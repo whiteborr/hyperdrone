@@ -1,13 +1,13 @@
 import math
 import pygame
 
-from base_drone import BaseDrone # Enemy inherits from BaseDrone
-from bullet import Bullet       # For enemy projectiles
-from game_settings import (     # Import necessary settings and colors
-    BLACK, RED, GREEN, YELLOW,  # Colors for health bar and enemy
-    ENEMY_SPEED, ENEMY_HEALTH, ENEMY_COLOR, # Basic enemy stats
+from base_drone import BaseDrone 
+from bullet import Bullet
+from game_settings import (
+    BLACK, RED, GREEN, YELLOW,
+    ENEMY_SPEED, ENEMY_HEALTH, ENEMY_COLOR,
     ENEMY_BULLET_SPEED, ENEMY_BULLET_COOLDOWN, ENEMY_BULLET_COLOR, ENEMY_BULLET_LIFETIME,
-    TILE_SIZE # For AI behavior, like maintaining distance
+    TILE_SIZE
 )
 
 class Enemy(BaseDrone):
@@ -60,7 +60,6 @@ class Enemy(BaseDrone):
         # self.image.fill((0,0,0,0)) # Clear for transparency
         # pygame.draw.circle(self.image, ENEMY_COLOR, (self.size//2, self.size//2), self.size//2)
         pass
-
 
     def stun(self, duration_ms):
         """

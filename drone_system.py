@@ -2,9 +2,7 @@ import json
 import os
 import random
 
-from drone_configs import DRONE_DATA, OMEGA_STAT_RANGES # For drone stats and Omega-9 randomization
-# game_settings is not directly imported here, but its values are used by drone_configs
-# and potentially by the player class which interacts with drone_system.
+from drone_configs import DRONE_DATA, OMEGA_STAT_RANGES 
 
 DATA_DIR = "data" # Directory to store save files
 UNLOCKS_FILE_PATH = os.path.join(DATA_DIR, "drone_unlocks.json") # Path to the drone unlocks save file
@@ -292,4 +290,3 @@ class DroneSystem:
             return true_base_stats # Return the modified stats for Omega-9.
             
         return true_base_stats # Return the (unmodified) base stats for other drones.
-

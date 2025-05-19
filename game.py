@@ -11,7 +11,7 @@ from enemy import Enemy
 from maze import Maze
 from game_settings import (
     WIDTH, HEIGHT, FPS, TILE_SIZE,
-    BLACK, GOLD, WHITE, GREEN, CYAN, RED, MAGENTA, DARK_RED, GREY, YELLOW, LIGHT_BLUE,
+    BLACK, GOLD, WHITE, GREEN, CYAN, RED, DARK_RED, GREY, YELLOW, LIGHT_BLUE,
     POWERUP_SIZE, POWERUP_TYPES, POWERUP_SPAWN_CHANCE, MAX_POWERUPS_ON_SCREEN,
     ENEMY_BULLET_DAMAGE, WEAPON_UPGRADE_ITEM_LIFETIME, POWERUP_ITEM_LIFETIME,
     WEAPON_MODE_NAMES, 
@@ -106,11 +106,14 @@ class WeaponUpgradeItem(Collectible):
             except pygame.error as e:
                 print(f"Error loading icon for {self.powerup_type} ('{image_path}'): {e}")
         super().__init__(x, y, base_color=details["color"], size=POWERUP_SIZE, thickness=4, icon_surface=loaded_icon)
-        self.creation_time = pygame.time.get_ticks() 
+        self.creation_time = pygame.time.get_ticks()
+
     def update(self):
         return self.base_update(WEAPON_UPGRADE_ITEM_LIFETIME)
+    
     def apply_effect(self, player):
         player.cycle_weapon_state(force_cycle=True) 
+
 
 class ShieldItem(Collectible):
     def __init__(self, x, y):
@@ -127,11 +130,14 @@ class ShieldItem(Collectible):
                 print(f"Error loading icon for {self.powerup_type} ('{image_path}'): {e}")
         super().__init__(x, y, base_color=details["color"], size=POWERUP_SIZE, thickness=4, icon_surface=loaded_icon)
         self.creation_time = pygame.time.get_ticks()
-        self.effect_duration = get_game_setting("SHIELD_POWERUP_DURATION") 
+        self.effect_duration = get_game_setting("SHIELD_POWERUP_DURATION")
+
     def update(self):
-        return self.base_update(POWERUP_ITEM_LIFETIME) 
+        return self.base_update(POWERUP_ITEM_LIFETIME)
+    
     def apply_effect(self, player):
         player.activate_shield(self.effect_duration)
+
 
 class SpeedBoostItem(Collectible):
     def __init__(self, x, y):
@@ -149,9 +155,11 @@ class SpeedBoostItem(Collectible):
         super().__init__(x, y, base_color=details["color"], size=POWERUP_SIZE, thickness=4, icon_surface=loaded_icon)
         self.creation_time = pygame.time.get_ticks()
         self.effect_duration = get_game_setting("SPEED_BOOST_POWERUP_DURATION")
-        self.multiplier = details["multiplier"] 
+        self.multiplier = details["multiplier"]
+
     def update(self):
         return self.base_update(POWERUP_ITEM_LIFETIME)
+    
     def apply_effect(self, player):
         player.arm_speed_boost(self.effect_duration, self.multiplier)
 # --- End of Collectible Classes ---
@@ -1147,13 +1155,13 @@ class Game:
                 no_lb_text = self.font.render("Leaderboard disabled (custom settings).", True, YELLOW)
                 self.screen.blit(no_lb_text, no_lb_text.get_rect(center=(WIDTH//2, prompt_y_offset)))
                 prompt_y_offset += self.font.get_height() + 10
-            prompt_str = "R: Restart, M: Menu, Q: Quit"
+            prompt_str = "R: Restart  M: Menu  Q: Quit"
             prompt_clr = WHITE
             if can_submit_score and is_new_high:
                 prompt_str = "New High Score! Press any key to enter name."
                 prompt_clr = GOLD
             elif can_submit_score:
-                prompt_str = "R: Restart, L: Leaderboard, M: Menu, Q: Quit"
+                prompt_str = "R: Restart  L: Leaderboard  M: Menu  Q: Quit"
             prompt_surf = self.font.render(prompt_str, True, prompt_clr)
             self.screen.blit(prompt_surf, prompt_surf.get_rect(center=(WIDTH//2, prompt_y_offset)))
         elif self.game_state == GAME_STATE_ENTER_NAME:

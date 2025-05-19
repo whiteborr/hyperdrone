@@ -3,7 +3,7 @@ import pygame
 
 from game_settings import PLAYER_SPEED, CYAN
 
-class BaseDrone(pygame.sprite.Sprite):  # Inherit from pygame.sprite.Sprite
+class BaseDrone(pygame.sprite.Sprite):
     def __init__(self, x, y, size=30, speed=PLAYER_SPEED):
         super().__init__()  # Call the parent (Sprite) constructor
         self.x = x

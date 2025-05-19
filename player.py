@@ -4,18 +4,10 @@ import os
 import pygame
 
 from game_settings import (
-    BLUE, ORANGE, CYAN, WHITE, YELLOW, LIGHT_BLUE,
-    PLAYER_BULLET_COLOR,
+    BLUE, ORANGE, CYAN, WHITE, YELLOW, LIGHT_BLUE, GREEN
 )
 
-try:
-    from drone_configs import PHANTOM_CLOAK_DURATION_MS, PHANTOM_CLOAK_COOLDOWN_MS, PHANTOM_CLOAK_ALPHA
-except ImportError:
-    print("DEBUG (player.py): Could not import Phantom cloak constants from drone_configs. Using fallback values.")
-    PHANTOM_CLOAK_DURATION_MS = 5000
-    PHANTOM_CLOAK_COOLDOWN_MS = 15000
-    PHANTOM_CLOAK_ALPHA = 70
-
+from drone_configs import PHANTOM_CLOAK_DURATION_MS, PHANTOM_CLOAK_COOLDOWN_MS, PHANTOM_CLOAK_ALPHA
 from base_drone import BaseDrone
 from bullet import Bullet, Missile, LightningBullet
 
@@ -29,7 +21,6 @@ try:
     if hasattr(gs_module, 'get_game_setting') and callable(gs_module.get_game_setting):
         _game_settings_get_function = gs_module.get_game_setting
         _using_internal_player_defaults = False
-        # print("DEBUG (player.py): SUCCESSFULLY imported game_settings module and its get_game_setting function.")
     else:
         print("ERROR (player.py): game_settings module imported, but get_game_setting function NOT FOUND or not callable.")
 except ImportError as e:
@@ -46,7 +37,7 @@ def get_game_setting(key):
         except Exception as e:
             print(f"ERROR (player.py): Error calling get_game_setting from game_settings module for key '{key}': {e}. Reverting to internal fallback.")
             _using_internal_player_defaults = True
-    
+
     defaults = {
         "PLAYER_MAX_HEALTH":100, "PLAYER_SPEED":3, "ROTATION_SPEED":5,
         "PLAYER_BASE_SHOOT_COOLDOWN":500, "PLAYER_RAPID_FIRE_COOLDOWN":150,
@@ -60,12 +51,12 @@ def get_game_setting(key):
         "WEAPON_MODE_RAPID_TRI":3, "WEAPON_MODE_BIG_SHOT":4, "WEAPON_MODE_BOUNCE":5,
         "WEAPON_MODE_PIERCE":6, "WEAPON_MODE_HEATSEEKER":7, "WEAPON_MODE_HEATSEEKER_PLUS_BULLETS":8,
         "WEAPON_MODE_LIGHTNING": 9,
-        "WEAPON_MODES_SEQUENCE": [0,1,2,3,4,5,6,7,8,9], 
+        "WEAPON_MODES_SEQUENCE": [0,1,2,3,4,5,6,7,8,9],
         "WIDTH": 1920, "HEIGHT": 1080, "TILE_SIZE": 80,
         "LIGHTNING_COLOR": (0, 220, 220), "LIGHTNING_DAMAGE": 15,
-        "LIGHTNING_LIFETIME": 60, # User set this high for testing
+        "LIGHTNING_LIFETIME": 60,
         "LIGHTNING_COOLDOWN": 750,
-        "LIGHTNING_ZAP_RANGE": 80 * 7, 
+        "LIGHTNING_ZAP_RANGE": 80 * 7,
         "PHANTOM_CLOAK_COOLDOWN_MS": 15000, "PHANTOM_CLOAK_DURATION_MS": 5000,
         "PHANTOM_CLOAK_ALPHA": 70,
         "POWERUP_TYPES": {
@@ -74,6 +65,11 @@ def get_game_setting(key):
             "weapon_upgrade": { "color": BLUE, "image_filename": "weapon_icon.png" }
         },
         "SHIELD_POWERUP_DURATION": 35000,
+        "WEAPON_MODE_NAMES": {
+            0: "Single Shot", 1: "Tri-Shot", 2: "Rapid Single", 3: "Rapid Tri-Shot",
+            4: "Big Shot", 5: "Bounce Shot", 6: "Pierce Shot", 7: "Heatseeker",
+            8: "Seeker + Rapid", 9: "Lightning"
+        }
     }
     val = defaults.get(key)
     if val is None:
@@ -116,29 +112,21 @@ class Drone(BaseDrone):
             if self.sprite_path is not None and not isinstance(self.sprite_path, str):
                 print(f"Warning: Invalid sprite_path type for {self.drone_id}: '{type(self.sprite_path)}'. Using fallback drawing.")
 
-        # print("DEBUG (Drone.__init__): Initializing weapon system...")
         try:
             initial_weapon_mode_val = get_game_setting("INITIAL_WEAPON_MODE")
             weapon_modes_sequence_val = get_game_setting("WEAPON_MODES_SEQUENCE")
-            # print(f"DEBUG (Drone.__init__): Value from get_game_setting('INITIAL_WEAPON_MODE'): {initial_weapon_mode_val} (type: {type(initial_weapon_mode_val)})")
-            # print(f"DEBUG (Drone.__init__): Value from get_game_setting('WEAPON_MODES_SEQUENCE'): {weapon_modes_sequence_val} (type: {type(weapon_modes_sequence_val)})")
             if weapon_modes_sequence_val is None or not isinstance(weapon_modes_sequence_val, list) or not weapon_modes_sequence_val:
-                # This print is already present in the user's output
-                # print("CRITICAL (Drone.__init__): WEAPON_MODES_SEQUENCE is invalid or empty from get_game_setting. Defaulting to basic sequence: [0]")
-                weapon_modes_sequence_val = [0] 
-                initial_weapon_mode_val = 0 
+                weapon_modes_sequence_val = [0]
+                initial_weapon_mode_val = 0
             if initial_weapon_mode_val is None or initial_weapon_mode_val not in weapon_modes_sequence_val:
-                # This print is already present in the user's output
-                # print(f"Warning (Drone.__init__): INITIAL_WEAPON_MODE '{initial_weapon_mode_val}' is invalid or not in sequence {weapon_modes_sequence_val}. Defaulting to first weapon in sequence.")
                 initial_weapon_mode_val = weapon_modes_sequence_val[0]
             self.weapon_mode_index = weapon_modes_sequence_val.index(initial_weapon_mode_val)
             self.current_weapon_mode = weapon_modes_sequence_val[self.weapon_mode_index]
-            # print(f"DEBUG (Drone.__init__): Final current_weapon_mode = {self.current_weapon_mode}, index = {self.weapon_mode_index}")
         except Exception as e:
             print(f"CRITICAL ERROR (Drone.__init__): Exception during weapon initialization: {e}. Defaulting weapon.")
             self.weapon_mode_index = 0
-            self.current_weapon_mode = 0 
-        
+            self.current_weapon_mode = 0
+
         self.current_bullet_size = get_game_setting("PLAYER_DEFAULT_BULLET_SIZE")
         self.base_shoot_cooldown_config = get_game_setting("PLAYER_BASE_SHOOT_COOLDOWN")
         self.rapid_shoot_cooldown_config = get_game_setting("PLAYER_RAPID_FIRE_COOLDOWN")
@@ -247,26 +235,50 @@ class Drone(BaseDrone):
 
     def cycle_weapon_state(self, force_cycle=False):
         weapon_sequence = get_game_setting("WEAPON_MODES_SEQUENCE")
+        
+        # Check for invalid or empty weapon sequence
         if weapon_sequence is None or not isinstance(weapon_sequence, list) or not weapon_sequence:
             print("ERROR (cycle_weapon_state): WEAPON_MODES_SEQUENCE is invalid or empty. Cannot cycle weapon.")
             return
-        if len(weapon_sequence) <= 1 and not force_cycle:
-             if len(weapon_sequence) == 1:
+        
+        num_weapon_modes = len(weapon_sequence)
+        max_weapon_index = num_weapon_modes - 1
+
+        # If there are no weapons or only one weapon in the sequence
+        if num_weapon_modes <= 0:
+            print("ERROR (cycle_weapon_state): No weapons defined in WEAPON_MODES_SEQUENCE.")
+            return
+        
+        if num_weapon_modes == 1:
+            # If only one weapon, ensure it's set (especially if called with force_cycle=False initially)
+            # but don't change if it's already set.
+            if self.current_weapon_mode != weapon_sequence[0] or self.weapon_mode_index != 0:
                 self.weapon_mode_index = 0
                 self.current_weapon_mode = weapon_sequence[0]
                 self._update_weapon_attributes()
-             return
-        max_weapon_index = len(weapon_sequence) - 1
-        if not force_cycle:
-            if self.weapon_mode_index >= max_weapon_index:
-                return
-        self.weapon_mode_index = (self.weapon_mode_index + 1) % len(weapon_sequence)
+            # print("DEBUG: Only one weapon mode available. No cycle.")
+            return
+
+        # If already at the last weapon mode in the sequence, do not cycle further.
+        if self.weapon_mode_index >= max_weapon_index:
+            # print(f"DEBUG: Max weapon (Index: {self.weapon_mode_index}) reached. No further upgrade from cycle_weapon_state.")
+            return
+     
+        self.weapon_mode_index += 1
+        
+        # Ensure the index is within bounds (should be, due to the check above)
+        # self.weapon_mode_index = min(self.weapon_mode_index, max_weapon_index) 
+        # This line is technically redundant if the logic is correct, but can be a safeguard.
+
         self.current_weapon_mode = weapon_sequence[self.weapon_mode_index]
         self._update_weapon_attributes()
+        
         weapon_names = get_game_setting("WEAPON_MODE_NAMES")
         current_weapon_name = "Unknown"
         if isinstance(weapon_names, dict): 
             current_weapon_name = weapon_names.get(self.current_weapon_mode, f"Unknown Mode ID: {self.current_weapon_mode}")
+        # You can uncomment the line below for debugging weapon changes:
+        # print(f"Weapon cycled to: {current_weapon_name} (Index: {self.weapon_mode_index})")
 
     def update_movement(self, maze=None):
         if self.moving_forward:
@@ -326,10 +338,63 @@ class Drone(BaseDrone):
         elif self.y > game_area_bottom: self.y = game_area_bottom; clamped = True
         if clamped:
             self.rect.center = (int(self.x), int(self.y))
-        self.bullets_group.update() 
+        self.bullets_group.update()
         self.missiles_group.update()
         if self.shield_active:
             self.shield_visual_radius_factor = 1.0 + 0.1 * math.sin(current_time * 0.005)
+
+    def get_raycast_endpoint(self, start_pos_tuple, direction_angle_degrees, max_range, maze_obj, step_size=3):
+        """
+        Raycasts from start_pos in a direction, stopping at the first wall or at max_range.
+        Returns the pygame.math.Vector2 endpoint of where the ray visually stops.
+        """
+        start_pos = pygame.math.Vector2(start_pos_tuple)
+        direction_rad = math.radians(direction_angle_degrees)
+        
+        final_end_point = pygame.math.Vector2(
+            start_pos.x + math.cos(direction_rad) * max_range,
+            start_pos.y + math.sin(direction_rad) * max_range
+        )
+
+        if not maze_obj:
+            return final_end_point 
+
+        current_pos = pygame.math.Vector2(start_pos) # Make a copy
+        num_steps = int(max_range / step_size)
+        if num_steps <= 0: num_steps = 1 # Ensure at least one check if max_range is small
+
+        for i in range(num_steps + 1): # Iterate up to and including max_range distance
+            # Calculate current point to check
+            # For i=0, current_range is 0, current_check_pos is start_pos
+            # For i=num_steps, current_range is max_range, current_check_pos is final_end_point
+            current_range = i * step_size 
+            if current_range > max_range: # Don't check beyond max_range
+                current_range = max_range
+            
+            current_check_pos = pygame.math.Vector2(
+                start_pos.x + math.cos(direction_rad) * current_range,
+                start_pos.y + math.sin(direction_rad) * current_range
+            )
+            
+            # Check if this point is inside a wall
+            if maze_obj.is_wall(current_check_pos.x, current_check_pos.y, 2, 2): # Use a small 2x2 check area
+                # Wall hit. If it's the very first check (i=0) and start_pos is in wall, return start_pos.
+                if i == 0:
+                    return start_pos 
+                
+                # Otherwise, the collision happened between the previous point and current_check_pos.
+                # Return the previous clear point.
+                prev_range = (i - 1) * step_size
+                previous_clear_pos = pygame.math.Vector2(
+                    start_pos.x + math.cos(direction_rad) * prev_range,
+                    start_pos.y + math.sin(direction_rad) * prev_range
+                )
+                return previous_clear_pos
+            
+            if current_range >= max_range: # Reached max_range without hitting a wall (for this iteration)
+                break 
+                
+        return final_end_point # No wall hit within max_range
 
     def shoot(self, sound=None, missile_sound=None, maze=None, enemies_group=None):
         current_time = pygame.time.get_ticks()
@@ -342,45 +407,72 @@ class Drone(BaseDrone):
             tip_x, tip_y = self.get_tip_position()
             active_mode = self.current_weapon_mode
             fired_this_call = False
-            
-            # print(f"DEBUG (shoot): Active mode: {active_mode} ({get_game_setting('WEAPON_MODE_NAMES').get(active_mode, 'Unknown')}), Cooldown passed.")
+            raycast_step_size = 3 # Define step_size for raycasting checks, tune as needed
 
             if active_mode == get_game_setting("WEAPON_MODE_LIGHTNING"):
-                # print(f"DEBUG (shoot): WEAPON_MODE_LIGHTNING selected.")
-                closest_enemy = None
-                min_dist_sq = float('inf') 
-                if enemies_group:
-                    for enemy_sprite in enemies_group:
-                        if enemy_sprite.alive:
-                            dist_sq = (self.x - enemy_sprite.rect.centerx)**2 + \
-                                      (self.y - enemy_sprite.rect.centery)**2
-                            if dist_sq < min_dist_sq:
-                                min_dist_sq = dist_sq
-                                closest_enemy = enemy_sprite
+                closest_visible_enemy = None
+                min_dist_to_visible_enemy_sq = float('inf') # Using squared distance for comparison efficiency
                 
                 zap_range = get_game_setting("LIGHTNING_ZAP_RANGE")
-                if zap_range is None: zap_range = TILE_SIZE * 7 # Fallback if not in settings
-                zap_range_sq = zap_range**2
+                if zap_range is None: zap_range = get_game_setting("TILE_SIZE") * 7
+
+                if enemies_group and maze:
+                    for enemy_sprite in enemies_group:
+                        if enemy_sprite.alive:
+                            enemy_center_vec = pygame.math.Vector2(enemy_sprite.rect.center)
+                            tip_vec = pygame.math.Vector2(tip_x, tip_y)
+                            
+                            vector_to_enemy = enemy_center_vec - tip_vec
+                            dist_to_enemy = vector_to_enemy.length()
+
+                            if dist_to_enemy == 0 or dist_to_enemy > zap_range:
+                                continue
+
+                            angle_to_enemy_rad = math.atan2(vector_to_enemy.y, vector_to_enemy.x)
+                            angle_to_enemy_deg = math.degrees(angle_to_enemy_rad)
+                            
+                            # Raycast towards the enemy up to the enemy's actual distance
+                            ray_hit_point = self.get_raycast_endpoint(
+                                (tip_x, tip_y),
+                                angle_to_enemy_deg,
+                                dist_to_enemy, 
+                                maze,
+                                step_size=raycast_step_size 
+                            )
+                            
+                            # If the ray reached (or got very close to) the enemy, it's a clear shot
+                            if ray_hit_point.distance_to(enemy_center_vec) < raycast_step_size * 1.5: # Tolerance
+                                current_dist_sq = dist_to_enemy**2
+                                if current_dist_sq < min_dist_to_visible_enemy_sq:
+                                    min_dist_to_visible_enemy_sq = current_dist_sq
+                                    closest_visible_enemy = enemy_sprite
                 
-                if closest_enemy:
-                    # print(f"DEBUG (shoot): Closest enemy for lightning: ID {id(closest_enemy)}, dist_sq: {min_dist_sq:.2f}, zap_range_sq: {zap_range_sq:.2f}")
-                    if min_dist_sq <= zap_range_sq:
-                        # print(f"DEBUG (shoot): Enemy IN ZAP RANGE. Creating LightningBullet.")
-                        new_lightning_bullet = LightningBullet(
-                            origin_pos=(tip_x, tip_y), 
-                            target_enemy=closest_enemy,
-                            damage=get_game_setting("LIGHTNING_DAMAGE"),
-                            lifetime=get_game_setting("LIGHTNING_LIFETIME"),
-                            color=get_game_setting("LIGHTNING_COLOR"),
-                            owner=self
-                        )
-                        self.bullets_group.add(new_lightning_bullet)
-                        # print(f"DEBUG (shoot): LightningBullet added to bullets_group. Group size: {len(self.bullets_group)}")
-                        fired_this_call = True
-                    # else:
-                        # print(f"DEBUG (shoot): Lightning target found but OUT OF ZAP RANGE.")
-                # else:
-                    # print(f"DEBUG (shoot): No closest enemy found for lightning.")
+                lightning_params = {
+                    "origin_pos": (tip_x, tip_y),
+                    "damage": get_game_setting("LIGHTNING_DAMAGE"),
+                    "lifetime": get_game_setting("LIGHTNING_LIFETIME"),
+                    "color": get_game_setting("LIGHTNING_COLOR"),
+                    "owner": self,
+                    "maze": maze
+                }
+
+                if closest_visible_enemy:
+                    lightning_params["target_enemy"] = closest_visible_enemy
+                else:
+                    # No visible enemy, fire straight, stopping at walls
+                    actual_end_point = self.get_raycast_endpoint(
+                        (tip_x, tip_y), 
+                        self.angle, # Player's current facing angle
+                        zap_range, 
+                        maze,
+                        step_size=raycast_step_size
+                    )
+                    lightning_params["end_point"] = actual_end_point
+                
+                new_lightning_bullet = LightningBullet(**lightning_params)
+                self.bullets_group.add(new_lightning_bullet)
+                fired_this_call = True
+            
             else: # Other bullet types
                 bullet_fire_angles = [self.angle]
                 current_bullet_base_speed = get_game_setting("PLAYER_BULLET_SPEED")
@@ -419,6 +511,7 @@ class Drone(BaseDrone):
                     )
                     self.bullets_group.add(new_bullet)
                 fired_this_call = True
+
             if fired_this_call:
                 self.last_shot_time = current_time
                 if sound:
@@ -547,10 +640,8 @@ class Drone(BaseDrone):
                     pygame.draw.circle(shield_surf, shield_alpha_color,
                                        (shield_radius_animated, shield_radius_animated), shield_radius_animated)
                     surface.blit(shield_surf, shield_surf.get_rect(center=self.rect.center))
-        
-        # MODIFIED: Manually call draw for each bullet in the bullets_group
-        # This ensures custom draw methods like LightningBullet's are used.
+
         for bullet in self.bullets_group:
-            bullet.draw(surface) 
-            
-        self.missiles_group.draw(surface) # Missiles can still use default group draw if they have a good self.image
+            bullet.draw(surface)
+
+        self.missiles_group.draw(surface)

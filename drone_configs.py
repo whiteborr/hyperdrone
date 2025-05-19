@@ -4,18 +4,7 @@ Each drone has a unique ID (the key in DRONE_DATA), a display name,
 paths to its sprite and icon, base statistics, an unlock condition,
 and a descriptive text.
 """
-
-# Import necessary constants from game_settings for default drone values
-# This helps keep base stats for the Original Drone consistent with general player settings.
-try:
-    from game_settings import PLAYER_MAX_HEALTH, PLAYER_SPEED, ROTATION_SPEED
-except ImportError:
-    # Fallback values if game_settings.py is not available during direct import (e.g. linting)
-    # The game itself should ensure game_settings is loaded correctly.
-    print("Warning (drone_configs.py): Could not import from game_settings. Using fallback default stats for ORIGINAL_DRONE.")
-    PLAYER_MAX_HEALTH = 100
-    PLAYER_SPEED = 3
-    ROTATION_SPEED = 5
+from game_settings import PLAYER_MAX_HEALTH, PLAYER_SPEED, ROTATION_SPEED
 
 # Main dictionary holding all drone configurations
 DRONE_DATA = {

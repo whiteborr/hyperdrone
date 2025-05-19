@@ -11,8 +11,9 @@ HYPERDRONE is a dynamic top-down 2D game where players pilot an advanced drone t
   * Unlock new drones by reaching certain player levels, collecting in-game currency (cores), or defeating specific bosses (future feature).
   * Player progress (level, cores, unlocked drones, selected drone) is saved locally.
 * **Dynamic Weapon System:**
-  * Cycle through multiple weapon modes (Single Shot, Tri-Shot, Rapid Fire, Big Shot, Bounce Shot, Pierce Shot, Heatseeker Missiles).
+  * Cycle through multiple weapon modes (Single Shot, Tri-Shot, Rapid Fire, Big Shot, Bounce Shot, Pierce Shot, Heatseeker Missiles, Lightning).
     * Collect weapon upgrade power-ups to advance to the next weapon mode.
+    * Defealt all enemies in the level to advance to the next weapon mode.
 * **Power-ups:**
   * **Shield:** Provides temporary invincibility.
     * **Speed Boost:** Temporarily increases drone speed and activates a co-shield.
@@ -23,7 +24,7 @@ HYPERDRONE is a dynamic top-down 2D game where players pilot an advanced drone t
 * **Scoring & Leaderboard:**
   * Earn points for collecting rings and defeating enemies.
     * Local leaderboard saves top scores with player names and levels achieved.
-    * Option to disable leaderboard if game settings are modified from defaults.
+    * Leaderboard is disabled if game settings are modified from defaults.
 * **Customizable Game Settings:** Adjust various game parameters like player health, lives, speed, weapon stats, enemy stats, and level timer via an in-game settings menu.
 * **UI Panel:** Displays score, level, time remaining, player cores, health, weapon charge, active power-up duration, lives, and collected rings.
 * **Sound Effects & Music:** Includes sound effects for game events and background music for menus/gameplay.
