@@ -30,6 +30,11 @@
         "level": 2
     },
     {
+        "name": "DAD",
+        "score": 165,
+        "level": 2
+    },
+    {
         "name": "VIVIAN",
         "score": 130,
         "level": 1
@@ -42,11 +47,6 @@
     {
         "name": "VIVIAN",
         "score": 80,
-        "level": 1
-    },
-    {
-        "name": "VIVIAN",
-        "score": 75,
         "level": 1
     }
 ]

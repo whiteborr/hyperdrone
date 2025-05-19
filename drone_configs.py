@@ -9,7 +9,7 @@ from game_settings import PLAYER_MAX_HEALTH, PLAYER_SPEED, ROTATION_SPEED
 # Main dictionary holding all drone configurations
 DRONE_DATA = {
     "ORIGINAL_DRONE": {
-        "name": "Original Drone",
+        "name": "Drone",
         "sprite_path": None, # Indicates to use the fallback drawing logic in the Player/Drone class
         "icon_path": "assets/drones/original_icon.png", # Path to the UI icon for selection
         "base_stats": { # Base statistics for this drone
