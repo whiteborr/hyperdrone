@@ -169,8 +169,8 @@ class Game:
     def __init__(self):
         pygame.init()
         pygame.mixer.init()
-        self.screen = pygame.display.set_mode((WIDTH, HEIGHT))
-        pygame.display.set_caption("Drone Maze Combat")
+        self.screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
+        pygame.display.set_caption("HYPERDRONE")
         self.clock = pygame.time.Clock()
         self.drone_system = DroneSystem()
         
@@ -180,6 +180,7 @@ class Game:
         # self.UI_PANEL_COLOR = BLACK # No longer used for a full panel
 
         self.font_path_emoji = os.path.join("assets", "fonts", "seguiemj.ttf")
+        self.font_path_neuropol = os.path.join("assets", "fonts", "neuropol.otf")
         self.font_size_ui = 28
         self.font_size_ui_values = 30 # Can be same as font_size_ui or different
         self.font_size_small = 24
@@ -200,8 +201,8 @@ class Game:
             self.medium_font = pygame.font.Font(self.font_path_emoji, self.font_size_medium)
             self.large_font = pygame.font.Font(self.font_path_emoji, self.font_size_large)
             self.input_font = pygame.font.Font(self.font_path_emoji, self.font_size_input)
-            self.menu_font = pygame.font.Font(self.font_path_emoji, self.font_size_menu)
-            self.title_font = pygame.font.Font(self.font_path_emoji, self.font_size_title)
+            self.menu_font = pygame.font.Font(self.font_path_neuropol, self.font_size_menu)
+            self.title_font = pygame.font.Font(self.font_path_neuropol, self.font_size_title)
             self.timer_display_font = self.font_ui_values # Explicitly for timer
             self.font_drone_name = pygame.font.Font(self.font_path_emoji, self.font_drone_select_name)
             self.font_drone_desc = pygame.font.Font(self.font_path_emoji, self.font_drone_select_desc)
