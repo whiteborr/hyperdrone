@@ -9,19 +9,19 @@ HYPERDRONE is a dynamic top-down 2D game where players pilot an advanced drone t
 * **Multiple Playable Drones:** Unlock and select from a variety of drones, each with distinct base stats (HP, speed, turn speed, fire rate) and some with special abilities (e.g., Omega-9's random stat boosts, Phantom's cloak).
 * **Drone Unlocks & Progression:**
   * Unlock new drones by reaching certain player levels, collecting in-game currency (cores), or defeating specific bosses (future feature).
-  * Player progress (level, cores, unlocked drones, selected drone) is saved locally.
+    * Player progress (level, cores, unlocked drones, selected drone) is saved locally.
 * **Dynamic Weapon System:**
-    * Cycle through multiple weapon modes (Single Shot, Tri-Shot, Rapid Fire, Big Shot, Bounce Shot, Pierce Shot, Heatseeker Missiles).
+  * Cycle through multiple weapon modes (Single Shot, Tri-Shot, Rapid Fire, Big Shot, Bounce Shot, Pierce Shot, Heatseeker Missiles).
     * Collect weapon upgrade power-ups to advance to the next weapon mode.
 * **Power-ups:**
-    * **Shield:** Provides temporary invincibility.
-    * **Speed Boost:** Temporarily increases drone speed and activates a co-shield.
+  * **Shield:** Provides temporary invincibility.
+  * **Speed Boost:** Temporarily increases drone speed and activates a co-shield.
 * **Enemy Drones:** Encounter AI-controlled enemy drones that navigate the maze and shoot at the player.
 * **Collectibles:**
-    * **Rings:** Collect rings in each level to progress and earn score/cores.
+  * **Rings:** Collect rings in each level to progress and earn score/cores.
     * **Cores:** In-game currency used for unlocking drones.
 * **Scoring & Leaderboard:**
-    * Earn points for collecting rings and defeating enemies.
+  * Earn points for collecting rings and defeating enemies.
     * Local leaderboard saves top scores with player names and levels achieved.
     * Option to disable leaderboard if game settings are modified from defaults.
 * **Customizable Game Settings:** Adjust various game parameters like player health, lives, speed, weapon stats, enemy stats, and level timer via an in-game settings menu.
@@ -42,10 +42,16 @@ HYPERDRONE is a dynamic top-down 2D game where players pilot an advanced drone t
 
 1. Press `Win + R`, type `cmd`, and press **Enter**.
 2. In the command prompt, type:
-    `cmd`
-    `python --version`
+
+    ```cmd
+    python --version
+    ```
+
     You should see something like:
-   `Python 3.12.0`
+
+    ```cmd
+    Python 3.12.0
+    ```
 
     If not, restart your computer and try again.
 
@@ -53,23 +59,17 @@ HYPERDRONE is a dynamic top-down 2D game where players pilot an advanced drone t
 
 ### Step 3: Download the Game Files
 
+Clone the repository or download the ZIP file.
+
 ```cmd
 cd C:\YourPreferredDirectory
 git clone [https://github.com/alliedgwailou/alliedgwailou.git](https://github.com/alliedgwailou/alliedgwailou.git)
 cd alliedgwailou
+```
 
-Or download ZIP manually from the GitHub repo and extract it.
-
-Step 4: Install Pygame
-pip install pygame
-
-Step 5: Run the Game
-python main.py
-
-🎮 The game should launch in a new window.
-
-File Structure
-project_root/
+Or download ZIP manually from the GitHub repo and extract it.Step 4: Install Pygamepip install pygame
+Step 5: Run the Gamepython main.py
+🎮 The game should launch in a new window.File Structureproject_root/
 ├── main.py                # Entry point
 ├── game.py                # Core game loop and state handling
 ├── base_drone.py          # Base class for all drones
@@ -80,95 +80,9 @@ project_root/
 ├── game_settings.py       # Configuration and tunable parameters
 ├── leaderboard.py         # Leaderboard management
 └── assets/                # Images, sounds, fonts
-
-Game Controls
-Key
-
-Action
-
-↑ Arrow
-
-Thrust forward
-
-↓ Arrow
-
-Cancel thrust (coast)
-
-←/→ Arrows
-
-Rotate drone
-
-Spacebar
-
-Fire weapon
-
-P
-
-Pause / Unpause
-
-R
-
-Restart (Game Over screen)
-
-M
-
-Main Menu
-
-L
-
-View Leaderboard
-
-Q
-
-Quit (from Pause or Game Over)
-
-Modding Ideas
-Add new weapons or bullet types.
-
-Introduce new enemy classes or behaviors.
-
-Customize maze generation.
-
-Add new power-ups.
-
-Create new game modes (boss battles, time attack, etc).
-
-Future Enhancements
-Boss fights with unique mechanics.
-
-Story/campaign mode.
-
-Level-specific hazards.
-
-Smarter enemy AI and formations.
-
-More immersive sound design and visuals.
-
-🛠️ Compile to Windows Executable (.exe)
-You can convert the Python game into a standalone executable using PyInstaller.
-
-Step 1: Install PyInstaller
-pip install pyinstaller
-
-Step 2: Compile the Game
-Open a command prompt in the project directory and run:
-
-pyinstaller --onefile --windowed main.py
-
---onefile: Creates a single .exe file
-
---windowed: Prevents a terminal from opening alongside the game window
-
-Step 3: Locate the Executable
-After the build completes, you’ll find your .exe in the dist/ folder:
-
-project_root/
+Game ControlsKeyAction↑ ArrowThrust forward↓ ArrowCancel thrust (coast)←/→ ArrowsRotate droneSpacebarFire weaponPPause / UnpauseRRestart (Game Over screen)MMain MenuLView LeaderboardQQuit (from Pause or Game Over)Modding IdeasAdd new weapons or bullet types.Introduce new enemy classes or behaviors.Customize maze generation.Add new power-ups.Create new game modes (boss battles, time attack, etc).Future EnhancementsThis section outlines the planned improvements to enhance the overall depth, polish, and gameplay experience.Gameplay Mechanics & ContentPower-Ups & Collectibles Expansion:EMP Blast: Stuns all on-screen enemies briefly when picked up.Score Multiplier: Additional points for killing all enemies and completing levels within a time limit (e.g., 120 seconds).Enemy Variety & Smarter AI:Introduce new enemy types with diverse behaviors:Swarmers: Weak but fast, relying on numbers.Tanks: Heavy armor, higher health, potentially dealing more damage or having special attacks.Snipers: Long-range, accurate shots with a slow firing rate.Support Drones: Capable of healing other enemies or deploying shields.Upgrade enemy pathfinding (e.g., using A*) for better maze navigation.Maze & Level Design Enhancements:Themed Levels: Introduce different visual themes per level (e.g., tech, jungle, industrial).Hazards & Obstacles: Incorporate elements like laser grids, moving walls, or traps (e.g., slime, spikes).Interactive Elements: Add switches, breakable walls, or explosive barrels.New Objectives: Diversify missions beyond ring collection, such as:Timed escape missions.Kill-target levels (e.g., destroy all turrets).Escort missions for friendly drones.Boss Battles:Introduce boss enemies at key stages, featuring unique patterns, high health, and multi-phase attacks.Player Progression & Special Abilities:Permanent Upgrades: Allow players to use rings (or another currency) between levels to buy stat boosts (speed, health, damage, shield recharge).Drone Abilities: Implement cooldown-based abilities for the player, such as:Dash/dodge.Temporary shield.High-powered laser shot.EMP blast (as an ability, not just a pickup).Visuals and AudioVisual Feedback Improvements:Particle Effects: Add effects for explosions, collisions, thrusters, and power-up pickups.Distinct Enemy Designs: Create unique visuals for new enemy types, possibly with animated parts like blinking lights or moving components.Impact Decals: Show small marks where bullets hit walls.Audio Enhancements:Add varied sounds for different weapons and enemy attacks.Introduce new audio cues for new power-ups.Implement more dynamic explosion sound effects.Potentially vary background music intensity based on in-game events.UI & UX ImprovementsMini-Map: Implement a helpful mini-map for maze layouts, possibly with a fog-of-war style that reveals as the player explores.Game Over Screen: Display more detailed statistics like kill count, accuracy, total time, and rings collected.Optional Story Elements: Consider including light story beats or cutscenes between levels to provide more context.🛠️ Compile to Windows Executable (.exe)You can convert the Python game into a standalone executable using PyInstaller.Step 1: Install PyInstallerpip install pyinstaller
+Step 2: Compile the GameOpen a command prompt in the project directory and run:pyinstaller --onefile --windowed main.py
+--onefile: Creates a single .exe file--windowed: Prevents a terminal from opening alongside the game windowStep 3: Locate the ExecutableAfter the build completes, you’ll find your .exe in the dist/ folder:project_root/
 └── dist/
     └── main.exe
-
-Step 4: Run or Share
-You can now double-click the .exe to run the game or share it with others. Python is not required to run the .exe.
-
-Note: If your game uses assets like fonts, images, or sounds, you may need to bundle them using the --add-data option:
-bash pyinstaller --onefile --windowed --add-data "assets;assets" main.py 
-(Use a semicolon ; to separate source and destination on Windows
+Step 4: Run or ShareYou can now double-click the .exe to run the game or share it with others. Python is not required to run the .exe.Note: If your game uses assets like fonts, images, or sounds, you may need to bundle them using the --add-data option
