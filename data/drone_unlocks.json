@@ -1,0 +1,11 @@
+{
+  "unlocked_drones": [
+    "ORIGINAL_DRONE",
+    "VANTIS",
+    "ZEPHYR"
+  ],
+  "selected_drone": "ORIGINAL_DRONE",
+  "player_level": 2,
+  "bosses_defeated": [],
+  "player_cores": 595
+}
