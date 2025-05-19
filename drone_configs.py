@@ -44,7 +44,7 @@ DRONE_DATA = {
             "fire_rate_multiplier": 1.0,
             "special_ability": None,
         },
-        "unlock_condition": {"type": "level", "value": 2, "description": "Unlock: Reach Level 2"},
+        "unlock_condition": {"type": "level", "value": 3, "description": "Unlock: Reach Level 3"}, # UPDATED
         "description": "Sleek triangular stealth drone. A good all-rounder with balanced statistics.",
     },
     "RHINOX": {
@@ -58,7 +58,7 @@ DRONE_DATA = {
             "fire_rate_multiplier": 1.2, # 20% slower fire rate (cooldown * 1.2)
             "special_ability": None,
         },
-        "unlock_condition": {"type": "cores", "value": 500, "description": "Unlock: 500 Cores"},
+        "unlock_condition": {"type": "cores", "value": 1000, "description": "Unlock: 1000 Cores"}, # UPDATED
         "description": "Broad heavy armor-plated drone. Trades speed for high HP and resilience.",
     },
     "ZEPHYR": {
@@ -72,7 +72,7 @@ DRONE_DATA = {
             "fire_rate_multiplier": 0.9, # 10% faster fire rate (cooldown * 0.9)
             "special_ability": None,
         },
-        "unlock_condition": {"type": "level", "value": 5, "description": "Unlock: Reach Level 5"},
+        "unlock_condition": {"type": "level", "value": 10, "description": "Unlock: Reach Level 10"}, # UPDATED
         "description": "Lightweight quad-rotor frame. Excels in speed and agility but is more fragile.",
     },
     "STRIX": {
@@ -100,7 +100,7 @@ DRONE_DATA = {
             "fire_rate_multiplier": 1.0,
             "special_ability": "omega_boost", # Key for its unique randomization ability
         },
-        "unlock_condition": {"type": "level", "value": 10, "description": "Unlock: Reach Level 10"},
+        "unlock_condition": {"type": "level", "value": 20, "description": "Unlock: Reach Level 20"}, # UPDATED
         "description": "Futuristic experimental drone. Unstable: its core stats are randomized each run.",
     },
     "PHANTOM": {
@@ -114,7 +114,7 @@ DRONE_DATA = {
             "fire_rate_multiplier": 1.1, # Slightly slower fire rate
             "special_ability": "phantom_cloak", # Key for cloaking ability
         },
-        "unlock_condition": {"type": "cores", "value": 1000, "description": "Unlock: 1000 Cores"},
+        "unlock_condition": {"type": "cores", "value": 50000, "description": "Unlock: 50000 Cores"}, # UPDATED
         "description": "Features a shimmer-based cloaking device. Can briefly turn invisible but is delicate.",
     },
     # Add more drone configurations here following the same structure
@@ -153,4 +153,3 @@ OMEGA_STAT_RANGES = {
 for drone_id_ordered in DRONE_DISPLAY_ORDER:
     if drone_id_ordered not in DRONE_DATA:
         print(f"Warning (drone_configs.py): Drone ID '{drone_id_ordered}' found in DRONE_DISPLAY_ORDER but not in DRONE_DATA.")
-
