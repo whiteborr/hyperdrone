@@ -1000,105 +1000,170 @@ class Game:
                     enemy_obj.bullets.remove(bullet_obj)
 
     def draw_ui(self):
-        if not self.player: return 
+        if not self.player: return
         panel_surface = pygame.Surface((self.UI_PANEL_WIDTH, HEIGHT))
         panel_surface.fill(self.UI_PANEL_COLOR)
         self.screen.blit(panel_surface, (0, 0))
+        
         padding = self.ui_panel_padding
-        icon_text_gap = 5 
-        element_spacing = 10 
-        bar_max_width = self.UI_PANEL_WIDTH - (2 * padding) 
-        bar_height = 18 
-        current_time = pygame.time.get_ticks() 
-        current_y_top = padding 
+        icon_text_gap = 5 # Used for spacing between icon and bar
+        element_spacing = 10
+        bar_max_width = self.UI_PANEL_WIDTH - (2 * padding) # Original max width available for elements
+        bar_height = 18
+        
+        current_time = pygame.time.get_ticks()
+        current_y_top = padding
+
+        # --- Score, Level, Cores, Time (remain as before) ---
         score_text = f"🏆 Score: {self.score}"
-        level_text = f"🎯 Level: {self.level}"
         score_surf = self.font_ui_text.render(score_text, True, GOLD)
-        level_surf = self.font_ui_text.render(level_text, True, CYAN)
         self.screen.blit(score_surf, (padding, current_y_top))
         current_y_top += score_surf.get_height() + element_spacing // 2
+
+        level_text = f"🎯 Level: {self.level}"
+        level_surf = self.font_ui_text.render(level_text, True, CYAN)
         self.screen.blit(level_surf, (padding, current_y_top))
         current_y_top += level_surf.get_height() + element_spacing
+
+        cores_text = f"💠 Cores: {self.drone_system.get_player_cores()}"
+        cores_surf = self.font_ui_text.render(cores_text, True, GOLD)
+        self.screen.blit(cores_surf, (padding, current_y_top))
+        current_y_top += cores_surf.get_height() + element_spacing
+
         time_left_s = max(0, self.level_time_remaining_ms // 1000)
         mins = time_left_s // 60
         secs = time_left_s % 60
         timer_str = f"⏱️ Time: {mins:02d}:{secs:02d}"
-        timer_color = WHITE if time_left_s > 30 else (RED if (current_time // 250) % 2 == 0 else DARK_RED) 
+        timer_color = WHITE if time_left_s > 30 else (RED if (current_time // 250) % 2 == 0 else DARK_RED)
         timer_surf = self.font_ui_text.render(timer_str, True, timer_color)
         self.screen.blit(timer_surf, (padding, current_y_top))
         current_y_top += timer_surf.get_height() + element_spacing * 2
-        cores_text = f"💠 {self.drone_system.get_player_cores()}"
-        cores_surf = self.font_ui_values.render(cores_text, True, GOLD)
-        self.screen.blit(cores_surf, cores_surf.get_rect(centerx=self.UI_PANEL_WIDTH//2, top=current_y_top))
-        current_y_top += cores_surf.get_height() + element_spacing * 2
-        current_y_bottom = HEIGHT - padding 
-        current_y_bottom -= bar_height
+
+        # --- Indicator Bars with Icons ---
+        # Define total width for the "icon + gap + bar" element.
+        # Adjust the 0.85 factor (85%) as needed.
+        total_indicator_width = bar_max_width # Uses the full available space
+        min_bar_segment_width = 20 # Minimum pixel width for the bar segment itself
+
+        current_y_bottom = HEIGHT - padding
+        current_y_bottom -= bar_height 
+
+        # --- Health Bar ---
         health_bar_y = current_y_bottom
+        health_icon_char = "❤️" 
+        health_icon_surf = self.font_ui_text.render(health_icon_char, True, RED) # Red heart
+        health_icon_width = health_icon_surf.get_width()
+        health_icon_height = health_icon_surf.get_height()
+
+        self.screen.blit(health_icon_surf, (padding, health_bar_y + (bar_height - health_icon_height) // 2))
+        
+        bar_drawing_start_x_health = padding + health_icon_width + icon_text_gap
+        bar_segment_width_health = total_indicator_width - health_icon_width - icon_text_gap
+        if bar_segment_width_health < min_bar_segment_width: bar_segment_width_health = min_bar_segment_width
+
         health_percentage = self.player.health / self.player.max_health if self.player.max_health > 0 else 0
-        health_bar_width_fill = int(bar_max_width * health_percentage)
+        health_bar_width_fill = int(bar_segment_width_health * health_percentage)
         health_fill_color = GREEN if health_percentage > 0.6 else YELLOW if health_percentage > 0.3 else RED
-        pygame.draw.rect(self.screen, (50,50,50), (padding, health_bar_y, bar_max_width, bar_height)) 
+        
+        pygame.draw.rect(self.screen, (50,50,50), (bar_drawing_start_x_health, health_bar_y, bar_segment_width_health, bar_height))
         if health_bar_width_fill > 0:
-            pygame.draw.rect(self.screen, health_fill_color, (padding, health_bar_y, health_bar_width_fill, bar_height)) 
-        pygame.draw.rect(self.screen, WHITE, (padding, health_bar_y, bar_max_width, bar_height), 2) 
-        health_label_surf = self.small_font.render("HP", True, WHITE)
-        self.screen.blit(health_label_surf, (padding + 5, health_bar_y + (bar_height - health_label_surf.get_height()) // 2))
+            pygame.draw.rect(self.screen, health_fill_color, (bar_drawing_start_x_health, health_bar_y, health_bar_width_fill, bar_height))
+        pygame.draw.rect(self.screen, WHITE, (bar_drawing_start_x_health, health_bar_y, bar_segment_width_health, bar_height), 2)
+
         current_y_bottom -= element_spacing
         current_y_bottom -= bar_height
+
+        # --- Weapon Charge Bar ---
         weapon_charge_bar_y = current_y_bottom
-        weapon_ready_color = PLAYER_BULLET_COLOR 
-        charge_bar_fill_color = CYAN 
+        weapon_icon_char = "💥" 
+        weapon_icon_surf = self.font_ui_text.render(weapon_icon_char, True, YELLOW) # Yellow/Orange for weapon
+        weapon_icon_width = weapon_icon_surf.get_width()
+        weapon_icon_height = weapon_icon_surf.get_height()
+
+        self.screen.blit(weapon_icon_surf, (padding, weapon_charge_bar_y + (bar_height - weapon_icon_height) // 2))
+
+        bar_drawing_start_x_weapon = padding + weapon_icon_width + icon_text_gap
+        bar_segment_width_weapon = total_indicator_width - weapon_icon_width - icon_text_gap
+        if bar_segment_width_weapon < min_bar_segment_width: bar_segment_width_weapon = min_bar_segment_width
+        
         charge_fill_pct = 0.0
-        charge_label_text = "RECHARGING"
+        weapon_ready_color = PLAYER_BULLET_COLOR # Fallback
+        charge_bar_fill_color = CYAN # Fallback
         if self.player.current_weapon_mode == get_game_setting("WEAPON_MODE_HEATSEEKER"):
             weapon_ready_color = MISSILE_COLOR
             time_since_last_shot = current_time - self.player.last_missile_shot_time
             cooldown_duration = self.player.current_missile_cooldown
-        else: 
+        else:
             if self.player.current_weapon_mode == get_game_setting("WEAPON_MODE_LIGHTNING"):
                 weapon_ready_color = get_game_setting("LIGHTNING_COLOR")
             time_since_last_shot = current_time - self.player.last_shot_time
             cooldown_duration = self.player.current_shoot_cooldown
         if cooldown_duration > 0:
             charge_fill_pct = min(1.0, time_since_last_shot / cooldown_duration)
-        else: 
+        else:
             charge_fill_pct = 1.0
-        if charge_fill_pct >= 1.0:
-            charge_bar_fill_color = weapon_ready_color
-            charge_label_text = "READY"
-        weapon_charge_bar_width_fill = int(bar_max_width * charge_fill_pct)
-        pygame.draw.rect(self.screen, (50,50,50), (padding, weapon_charge_bar_y, bar_max_width, bar_height))
+        
+        charge_bar_fill_color = weapon_ready_color if charge_fill_pct >= 1.0 else CYAN # Use weapon color when ready
+
+        weapon_charge_bar_width_fill = int(bar_segment_width_weapon * charge_fill_pct)
+        
+        pygame.draw.rect(self.screen, (50,50,50), (bar_drawing_start_x_weapon, weapon_charge_bar_y, bar_segment_width_weapon, bar_height))
         if weapon_charge_bar_width_fill > 0:
-            pygame.draw.rect(self.screen, charge_bar_fill_color, (padding, weapon_charge_bar_y, weapon_charge_bar_width_fill, bar_height))
-        pygame.draw.rect(self.screen, WHITE, (padding, weapon_charge_bar_y, bar_max_width, bar_height), 2)
-        charge_label_surf = self.small_font.render(charge_label_text, True, WHITE)
-        self.screen.blit(charge_label_surf, (padding + 5, weapon_charge_bar_y + (bar_height - charge_label_surf.get_height()) // 2))
+            pygame.draw.rect(self.screen, charge_bar_fill_color, (bar_drawing_start_x_weapon, weapon_charge_bar_y, weapon_charge_bar_width_fill, bar_height))
+        pygame.draw.rect(self.screen, WHITE, (bar_drawing_start_x_weapon, weapon_charge_bar_y, bar_segment_width_weapon, bar_height), 2)
+
         current_y_bottom -= element_spacing
         current_y_bottom -= bar_height
+
+        # --- Power-up Bar ---
         powerup_bar_y = current_y_bottom
-        active_powerup_for_ui = self.player.active_powerup_type 
+        active_powerup_for_ui = self.player.active_powerup_type
         powerup_bar_width_fill = 0
-        powerup_label_text = ""
-        powerup_bar_color = (80,80,80) 
+        powerup_icon_char = ""
+        powerup_icon_color = WHITE # Default
+        
         if active_powerup_for_ui == "shield" and self.player.shield_active:
+            powerup_icon_char = "🛡️"
+            powerup_icon_color = POWERUP_TYPES["shield"]["color"]
             remaining_time = self.player.shield_end_time - current_time
             if self.player.shield_duration > 0 and remaining_time > 0:
-                powerup_bar_width_fill = int(bar_max_width * (remaining_time / self.player.shield_duration))
-                powerup_bar_color = POWERUP_TYPES["shield"]["color"]
-                powerup_label_text = "Shield"
+                 # Temp render to get width for bar calculation BEFORE main render
+                temp_icon_surf = self.font_ui_text.render(powerup_icon_char, True, WHITE)
+                temp_icon_width = temp_icon_surf.get_width()
+                bar_segment_width_powerup = total_indicator_width - temp_icon_width - icon_text_gap
+                if bar_segment_width_powerup < min_bar_segment_width: bar_segment_width_powerup = min_bar_segment_width
+                powerup_bar_width_fill = int(bar_segment_width_powerup * (remaining_time / self.player.shield_duration))
         elif active_powerup_for_ui == "speed_boost" and self.player.speed_boost_active:
+            powerup_icon_char = "💨"
+            powerup_icon_color = POWERUP_TYPES["speed_boost"]["color"]
             remaining_time = self.player.speed_boost_end_time - current_time
             if self.player.speed_boost_duration > 0 and remaining_time > 0:
-                powerup_bar_width_fill = int(bar_max_width * (remaining_time / self.player.speed_boost_duration))
-                powerup_bar_color = POWERUP_TYPES["speed_boost"]["color"]
-                powerup_label_text = "Speed"
-        if powerup_bar_width_fill > 0: 
-            pygame.draw.rect(self.screen, (50,50,50), (padding, powerup_bar_y, bar_max_width, bar_height))
-            pygame.draw.rect(self.screen, powerup_bar_color, (padding, powerup_bar_y, powerup_bar_width_fill, bar_height))
-            pygame.draw.rect(self.screen, WHITE, (padding, powerup_bar_y, bar_max_width, bar_height), 2)
-            if powerup_label_text:
-                powerup_label_surf = self.small_font.render(powerup_label_text, True, WHITE)
-                self.screen.blit(powerup_label_surf, (padding + 5, powerup_bar_y + (bar_height - powerup_label_surf.get_height()) // 2))
+                temp_icon_surf = self.font_ui_text.render(powerup_icon_char, True, WHITE)
+                temp_icon_width = temp_icon_surf.get_width()
+                bar_segment_width_powerup = total_indicator_width - temp_icon_width - icon_text_gap
+                if bar_segment_width_powerup < min_bar_segment_width: bar_segment_width_powerup = min_bar_segment_width
+                powerup_bar_width_fill = int(bar_segment_width_powerup * (remaining_time / self.player.speed_boost_duration))
+
+        if powerup_icon_char: # Only draw if there's an active power-up
+            powerup_icon_surf = self.font_ui_text.render(powerup_icon_char, True, WHITE) # Draw icon in white
+            powerup_icon_width = powerup_icon_surf.get_width()
+            powerup_icon_height = powerup_icon_surf.get_height()
+            
+            self.screen.blit(powerup_icon_surf, (padding, powerup_bar_y + (bar_height - powerup_icon_height) // 2))
+
+            bar_drawing_start_x_powerup = padding + powerup_icon_width + icon_text_gap
+            # Use the bar_segment_width calculated when determining fill, or recalculate if needed
+            # This assumes bar_segment_width_powerup was set if powerup_icon_char is true
+            # For safety, let's ensure bar_segment_width_powerup is always defined before use here:
+            current_bar_segment_width_powerup = total_indicator_width - powerup_icon_width - icon_text_gap
+            if current_bar_segment_width_powerup < min_bar_segment_width: current_bar_segment_width_powerup = min_bar_segment_width
+
+            pygame.draw.rect(self.screen, (50,50,50), (bar_drawing_start_x_powerup, powerup_bar_y, current_bar_segment_width_powerup, bar_height))
+            if powerup_bar_width_fill > 0: # Fill color is the powerup_icon_color
+                pygame.draw.rect(self.screen, powerup_icon_color, (bar_drawing_start_x_powerup, powerup_bar_y, powerup_bar_width_fill, bar_height))
+            pygame.draw.rect(self.screen, WHITE, (bar_drawing_start_x_powerup, powerup_bar_y, current_bar_segment_width_powerup, bar_height), 2)
+
+        # --- Lives and Rings (remain as before) ---
         current_y_bottom -= element_spacing
         ui_icon_lives_h = self.ui_icon_size_lives[1] if self.current_drone_life_icon_surface else self.small_font.get_height()
         current_y_bottom -= ui_icon_lives_h
@@ -1106,29 +1171,30 @@ class Game:
         if self.current_drone_life_icon_surface:
             for i in range(self.lives):
                 icon_x = padding + i * (self.ui_icon_size_lives[0] + icon_text_gap // 2)
-                if icon_x + self.ui_icon_size_lives[0] <= self.UI_PANEL_WIDTH - padding: 
+                if icon_x + self.ui_icon_size_lives[0] <= self.UI_PANEL_WIDTH - padding:
                     self.screen.blit(self.current_drone_life_icon_surface, (icon_x, lives_y_pos))
-                else: break 
-        else: 
+                else: break
+        else:
             self.screen.blit(self.small_font.render(f"Lives: {self.lives}", True, WHITE),
                              (padding, lives_y_pos + (ui_icon_lives_h - self.small_font.get_height())//2 ))
+
         current_y_bottom -= element_spacing
         ring_icon_h = self.ui_icon_size_rings[1] if self.ring_ui_icon else self.small_font.get_height()
         current_y_bottom -= ring_icon_h
         ring_ui_y_pos = current_y_bottom
         ring_current_x_offset = padding
-        next_ring_slot_x_abs = padding 
+        next_ring_slot_x_abs = padding
         for i in range(self.total_rings_per_level):
             current_icon_width = self.ui_icon_size_rings[0] if self.ring_ui_icon else 0
-            if ring_current_x_offset + current_icon_width > self.UI_PANEL_WIDTH - padding: break 
+            if ring_current_x_offset + current_icon_width > self.UI_PANEL_WIDTH - padding: break
             icon_to_draw = self.ring_ui_icon if i < self.collected_rings else \
                            (self.ring_ui_icon_empty if self.ring_ui_icon_empty else None)
             if icon_to_draw:
                 self.screen.blit(icon_to_draw, (ring_current_x_offset, ring_ui_y_pos))
-            elif not self.ring_ui_icon : 
+            elif not self.ring_ui_icon :
                 pygame.draw.circle(self.screen,GREY,(ring_current_x_offset+self.ui_icon_size_rings[0]//2,
                                    ring_ui_y_pos+self.ui_icon_size_rings[1]//2),self.ui_icon_size_rings[0]//2,1)
-            if i == self.collected_rings: 
+            if i == self.collected_rings:
                 next_ring_slot_x_abs = ring_current_x_offset
             ring_current_x_offset += current_icon_width + (icon_text_gap // 2)
         self.ring_ui_target_pos = (
