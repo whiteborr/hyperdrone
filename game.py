@@ -32,6 +32,30 @@ from game_settings import (
 from drone_system import DroneSystem
 from drone_configs import DRONE_DATA, DRONE_DISPLAY_ORDER
 
+# --- Helper Function for Dynamic Fragment Spawning ---
+def get_random_valid_fragment_tile(maze_grid, maze_cols, maze_rows, existing_fragment_tiles=None):
+    """
+    Returns a random (tile_x, tile_y) that is a path cell (0) in the maze_grid.
+    Avoids tiles already occupied by other fragments in the current spawning session.
+    """
+    if existing_fragment_tiles is None:
+        existing_fragment_tiles = set()
+
+    available_path_tiles = []
+    for r in range(maze_rows):
+        for c in range(maze_cols):
+            # Ensure coordinates are within grid bounds before accessing maze_grid[r][c]
+            if 0 <= r < len(maze_grid) and 0 <= c < len(maze_grid[r]):
+                if maze_grid[r][c] == 0 and (c, r) not in existing_fragment_tiles: # Must be a path (0) and not already used
+                    available_path_tiles.append((c, r))
+            # else: # This case should ideally not happen if maze_rows/cols are from maze.actual_maze_rows/cols
+                # print(f"Warning: Accessing out of bounds in get_random_valid_fragment_tile: r={r}, c={c}")
+    
+    if not available_path_tiles:
+        return None # No suitable spot found
+    
+    return random.choice(available_path_tiles)
+
 # --- Collectible Classes ---
 class Collectible(pygame.sprite.Sprite):
     """Base class for collectible items with a pulsing shine effect."""
@@ -189,7 +213,7 @@ class CoreFragmentItem(Collectible):
                     raw_icon = pygame.image.load(image_path_to_load).convert_alpha()
                     icon_display_size = int(CORE_FRAGMENT_VISUAL_SIZE * 0.8)
                     icon_surface = pygame.transform.smoothscale(raw_icon, (icon_display_size, icon_display_size))
-                else: print(f"CoreFragment icon not found: {icon_filename}")
+                else: print(f"CoreFragment icon not found: {icon_filename}") # This message will now be accurate
             except pygame.error as e: print(f"Error loading icon for CF '{self.fragment_name}': {e}")
         super().__init__(x, y, base_color=base_color, size=CORE_FRAGMENT_VISUAL_SIZE, thickness=3, icon_surface=icon_surface)
         self.creation_time = pygame.time.get_ticks()
@@ -466,15 +490,24 @@ class Game:
 
     def spawn_core_fragments_for_level(self):
         if not self.maze: return
+        occupied_fragment_tiles_this_level = set()
         for frag_key, details in CORE_FRAGMENT_DETAILS.items():
             if details["spawn_info"]["level"] == self.level and not self.drone_system.has_collected_fragment(details["id"]):
-                tile_x, tile_y = details["spawn_info"]["tile_x"], details["spawn_info"]["tile_y"]
-                if 0 <= tile_y < len(self.maze.grid) and 0 <= tile_x < len(self.maze.grid[0]) and self.maze.grid[tile_y][tile_x] == 0:
+                random_tile = get_random_valid_fragment_tile(
+                    self.maze.grid,
+                    self.maze.actual_maze_cols,
+                    self.maze.actual_maze_rows,
+                    occupied_fragment_tiles_this_level
+                )
+                if random_tile:
+                    tile_x, tile_y = random_tile
                     abs_x = tile_x * TILE_SIZE + TILE_SIZE // 2 + self.maze.game_area_x_offset
                     abs_y = tile_y * TILE_SIZE + TILE_SIZE // 2
                     self.core_fragments.add(CoreFragmentItem(abs_x, abs_y, details["id"], details))
-                # Removed warning prints for cleaner output, assuming user will debug coordinates
-                # else: print(f"WARNING: CF tile ({tile_x},{tile_y}) invalid for {details['name']} L{self.level}")
+                    occupied_fragment_tiles_this_level.add(random_tile)
+                    print(f"Spawned Core Fragment: {details['name']} at tile ({tile_x},{tile_y}) for level {self.level}")
+                else:
+                    print(f"WARNING: Could not find a unique valid tile to spawn fragment {details['name']} in level {self.level}.")
 
     def place_collectibles(self, initial_setup=False):
         path_cells_relative = self.maze.get_path_cells() if self.maze else []
@@ -540,7 +573,7 @@ class Game:
         random.shuffle(path_cells_absolute)
         for spawn_x, spawn_y in path_cells_absolute:
             if not self.maze.is_wall(spawn_x, spawn_y, drone_check_width, drone_check_height): return (spawn_x, spawn_y)
-        # print("Warning: Could not find a perfectly clear spawn point. Using first path cell as fallback.") # Removed for cleaner output
+        # print("Warning: Could not find a perfectly clear spawn point. Using first path cell as fallback.")
         return path_cells_absolute[0]
 
     def spawn_enemies(self):
@@ -857,7 +890,7 @@ class Game:
     def end_bonus_level(self, completed=True):
         print(f"--- Bonus Level Ended. Completed: {completed} ---")
         if completed: self.score += 500; self.drone_system.add_player_cores(250)
-        print(f"Proceeding to regular level: {self.level}") # self.level was already incremented by level_up
+        print(f"Proceeding to regular level: {self.level}")
         self.maze = Maze(game_area_x_offset=self.UI_PANEL_WIDTH)
         new_player_pos = self.get_safe_spawn_point(self.player_spawn_check_dimension, self.player_spawn_check_dimension)
         if self.player:
@@ -893,7 +926,7 @@ class Game:
                 for p_up in list(self.power_ups):
                     if p_up.update(): p_up.kill()
                 for fragment in list(self.core_fragments):
-                    if fragment.update(): pass # Killing handled in check_collisions
+                    if fragment.update(): pass
                 self.rings.update(); self.check_collisions()
                 if FPS > 0 and random.random() < (POWERUP_SPAWN_CHANCE / FPS): self.try_spawn_powerup()
                 if self.player and not self.player.alive:
@@ -944,7 +977,7 @@ class Game:
         for fragment in collided_fragments:
             if not fragment.collected and fragment.apply_effect(self.player,self):
                 self.play_sound('collect_fragment'); fragment.kill(); self.score+=100
-                num_collected = len(self.drone_system.get_collected_fragments_ids())
+                # num_collected = len(self.drone_system.get_collected_fragments_ids()) # For UI message if needed
                 if self.drone_system.are_all_core_fragments_collected(): print("UI MSG: All Core Fragments Collected! Bonus level unlocked!")
         if self.player.alive:
             enemy_collisions = pygame.sprite.spritecollide(self.player,self.enemies,False,pygame.sprite.collide_rect_ratio(0.7))
@@ -1180,29 +1213,29 @@ class Game:
     def level_up(self):
         if self.drone_system.are_all_core_fragments_collected() and not self.played_bonus_level_after_fragments:
             print("All core fragments collected! Transitioning to bonus level.")
-            self.played_bonus_level_after_fragments = True 
+            self.played_bonus_level_after_fragments = True
             self.set_game_state(GAME_STATE_BONUS_LEVEL_START)
             return
         self.level += 1
         self.collected_rings = 0; self.displayed_collected_rings = 0
-        self.total_rings_per_level = min(self.total_rings_per_level + 1, 15) 
-        newly_unlocked = self.drone_system.set_player_level(self.level) 
+        self.total_rings_per_level = min(self.total_rings_per_level + 1, 15)
+        newly_unlocked = self.drone_system.set_player_level(self.level)
         if newly_unlocked: print(f"New drones unlocked by reaching level {self.level}: {newly_unlocked}")
         if self.player:
-            if self.all_enemies_killed_this_level: self.player.cycle_weapon_state(force_cycle=False) 
-            self.player.health = min(self.player.health + 25, self.player.max_health) 
-            self.player.reset_active_powerups() 
-        self.all_enemies_killed_this_level = False 
-        self.maze = Maze(game_area_x_offset=self.UI_PANEL_WIDTH) 
+            if self.all_enemies_killed_this_level: self.player.cycle_weapon_state(force_cycle=False)
+            self.player.health = min(self.player.health + 25, self.player.max_health)
+            self.player.reset_active_powerups()
+        self.all_enemies_killed_this_level = False
+        self.maze = Maze(game_area_x_offset=self.UI_PANEL_WIDTH)
         new_player_pos = self.get_safe_spawn_point(self.player_spawn_check_dimension, self.player_spawn_check_dimension)
         if self.player:
             current_drone_id = self.player.drone_id; drone_config = self.drone_system.get_drone_config(current_drone_id)
             effective_drone_stats = self.drone_system.get_drone_stats(current_drone_id); player_ingame_sprite = drone_config.get("ingame_sprite_path")
             self.player.reset(new_player_pos[0], new_player_pos[1], drone_id=current_drone_id,
                               drone_stats=effective_drone_stats, drone_sprite_path=player_ingame_sprite)
-        self.spawn_enemies(); self.core_fragments.empty(); self.place_collectibles(initial_setup=True) 
-        self._reset_level_timer(); self.play_sound('level_up') 
-        self.animating_rings.clear() 
+        self.spawn_enemies(); self.core_fragments.empty(); self.place_collectibles(initial_setup=True)
+        self._reset_level_timer(); self.play_sound('level_up')
+        self.animating_rings.clear()
         if self.player: self.player.moving_forward = False
 
     def reset_player_after_death(self):
