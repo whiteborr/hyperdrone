@@ -3,13 +3,12 @@
     "ORIGINAL_DRONE",
     "VANTIS"
   ],
-  "selected_drone": "VANTIS",
-  "player_level": 1,
+  "selected_drone": "ORIGINAL_DRONE",
+  "player_level": 3,
   "bosses_defeated": [],
-  "player_cores": 310,
+  "player_cores": 105,
   "collected_core_fragments": [
     "cf_alpha",
-    "cf_beta",
-    "cf_gamma"
+    "cf_beta"
   ]
 }
