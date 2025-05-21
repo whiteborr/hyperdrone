@@ -971,33 +971,37 @@ class GameController:
         """Spawns enemies for the current regular level."""
         self.enemies.empty()
         num_enemies = min(self.level + 1, 7) # Example: level number + 1, max 7 enemies
-        
+
         enemy_shoot_sound = self.sounds.get('enemy_shoot')
-        # Get PLAYER_DEFAULT_BULLET_SIZE once to pass to Enemy constructor, used for enemy bullet size scaling
         player_bullet_size_setting = get_game_setting("PLAYER_DEFAULT_BULLET_SIZE")
+        # ---> Get the new sprite path for regular enemies
+        regular_enemy_sprite = get_game_setting("REGULAR_ENEMY_SPRITE_PATH")
 
         for _ in range(num_enemies):
-            # Try to find a spawn point away from player and other enemies
             spawn_attempts = 0
             spawned = False
             while spawn_attempts < 10 and not spawned:
-                abs_x, abs_y = self._get_safe_spawn_point(TILE_SIZE * 0.7, TILE_SIZE * 0.7) # Enemy size for check
-                if abs_x is None: break # No safe points
+                abs_x, abs_y = self._get_safe_spawn_point(TILE_SIZE * 0.7, TILE_SIZE * 0.7)
+                if abs_x is None: break
 
-                # Check distance from player
-                if self.player and math.hypot(abs_x - self.player.x, abs_y - self.player.y) < TILE_SIZE * 4: # Too close to player
+                if self.player and math.hypot(abs_x - self.player.x, abs_y - self.player.y) < TILE_SIZE * 4:
                     spawn_attempts += 1; continue
-                # Check distance from other enemies
-                if any(math.hypot(abs_x - e.x, abs_y - e.y) < TILE_SIZE * 2 for e in self.enemies): # Too close to another enemy
+                if any(math.hypot(abs_x - e.x, abs_y - e.y) < TILE_SIZE * 2 for e in self.enemies):
                     spawn_attempts += 1; continue
-                
-                self.enemies.add(Enemy(abs_x, abs_y, player_bullet_size_setting, shoot_sound=enemy_shoot_sound))
+
+                # ---> Pass the sprite_path to the Enemy constructor
+                self.enemies.add(Enemy(abs_x, abs_y, player_bullet_size_setting,
+                                     shoot_sound=enemy_shoot_sound,
+                                     sprite_path=regular_enemy_sprite))
                 spawned = True
-            
-            if not spawned: # If too many attempts, just spawn at a random safe spot
+
+            if not spawned:
                 abs_x_fallback, abs_y_fallback = self._get_safe_spawn_point(TILE_SIZE * 0.7, TILE_SIZE * 0.7)
                 if abs_x_fallback is not None:
-                    self.enemies.add(Enemy(abs_x_fallback, abs_y_fallback, player_bullet_size_setting, shoot_sound=enemy_shoot_sound))
+                    # ---> Also pass it here for the fallback spawn
+                    self.enemies.add(Enemy(abs_x_fallback, abs_y_fallback, player_bullet_size_setting,
+                                         shoot_sound=enemy_shoot_sound,
+                                         sprite_path=regular_enemy_sprite))
 
     def _spawn_prototype_drones(self, count, far_from_player=False):
         """Spawns prototype drones for the Architect's Vault."""
