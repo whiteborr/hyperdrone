@@ -25,8 +25,8 @@ from game_settings import (
 )
 
 # Import from other refactored packages
-from ..drone_management.drone_configs import DRONE_DATA, DRONE_DISPLAY_ORDER #
-from ..hyperdrone_core import leaderboard #
+from drone_management.drone_configs import DRONE_DATA, DRONE_DISPLAY_ORDER #
+from hyperdrone_core import leaderboard #
 
 
 class UIManager: #
