@@ -1,0 +1,21 @@
+{
+  "unlocked_drones": [
+    "ORIGINAL_DRONE",
+    "VANTIS",
+    "RHINOX",
+    "STRIX",
+    "OMEGA-9",
+    "PHANTOM",
+    "ZEPHYR"
+  ],
+  "selected_drone": "ORIGINAL_DRONE",
+  "player_level": 1,
+  "bosses_defeated": [],
+  "player_cores": 30,
+  "collected_core_fragments": [
+    "cf_alpha"
+  ],
+  "architect_vault_completed": false,
+  "unlocked_blueprints": [],
+  "unlocked_lore_codex_entries": []
+}
