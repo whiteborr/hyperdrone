@@ -1,13 +1,16 @@
 {
   "unlocked_drones": [
-    "ORIGINAL_DRONE"
+    "ORIGINAL_DRONE",
+    "VANTIS"
   ],
   "selected_drone": "ORIGINAL_DRONE",
-  "player_level": 2,
+  "player_level": 1,
   "bosses_defeated": [],
-  "player_cores": 55,
+  "player_cores": 340,
   "collected_core_fragments": [
-    "cf_alpha"
+    "cf_alpha",
+    "cf_beta",
+    "cf_gamma"
   ],
   "architect_vault_completed": false,
   "unlocked_blueprints": [],

@@ -1,3 +1,5 @@
+# game_settings.py
+
 # ==========================
 # General Settings
 # ==========================
@@ -6,6 +8,7 @@ HEIGHT = 1080
 FPS = 60
 BOTTOM_PANEL_HEIGHT = 120
 GAME_PLAY_AREA_HEIGHT = HEIGHT - BOTTOM_PANEL_HEIGHT
+FULLSCREEN_MODE = False # Added for easier toggling
 
 # ==========================
 # Tile & Maze Settings
@@ -50,7 +53,7 @@ ROTATION_SPEED = 5
 PLAYER_BULLET_COLOR = (255, 200, 0)
 PLAYER_BULLET_SPEED = 5
 PLAYER_BULLET_LIFETIME = 100
-PLAYER_DEFAULT_BULLET_SIZE = 4
+PLAYER_DEFAULT_BULLET_SIZE = 4 # DEFINED HERE
 PLAYER_BIG_BULLET_SIZE = PLAYER_DEFAULT_BULLET_SIZE * 4
 PLAYER_BASE_SHOOT_COOLDOWN = 500
 PLAYER_RAPID_FIRE_COOLDOWN = 150
@@ -159,32 +162,32 @@ SPEED_BOOST_POWERUP_DURATION = POWERUP_TYPES["speed_boost"]["duration"]
 # Core Fragment & Architect's Vault Settings
 # ==========================
 TOTAL_CORE_FRAGMENTS_NEEDED = 3
+CORE_FRAGMENT_VISUAL_SIZE = TILE_SIZE // 2.5 # Added this constant definition
 
 CORE_FRAGMENT_DETAILS = {
-    "fragment_alpha": { # Changed key to match cf_alpha
+    "fragment_alpha": { 
         "id": "cf_alpha",
         "name": "Alpha Core Fragment",
         "icon_filename": "core_fragment_alpha.png",
         "description": "A corrupted fragment, pulses with unstable energy.",
-        "spawn_info": {"level": 1}, # Spawn location handled dynamically in game.py
-        "buff": {"type": "speed", "value": 1.1} # Example: 10% speed boost
+        "spawn_info": {"level": 1}, 
+        "buff": {"type": "speed", "value": 1.1} 
     },
-    "fragment_beta": { # Changed key to match cf_beta
+    "fragment_beta": { 
         "id": "cf_beta",
         "name": "Beta Core Fragment",
         "icon_filename": "core_fragment_beta.png",
         "description": "This piece hums with a strange, alien resonance.",
         "spawn_info": {"level": 2},
-        "buff": {"type": "damage", "value": 1.1} # Example: 10% damage boost
+        "buff": {"type": "damage", "value": 1.1} 
     },
-    "fragment_gamma": { # Changed key to match cf_gamma
+    "fragment_gamma": { 
         "id": "cf_gamma",
         "name": "Gamma Core Fragment",
         "icon_filename": "core_fragment_gamma.png",
-        "description": "Seems to be a critical processing unit heavily damaged.",
+        "description": "Seems to be a critical processing unit, heavily damaged.",
         "spawn_info": {"level": 3},
-        "buff": {"type": "shield_regen_rate", "value": 0.5},
-        "buff_alt": {"type": "damage_reduction", "value": 0.1} # Player takes 10% less damage
+        "buff_alt": {"type": "damage_reduction", "value": 0.1} 
     }
 }
 
@@ -193,8 +196,7 @@ ARCHITECT_VAULT_GAUNTLET_WAVES = 3
 ARCHITECT_VAULT_DRONES_PER_WAVE = [3, 4, 5] # Number of prototype drones per wave
 
 # Architect's Vault Reward
-# This could be a new drone ID, an upgrade ID, or a lore codex entry ID
-ARCHITECT_REWARD_BLUEPRINT_ID = "DRONE_ARCHITECT_X" # Example ID for a new drone
+ARCHITECT_REWARD_BLUEPRINT_ID = "DRONE_ARCHITECT_X" 
 ARCHITECT_REWARD_LORE_ID = "lore_architect_origin"
 
 # ==========================
@@ -213,12 +215,10 @@ GAME_STATE_ENTER_NAME = "enter_name"
 GAME_STATE_SETTINGS = "settings_menu"
 GAME_STATE_DRONE_SELECT = "drone_select_menu"
 
-# Existing Bonus Level States (might be deprecated or used for simpler bonus)
-GAME_STATE_BONUS_LEVEL_TRANSITION = "bonus_level_transition" # Could be used for Architect's Vault intro
+GAME_STATE_BONUS_LEVEL_TRANSITION = "bonus_level_transition" 
 GAME_STATE_BONUS_LEVEL_START = "bonus_level_start"
 GAME_STATE_BONUS_LEVEL_PLAYING = "bonus_level_playing"
 
-# New Architect's Vault Game States
 GAME_STATE_ARCHITECT_VAULT_INTRO = "architect_vault_intro"
 GAME_STATE_ARCHITECT_VAULT_ENTRY_PUZZLE = "architect_vault_entry_puzzle"
 GAME_STATE_ARCHITECT_VAULT_GAUNTLET = "architect_vault_gauntlet"
@@ -235,7 +235,7 @@ except ImportError:
     PHANTOM_CLOAK_COOLDOWN_MS = 15000
 
 DEFAULT_SETTINGS = {
-    "WIDTH": WIDTH, "HEIGHT": HEIGHT, "FPS": FPS,
+    "WIDTH": WIDTH, "HEIGHT": HEIGHT, "FPS": FPS, "FULLSCREEN_MODE": FULLSCREEN_MODE,
     "BOTTOM_PANEL_HEIGHT": BOTTOM_PANEL_HEIGHT, "GAME_PLAY_AREA_HEIGHT": GAME_PLAY_AREA_HEIGHT,
     "TILE_SIZE": TILE_SIZE, "MAZE_ROWS": MAZE_ROWS,
     "PLAYER_MAX_HEALTH": PLAYER_MAX_HEALTH, "PLAYER_LIVES": PLAYER_LIVES,
@@ -259,7 +259,7 @@ DEFAULT_SETTINGS = {
     "POWERUP_SIZE": POWERUP_SIZE, "POWERUP_SPAWN_CHANCE": POWERUP_SPAWN_CHANCE, "MAX_POWERUPS_ON_SCREEN": MAX_POWERUPS_ON_SCREEN,
     "WEAPON_UPGRADE_ITEM_LIFETIME": WEAPON_UPGRADE_ITEM_LIFETIME, "POWERUP_ITEM_LIFETIME": POWERUP_ITEM_LIFETIME,
     "POWERUP_TYPES": POWERUP_TYPES, "SHIELD_POWERUP_DURATION": SHIELD_POWERUP_DURATION, "SPEED_BOOST_POWERUP_DURATION": SPEED_BOOST_POWERUP_DURATION,
-    "TOTAL_CORE_FRAGMENTS_NEEDED": TOTAL_CORE_FRAGMENTS_NEEDED, "CORE_FRAGMENT_DETAILS": CORE_FRAGMENT_DETAILS,
+    "TOTAL_CORE_FRAGMENTS_NEEDED": TOTAL_CORE_FRAGMENTS_NEEDED, "CORE_FRAGMENT_DETAILS": CORE_FRAGMENT_DETAILS, "CORE_FRAGMENT_VISUAL_SIZE": CORE_FRAGMENT_VISUAL_SIZE,
     "ARCHITECT_VAULT_EXTRACTION_TIMER_MS": ARCHITECT_VAULT_EXTRACTION_TIMER_MS,
     "ARCHITECT_VAULT_GAUNTLET_WAVES": ARCHITECT_VAULT_GAUNTLET_WAVES, "ARCHITECT_VAULT_DRONES_PER_WAVE": ARCHITECT_VAULT_DRONES_PER_WAVE,
     "ARCHITECT_REWARD_BLUEPRINT_ID": ARCHITECT_REWARD_BLUEPRINT_ID, "ARCHITECT_REWARD_LORE_ID": ARCHITECT_REWARD_LORE_ID,
@@ -285,10 +285,9 @@ def set_game_setting(key, value):
         SETTINGS_MODIFIED = any(
             _CURRENT_GAME_SETTINGS[k] != v for k, v in DEFAULT_SETTINGS.items() if k in _CURRENT_GAME_SETTINGS
         )
-        if key in globals(): # Also update the global variable if it exists
+        if key in globals(): 
             globals()[key] = value
-            # Special handling for dynamically calculated globals
-            if key in {"HEIGHT", "BOTTOM_PANEL_HEIGHT", "TILE_SIZE"}: # Added TILE_SIZE
+            if key in {"HEIGHT", "BOTTOM_PANEL_HEIGHT", "TILE_SIZE"}: 
                 globals()["GAME_PLAY_AREA_HEIGHT"] = get_game_setting("HEIGHT") - get_game_setting("BOTTOM_PANEL_HEIGHT")
                 globals()["MAZE_ROWS"] = globals()["GAME_PLAY_AREA_HEIGHT"] // get_game_setting("TILE_SIZE")
             elif key == "PLAYER_BULLET_SPEED":
@@ -299,30 +298,26 @@ def set_game_setting(key, value):
         print(f"Warning: Attempted to set an unknown game setting '{key}'.")
 
 def get_game_setting(key):
-    # Prioritize _CURRENT_GAME_SETTINGS, then globals (if somehow directly modified), then DEFAULT_SETTINGS
     if key in _CURRENT_GAME_SETTINGS:
         return _CURRENT_GAME_SETTINGS[key]
-    if key in globals(): # Should ideally not be needed if set_game_setting is always used
-        # print(f"Debug: get_game_setting found '{key}' in globals().")
+    if key in globals(): 
         return globals()[key]
-    # print(f"Debug: get_game_setting falling back to DEFAULT_SETTINGS for '{key}'.")
     return DEFAULT_SETTINGS.get(key)
 
 # Initialize global scope with default settings
 for key, value in DEFAULT_SETTINGS.items():
-    if key not in globals(): # Ensure we don't overwrite existing globals like functions
+    if key not in globals(): 
         globals()[key] = value
 
 # Recalculate dependent globals after all defaults are set
 GAME_PLAY_AREA_HEIGHT = get_game_setting("HEIGHT") - get_game_setting("BOTTOM_PANEL_HEIGHT")
 MAZE_ROWS = GAME_PLAY_AREA_HEIGHT // get_game_setting("TILE_SIZE")
-if get_game_setting("PLAYER_BULLET_SPEED") is not None: # Check for None before arithmetic
+if get_game_setting("PLAYER_BULLET_SPEED") is not None: 
     MISSILE_SPEED = get_game_setting("PLAYER_BULLET_SPEED") * 0.8
-if get_game_setting("PLAYER_BULLET_LIFETIME") is not None: # Check for None
+if get_game_setting("PLAYER_BULLET_LIFETIME") is not None: 
     MISSILE_LIFETIME = get_game_setting("PLAYER_BULLET_LIFETIME") * 8
 
 # Ensure complex structures are properly initialized in globals if not already
-# This is mostly for safety, as the loop above should handle them.
 if 'WEAPON_MODES_SEQUENCE' not in globals() and 'WEAPON_MODES_SEQUENCE' in DEFAULT_SETTINGS:
     globals()['WEAPON_MODES_SEQUENCE'] = DEFAULT_SETTINGS['WEAPON_MODES_SEQUENCE']
 if 'WEAPON_MODE_NAMES' not in globals() and 'WEAPON_MODE_NAMES' in DEFAULT_SETTINGS:
@@ -331,4 +326,6 @@ if 'POWERUP_TYPES' not in globals() and 'POWERUP_TYPES' in DEFAULT_SETTINGS:
     globals()['POWERUP_TYPES'] = DEFAULT_SETTINGS['POWERUP_TYPES']
 if 'CORE_FRAGMENT_DETAILS' not in globals() and 'CORE_FRAGMENT_DETAILS' in DEFAULT_SETTINGS:
     globals()['CORE_FRAGMENT_DETAILS'] = DEFAULT_SETTINGS['CORE_FRAGMENT_DETAILS']
+if 'ARCHITECT_VAULT_DRONES_PER_WAVE' not in globals() and 'ARCHITECT_VAULT_DRONES_PER_WAVE' in DEFAULT_SETTINGS:
+    globals()['ARCHITECT_VAULT_DRONES_PER_WAVE'] = DEFAULT_SETTINGS['ARCHITECT_VAULT_DRONES_PER_WAVE']
 

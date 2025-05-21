@@ -1,303 +1,238 @@
-import math
-import random
-
+# bullet.py
 import pygame
-
+import math
 from game_settings import (
-    TILE_SIZE,
-    PLAYER_BULLET_LIFETIME, PLAYER_BULLET_SPEED,
-    WHITE as DEFAULT_BULLET_COLOR,
-    MISSILE_LIFETIME, MISSILE_SPEED, MISSILE_COLOR, MISSILE_SIZE, MISSILE_TURN_RATE,
-    LIGHTNING_DAMAGE, LIGHTNING_LIFETIME, LIGHTNING_COLOR
+    PLAYER_BULLET_COLOR, PLAYER_BULLET_SPEED, PLAYER_BULLET_LIFETIME, PLAYER_DEFAULT_BULLET_SIZE,
+    MISSILE_COLOR, MISSILE_SPEED, MISSILE_LIFETIME, MISSILE_SIZE, MISSILE_TURN_RATE,
+    LIGHTNING_COLOR, LIGHTNING_LIFETIME, LIGHTNING_ZAP_RANGE, TILE_SIZE,
+    WIDTH, GAME_PLAY_AREA_HEIGHT # For boundary checks
 )
 
-
 class Bullet(pygame.sprite.Sprite):
-    def __init__(self, x, y, angle, speed=None, color=None, lifetime=None, size=6,
-                 bounces=0, pierce_count=0, damage=25, owner=None, maze=None):
+    def __init__(self, x, y, angle, speed, lifetime, size, color, damage, max_bounces=0, max_pierces=0):
         super().__init__()
-        self.x = x
-        self.y = y
-        self.angle = angle
-        self.speed = speed if speed is not None else PLAYER_BULLET_SPEED
-        self.color = color if color is not None else DEFAULT_BULLET_COLOR
-        self.lifetime = lifetime if lifetime is not None else PLAYER_BULLET_LIFETIME
-        self.size = size
-        self.alive = True
-        self.damage = damage
-        self.owner = owner
-        self.maze = maze
-        self.max_bounces = bounces
+        self.x = float(x)
+        self.y = float(y)
+        self.angle = float(angle)
+        self.speed = float(speed)
+        self.lifetime = int(lifetime) # In frames
+        self.size = int(size)
+        self.color = color
+        self.damage = int(damage)
+        self.max_bounces = int(max_bounces)
         self.bounces_done = 0
-        self.max_pierces = pierce_count
+        self.max_pierces = int(max_pierces)
         self.pierces_done = 0
+        self.alive = True
+
         self.image = pygame.Surface([self.size * 2, self.size * 2], pygame.SRCALPHA)
         pygame.draw.circle(self.image, self.color, (self.size, self.size), self.size)
-        self.rect = self.image.get_rect(center=(int(self.x), int(self.y)))
+        self.rect = self.image.get_rect(center=(self.x, self.y))
 
-    def update(self):
+        rad_angle = math.radians(self.angle)
+        self.dx = math.sin(rad_angle) * self.speed
+        self.dy = -math.cos(rad_angle) * self.speed # Pygame y is inverted
+
+    def update(self, maze=None): # Maze needed for bouncing
         if not self.alive:
+            self.kill() # Remove from all groups
             return
-        old_x, old_y = self.x, self.y
-        dx = math.cos(math.radians(self.angle)) * self.speed
-        dy = math.sin(math.radians(self.angle)) * self.speed
-        self.x += dx
-        self.y += dy
-        self.rect.center = (int(self.x), int(self.y))
+
+        self.x += self.dx
+        self.y += self.dy
+        self.rect.center = (self.x, self.y)
         self.lifetime -= 1
+
         if self.lifetime <= 0:
             self.alive = False
-            self.kill()
             return
-        if self.maze:
-            collided_with_wall = self.maze.is_wall(self.rect.centerx, self.rect.centery, self.rect.width, self.rect.height)
-            if collided_with_wall:
-                if self.max_pierces > 0 and self.pierces_done < self.max_pierces:
-                    self.pierces_done += 1
-                elif self.max_bounces > 0 and self.bounces_done < self.max_bounces:
-                    self.bounces_done += 1
-                    self.x, self.y = old_x, old_y
-                    reflected = False
-                    test_rect_x = self.rect.copy()
-                    test_rect_x.center = (old_x + dx, old_y)
-                    if self.maze.is_wall(test_rect_x.centerx, test_rect_x.centery, test_rect_x.width, test_rect_x.height):
-                        self.angle = 180 - self.angle
-                        reflected = True
-                    test_rect_y = self.rect.copy()
-                    test_rect_y.center = (old_x, old_y + dy)
-                    if self.maze.is_wall(test_rect_y.centerx, test_rect_y.centery, test_rect_y.width, test_rect_y.height):
-                        self.angle = 360 - self.angle
-                        reflected = True
-                    if not reflected:
+
+        # Boundary checks (simple screen boundaries for now)
+        # game_area_x_offset is assumed to be 0 for bullets originating from player
+        if not (0 < self.rect.centerx < WIDTH and 0 < self.rect.centery < GAME_PLAY_AREA_HEIGHT):
+            if self.bounces_done < self.max_bounces:
+                # A more sophisticated bounce would reflect based on which boundary was hit
+                # For simplicity, let's just reverse direction if it hits a generic boundary
+                # This is a placeholder for proper wall collision bouncing
+                if self.rect.left < 0 or self.rect.right > WIDTH:
+                    self.dx *= -1
+                    self.angle = (180 - self.angle) % 360 # Approximate angle reflection
+                if self.rect.top < 0 or self.rect.bottom > GAME_PLAY_AREA_HEIGHT:
+                    self.dy *= -1
+                    self.angle = (-self.angle) % 360 # Approximate angle reflection
+                self.bounces_done += 1
+            else:
+                self.alive = False
+            return # Stop further processing if bounced or died
+
+        # Maze collision for bouncing (simplified)
+        if maze and self.max_bounces > 0:
+            # Create a small rect for the bullet tip for more precise collision
+            tip_rect = pygame.Rect(self.x - self.size/2, self.y - self.size/2, self.size, self.size)
+            
+            wall_hit_type = maze.is_wall(tip_rect.centerx, tip_rect.centery, self.size, self.size)
+
+            if wall_hit_type: # If it hits any wall defined by the maze
+                if self.bounces_done < self.max_bounces:
+                    # Determine bounce direction based on wall orientation (simplified)
+                    # This is a very basic bounce logic.
+                    # A proper bounce needs to know the normal of the wall hit.
+                    # For now, we'll assume horizontal or vertical walls.
+                    
+                    # Check if primarily horizontal or vertical movement led to collision
+                    # This is a heuristic. Better to check wall normal.
+                    collided_horizontally = False
+                    collided_vertically = False
+
+                    # Check collision with a slightly pushed back position to see which component caused it
+                    prev_x, prev_y = self.x - self.dx, self.y - self.dy
+                    if maze.is_wall(prev_x, self.y, self.size, self.size): # Likely vertical wall
+                        collided_horizontally = True
+                    if maze.is_wall(self.x, prev_y, self.size, self.size): # Likely horizontal wall
+                        collided_vertically = True
+                    
+                    if collided_horizontally and not collided_vertically : # Hit a vertical wall
+                        self.dx *= -1
+                        self.angle = (180 - self.angle) % 360 
+                    elif collided_vertically and not collided_horizontally: # Hit a horizontal wall
+                        self.dy *= -1
+                        self.angle = (-self.angle) % 360
+                    else: # Corner hit or ambiguous, reverse both (or just die)
+                        self.dx *= -1
+                        self.dy *= -1
                         self.angle = (self.angle + 180) % 360
-                    self.angle %= 360
-                    self.x += math.cos(math.radians(self.angle)) * self.speed * 0.1
-                    self.y += math.sin(math.radians(self.angle)) * self.speed * 0.1
-                    self.rect.center = (int(self.x), int(self.y))
+                        
+                    self.bounces_done += 1
+                    # Move bullet slightly out of wall to prevent getting stuck
+                    self.x += self.dx * 0.5 
+                    self.y += self.dy * 0.5
+                    self.rect.center = (self.x, self.y)
                 else:
-                    self.alive = False; self.kill(); return
-    def draw(self, surface):
-        if self.alive:
-            surface.blit(self.image, self.rect.topleft)
+                    self.alive = False
+
 
 class Missile(pygame.sprite.Sprite):
-    def __init__(self, x, y, initial_angle, enemies_group, maze, damage=None):
+    def __init__(self, x, y, initial_angle, damage, enemies_group):
         super().__init__()
-        self.x, self.y, self.angle = x, y, initial_angle
-        self.speed, self.color, self.lifetime = MISSILE_SPEED, MISSILE_COLOR, MISSILE_LIFETIME
-        self.size, self.turn_rate = MISSILE_SIZE, MISSILE_TURN_RATE
-        self.alive, self.enemies_group, self.maze = True, enemies_group, maze
-        self.damage = damage if damage is not None else 50
-        self.image_orig = pygame.Surface([self.size*2, self.size*1.5], pygame.SRCALPHA)
-        pygame.draw.polygon(self.image_orig, self.color, [(self.size*2, self.size*0.75), (0,0), (0,self.size*1.5)])
-        self.image, self.rect = self.image_orig.copy(), self.image_orig.get_rect(center=(int(x),int(y)))
-        self.target, self.is_wall_sliding, self.last_wall_check_pos = None, False, (None,None)
-
-    def update(self):
-        if not self.alive: return
-        self.lifetime -= 1
-        if self.lifetime <= 0: self.alive = False; self.kill(); return
-        if self.target is None or not self.target.alive: self.target = self._find_closest_enemy()
-
-        desired_angle = self.angle
-        AVOIDANCE_FEELER_LENGTH, AVOIDANCE_TURN_ANGLE_STEP, MAX_AVOIDANCE_CHECKS_PER_SIDE = TILE_SIZE*0.7, 30, 3
-        wall_directly_ahead, alternative_path_angle = False, None
-
-        if self.maze:
-            feeler_main_x = self.x + math.cos(math.radians(self.angle)) * AVOIDANCE_FEELER_LENGTH
-            feeler_main_y = self.y + math.sin(math.radians(self.angle)) * AVOIDANCE_FEELER_LENGTH
-            wall_directly_ahead = self.maze.is_wall(feeler_main_x, feeler_main_y, self.rect.width*0.5, self.rect.height*0.5)
-            if wall_directly_ahead:
-                self.is_wall_sliding = True
-                for i in range(1, MAX_AVOIDANCE_CHECKS_PER_SIDE + 1):
-                    for turn_dir in [1, -1]:
-                        angle_to_check = (self.angle + i * AVOIDANCE_TURN_ANGLE_STEP * turn_dir + 360) % 360
-                        feeler_x = self.x + math.cos(math.radians(angle_to_check)) * AVOIDANCE_FEELER_LENGTH
-                        feeler_y = self.y + math.sin(math.radians(angle_to_check)) * AVOIDANCE_FEELER_LENGTH
-                        if not self.maze.is_wall(feeler_x, feeler_y, self.rect.width*0.5, self.rect.height*0.5):
-                            alternative_path_angle = angle_to_check; break
-                    if alternative_path_angle: break
-                desired_angle = alternative_path_angle if alternative_path_angle else (self.angle + 90) % 360
-            else: self.is_wall_sliding = False
-
-        if not self.is_wall_sliding and self.target:
-            dx_target, dy_target = self.target.rect.centerx - self.x, self.target.rect.centery - self.y
-            if not (dx_target == 0 and dy_target == 0): desired_angle = math.degrees(math.atan2(dy_target, dx_target))
-
-        self.angle = (self.angle % 360)
-        desired_angle = (desired_angle % 360)
-        angle_diff = (desired_angle - self.angle + 180) % 360 - 180
-        if abs(angle_diff) < self.turn_rate: self.angle = desired_angle
-        else: self.angle += self.turn_rate * (1 if angle_diff > 0 else -1)
-        self.angle %= 360
-
-        self.image = pygame.transform.rotate(self.image_orig, -self.angle)
-        self.rect = self.image.get_rect(center=(int(self.x), int(self.y)))
-
-        prev_x, prev_y = self.x, self.y
-        next_x_pos = self.x + math.cos(math.radians(self.angle)) * self.speed
-        next_y_pos = self.y + math.sin(math.radians(self.angle)) * self.speed
-        temp_next_rect = self.rect.copy(); temp_next_rect.center = (int(next_x_pos), int(next_y_pos))
-
-        collided_on_move = self.maze and self.maze.is_wall(temp_next_rect.centerx, temp_next_rect.centery, temp_next_rect.width, temp_next_rect.height)
-        if collided_on_move:
-            self.x, self.y = prev_x, prev_y
-            self.angle = (self.angle + 45 * random.choice([-1,1])) % 360
-        else:
-            self.x, self.y = next_x_pos, next_y_pos
-        self.rect.center = (int(self.x), int(self.y))
-        if self.last_wall_check_pos == (round(self.x,1), round(self.y,1)) and collided_on_move: pass
-        self.last_wall_check_pos = (round(self.x,1), round(self.y,1))
-
-    def _find_closest_enemy(self):
-        closest_enemy, min_dist_sq = None, float('inf')
-        if not self.enemies_group: return None
-        for enemy in self.enemies_group:
-            if enemy.alive:
-                dist_sq = (self.x - enemy.rect.centerx)**2 + (self.y - enemy.rect.centery)**2
-                if dist_sq < min_dist_sq: min_dist_sq, closest_enemy = dist_sq, enemy
-        return closest_enemy
-
-    def draw(self, surface):
-        if self.alive: surface.blit(self.image, self.rect.topleft)
-
-
-class LightningBullet(pygame.sprite.Sprite):
-    def __init__(self, origin_pos, target_enemy=None, end_point=None, 
-                 damage=LIGHTNING_DAMAGE,
-                 lifetime=LIGHTNING_LIFETIME,
-                 color=LIGHTNING_COLOR,
-                 owner=None, maze=None):
-        super().__init__()
-        self.origin_pos = pygame.math.Vector2(origin_pos) 
-        self.target_enemy = target_enemy
-        self.maze = maze
-        self.owner = owner 
-
-        if self.target_enemy:
-            self.target_pos = pygame.math.Vector2(self.target_enemy.rect.center)
-            if hasattr(self.target_enemy, 'take_damage') and self.target_enemy.alive:
-                self.target_enemy.take_damage(damage)
-        elif end_point:
-            self.target_pos = pygame.math.Vector2(end_point)
-        else:
-            self.target_pos = pygame.math.Vector2(origin_pos[0] + 1, origin_pos[1]) # Corrected to use tuple access for origin_pos
-
+        self.x = float(x)
+        self.y = float(y)
+        self.angle = float(initial_angle)
+        self.speed = MISSILE_SPEED
+        self.lifetime = MISSILE_LIFETIME
         self.damage = damage
-        self.lifetime = lifetime
-        self.initial_lifetime = max(1, lifetime)
-        self.color = color
-        self.line_thickness = 2
+        self.enemies_group = enemies_group # For targeting
+        self.target = None
+        self.turn_rate = MISSILE_TURN_RATE
         self.alive = True
 
-        tm_min_x = min(self.origin_pos.x, self.target_pos.x)
-        tm_min_y = min(self.origin_pos.y, self.target_pos.y)
-        tm_max_x = max(self.origin_pos.x, self.target_pos.x)
-        tm_max_y = max(self.origin_pos.y, self.target_pos.y)
-        tm_width = max(1, tm_max_x - tm_min_x)
-        tm_height = max(1, tm_max_y - tm_min_y)
-        self.image = pygame.Surface((tm_width, tm_height), pygame.SRCALPHA)
-        self.rect = self.image.get_rect(topleft=(tm_min_x, tm_min_y))
+        # Basic missile image
+        self.original_image = pygame.Surface([MISSILE_SIZE * 2, MISSILE_SIZE * 3], pygame.SRCALPHA)
+        pygame.draw.polygon(self.original_image, MISSILE_COLOR, 
+                            [(MISSILE_SIZE, 0), (0, MISSILE_SIZE*3), (MISSILE_SIZE*2, MISSILE_SIZE*3)])
+        self.image = pygame.transform.rotate(self.original_image, -self.angle)
+        self.rect = self.image.get_rect(center=(self.x, self.y))
 
-    def update(self):
+    def _find_target(self):
+        if not self.enemies_group:
+            return None
+        closest_enemy = None
+        min_dist_sq = float('inf')
+        for enemy in self.enemies_group:
+            if hasattr(enemy, 'alive') and not enemy.alive: continue # Skip dead enemies
+            dist_sq = (enemy.rect.centerx - self.x)**2 + (enemy.rect.centery - self.y)**2
+            if dist_sq < min_dist_sq:
+                min_dist_sq = dist_sq
+                closest_enemy = enemy
+        return closest_enemy
+
+    def update(self, enemies_group_updated=None, maze=None): # maze for potential future wall collision
         if not self.alive:
-            self.kill(); return
-
-        self.lifetime -= 1
-        if self.lifetime <= 0:
-            self.alive = False
             self.kill()
             return
 
-        if self.owner and hasattr(self.owner, 'get_tip_position'):
-            new_origin_tuple = self.owner.get_tip_position()
-            self.origin_pos.x = new_origin_tuple[0]
-            self.origin_pos.y = new_origin_tuple[1]
+        if enemies_group_updated is not None: # Allow updating the enemy group reference
+            self.enemies_group = enemies_group_updated
 
-        if self.target_enemy and self.target_enemy.alive:
-            self.target_pos.update(self.target_enemy.rect.center)
+        if not self.target or (hasattr(self.target, 'alive') and not self.target.alive):
+            self.target = self._find_target()
 
-        current_end_point_for_rect = self.target_pos
-        if self.target_enemy and self.target_enemy.alive: 
-            current_end_point_for_rect = pygame.math.Vector2(self.target_enemy.rect.center)
-        
-        min_x = min(self.origin_pos.x, current_end_point_for_rect.x)
-        min_y = min(self.origin_pos.y, current_end_point_for_rect.y)
-        max_x = max(self.origin_pos.x, current_end_point_for_rect.x)
-        max_y = max(self.origin_pos.y, current_end_point_for_rect.y)
-        
-        buffer = self.line_thickness + 2 
-        
-        self.rect.x = min_x - buffer
-        self.rect.y = min_y - buffer
-        self.rect.width = max(1, (max_x - min_x) + 2 * buffer)
-        self.rect.height = max(1, (max_y - min_y) + 2 * buffer)
+        if self.target:
+            target_dx = self.target.rect.centerx - self.x
+            target_dy = self.target.rect.centery - self.y
+            target_angle = math.degrees(math.atan2(-target_dx, -target_dy)) # Note: atan2 for y,x then adjust
+            
+            # Normalize angles to be between 0 and 360
+            current_angle_norm = self.angle % 360
+            target_angle_norm = (target_angle + 360) % 360
 
-    def draw(self, surface):
+            # Calculate shortest angle to turn
+            angle_diff = target_angle_norm - current_angle_norm
+            if angle_diff > 180: angle_diff -= 360
+            if angle_diff < -180: angle_diff += 360
+
+            # Apply turn rate
+            turn_amount = max(-self.turn_rate, min(self.turn_rate, angle_diff))
+            self.angle += turn_amount
+            self.angle %= 360
+
+
+        rad_angle = math.radians(self.angle)
+        self.x += math.sin(rad_angle) * self.speed
+        self.y -= math.cos(rad_angle) * self.speed
+        
+        self.image = pygame.transform.rotate(self.original_image, -self.angle)
+        self.rect = self.image.get_rect(center=(self.x, self.y))
+
+        self.lifetime -= 1
+        if self.lifetime <= 0 or not (0 < self.rect.centerx < WIDTH and 0 < self.rect.centery < GAME_PLAY_AREA_HEIGHT):
+            self.alive = False
+
+
+class LightningZap(pygame.sprite.Sprite):
+    def __init__(self, start_pos, target_pos, damage, lifetime):
+        super().__init__()
+        self.start_pos = start_pos
+        self.target_pos = target_pos if target_pos else (start_pos[0], start_pos[1] - LIGHTNING_ZAP_RANGE) # Default straight if no target
+        self.damage = damage
+        self.lifetime = lifetime # In frames
+        self.alive = True
+        self.color = LIGHTNING_COLOR
+        self.creation_time = pygame.time.get_ticks()
+
+        # Create a surface that can encompass the lightning bolt
+        # This is a simplified visual; a proper one would use multiple segments or a texture
+        max_x = max(self.start_pos[0], self.target_pos[0])
+        min_x = min(self.start_pos[0], self.target_pos[0])
+        max_y = max(self.start_pos[1], self.target_pos[1])
+        min_y = min(self.start_pos[1], self.target_pos[1])
+        
+        width = max_x - min_x + 10 # Add padding
+        height = max_y - min_y + 10 # Add padding
+        self.image = pygame.Surface((width, height), pygame.SRCALPHA)
+        self.rect = self.image.get_rect(topleft=(min_x - 5, min_y - 5))
+
+        # Draw the lightning bolt relative to the surface's top-left
+        local_start = (self.start_pos[0] - self.rect.left, self.start_pos[1] - self.rect.top)
+        local_target = (self.target_pos[0] - self.rect.left, self.target_pos[1] - self.rect.top)
+        
+        # Simple line for now, can be made jagged
+        pygame.draw.line(self.image, self.color, local_start, local_target, 3)
+        # Add some "glow" or particles
+        pygame.draw.circle(self.image, self.color, local_start, 5)
+        pygame.draw.circle(self.image, self.color, local_target, 5)
+
+
+    def update(self, current_time): # current_time passed from GameController
         if not self.alive:
+            self.kill()
             return
-        
-        current_draw_target_pos = self.target_pos
-        if self.target_enemy and self.target_enemy.alive:
-             current_draw_target_pos = pygame.math.Vector2(self.target_enemy.rect.center)
-        
-        current_alpha = int(255 * (self.lifetime / self.initial_lifetime)**2) 
-        current_alpha = max(0, min(255, current_alpha))
-        if current_alpha == 0: return
 
-        points = [self.origin_pos] 
-        num_segments = random.randint(4, 7)
+        # Fade out effect (optional) or just time-based disappearance
+        if current_time - self.creation_time > self.lifetime:
+            self.alive = False
+        else:
+            # Pulsing alpha effect
+            alpha_pulse = abs(math.sin((current_time - self.creation_time) * 0.02)) # Faster pulse for zap
+            alpha = 100 + int(alpha_pulse * 155) # Range 100-255
+            self.image.set_alpha(alpha)
 
-        # MODIFIED: Removed the special handling for distance < 5
-        # Now, the jagged line logic will always attempt to draw.
-        # if self.origin_pos.distance_to(current_draw_target_pos) < 5: 
-        #      # ... this block is removed ...
-        #      return
-
-        # Check if distance is too small for meaningful segmentation, draw straight line if so
-        # This check can be kept if desired, or tuned. Forcing jagged lines for very short distances might look odd.
-        # For now, let's keep the principle of drawing something meaningful.
-        # A very small distance might still benefit from a direct line rather than multiple segments on top of each other.
-        if self.origin_pos.distance_to(current_draw_target_pos) < self.line_thickness * 2: # If length is less than ~twice thickness
-             try:
-                rgb_color = self.color[:3] if len(self.color) == 4 else self.color
-                line_color_with_alpha = (*rgb_color, current_alpha)
-                pygame.draw.line(surface, line_color_with_alpha, self.origin_pos, current_draw_target_pos, self.line_thickness)
-             except (ValueError, TypeError):
-                 temp_line_surf = pygame.Surface(surface.get_size(), pygame.SRCALPHA)
-                 pygame.draw.line(temp_line_surf, self.color, self.origin_pos, current_draw_target_pos, self.line_thickness)
-                 temp_line_surf.set_alpha(current_alpha)
-                 surface.blit(temp_line_surf, (0,0))
-             return # Return after drawing the simplified short line
-
-        # Proceed with jagged line if distance is sufficient
-        dx_segment = (current_draw_target_pos.x - self.origin_pos.x) / num_segments
-        dy_segment = (current_draw_target_pos.y - self.origin_pos.y) / num_segments
-        max_perpendicular_offset = self.line_thickness * 2.5
-
-        for i in range(1, num_segments):
-            base_x = self.origin_pos.x + dx_segment * i
-            base_y = self.origin_pos.y + dy_segment * i
-            perp_dx = -dy_segment
-            perp_dy = dx_segment
-            len_perp = math.hypot(perp_dx, perp_dy)
-            if len_perp > 0:
-                perp_dx /= len_perp
-                perp_dy /= len_perp
-            rand_offset_magnitude = random.uniform(-max_perpendicular_offset, max_perpendicular_offset)
-            offset_x = perp_dx * rand_offset_magnitude
-            offset_y = perp_dy * rand_offset_magnitude
-            points.append(pygame.math.Vector2(base_x + offset_x, base_y + offset_y))
-
-        points.append(current_draw_target_pos)
-
-        if len(points) >= 2:
-            try:
-                rgb_color = self.color[:3] if len(self.color) == 4 else self.color
-                line_color_with_alpha = (*rgb_color, current_alpha)
-                pygame.draw.lines(surface, line_color_with_alpha, False, points, self.line_thickness)
-            except (ValueError, TypeError):
-                 temp_line_surf = pygame.Surface(surface.get_size(), pygame.SRCALPHA)
-                 pygame.draw.lines(temp_line_surf, self.color, False, points, self.line_thickness)
-                 temp_line_surf.set_alpha(current_alpha)
-                 surface.blit(temp_line_surf, (0,0))
