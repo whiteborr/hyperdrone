@@ -1,38 +1,24 @@
-import pygame
 import sys
 import os
 import random
-import math # Keep math import if used directly for calculations here
+import math
 
-# Core Game System Imports
-try:
-    from scene_manager import SceneManager
-    from event_manager import EventManager
-    from ui import UIManager
-    from player_actions import PlayerActions
-    from drone_system import DroneSystem
-    from bullet import LightningZap # Specifically for type checking if needed
-    import leaderboard # For loading/saving scores
-except ImportError as e:
-    print(f"Critical Error (game_loop.py): Failed to import core system modules: {e}")
-    pygame.quit()
-    sys.exit()
+import pygame
 
-# Game Object Imports
-try:
-    from player import Drone # Your updated Player class
-    from enemy import Enemy
-    from maze import Maze
-    from collectibles import Ring, WeaponUpgradeItem, ShieldItem, SpeedBoostItem, CoreFragmentItem
-    # Bullet class is used by Player and Enemy, not directly instantiated in game_loop typically
-except ImportError as e:
-    print(f"Critical Error (game_loop.py): Failed to import game object modules: {e}")
-    pygame.quit()
-    sys.exit()
+from scene_manager import SceneManager
+from event_manager import EventManager
+from ui import UIManager
+from player_actions import PlayerActions
+from drone_system import DroneSystem
+from bullet import LightningZap # Specifically for type checking if needed
+import leaderboard # For loading/saving scores
 
-# Game Settings and Configuration Imports
-try:
-    from game_settings import (
+from player import Drone # Your updated Player class
+from enemy import Enemy
+from maze import Maze
+from collectibles import Ring, WeaponUpgradeItem, ShieldItem, SpeedBoostItem, CoreFragmentItem
+from drone_configs import DRONE_DISPLAY_ORDER, DRONE_DATA
+from game_settings import (
         WIDTH, HEIGHT, FPS, TILE_SIZE, 
         BLACK, WHITE, GOLD, CYAN, RED, YELLOW, GREEN, # Basic colors
         GAME_STATE_MAIN_MENU, GAME_STATE_PLAYING, GAME_STATE_GAME_OVER,
@@ -52,12 +38,7 @@ try:
         PLAYER_DEFAULT_BULLET_SIZE, 
         get_game_setting, set_game_setting, reset_all_settings_to_default 
     )
-    from drone_configs import DRONE_DISPLAY_ORDER, DRONE_DATA 
-except ImportError as e:
-    print(f"Critical Error (game_loop.py): Failed to import from game_settings.py or drone_configs.py: {e}")
-    pygame.quit()
-    sys.exit()
-
+ 
 
 class GameController:
     def __init__(self):

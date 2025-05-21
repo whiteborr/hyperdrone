@@ -1,4 +1,4 @@
-import pygame # Pygame might be needed for color objects if used directly, though tuples are fine.
+import pygame
 
 # ==========================
 # General Display Settings

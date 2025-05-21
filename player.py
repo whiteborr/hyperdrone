@@ -1,16 +1,16 @@
 import pygame
 import math
-import os # For os.path.exists
+import os
 
-# Corrected import to use 'game_settings.py'
+
 from game_settings import (
     PLAYER_SPEED, PLAYER_MAX_HEALTH, WIDTH, HEIGHT, GAME_PLAY_AREA_HEIGHT, TILE_SIZE,
-    GREEN, YELLOW, RED, BLACK, BLUE, CYAN, WHITE, LIGHT_BLUE, ORANGE, # Added ORANGE for consistency
+    GREEN, YELLOW, RED, BLACK, BLUE, CYAN, WHITE, LIGHT_BLUE, ORANGE,
     ROTATION_SPEED, 
     PLAYER_BASE_SHOOT_COOLDOWN, PLAYER_RAPID_FIRE_COOLDOWN, 
     POWERUP_TYPES, PLAYER_BULLET_COLOR, PLAYER_BULLET_SPEED, PLAYER_BULLET_LIFETIME,
     PLAYER_DEFAULT_BULLET_SIZE, PLAYER_BIG_BULLET_SIZE,
-    WEAPON_MODES_SEQUENCE, INITIAL_WEAPON_MODE, WEAPON_MODE_ICONS, WEAPON_MODE_NAMES, # Added WEAPON_MODE_NAMES
+    WEAPON_MODES_SEQUENCE, INITIAL_WEAPON_MODE, WEAPON_MODE_ICONS, WEAPON_MODE_NAMES,
     BOUNCING_BULLET_MAX_BOUNCES, PIERCING_BULLET_MAX_PIERCES,
     MISSILE_COOLDOWN, MISSILE_DAMAGE, MISSILE_COLOR, 
     LIGHTNING_COOLDOWN, LIGHTNING_DAMAGE, LIGHTNING_LIFETIME, LIGHTNING_ZAP_RANGE, LIGHTNING_COLOR, 
@@ -22,14 +22,7 @@ from game_settings import (
     SHIELD_POWERUP_DURATION, SPEED_BOOST_POWERUP_DURATION, 
     get_game_setting 
 )
-try:
-    from bullet import Bullet, Missile, LightningZap
-except ImportError:
-    print("Warning (player.py): Could not import Bullet, Missile, or LightningZap from bullet.py. Shooting will be affected.")
-    class Bullet(pygame.sprite.Sprite): pass
-    class Missile(pygame.sprite.Sprite): pass
-    class LightningZap(pygame.sprite.Sprite): pass
-
+from bullet import Bullet, Missile, LightningZap
 from base_drone import BaseDrone 
 
 class Drone(BaseDrone):

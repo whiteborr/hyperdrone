@@ -1,22 +1,11 @@
 import pygame
 import random
 
-# Import necessary constants from game_settings.py
-try:
-    from game_settings import (
-        TILE_SIZE, WIDTH, MAZE_ROWS, GAME_PLAY_AREA_HEIGHT, # Core dimensions
-        BLUE, # Default wall color for standard maze
-        ARCHITECT_VAULT_WALL_COLOR # Wall color for architect vault
+from game_settings import (
+        TILE_SIZE, WIDTH, MAZE_ROWS, GAME_PLAY_AREA_HEIGHT,
+        BLUE,
+        ARCHITECT_VAULT_WALL_COLOR
     )
-except ImportError:
-    print("Warning (maze.py): Could not import constants from game_settings. Using fallback values.")
-    TILE_SIZE = 80
-    WIDTH = 1920
-    GAME_PLAY_AREA_HEIGHT = 1080 - 120
-    MAZE_ROWS = GAME_PLAY_AREA_HEIGHT // TILE_SIZE
-    BLUE = (0, 100, 255)
-    ARCHITECT_VAULT_WALL_COLOR = (150, 120, 200)
-
 
 class Maze:
     def __init__(self, game_area_x_offset=0, maze_type="standard"):
@@ -33,26 +22,12 @@ class Maze:
         # Use MAZE_COLS calculated from WIDTH and TILE_SIZE, and MAZE_ROWS from game_settings
         self.actual_maze_cols = (WIDTH - self.game_area_x_offset) // TILE_SIZE
         self.actual_maze_rows = MAZE_ROWS 
-
         self.walls = [] # Will store tuples of ((x1,y1), (x2,y2))
-
-        if self.actual_maze_cols <= 0 or self.actual_maze_rows <= 0:
-            print(f"ERROR (Maze.__init__): Maze dimensions are invalid. Cols: {self.actual_maze_cols}, Rows: {self.actual_maze_rows}.")
-            self.actual_maze_cols = max(1, self.actual_maze_cols) # Ensure at least 1x1
-            self.actual_maze_rows = max(1, self.actual_maze_rows)
-            self.grid = [[0]] # A single path cell for fallback
-            self.walls = self._create_wall_lines_from_uploaded_logic()
-            print(f"Debug (Maze.__init__): Minimal 1x1 grid created. Walls: {len(self.walls)}")
-            return
-
         # Initialize grid: 1 represents a wall, 0 represents a path.
         self.grid = [[1 for _ in range(self.actual_maze_cols)] for _ in range(self.actual_maze_rows)]
-
-        print(f"[DEBUG] Maze __init__: Grid size: {self.actual_maze_rows}x{self.actual_maze_cols}. Calling generation (User's Recursive Backtracker)...")
         self._generate_maze_from_uploaded_logic(0, 0) # Start generation, typically from (0,0) or random
-
         self.walls = self._create_wall_lines_from_uploaded_logic()
-        print(f"[DEBUG] Maze __init__: Maze fully initialized. Number of walls: {len(self.walls)}")
+
 
     def _generate_maze_from_uploaded_logic(self, row, col):
         """
@@ -81,7 +56,6 @@ class Maze:
         Creates wall line segments based on the logic from the user's uploaded file.
         This method can produce horizontal, vertical, and diagonal lines across wall cells.
         """
-        print("[DEBUG] _create_wall_lines_from_uploaded_logic: Starting wall creation.")
         lines = []
         ts = TILE_SIZE
         for r in range(self.actual_maze_rows):
@@ -101,7 +75,6 @@ class Maze:
                     # Otherwise, it forms a horizontal or vertical line segment for this wall cell's edge.
                     if x1 != x2 or y1 != y2: # Only add if it forms a line (not just a point)
                         lines.append(((x1, y1), (x2, y2)))
-        print(f"[DEBUG] _create_wall_lines_from_uploaded_logic: Finished. Number of wall segments: {len(lines)}")
         return lines
 
     def draw(self, surface):
@@ -110,7 +83,6 @@ class Maze:
         wall_thickness = 2 if self.maze_type == "standard" else 3
         
         if not self.walls: 
-            # print("[DEBUG] draw: No walls to draw.")
             return
 
         for line_segment in self.walls:

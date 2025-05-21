@@ -1,8 +1,5 @@
 import pygame
 
-# Pygame key constants can be directly used if EventManager passes the 'keys' state.
-# No direct import of game_settings needed here typically, as actions are delegated.
-
 class PlayerActions:
     def __init__(self, game_controller_ref):
         """

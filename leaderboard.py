@@ -1,16 +1,8 @@
 import json
 import os
 
-# Import constants from game_settings.py
-try:
-    from game_settings import LEADERBOARD_FILE_NAME, LEADERBOARD_MAX_ENTRIES
-except ImportError:
-    print("Warning (leaderboard.py): Could not import from game_settings. Using fallback values.")
-    LEADERBOARD_FILE_NAME = "leaderboard.json" # Default filename
-    LEADERBOARD_MAX_ENTRIES = 10               # Default max scores
+from game_settings import LEADERBOARD_FILE_NAME, LEADERBOARD_MAX_ENTRIES
 
-# Define the directory for data files, if not already globally defined
-# This helps keep data files organized.
 DATA_DIR = "data"
 LEADERBOARD_FULL_PATH = os.path.join(DATA_DIR, LEADERBOARD_FILE_NAME)
 
@@ -55,7 +47,6 @@ def load_scores():
         print(f"Leaderboard: Unexpected error loading scores from '{LEADERBOARD_FULL_PATH}': {e}. Returning empty list.")
         return []
 
-
 def save_scores(scores):
     """Saves scores to the leaderboard file."""
     if not _ensure_data_dir_exists(): # Ensure directory exists before trying to save
@@ -71,7 +62,6 @@ def save_scores(scores):
         print(f"Leaderboard: Error: Could not save scores to '{LEADERBOARD_FULL_PATH}': {e}")
     except Exception as e: # Catch any other unexpected errors during saving
         print(f"Leaderboard: Unexpected error saving scores to '{LEADERBOARD_FULL_PATH}': {e}")
-
 
 def add_score(name, score, level):
     """

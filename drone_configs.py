@@ -5,17 +5,10 @@ paths to its sprite and icon, base statistics, an unlock condition,
 and a descriptive text.
 """
 # Import base values from game_settings to ensure consistency or provide defaults
-try:
-    from game_settings import (
+from game_settings import (
         PLAYER_MAX_HEALTH, PLAYER_SPEED, ROTATION_SPEED,
         ARCHITECT_REWARD_BLUEPRINT_ID # For the Architect-X unlock condition
     )
-except ImportError:
-    print("Warning (drone_configs.py): Could not import all constants from game_settings. Using fallbacks.")
-    PLAYER_MAX_HEALTH = 100
-    PLAYER_SPEED = 3
-    ROTATION_SPEED = 5
-    ARCHITECT_REWARD_BLUEPRINT_ID = "DRONE_ARCHITECT_X" # Fallback, should match game_settings
 
 # Main dictionary holding all drone configurations
 DRONE_DATA = {

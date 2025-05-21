@@ -1,35 +1,15 @@
-import pygame
 import os
 import math
 import random
 
-# Import necessary constants from game_settings.py
-try:
-    from game_settings import (
-        GOLD, PURPLE, BLUE, LIGHT_BLUE, GREEN, # Colors
-        POWERUP_TYPES, TILE_SIZE, POWERUP_SIZE, CORE_FRAGMENT_VISUAL_SIZE, # Sizes and type definitions
-        WEAPON_UPGRADE_ITEM_LIFETIME, POWERUP_ITEM_LIFETIME, # Lifetimes
-        # get_game_setting might be needed if some behaviors are dynamic, but usually not for collectibles
-    )
-except ImportError:
-    print("Warning (collectibles.py): Could not import all constants from game_settings. Using fallbacks.")
-    # Fallback values
-    GOLD = (255, 215, 0)
-    PURPLE = (128, 0, 128)
-    BLUE = (0, 0, 255)
-    LIGHT_BLUE = (173, 216, 230)
-    GREEN = (0, 255, 0)
-    POWERUP_TYPES = { # Minimal fallback
-        "shield": {"color": LIGHT_BLUE, "image_filename": "shield_icon.png", "duration": 10000},
-        "speed_boost": {"color": GREEN, "image_filename": "speed_icon.png", "duration": 7000, "multiplier": 1.5},
-        "weapon_upgrade": {"color": BLUE, "image_filename": "weapon_icon.png"}
-    }
-    TILE_SIZE = 80
-    POWERUP_SIZE = TILE_SIZE // 3
-    CORE_FRAGMENT_VISUAL_SIZE = TILE_SIZE // 2.5
-    WEAPON_UPGRADE_ITEM_LIFETIME = 15000
-    POWERUP_ITEM_LIFETIME = 12000
+import pygame
 
+
+from game_settings import (
+        GOLD, PURPLE, BLUE, LIGHT_BLUE, GREEN,
+        POWERUP_TYPES, TILE_SIZE, POWERUP_SIZE, CORE_FRAGMENT_VISUAL_SIZE,
+        WEAPON_UPGRADE_ITEM_LIFETIME, POWERUP_ITEM_LIFETIME,
+    )
 
 class Collectible(pygame.sprite.Sprite):
     """Base class for collectible items with a pulsing shine effect."""

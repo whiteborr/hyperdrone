@@ -86,9 +86,7 @@ HYPERDRONE is a dynamic top-down 2D game where players pilot an advanced drone t
 
 2. In the command prompt, type:
 
-
 python --version
-
 
 You should see something like: `Python 3.10.7`. If not, restart your computer and try again.
 
@@ -97,17 +95,12 @@ You should see something like: `Python 3.10.7`. If not, restart your computer an
 ### Step 3: Download the Game Files
 
 1. Navigate to your preferred directory in the command prompt.
-
-
-cd C:\YourPreferredDirectory
-
+`cd C:\YourPreferredDirectory`
 
 2. Clone the repository (if you have Git installed):
 
-
-git clone https://github.com/your-username/hyperdrone.git
+git clone <https://github.com/your-username/hyperdrone.git>
 cd hyperdrone
-
 
 (Replace `your-username/hyperdrone.git` with the actual repository URL if applicable)
 Alternatively, download the ZIP file of the game from its source (e.g., GitHub) and extract it to a folder named `hyperdrone`. Then navigate into this folder in your command prompt.
@@ -116,22 +109,17 @@ Alternatively, download the ZIP file of the game from its source (e.g., GitHub) 
 
 In the command prompt, inside the `hyperdrone` project directory, type:
 
-
 pip install pygame
-
 
 ### Step 5: Run the Game
 
 In the command prompt, inside the `hyperdrone` project directory, type:
 
-
 python main.py
-
 
 🎮 The game should launch in a new window.
 
 ## File Structure (Key Files)
-
 
 hyperdrone/
 ├── main.py                     # Main entry point for the game.
@@ -158,25 +146,24 @@ hyperdrone/
 ├── leaderboard.json        # Saved high scores.
 └── drone_unlocks.json      # Saved player progression and unlocks.
 
-
 ## Game Controls
 
-| Key | Action | Context | 
- | ----- | ----- | ----- | 
-| ↑ Arrow | Thrust Forward (Toggle On) | Gameplay | 
-| ↓ Arrow | Stop Thrust (Toggle Off) | Gameplay | 
-| ←/→ Arrows | Rotate Drone | Gameplay | 
-| Spacebar | Fire Weapon | Gameplay (Combat States) | 
-| P | Pause / Unpause Game | Gameplay, Architect's Vault | 
-| S | Cycle Weapon | Gameplay (If Player Alive & Not Paused) | 
-| C | Activate Cloak (If Phantom Drone Equipped) | Gameplay (If Player Alive & Not Paused) | 
-| 1, 2, 3 | Activate Vault Terminals | Architect's Vault (Entry Puzzle) | 
-| Enter | Select Option / Confirm | Menus, Name Entry, Vault Success/Failure | 
-| Esc | Back / Main Menu | Drone Select, Settings, Leaderboard, Pause (Vault) | 
-| R | Restart Game | Game Over Screen | 
-| M | Main Menu | Game Over, Pause Menu, Vault Success/Failure | 
-| L | View Leaderboard | Game Over, Pause Menu (Playing State) | 
-| Q | Quit Game | Main Menu, Game Over, Leaderboard, Pause Menu | 
+| Key | Action | Context |
+ | ----- | ----- | ----- |
+| ↑ Arrow | Thrust Forward (Toggle On) | Gameplay |
+| ↓ Arrow | Stop Thrust (Toggle Off) | Gameplay |
+| ←/→ Arrows | Rotate Drone | Gameplay |
+| Spacebar | Fire Weapon | Gameplay (Combat States) |
+| P | Pause / Unpause Game | Gameplay, Architect's Vault |
+| S | Cycle Weapon | Gameplay (If Player Alive & Not Paused) |
+| C | Activate Cloak (If Phantom Drone Equipped) | Gameplay (If Player Alive & Not Paused) |
+| 1, 2, 3 | Activate Vault Terminals | Architect's Vault (Entry Puzzle) |
+| Enter | Select Option / Confirm | Menus, Name Entry, Vault Success/Failure |
+| Esc | Back / Main Menu | Drone Select, Settings, Leaderboard, Pause (Vault) |
+| R | Restart Game | Game Over Screen |
+| M | Main Menu | Game Over, Pause Menu, Vault Success/Failure |
+| L | View Leaderboard | Game Over, Pause Menu (Playing State) |
+| Q | Quit Game | Main Menu, Game Over, Leaderboard, Pause Menu |
 
 ## Future Enhancements & Modding Ideas
 
@@ -204,17 +191,13 @@ You can convert the Python game into a standalone executable using PyInstaller.
 
 ### Step 1: Install PyInstaller
 
-
 pip install pyinstaller
-
 
 ### Step 2: Compile the Game
 
 Open a command prompt in the project directory (where `main.py` is located) and run:
 
-
 pyinstaller --onefile --windowed --add-data "assets;assets" --add-data "data;data" main.py
-
 
 * `--onefile`: Creates a single `.exe` file (may take longer to start).
 

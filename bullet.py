@@ -1,34 +1,14 @@
-import random
-import pygame
 import math
+import random
 
-# Import necessary constants from game_settings
-try:
-    from game_settings import (
+import pygame
+
+from game_settings import (
         PLAYER_BULLET_COLOR, PLAYER_BULLET_SPEED, PLAYER_BULLET_LIFETIME, PLAYER_DEFAULT_BULLET_SIZE,
         MISSILE_COLOR, MISSILE_SPEED, MISSILE_LIFETIME, MISSILE_SIZE, MISSILE_TURN_RATE, MISSILE_DAMAGE,
         LIGHTNING_COLOR, LIGHTNING_LIFETIME, LIGHTNING_ZAP_RANGE,
         WIDTH, GAME_PLAY_AREA_HEIGHT, TILE_SIZE # For boundary checks and potentially other logic
     )
-except ImportError:
-    # Fallback values if game_settings.py is not found or constants are missing
-    print("Warning (bullet.py): Could not import all constants from game_settings. Using fallbacks.")
-    PLAYER_BULLET_COLOR = (255, 200, 0)
-    PLAYER_BULLET_SPEED = 7
-    PLAYER_BULLET_LIFETIME = 100
-    PLAYER_DEFAULT_BULLET_SIZE = 4
-    MISSILE_COLOR = (200, 0, 200)
-    MISSILE_SPEED = 5
-    MISSILE_LIFETIME = 200
-    MISSILE_SIZE = 8
-    MISSILE_TURN_RATE = 4
-    MISSILE_DAMAGE = 50
-    LIGHTNING_COLOR = (0, 128, 255)
-    LIGHTNING_LIFETIME = 30 # Frames
-    LIGHTNING_ZAP_RANGE = 250
-    WIDTH = 1920
-    GAME_PLAY_AREA_HEIGHT = 1080 - 120
-    TILE_SIZE = 80
 
 
 class Bullet(pygame.sprite.Sprite):

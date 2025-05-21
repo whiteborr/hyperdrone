@@ -1,23 +1,11 @@
-import pygame
 import math
 
-# It's good practice to have fallback default values or import them
-# from game_settings if they are universally applicable.
-# For now, using some common defaults.
-try:
-    from game_settings import PLAYER_SPEED, TILE_SIZE, WIDTH, GAME_PLAY_AREA_HEIGHT, CYAN
-except ImportError:
-    # Fallback values if game_settings.py is not found or constants are missing
-    # These should ideally match your project's defaults.
-    PLAYER_SPEED = 3
-    TILE_SIZE = 80
-    WIDTH = 1920
-    GAME_PLAY_AREA_HEIGHT = 1080 - 120 # Example, assuming bottom panel
-    CYAN = (0, 255, 255)
+import pygame
 
+from game_settings import PLAYER_SPEED, TILE_SIZE, WIDTH, GAME_PLAY_AREA_HEIGHT, CYAN
 
 class BaseDrone(pygame.sprite.Sprite):
-    def __init__(self, x, y, size=None, speed=None): # Made size and speed optional with fallbacks
+    def __init__(self, x, y, size=None, speed=None):
         super().__init__()
         self.x = float(x)
         self.y = float(y)
@@ -48,11 +36,6 @@ class BaseDrone(pygame.sprite.Sprite):
         self.collision_rect.center = self.rect.center
 
     def rotate(self, direction, rotation_speed):
-        """
-        Rotates the drone.
-        'left' for Counter-Clockwise (CCW), 'right' for Clockwise (CW).
-        This assumes self.angle where 0 is right, positive is CCW.
-        """
         if direction == "left":
             self.angle += rotation_speed
         elif direction == "right":
@@ -60,20 +43,10 @@ class BaseDrone(pygame.sprite.Sprite):
         self.angle %= 360  # Keep angle within 0-359 degrees
 
     def update_movement(self, maze=None, game_area_x_offset=0): # Added game_area_x_offset
-        """
-        Updates the drone's position based on its speed and angle,
-        with optional maze collision handling and boundary checks.
-        """
         if self.moving_forward and self.alive:
             angle_rad = math.radians(self.angle)
-            # In Pygame, positive y is down.
-            # Standard math: cos for x, sin for y.
-            # If angle 0 is right: dx = cos, dy = sin
-            # If angle 0 is up (like in original player): dx = sin, dy = -cos
-            # Assuming angle 0 is right for this base class, consistent with player's dynamic draw
             dx = math.cos(angle_rad) * self.speed
             dy = math.sin(angle_rad) * self.speed
-
             next_x = self.x + dx
             next_y = self.y + dy
 
@@ -124,11 +97,6 @@ class BaseDrone(pygame.sprite.Sprite):
 
 
     def draw(self, surface):
-        """
-        Basic draw method for BaseDrone.
-        Subclasses (like Player's Drone) should override this with their specific sprite.
-        This draws a simple shape if self.image is not otherwise set by a subclass.
-        """
         if self.alive:
             # If self.image was loaded by a subclass, it will be rotated there.
             # If not, this provides a very basic rotated representation.
@@ -153,10 +121,6 @@ class BaseDrone(pygame.sprite.Sprite):
 
 
     def update(self, maze=None, game_area_x_offset=0): # Added game_area_x_offset
-        """
-        Basic update method for a BaseDrone.
-        Calls movement update. Subclasses can extend this.
-        """
         if self.alive:
             self.update_movement(maze, game_area_x_offset)
             # Ensure rect is updated after movement
@@ -166,9 +130,6 @@ class BaseDrone(pygame.sprite.Sprite):
             self.kill() # Remove from sprite groups if not alive
 
     def reset(self, x, y):
-        """
-        Resets the drone's basic state.
-        """
         self.x = float(x)
         self.y = float(y)
         self.angle = 0.0

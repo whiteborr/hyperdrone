@@ -1,49 +1,29 @@
-import pygame
 import math
 import random
 import os
 
-# Import Bullet class
-try:
-    from bullet import Bullet
-except ImportError:
-    print("Warning (enemy.py): Could not import Bullet from bullet.py. Enemy shooting will be affected.")
-    # Define a dummy Bullet class if bullet.py or Bullet class is not found
-    class Bullet(pygame.sprite.Sprite):
-        def __init__(self, x, y, angle, speed, lifetime, size, color, damage, max_bounces=0, max_pierces=0):
-            super().__init__()
-            self.image = pygame.Surface([size*2, size*2])
-            self.rect = self.image.get_rect(center=(x,y))
-            self.alive = True
-        def update(self, maze=None, game_area_x_offset=0): # Added game_area_x_offset for consistency
-            if not self.alive: self.kill()
-        def draw(self, surface):
-            if self.alive: surface.blit(self.image, self.rect)
+import pygame
 
-
-# Import necessary constants from game_settings
-try:
-    from game_settings import (
+from bullet import Bullet
+from game_settings import (
         TILE_SIZE, ENEMY_SPEED, ENEMY_HEALTH, ENEMY_COLOR,
         ENEMY_BULLET_SPEED, ENEMY_BULLET_COOLDOWN, ENEMY_BULLET_LIFETIME,
         ENEMY_BULLET_COLOR, ENEMY_BULLET_DAMAGE, PLAYER_DEFAULT_BULLET_SIZE, # Used as a base for enemy bullet size
         WIDTH, GAME_PLAY_AREA_HEIGHT, # For boundary checks
         # PROTOTYPE_DRONE_SPRITE_PATH is used by game_loop when creating specific enemies
     )
-except ImportError:
-    print("Warning (enemy.py): Could not import all constants from game_settings. Using fallbacks.")
-    TILE_SIZE = 80
-    ENEMY_SPEED = 1.5
-    ENEMY_HEALTH = 100
-    ENEMY_COLOR = (255, 0, 0) # RED
-    ENEMY_BULLET_SPEED = 5
-    ENEMY_BULLET_COOLDOWN = 1500
-    ENEMY_BULLET_LIFETIME = 75
-    ENEMY_BULLET_COLOR = (255, 100, 0)
-    ENEMY_BULLET_DAMAGE = 10
-    PLAYER_DEFAULT_BULLET_SIZE = 4
-    WIDTH = 1920
-    GAME_PLAY_AREA_HEIGHT = 1080 - 120
+
+class Bullet(pygame.sprite.Sprite):
+    def __init__(self, x, y, angle, speed, lifetime, size, color, damage, max_bounces=0, max_pierces=0):
+        super().__init__()
+        self.image = pygame.Surface([size*2, size*2])
+        self.rect = self.image.get_rect(center=(x,y))
+        self.alive = True
+    def update(self, maze=None, game_area_x_offset=0): # Added game_area_x_offset for consistency
+        if not self.alive: self.kill()
+    def draw(self, surface):
+        if self.alive: surface.blit(self.image, self.rect)
+
 
 
 class Enemy(pygame.sprite.Sprite):

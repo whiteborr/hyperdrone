@@ -1,34 +1,15 @@
-import pygame
 import sys
 
-# Import all necessary game state constants from game_settings.py
-try:
-    from game_settings import (
+import pygame
+
+from game_settings import (
         GAME_STATE_MAIN_MENU, GAME_STATE_PLAYING, GAME_STATE_GAME_OVER,
         GAME_STATE_LEADERBOARD, GAME_STATE_ENTER_NAME, GAME_STATE_SETTINGS, GAME_STATE_DRONE_SELECT,
-        GAME_STATE_BONUS_LEVEL_PLAYING, # Assuming this state is still potentially used
+        GAME_STATE_BONUS_LEVEL_PLAYING,
         GAME_STATE_ARCHITECT_VAULT_INTRO, GAME_STATE_ARCHITECT_VAULT_ENTRY_PUZZLE,
         GAME_STATE_ARCHITECT_VAULT_GAUNTLET, GAME_STATE_ARCHITECT_VAULT_EXTRACTION,
         GAME_STATE_ARCHITECT_VAULT_SUCCESS, GAME_STATE_ARCHITECT_VAULT_FAILURE
-        # Add any other game state constants if they are used for event handling
     )
-except ImportError:
-    print("Critical Error (event_manager.py): Could not import game state constants from game_settings.py.")
-    # Fallback string values if import fails, though this will likely lead to issues.
-    GAME_STATE_MAIN_MENU = "main_menu"
-    GAME_STATE_PLAYING = "playing"
-    GAME_STATE_GAME_OVER = "game_over"
-    GAME_STATE_LEADERBOARD = "leaderboard_display"
-    GAME_STATE_ENTER_NAME = "enter_name"
-    GAME_STATE_SETTINGS = "settings_menu"
-    GAME_STATE_DRONE_SELECT = "drone_select_menu"
-    GAME_STATE_BONUS_LEVEL_PLAYING = "bonus_level_playing"
-    GAME_STATE_ARCHITECT_VAULT_INTRO = "architect_vault_intro"
-    GAME_STATE_ARCHITECT_VAULT_ENTRY_PUZZLE = "architect_vault_entry_puzzle"
-    GAME_STATE_ARCHITECT_VAULT_GAUNTLET = "architect_vault_gauntlet"
-    GAME_STATE_ARCHITECT_VAULT_EXTRACTION = "architect_vault_extraction"
-    GAME_STATE_ARCHITECT_VAULT_SUCCESS = "architect_vault_success"
-    GAME_STATE_ARCHITECT_VAULT_FAILURE = "architect_vault_failure"
 
 class EventManager:
     def __init__(self, game_controller_ref, scene_manager_ref):

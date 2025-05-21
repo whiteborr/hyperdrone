@@ -1,10 +1,9 @@
-import pygame
 import os
-import math # For UI effects like pulsing
+import math
 
-# Import constants directly from game_settings.py
-try:
-    from game_settings import (
+import pygame
+
+from game_settings import (
         WIDTH, HEIGHT, GAME_PLAY_AREA_HEIGHT, BOTTOM_PANEL_HEIGHT, TILE_SIZE,
         BLACK, GOLD, WHITE, GREEN, CYAN, RED, DARK_RED, GREY, YELLOW, LIGHT_BLUE, ORANGE, PURPLE,
         DARK_GREY, DARK_PURPLE, ARCHITECT_VAULT_BG_COLOR, ARCHITECT_VAULT_WALL_COLOR, ARCHITECT_VAULT_ACCENT_COLOR,
@@ -19,38 +18,9 @@ try:
         TOTAL_CORE_FRAGMENTS_NEEDED, CORE_FRAGMENT_DETAILS, # For HUD display
         get_game_setting # To access current game settings
     )
-except ImportError:
-    print("Critical Error (ui.py): Could not import from game_settings.py. UI will likely fail.")
-    # Add minimal fallbacks if absolutely necessary for standalone testing, but this indicates a project setup issue.
-    WIDTH, HEIGHT = 1920, 1080
-    GAME_PLAY_AREA_HEIGHT, BOTTOM_PANEL_HEIGHT, TILE_SIZE = 960, 120, 80
-    BLACK, GOLD, WHITE, RED, CYAN, YELLOW, GREEN, LIGHT_BLUE, ORANGE, PURPLE, GREY, DARK_RED, DARK_GREY, DARK_PURPLE = [(0,0,0)]*14
-    ARCHITECT_VAULT_BG_COLOR, ARCHITECT_VAULT_WALL_COLOR, ARCHITECT_VAULT_ACCENT_COLOR = [(0,0,0)]*3
-    WEAPON_MODE_ICONS, POWERUP_TYPES, CORE_FRAGMENT_DETAILS = {}, {}, {}
-    PLAYER_BULLET_COLOR, MISSILE_COLOR, LIGHTNING_COLOR = [(255,255,255)]*3
-    GAME_STATE_MAIN_MENU = "main_menu" # etc. for all states
-    DEFAULT_SETTINGS = {}
-    TOTAL_CORE_FRAGMENTS_NEEDED = 3
-    def get_game_setting(key): return None
 
-
-# Import DRONE_DATA for drone select screen details
-try:
-    from drone_configs import DRONE_DATA, DRONE_DISPLAY_ORDER # DRONE_DISPLAY_ORDER might be used by GameController
-except ImportError:
-    print("Critical Error (ui.py): Could not import from drone_configs.py. Drone selection UI will fail.")
-    DRONE_DATA = {}
-
-# Import leaderboard module for displaying leaderboard scores
-try:
-    import leaderboard
-except ImportError:
-    print("Warning (ui.py): Could not import leaderboard.py. Leaderboard display will fail.")
-    class leaderboard: # Dummy class
-        @staticmethod
-        def load_scores(): return []
-        @staticmethod
-        def is_high_score(s, l): return False
+from drone_configs import DRONE_DATA, DRONE_DISPLAY_ORDER
+import leaderboard
 
 
 class UIManager:

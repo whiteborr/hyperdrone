@@ -2,31 +2,16 @@ import json
 import os
 import random
 
-# Import from drone_configs.py
-try:
-    from drone_configs import DRONE_DATA, DRONE_DISPLAY_ORDER, OMEGA_STAT_RANGES
+from drone_configs import DRONE_DATA, DRONE_DISPLAY_ORDER, OMEGA_STAT_RANGES
     # Note: Special ability constants like PHANTOM_CLOAK_DURATION_MS_CONFIG
     # are in drone_configs.py. Player will get effective values via game_settings.
-except ImportError:
-    print("Critical Error (drone_system.py): Could not import from drone_configs.py. System may not function.")
-    DRONE_DATA = {}
-    DRONE_DISPLAY_ORDER = []
-    OMEGA_STAT_RANGES = {}
 
-# Import from game_settings.py
-try:
-    from game_settings import (
+from game_settings import (
         CORE_FRAGMENT_DETAILS, TOTAL_CORE_FRAGMENTS_NEEDED,
         ARCHITECT_REWARD_BLUEPRINT_ID, ARCHITECT_REWARD_LORE_ID,
         # get_game_setting is used by player.py to get effective ability values
         # DroneSystem might not need get_game_setting directly for these if player handles it.
     )
-except ImportError:
-    print("Warning (drone_system.py): Could not import all constants from game_settings. Using fallbacks.")
-    CORE_FRAGMENT_DETAILS = {}
-    TOTAL_CORE_FRAGMENTS_NEEDED = 3
-    ARCHITECT_REWARD_BLUEPRINT_ID = "DRONE_ARCHITECT_X"
-    ARCHITECT_REWARD_LORE_ID = "lore_architect_origin"
 
 DATA_DIR = "data" # Directory to store save files
 UNLOCKS_FILE_PATH = os.path.join(DATA_DIR, "drone_unlocks.json")
@@ -453,8 +438,3 @@ if __name__ == '__main__':
     print(f"DroneSystem Test: Player cores after add: {ds.get_player_cores()}")
     ds.spend_player_cores(100)
     print(f"DroneSystem Test: Player cores after spend: {ds.get_player_cores()}")
-
-    # Test reset
-    # ds.reset_all_progress()
-    # print(f"DroneSystem Test: Player cores after reset: {ds.get_player_cores()}")
-    # print(f"DroneSystem Test: Selected drone after reset: {ds.get_selected_drone_id()}")
