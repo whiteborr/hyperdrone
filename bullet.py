@@ -1,6 +1,6 @@
+import random
 import pygame
 import math
-import os # For path joining if any assets were directly loaded here (not typical for bullets)
 
 # Import necessary constants from game_settings
 try:

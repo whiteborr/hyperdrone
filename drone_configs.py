@@ -22,7 +22,7 @@ DRONE_DATA = {
     "DRONE": {
         "name": "Drone",
         "sprite_path": "assets/images/drones/drone_2d.png", # Main display image for selection screen
-        "icon_path": "assets/images/drones/original_icon.png",      # Small UI icon (e.g., for lives)
+        "icon_path": "assets/images/drones/drone_2d.png",      # Small UI icon (e.g., for lives) - UPDATED
         "ingame_sprite_path": "assets/images/drones/drone_2d.png", # Sprite used during gameplay
         "base_stats": { # Base statistics for this drone
             "hp": PLAYER_MAX_HEALTH,
@@ -38,7 +38,7 @@ DRONE_DATA = {
     "VANTIS": {
         "name": "VANTIS",
         "sprite_path": "assets/images/drones/vantis.png",
-        "icon_path": "assets/images/drones/vantis.png", # Assuming a specific icon variant
+        "icon_path": "assets/images/drones/vantis.png", # Assuming a specific icon variant - UPDATED
         "ingame_sprite_path": "assets/images/drones/vantis_2d.png",
         "base_stats": {
             "hp": int(PLAYER_MAX_HEALTH * 0.9), # Slightly less HP
@@ -54,7 +54,7 @@ DRONE_DATA = {
     "RHINOX": {
         "name": "RHINOX",
         "sprite_path": "assets/images/drones/rhinox.png",
-        "icon_path": "assets/images/drones/rhinox_icon.png",
+        "icon_path": "assets/images/drones/rhinox.png", # UPDATED
         "ingame_sprite_path": "assets/images/drones/rhinox_2d.png",
         "base_stats": {
             "hp": int(PLAYER_MAX_HEALTH * 1.5), # More HP
@@ -70,7 +70,7 @@ DRONE_DATA = {
     "ZEPHYR": {
         "name": "ZEPHYR",
         "sprite_path": "assets/images/drones/zephyr.png",
-        "icon_path": "assets/images/drones/zephyr_icon.png",
+        "icon_path": "assets/images/drones/zephyr.png", # UPDATED
         "ingame_sprite_path": "assets/images/drones/zephyr_2d.png",
         "base_stats": {
             "hp": int(PLAYER_MAX_HEALTH * 0.75), # Less HP
@@ -86,7 +86,7 @@ DRONE_DATA = {
     "STRIX": {
         "name": "STRIX",
         "sprite_path": "assets/images/drones/strix.png",
-        "icon_path": "assets/images/drones/strix_icon.png",
+        "icon_path": "assets/images/drones/strix.png", # UPDATED
         "ingame_sprite_path": "assets/images/drones/strix_2d.png",
         "base_stats": {
             "hp": PLAYER_MAX_HEALTH * 1.0,
@@ -102,7 +102,7 @@ DRONE_DATA = {
     "OMEGA-9": {
         "name": "OMEGA-9",
         "sprite_path": "assets/images/drones/omega-9.png",
-        "icon_path": "assets/images/drones/omega-9_icon.png",
+        "icon_path": "assets/images/drones/omega-9.png", # UPDATED
         "ingame_sprite_path": "assets/images/drones/omega-9_2d.png",
         "base_stats": { # These are the 'pre-randomized' base values Omega-9 starts from
             "hp": PLAYER_MAX_HEALTH * 1.0,
@@ -118,7 +118,7 @@ DRONE_DATA = {
     "PHANTOM": {
         "name": "PHANTOM",
         "sprite_path": "assets/images/drones/phantom.png",
-        "icon_path": "assets/images/drones/phantom_icon.png",
+        "icon_path": "assets/images/drones/phantom.png", # UPDATED
         "ingame_sprite_path": "assets/images/drones/phantom_2d.png",
         "base_stats": {
             "hp": int(PLAYER_MAX_HEALTH * 0.6), # Fragile
@@ -134,7 +134,7 @@ DRONE_DATA = {
     "DRONE_ARCHITECT_X": { # ID should match ARCHITECT_REWARD_BLUEPRINT_ID from game_settings
         "name": "Architect-X",
         "sprite_path": "assets/images/drones/architect_x_icon.png", # Preview for selection screen
-        "icon_path": "assets/images/drones/architect_x_icon.png",   # Small UI icon
+        "icon_path": "assets/images/drones/architect_x_icon.png",   # Small UI icon - UPDATED
         "ingame_sprite_path": "assets/images/drones/architect_x_2d.png", # Actual in-game sprite
         "base_stats": {
             "hp": int(PLAYER_MAX_HEALTH * 1.2),

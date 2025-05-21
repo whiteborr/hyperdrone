@@ -333,7 +333,6 @@ def set_game_setting(key, value):
             )
 
         # If the changed key corresponds to a global variable, update it too.
-        # This allows other modules to use "from game_settings import WIDTH" and get the current value.
         if key in globals():
             globals()[key] = value
 
@@ -341,48 +340,40 @@ def set_game_setting(key, value):
             if key == "HEIGHT" or key == "BOTTOM_PANEL_HEIGHT":
                 GAME_PLAY_AREA_HEIGHT = get_game_setting("HEIGHT") - get_game_setting("BOTTOM_PANEL_HEIGHT")
                 globals()["GAME_PLAY_AREA_HEIGHT"] = GAME_PLAY_AREA_HEIGHT # Update global scope
-                if get_game_setting("TILE_SIZE") > 0: # Avoid division by zero
+                if get_game_setting("TILE_SIZE") > 0: 
                     MAZE_ROWS = GAME_PLAY_AREA_HEIGHT // get_game_setting("TILE_SIZE")
-                    globals()["MAZE_ROWS"] = MAZE_ROWS # Update global scope
+                    globals()["MAZE_ROWS"] = MAZE_ROWS 
             elif key == "TILE_SIZE":
                 if get_game_setting("TILE_SIZE") > 0:
                     MAZE_ROWS = get_game_setting("GAME_PLAY_AREA_HEIGHT") // get_game_setting("TILE_SIZE")
                     globals()["MAZE_ROWS"] = MAZE_ROWS
-            # Add other dependent calculations here if needed (e.g., MISSILE_SPEED based on PLAYER_BULLET_SPEED)
-
     else:
         print(f"Warning (game_settings.py): Attempted to set an unknown game setting '{key}'.")
 
 def reset_all_settings_to_default():
     """Resets all configurable settings back to their default values."""
     global SETTINGS_MODIFIED, _CURRENT_GAME_SETTINGS
-    global GAME_PLAY_AREA_HEIGHT, MAZE_ROWS # And any other dependent globals
+    global GAME_PLAY_AREA_HEIGHT, MAZE_ROWS 
 
     _CURRENT_GAME_SETTINGS = DEFAULT_SETTINGS.copy()
     SETTINGS_MODIFIED = False
     print("Game settings have been reset to defaults.")
 
-    # Update all global variables from the reset _CURRENT_GAME_SETTINGS
     for key, value in _CURRENT_GAME_SETTINGS.items():
-        if key in globals(): # Check if it's a global we manage this way
+        if key in globals(): 
             globals()[key] = value
 
-    # Recalculate dependent globals explicitly after resetting all
     GAME_PLAY_AREA_HEIGHT = get_game_setting("HEIGHT") - get_game_setting("BOTTOM_PANEL_HEIGHT")
     globals()["GAME_PLAY_AREA_HEIGHT"] = GAME_PLAY_AREA_HEIGHT
     if get_game_setting("TILE_SIZE") > 0:
         MAZE_ROWS = GAME_PLAY_AREA_HEIGHT // get_game_setting("TILE_SIZE")
         globals()["MAZE_ROWS"] = MAZE_ROWS
-    # Add other recalculations like MISSILE_SPEED if they were made dependent
 
 # Initialize globals that are calculated from other settings
-# This ensures they have correct values at startup and after any potential direct modifications.
 GAME_PLAY_AREA_HEIGHT = get_game_setting("HEIGHT") - get_game_setting("BOTTOM_PANEL_HEIGHT")
-if TILE_SIZE > 0: # Check to avoid division by zero if TILE_SIZE was somehow 0
+if TILE_SIZE > 0: 
     MAZE_ROWS = GAME_PLAY_AREA_HEIGHT // TILE_SIZE
 else:
-    MAZE_ROWS = 0 # Default or error state for MAZE_ROWS
+    MAZE_ROWS = 0 
     print("Warning (game_settings.py): TILE_SIZE is 0 or invalid, MAZE_ROWS set to 0.")
 
-# Example of another dependent variable (if it was global and not just used in player.py)
-# MISSILE_SPEED = get_game_setting("PLAYER_BULLET_SPEED") * 0.8 # Already handled by direct constant definition

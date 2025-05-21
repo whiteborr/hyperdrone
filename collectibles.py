@@ -304,3 +304,4 @@ class CoreFragmentItem(Collectible):
             else:
                 print(f"Error: Could not notify DroneSystem about collecting Core Fragment '{self.fragment_name}'.")
         return False # Already collected or system error
+

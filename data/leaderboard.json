@@ -15,6 +15,11 @@
         "level": 3
     },
     {
+        "name": "DAD",
+        "score": 495,
+        "level": 3
+    },
+    {
         "name": "KALIM",
         "score": 340,
         "level": 3
@@ -42,11 +47,6 @@
     {
         "name": "VIVIAN",
         "score": 130,
-        "level": 1
-    },
-    {
-        "name": "VIVIAN",
-        "score": 105,
         "level": 1
     }
 ]

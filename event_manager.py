@@ -62,9 +62,8 @@ class EventManager:
             if event.type == pygame.KEYDOWN:
                 # --- Quit Game (Global for specific states) ---
                 if event.key == pygame.K_q and current_game_state in [
-                    GAME_STATE_GAME_OVER, GAME_STATE_LEADERBOARD, GAME_STATE_MAIN_MENU, # Added Main Menu Q to quit
-                    # Add other states where Q should quit directly if needed
-                ] and not self.game_controller.paused: # Ensure not paused for main menu quit
+                    GAME_STATE_GAME_OVER, GAME_STATE_LEADERBOARD, GAME_STATE_MAIN_MENU,
+                ] and not self.game_controller.paused:
                     if hasattr(self.game_controller, 'quit_game'):
                          self.game_controller.quit_game()
                     continue # Event handled
@@ -87,7 +86,7 @@ class EventManager:
                 # --- Gameplay (Regular, Bonus, Architect's Vault Combat/Puzzle) ---
                 elif current_game_state in [GAME_STATE_PLAYING,
                                             GAME_STATE_BONUS_LEVEL_PLAYING,
-                                            GAME_STATE_ARCHITECT_VAULT_ENTRY_PUZZLE, # Puzzle allows movement/pause
+                                            GAME_STATE_ARCHITECT_VAULT_ENTRY_PUZZLE,
                                             GAME_STATE_ARCHITECT_VAULT_GAUNTLET,
                                             GAME_STATE_ARCHITECT_VAULT_EXTRACTION]:
                     if event.key == pygame.K_p: # Pause
@@ -96,28 +95,25 @@ class EventManager:
 
                     if self.game_controller.paused: # Handle input when paused
                         if hasattr(self.game_controller, 'handle_pause_menu_input'):
-                            # Pass the state the game was in when it was paused
                             self.game_controller.handle_pause_menu_input(event.key, current_game_state)
                     else: # Handle input when not paused (active gameplay)
                         if self.game_controller.player and self.game_controller.player.alive:
-                            if event.key == pygame.K_UP:
+                            if event.key == pygame.K_UP: # MODIFIED: Start continuous forward movement
                                 if hasattr(self.game_controller.player_actions, 'start_moving_forward'):
                                     self.game_controller.player_actions.start_moving_forward()
-                            elif event.key == pygame.K_DOWN: # Stop thrust
+                            elif event.key == pygame.K_DOWN: # MODIFIED: Stop continuous forward movement
                                 if hasattr(self.game_controller.player_actions, 'stop_moving_forward'):
                                     self.game_controller.player_actions.stop_moving_forward()
                             elif event.key == pygame.K_c: # Cloak ability
-                                # player_actions will delegate to player.try_activate_cloak
                                 if hasattr(self.game_controller.player_actions, 'try_activate_cloak'):
                                     self.game_controller.player_actions.try_activate_cloak(current_time)
                             elif event.key == pygame.K_s: # Cycle weapon
-                                # Player object directly handles weapon cycling
                                 if hasattr(self.game_controller.player, 'cycle_weapon_state'):
-                                    if self.game_controller.player.cycle_weapon_state(force_cycle=True): # True to cycle even at end
+                                    if self.game_controller.player.cycle_weapon_state(force_cycle=True):
                                         if hasattr(self.game_controller, 'play_sound'):
-                                            self.game_controller.play_sound('ui_select') # Sound for weapon cycle
+                                            self.game_controller.play_sound('ui_select')
 
-                        # Architect's Vault Entry Puzzle specific inputs (1, 2, 3 for terminals)
+                        # Architect's Vault Entry Puzzle specific inputs
                         if current_game_state == GAME_STATE_ARCHITECT_VAULT_ENTRY_PUZZLE:
                             if event.key == pygame.K_1:
                                 if hasattr(self.game_controller, 'try_activate_vault_terminal'):
@@ -131,7 +127,7 @@ class EventManager:
                 
                 # --- Architect's Vault Intro ---
                 elif current_game_state == GAME_STATE_ARCHITECT_VAULT_INTRO:
-                    if event.key == pygame.K_RETURN or event.key == pygame.K_SPACE: # Progress from intro
+                    if event.key == pygame.K_RETURN or event.key == pygame.K_SPACE:
                         self.scene_manager.set_game_state(GAME_STATE_ARCHITECT_VAULT_ENTRY_PUZZLE)
 
                 # --- Post-Game / Post-Vault States (Success/Failure) ---
@@ -150,55 +146,38 @@ class EventManager:
                     if event.key == pygame.K_RETURN:
                         if hasattr(self.game_controller, 'submit_leaderboard_name'):
                             self.game_controller.submit_leaderboard_name(self.player_name_input_cache)
-                        self.player_name_input_cache = "" # Clear cache after submission
+                        self.player_name_input_cache = "" 
                     elif event.key == pygame.K_BACKSPACE:
                         self.player_name_input_cache = self.player_name_input_cache[:-1]
-                    elif len(self.player_name_input_cache) < 6 and event.unicode.isalpha(): # Max 6 chars, A-Z
+                    elif len(self.player_name_input_cache) < 6 and event.unicode.isalpha():
                         self.player_name_input_cache += event.unicode.upper()
-                    # Update the game_controller's copy of the name for UI display
+                    
                     if hasattr(self.game_controller, 'update_player_name_input_display'):
                         self.game_controller.update_player_name_input_display(self.player_name_input_cache)
 
                 # --- Leaderboard Display ---
                 elif current_game_state == GAME_STATE_LEADERBOARD:
-                    if event.key == pygame.K_ESCAPE or event.key == pygame.K_m: # Back to main menu
+                    if event.key == pygame.K_ESCAPE or event.key == pygame.K_m:
                         if hasattr(self.game_controller, 'play_sound'): self.game_controller.play_sound('ui_select')
                         self.scene_manager.set_game_state(GAME_STATE_MAIN_MENU)
 
-            # Handle KEYUP for stopping forward movement (more responsive than checking not pressed)
-            if event.type == pygame.KEYUP:
-                # States where player movement is controlled
-                is_player_control_state_for_keyup = current_game_state in [
-                    GAME_STATE_PLAYING, GAME_STATE_BONUS_LEVEL_PLAYING,
-                    GAME_STATE_ARCHITECT_VAULT_ENTRY_PUZZLE,
-                    GAME_STATE_ARCHITECT_VAULT_GAUNTLET,
-                    GAME_STATE_ARCHITECT_VAULT_EXTRACTION
-                ]
-                if is_player_control_state_for_keyup:
-                    if not self.game_controller.paused and self.game_controller.player and self.game_controller.player.alive:
-                        if event.key == pygame.K_UP: # Stop thrust when K_UP is released
-                            if hasattr(self.game_controller.player_actions, 'stop_moving_forward_on_key_up'):
-                                self.game_controller.player_actions.stop_moving_forward_on_key_up()
+            # REMOVED KEYUP handling for K_UP to stop movement.
+            # The player now continues moving forward after K_UP is pressed, until K_DOWN is pressed.
 
         # --- Continuous Key Presses (Handled every frame, outside the event loop for smooth actions) ---
-        # Check if player exists, is alive, and game is not paused
         if not self.game_controller.paused and self.game_controller.player and self.game_controller.player.alive:
-            # States where continuous player actions (rotation, shooting) are allowed
             is_active_player_control_state_continuous = current_game_state in [
                 GAME_STATE_PLAYING,
                 GAME_STATE_BONUS_LEVEL_PLAYING,
-                GAME_STATE_ARCHITECT_VAULT_ENTRY_PUZZLE, # Allow rotation, but shooting might be disabled by game logic
+                GAME_STATE_ARCHITECT_VAULT_ENTRY_PUZZLE,
                 GAME_STATE_ARCHITECT_VAULT_GAUNTLET,
                 GAME_STATE_ARCHITECT_VAULT_EXTRACTION
             ]
 
             if is_active_player_control_state_continuous:
-                # Player rotation (delegated to player_actions)
                 if hasattr(self.game_controller.player_actions, 'handle_continuous_input'):
                     self.game_controller.player_actions.handle_continuous_input(keys, current_time)
 
-                # Player shooting (delegated to player_actions)
-                # Shooting is usually only allowed in combat states, not puzzle states
                 can_shoot_in_current_state = current_game_state in [
                     GAME_STATE_PLAYING,
                     GAME_STATE_BONUS_LEVEL_PLAYING,
