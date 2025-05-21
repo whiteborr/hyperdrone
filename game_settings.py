@@ -1,5 +1,3 @@
-# game_settings.py
-
 # ==========================
 # General Settings
 # ==========================
@@ -22,6 +20,8 @@ BLACK = (0, 0, 0)
 BLUE = (0, 100, 255)
 CYAN = (0, 255, 255)
 DARK_RED = (100, 0, 0)
+DARK_GREY = (50, 50, 50)
+DARK_PURPLE = (40, 0, 70)
 ELECTRIC_BLUE = (0, 128, 255)
 GOLD = (255, 215, 0)
 GREEN = (0, 255, 0)
@@ -35,6 +35,9 @@ RED = (255, 0, 0)
 WHITE = (255, 255, 255)
 YELLOW = (255, 255, 0)
 PHANTOM_CLOAK_ALPHA_SETTING = 70
+ARCHITECT_VAULT_BG_COLOR = (20, 0, 30) # Dark, ancient tech feel
+ARCHITECT_VAULT_WALL_COLOR = (150, 120, 200) # Glowing purple/tech
+ARCHITECT_VAULT_ACCENT_COLOR = GOLD # For highlights, matching Gamma Fragment
 
 # ==========================
 # Player Settings
@@ -119,19 +122,27 @@ WEAPON_MODE_ICONS = {
 # ==========================
 ENEMY_SPEED = 1.5
 ENEMY_HEALTH = 100
-ENEMY_COLOR = RED
+ENEMY_COLOR = RED # Default enemy color
 ENEMY_BULLET_SPEED = 5
 ENEMY_BULLET_COOLDOWN = 1500
 ENEMY_BULLET_LIFETIME = 75
 ENEMY_BULLET_COLOR = (255, 100, 0)
 ENEMY_BULLET_DAMAGE = 10
 
+# Architect's Vault Prototype Drone Settings
+PROTOTYPE_DRONE_HEALTH = 150
+PROTOTYPE_DRONE_SPEED = 2.0
+PROTOTYPE_DRONE_COLOR = (200, 50, 250) # Distinct purple/magenta
+PROTOTYPE_DRONE_SHOOT_COOLDOWN = 1200
+PROTOTYPE_DRONE_BULLET_SPEED = 6
+PROTOTYPE_DRONE_SPRITE_PATH = "assets/drones/prototype_enemy.png" # Placeholder path
+
 # ==========================
 # Power-up Settings
 # ==========================
 POWERUP_SIZE = TILE_SIZE // 3
 POWERUP_SPAWN_CHANCE = 0.15
-MAX_POWERUPS_ON_SCREEN = 1
+MAX_POWERUPS_ON_SCREEN = 1 # For regular levels
 WEAPON_UPGRADE_ITEM_LIFETIME = 15000
 POWERUP_ITEM_LIFETIME = 12000
 
@@ -143,47 +154,48 @@ POWERUP_TYPES = {
 SHIELD_POWERUP_DURATION = POWERUP_TYPES["shield"]["duration"]
 SPEED_BOOST_POWERUP_DURATION = POWERUP_TYPES["speed_boost"]["duration"]
 
+
 # ==========================
-# Secret Blueprint Settings
+# Core Fragment & Architect's Vault Settings
 # ==========================
-TOTAL_CORE_FRAGMENTS_NEEDED = 3 # How many unique fragments to collect for the bonus
+TOTAL_CORE_FRAGMENTS_NEEDED = 3
 
 CORE_FRAGMENT_DETAILS = {
-    "fragment_01": {
-        "id": "cf_alpha", # Unique ID for this fragment
+    "fragment_alpha": { # Changed key to match cf_alpha
+        "id": "cf_alpha",
         "name": "Alpha Core Fragment",
-        "icon_filename": "core_fragment_alpha.png", # Place in assets/images/collectibles/ or assets/drones/
+        "icon_filename": "core_fragment_alpha.png",
         "description": "A corrupted fragment, pulses with unstable energy.",
-        "spawn_info": {
-            "level": 1, # Level this fragment can be found in
-            # IMPORTANT: Update these tile_x, tile_y to valid hidden spots in your levels
-            "tile_x": 2,# Replace with actual X coordinate (e.g., from your console print)
-            "tile_y": 8 # Replace with actual Y coordinate (e.g., from your console print)
-        }
+        "spawn_info": {"level": 1}, # Spawn location handled dynamically in game.py
+        "buff": {"type": "speed", "value": 1.1} # Example: 10% speed boost
     },
-    "fragment_02": {
+    "fragment_beta": { # Changed key to match cf_beta
         "id": "cf_beta",
         "name": "Beta Core Fragment",
         "icon_filename": "core_fragment_beta.png",
         "description": "This piece hums with a strange, alien resonance.",
-        "spawn_info": {
-            "level": 2,
-            "tile_x": 2, # Replace with actual X coordinate for Level 2
-            "tile_y": 8  # Replace with actual Y coordinate for Level 2
-        }
+        "spawn_info": {"level": 2},
+        "buff": {"type": "damage", "value": 1.1} # Example: 10% damage boost
     },
-    "fragment_03": {
+    "fragment_gamma": { # Changed key to match cf_gamma
         "id": "cf_gamma",
         "name": "Gamma Core Fragment",
         "icon_filename": "core_fragment_gamma.png",
-        "description": "Seems to be a critical processing unit, heavily damaged.",
-        "spawn_info": {
-            "level": 3,
-            "tile_x": 2,# Replace with actual X coordinate for Level 3
-            "tile_y": 8 # Replace with actual Y coordinate for Level 3
-        }
+        "description": "Seems to be a critical processing unit heavily damaged.",
+        "spawn_info": {"level": 3},
+        "buff": {"type": "shield_regen_rate", "value": 0.5},
+        "buff_alt": {"type": "damage_reduction", "value": 0.1} # Player takes 10% less damage
     }
 }
+
+ARCHITECT_VAULT_EXTRACTION_TIMER_MS = 90000 # 90 seconds
+ARCHITECT_VAULT_GAUNTLET_WAVES = 3
+ARCHITECT_VAULT_DRONES_PER_WAVE = [3, 4, 5] # Number of prototype drones per wave
+
+# Architect's Vault Reward
+# This could be a new drone ID, an upgrade ID, or a lore codex entry ID
+ARCHITECT_REWARD_BLUEPRINT_ID = "DRONE_ARCHITECT_X" # Example ID for a new drone
+ARCHITECT_REWARD_LORE_ID = "lore_architect_origin"
 
 # ==========================
 # Miscellaneous
@@ -192,6 +204,7 @@ LEVEL_TIMER_DURATION = 150000
 LEADERBOARD_MAX_ENTRIES = 10
 LEADERBOARD_FILE_NAME = "leaderboard.json"
 
+# Game States
 GAME_STATE_MAIN_MENU = "main_menu"
 GAME_STATE_PLAYING = "playing"
 GAME_STATE_GAME_OVER = "game_over"
@@ -199,10 +212,19 @@ GAME_STATE_LEADERBOARD = "leaderboard_display"
 GAME_STATE_ENTER_NAME = "enter_name"
 GAME_STATE_SETTINGS = "settings_menu"
 GAME_STATE_DRONE_SELECT = "drone_select_menu"
-# New Game States for Bonus Level
-GAME_STATE_BONUS_LEVEL_TRANSITION = "bonus_level_transition"
+
+# Existing Bonus Level States (might be deprecated or used for simpler bonus)
+GAME_STATE_BONUS_LEVEL_TRANSITION = "bonus_level_transition" # Could be used for Architect's Vault intro
 GAME_STATE_BONUS_LEVEL_START = "bonus_level_start"
 GAME_STATE_BONUS_LEVEL_PLAYING = "bonus_level_playing"
+
+# New Architect's Vault Game States
+GAME_STATE_ARCHITECT_VAULT_INTRO = "architect_vault_intro"
+GAME_STATE_ARCHITECT_VAULT_ENTRY_PUZZLE = "architect_vault_entry_puzzle"
+GAME_STATE_ARCHITECT_VAULT_GAUNTLET = "architect_vault_gauntlet"
+GAME_STATE_ARCHITECT_VAULT_EXTRACTION = "architect_vault_extraction"
+GAME_STATE_ARCHITECT_VAULT_SUCCESS = "architect_vault_success"
+GAME_STATE_ARCHITECT_VAULT_FAILURE = "architect_vault_failure"
 
 
 try:
@@ -213,58 +235,44 @@ except ImportError:
     PHANTOM_CLOAK_COOLDOWN_MS = 15000
 
 DEFAULT_SETTINGS = {
-    "WIDTH": WIDTH,
-    "HEIGHT": HEIGHT,
-    "BOTTOM_PANEL_HEIGHT": BOTTOM_PANEL_HEIGHT,
-    "GAME_PLAY_AREA_HEIGHT": GAME_PLAY_AREA_HEIGHT,
-    "PLAYER_MAX_HEALTH": PLAYER_MAX_HEALTH,
-    "PLAYER_LIVES": PLAYER_LIVES,
-    "PLAYER_SPEED": PLAYER_SPEED,
-    "ROTATION_SPEED": ROTATION_SPEED,
-    "INITIAL_WEAPON_MODE": INITIAL_WEAPON_MODE,
-    "WEAPON_MODES_SEQUENCE": WEAPON_MODES_SEQUENCE,
-    "WEAPON_MODE_NAMES": WEAPON_MODE_NAMES,
-    "PLAYER_BULLET_SPEED": PLAYER_BULLET_SPEED,
-    "PLAYER_BULLET_LIFETIME": PLAYER_BULLET_LIFETIME,
-    "PLAYER_DEFAULT_BULLET_SIZE": PLAYER_DEFAULT_BULLET_SIZE,
+    "WIDTH": WIDTH, "HEIGHT": HEIGHT, "FPS": FPS,
+    "BOTTOM_PANEL_HEIGHT": BOTTOM_PANEL_HEIGHT, "GAME_PLAY_AREA_HEIGHT": GAME_PLAY_AREA_HEIGHT,
+    "TILE_SIZE": TILE_SIZE, "MAZE_ROWS": MAZE_ROWS,
+    "PLAYER_MAX_HEALTH": PLAYER_MAX_HEALTH, "PLAYER_LIVES": PLAYER_LIVES,
+    "PLAYER_SPEED": PLAYER_SPEED, "ROTATION_SPEED": ROTATION_SPEED,
+    "PLAYER_BULLET_COLOR": PLAYER_BULLET_COLOR, "PLAYER_BULLET_SPEED": PLAYER_BULLET_SPEED,
+    "PLAYER_BULLET_LIFETIME": PLAYER_BULLET_LIFETIME, "PLAYER_DEFAULT_BULLET_SIZE": PLAYER_DEFAULT_BULLET_SIZE,
     "PLAYER_BIG_BULLET_SIZE": PLAYER_BIG_BULLET_SIZE,
-    "PLAYER_BASE_SHOOT_COOLDOWN": PLAYER_BASE_SHOOT_COOLDOWN,
-    "PLAYER_RAPID_FIRE_COOLDOWN": PLAYER_RAPID_FIRE_COOLDOWN,
-    "PLAYER_BULLET_COLOR": PLAYER_BULLET_COLOR,
-    "BOUNCING_BULLET_MAX_BOUNCES": BOUNCING_BULLET_MAX_BOUNCES,
-    "PIERCING_BULLET_MAX_PIERCES": PIERCING_BULLET_MAX_PIERCES,
-    "MISSILE_SPEED": MISSILE_SPEED,
-    "MISSILE_LIFETIME": MISSILE_LIFETIME,
-    "MISSILE_COOLDOWN": MISSILE_COOLDOWN,
-    "MISSILE_DAMAGE": MISSILE_DAMAGE,
-    "MISSILE_TURN_RATE": MISSILE_TURN_RATE,
-    "LIGHTNING_COLOR": LIGHTNING_COLOR,
-    "LIGHTNING_DAMAGE": LIGHTNING_DAMAGE,
-    "LIGHTNING_LIFETIME": LIGHTNING_LIFETIME,
-    "LIGHTNING_COOLDOWN": LIGHTNING_COOLDOWN,
-    "LIGHTNING_ZAP_RANGE": LIGHTNING_ZAP_RANGE,
-    "ENEMY_SPEED": ENEMY_SPEED,
-    "ENEMY_HEALTH": ENEMY_HEALTH,
-    "LEVEL_TIMER_DURATION": LEVEL_TIMER_DURATION,
-    "POWERUP_TYPES": POWERUP_TYPES,
-    "SHIELD_POWERUP_DURATION": SHIELD_POWERUP_DURATION,
-    "SPEED_BOOST_POWERUP_DURATION": SPEED_BOOST_POWERUP_DURATION,
-    "PHANTOM_CLOAK_DURATION_MS": PHANTOM_CLOAK_DURATION_MS,
-    "PHANTOM_CLOAK_COOLDOWN_MS": PHANTOM_CLOAK_COOLDOWN_MS,
-    "PHANTOM_CLOAK_ALPHA": PHANTOM_CLOAK_ALPHA_SETTING,
-    "TILE_SIZE": TILE_SIZE,
-    "TOTAL_CORE_FRAGMENTS_NEEDED": TOTAL_CORE_FRAGMENTS_NEEDED,
-    "CORE_FRAGMENT_DETAILS": CORE_FRAGMENT_DETAILS,
-    "GAME_STATE_MAIN_MENU": GAME_STATE_MAIN_MENU,
-    "GAME_STATE_PLAYING": GAME_STATE_PLAYING,
-    "GAME_STATE_GAME_OVER": GAME_STATE_GAME_OVER,
-    "GAME_STATE_LEADERBOARD": GAME_STATE_LEADERBOARD,
-    "GAME_STATE_ENTER_NAME": GAME_STATE_ENTER_NAME,
-    "GAME_STATE_SETTINGS": GAME_STATE_SETTINGS,
+    "PLAYER_BASE_SHOOT_COOLDOWN": PLAYER_BASE_SHOOT_COOLDOWN, "PLAYER_RAPID_FIRE_COOLDOWN": PLAYER_RAPID_FIRE_COOLDOWN,
+    "BOUNCING_BULLET_MAX_BOUNCES": BOUNCING_BULLET_MAX_BOUNCES, "PIERCING_BULLET_MAX_PIERCES": PIERCING_BULLET_MAX_PIERCES,
+    "MISSILE_COLOR": MISSILE_COLOR, "MISSILE_SPEED": MISSILE_SPEED, "MISSILE_LIFETIME": MISSILE_LIFETIME,
+    "MISSILE_SIZE": MISSILE_SIZE, "MISSILE_TURN_RATE": MISSILE_TURN_RATE, "MISSILE_COOLDOWN": MISSILE_COOLDOWN, "MISSILE_DAMAGE": MISSILE_DAMAGE,
+    "LIGHTNING_COLOR": LIGHTNING_COLOR, "LIGHTNING_DAMAGE": LIGHTNING_DAMAGE, "LIGHTNING_LIFETIME": LIGHTNING_LIFETIME,
+    "LIGHTNING_COOLDOWN": LIGHTNING_COOLDOWN, "LIGHTNING_ZAP_RANGE": LIGHTNING_ZAP_RANGE,
+    "INITIAL_WEAPON_MODE": INITIAL_WEAPON_MODE, "WEAPON_MODES_SEQUENCE": WEAPON_MODES_SEQUENCE, "WEAPON_MODE_NAMES": WEAPON_MODE_NAMES,
+    "ENEMY_SPEED": ENEMY_SPEED, "ENEMY_HEALTH": ENEMY_HEALTH, "ENEMY_COLOR": ENEMY_COLOR,
+    "ENEMY_BULLET_SPEED": ENEMY_BULLET_SPEED, "ENEMY_BULLET_COOLDOWN": ENEMY_BULLET_COOLDOWN,
+    "ENEMY_BULLET_LIFETIME": ENEMY_BULLET_LIFETIME, "ENEMY_BULLET_COLOR": ENEMY_BULLET_COLOR, "ENEMY_BULLET_DAMAGE": ENEMY_BULLET_DAMAGE,
+    "PROTOTYPE_DRONE_HEALTH": PROTOTYPE_DRONE_HEALTH, "PROTOTYPE_DRONE_SPEED": PROTOTYPE_DRONE_SPEED, "PROTOTYPE_DRONE_COLOR": PROTOTYPE_DRONE_COLOR,
+    "PROTOTYPE_DRONE_SHOOT_COOLDOWN": PROTOTYPE_DRONE_SHOOT_COOLDOWN, "PROTOTYPE_DRONE_BULLET_SPEED": PROTOTYPE_DRONE_BULLET_SPEED,
+    "PROTOTYPE_DRONE_SPRITE_PATH": PROTOTYPE_DRONE_SPRITE_PATH,
+    "POWERUP_SIZE": POWERUP_SIZE, "POWERUP_SPAWN_CHANCE": POWERUP_SPAWN_CHANCE, "MAX_POWERUPS_ON_SCREEN": MAX_POWERUPS_ON_SCREEN,
+    "WEAPON_UPGRADE_ITEM_LIFETIME": WEAPON_UPGRADE_ITEM_LIFETIME, "POWERUP_ITEM_LIFETIME": POWERUP_ITEM_LIFETIME,
+    "POWERUP_TYPES": POWERUP_TYPES, "SHIELD_POWERUP_DURATION": SHIELD_POWERUP_DURATION, "SPEED_BOOST_POWERUP_DURATION": SPEED_BOOST_POWERUP_DURATION,
+    "TOTAL_CORE_FRAGMENTS_NEEDED": TOTAL_CORE_FRAGMENTS_NEEDED, "CORE_FRAGMENT_DETAILS": CORE_FRAGMENT_DETAILS,
+    "ARCHITECT_VAULT_EXTRACTION_TIMER_MS": ARCHITECT_VAULT_EXTRACTION_TIMER_MS,
+    "ARCHITECT_VAULT_GAUNTLET_WAVES": ARCHITECT_VAULT_GAUNTLET_WAVES, "ARCHITECT_VAULT_DRONES_PER_WAVE": ARCHITECT_VAULT_DRONES_PER_WAVE,
+    "ARCHITECT_REWARD_BLUEPRINT_ID": ARCHITECT_REWARD_BLUEPRINT_ID, "ARCHITECT_REWARD_LORE_ID": ARCHITECT_REWARD_LORE_ID,
+    "LEVEL_TIMER_DURATION": LEVEL_TIMER_DURATION, "LEADERBOARD_MAX_ENTRIES": LEADERBOARD_MAX_ENTRIES, "LEADERBOARD_FILE_NAME": LEADERBOARD_FILE_NAME,
+    "PHANTOM_CLOAK_DURATION_MS": PHANTOM_CLOAK_DURATION_MS, "PHANTOM_CLOAK_COOLDOWN_MS": PHANTOM_CLOAK_COOLDOWN_MS, "PHANTOM_CLOAK_ALPHA": PHANTOM_CLOAK_ALPHA_SETTING,
+    "GAME_STATE_MAIN_MENU": GAME_STATE_MAIN_MENU, "GAME_STATE_PLAYING": GAME_STATE_PLAYING, "GAME_STATE_GAME_OVER": GAME_STATE_GAME_OVER,
+    "GAME_STATE_LEADERBOARD": GAME_STATE_LEADERBOARD, "GAME_STATE_ENTER_NAME": GAME_STATE_ENTER_NAME, "GAME_STATE_SETTINGS": GAME_STATE_SETTINGS,
     "GAME_STATE_DRONE_SELECT": GAME_STATE_DRONE_SELECT,
-    "GAME_STATE_BONUS_LEVEL_TRANSITION": GAME_STATE_BONUS_LEVEL_TRANSITION,
-    "GAME_STATE_BONUS_LEVEL_START": GAME_STATE_BONUS_LEVEL_START,
-    "GAME_STATE_BONUS_LEVEL_PLAYING": GAME_STATE_BONUS_LEVEL_PLAYING,
+    "GAME_STATE_BONUS_LEVEL_TRANSITION": GAME_STATE_BONUS_LEVEL_TRANSITION, "GAME_STATE_BONUS_LEVEL_START": GAME_STATE_BONUS_LEVEL_START, "GAME_STATE_BONUS_LEVEL_PLAYING": GAME_STATE_BONUS_LEVEL_PLAYING,
+    "GAME_STATE_ARCHITECT_VAULT_INTRO": GAME_STATE_ARCHITECT_VAULT_INTRO, "GAME_STATE_ARCHITECT_VAULT_ENTRY_PUZZLE": GAME_STATE_ARCHITECT_VAULT_ENTRY_PUZZLE,
+    "GAME_STATE_ARCHITECT_VAULT_GAUNTLET": GAME_STATE_ARCHITECT_VAULT_GAUNTLET, "GAME_STATE_ARCHITECT_VAULT_EXTRACTION": GAME_STATE_ARCHITECT_VAULT_EXTRACTION,
+    "GAME_STATE_ARCHITECT_VAULT_SUCCESS": GAME_STATE_ARCHITECT_VAULT_SUCCESS, "GAME_STATE_ARCHITECT_VAULT_FAILURE": GAME_STATE_ARCHITECT_VAULT_FAILURE,
+    "ARCHITECT_VAULT_BG_COLOR": ARCHITECT_VAULT_BG_COLOR, "ARCHITECT_VAULT_WALL_COLOR": ARCHITECT_VAULT_WALL_COLOR, "ARCHITECT_VAULT_ACCENT_COLOR": ARCHITECT_VAULT_ACCENT_COLOR,
 }
 
 SETTINGS_MODIFIED = False
@@ -277,9 +285,10 @@ def set_game_setting(key, value):
         SETTINGS_MODIFIED = any(
             _CURRENT_GAME_SETTINGS[k] != v for k, v in DEFAULT_SETTINGS.items() if k in _CURRENT_GAME_SETTINGS
         )
-        if key in globals():
+        if key in globals(): # Also update the global variable if it exists
             globals()[key] = value
-            if key in {"HEIGHT", "BOTTOM_PANEL_HEIGHT"}:
+            # Special handling for dynamically calculated globals
+            if key in {"HEIGHT", "BOTTOM_PANEL_HEIGHT", "TILE_SIZE"}: # Added TILE_SIZE
                 globals()["GAME_PLAY_AREA_HEIGHT"] = get_game_setting("HEIGHT") - get_game_setting("BOTTOM_PANEL_HEIGHT")
                 globals()["MAZE_ROWS"] = globals()["GAME_PLAY_AREA_HEIGHT"] // get_game_setting("TILE_SIZE")
             elif key == "PLAYER_BULLET_SPEED":
@@ -290,23 +299,30 @@ def set_game_setting(key, value):
         print(f"Warning: Attempted to set an unknown game setting '{key}'.")
 
 def get_game_setting(key):
+    # Prioritize _CURRENT_GAME_SETTINGS, then globals (if somehow directly modified), then DEFAULT_SETTINGS
     if key in _CURRENT_GAME_SETTINGS:
         return _CURRENT_GAME_SETTINGS[key]
-    if key in globals():
+    if key in globals(): # Should ideally not be needed if set_game_setting is always used
+        # print(f"Debug: get_game_setting found '{key}' in globals().")
         return globals()[key]
+    # print(f"Debug: get_game_setting falling back to DEFAULT_SETTINGS for '{key}'.")
     return DEFAULT_SETTINGS.get(key)
 
+# Initialize global scope with default settings
 for key, value in DEFAULT_SETTINGS.items():
-    if key not in globals():
+    if key not in globals(): # Ensure we don't overwrite existing globals like functions
         globals()[key] = value
 
+# Recalculate dependent globals after all defaults are set
 GAME_PLAY_AREA_HEIGHT = get_game_setting("HEIGHT") - get_game_setting("BOTTOM_PANEL_HEIGHT")
 MAZE_ROWS = GAME_PLAY_AREA_HEIGHT // get_game_setting("TILE_SIZE")
-if get_game_setting("PLAYER_BULLET_SPEED") is not None:
+if get_game_setting("PLAYER_BULLET_SPEED") is not None: # Check for None before arithmetic
     MISSILE_SPEED = get_game_setting("PLAYER_BULLET_SPEED") * 0.8
-if get_game_setting("PLAYER_BULLET_LIFETIME") is not None:
+if get_game_setting("PLAYER_BULLET_LIFETIME") is not None: # Check for None
     MISSILE_LIFETIME = get_game_setting("PLAYER_BULLET_LIFETIME") * 8
 
+# Ensure complex structures are properly initialized in globals if not already
+# This is mostly for safety, as the loop above should handle them.
 if 'WEAPON_MODES_SEQUENCE' not in globals() and 'WEAPON_MODES_SEQUENCE' in DEFAULT_SETTINGS:
     globals()['WEAPON_MODES_SEQUENCE'] = DEFAULT_SETTINGS['WEAPON_MODES_SEQUENCE']
 if 'WEAPON_MODE_NAMES' not in globals() and 'WEAPON_MODE_NAMES' in DEFAULT_SETTINGS:
@@ -315,3 +331,4 @@ if 'POWERUP_TYPES' not in globals() and 'POWERUP_TYPES' in DEFAULT_SETTINGS:
     globals()['POWERUP_TYPES'] = DEFAULT_SETTINGS['POWERUP_TYPES']
 if 'CORE_FRAGMENT_DETAILS' not in globals() and 'CORE_FRAGMENT_DETAILS' in DEFAULT_SETTINGS:
     globals()['CORE_FRAGMENT_DETAILS'] = DEFAULT_SETTINGS['CORE_FRAGMENT_DETAILS']
+
