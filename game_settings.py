@@ -164,7 +164,7 @@ PROTOTYPE_DRONE_SPEED = 2.0
 PROTOTYPE_DRONE_COLOR = MAGENTA # Distinct color
 PROTOTYPE_DRONE_SHOOT_COOLDOWN = 1200
 PROTOTYPE_DRONE_BULLET_SPEED = 6
-PROTOTYPE_DRONE_SPRITE_PATH = "assets/drones/prototype_enemy.png" # Path to its sprite
+PROTOTYPE_DRONE_SPRITE_PATH = "assets/images/drones/prototype_enemy.png" # Path to its sprite
 
 # ==========================
 # Power-up & Collectible Settings

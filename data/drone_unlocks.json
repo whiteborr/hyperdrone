@@ -1,6 +1,6 @@
 {
   "unlocked_drones": [
-    "ORIGINAL_DRONE",
+    "DRONE",
     "VANTIS",
     "RHINOX",
     "STRIX",
@@ -8,10 +8,10 @@
     "PHANTOM",
     "ZEPHYR"
   ],
-  "selected_drone": "ORIGINAL_DRONE",
+  "selected_drone": "VANTIS",
   "player_level": 1,
   "bosses_defeated": [],
-  "player_cores": 30,
+  "player_cores": 40,
   "collected_core_fragments": [
     "cf_alpha"
   ],

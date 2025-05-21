@@ -198,9 +198,9 @@ class Drone(BaseDrone):
     def rotate(self, direction, rotation_speed_override=None):
         effective_rotation_speed = rotation_speed_override if rotation_speed_override is not None else self.rotation_speed
         if direction == "left":  # Turn Counter-Clockwise
-            self.angle += effective_rotation_speed
-        elif direction == "right":  # Turn Clockwise
             self.angle -= effective_rotation_speed
+        elif direction == "right":  # Turn Clockwise
+            self.angle += effective_rotation_speed
         self.angle %= 360
 
     def handle_input(self, keys): # Usually called by EventManager or GameController

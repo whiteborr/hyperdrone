@@ -85,36 +85,11 @@ class UIManager:
     def _load_ui_assets(self):
         """Loads UI-specific assets like icons and background images."""
         # Load Ring Icon
-        try:
-            # Corrected path assuming standard project structure
-            ring_icon_path = os.path.join("assets", "images", "collectibles", "ring_ui_icon.png")
-            if not os.path.exists(ring_icon_path): # Try an alternative common location if first fails
-                ring_icon_path = os.path.join("assets", "images", "ring_ui_icon.png")
-
-            if os.path.exists(ring_icon_path):
-                raw_ring_icon = pygame.image.load(ring_icon_path).convert_alpha()
-                self.ui_assets["ring_icon"] = pygame.transform.smoothscale(raw_ring_icon, self.ui_icon_size_rings)
-                if self.ui_assets["ring_icon"]: # Create a desaturated/dimmed version for empty slots
-                    self.ui_assets["ring_icon_empty"] = self.ui_assets["ring_icon"].copy()
-                    self.ui_assets["ring_icon_empty"].set_alpha(80) # Make it semi-transparent
-            else:
-                print(f"UIManager: Warning - Ring UI icon not found at primary or alt path for 'ring_ui_icon.png'")
-        except pygame.error as e:
-            print(f"UIManager: Error loading ring UI icon: {e}")
-
+        ring_icon_path = os.path.join("assets", "images", "collectibles", "ring_ui_icon.png")
+        
         # Load Menu Background
-        try:
-            # Path to your main menu background image or logo
-            menu_bg_path = os.path.join("assets", "images", "ui", "menu_logo_hyperdrone.png") # Main path
-            if not os.path.exists(menu_bg_path): # Fallback path
-                 menu_bg_path = os.path.join("assets", "images", "menu_logo.png")
-
-            if os.path.exists(menu_bg_path):
-                 self.ui_assets["menu_background"] = pygame.image.load(menu_bg_path).convert_alpha()
-            else:
-                print(f"UIManager: Warning - Menu background image not found at primary or alt path for menu background.")
-        except pygame.error as e:
-            print(f"UIManager: Error loading menu background image: {e}")
+        menu_bg_path = os.path.join("assets", "images", "ui", "menu_logo_hyperdrone.png") # Main path
+        
 
     def update_player_life_icon_surface(self):
         """

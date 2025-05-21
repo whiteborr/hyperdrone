@@ -56,8 +56,8 @@ class DroneSystem:
         If the file doesn't exist or is corrupted, creates/returns default data.
         """
         default_data = {
-            "unlocked_drones": ["ORIGINAL_DRONE"], # ORIGINAL_DRONE is always unlocked
-            "selected_drone": "ORIGINAL_DRONE",
+            "unlocked_drones": ["DRONE"], # DRONE is always unlocked
+            "selected_drone": "DRONE",
             "player_level": 1,
             "bosses_defeated": [], # For future boss unlock conditions
             "player_cores": 0,
@@ -79,15 +79,15 @@ class DroneSystem:
                 for key, value in default_data.items():
                     data.setdefault(key, value) # Adds key with default value if key is missing
 
-                # Sanity check: Ensure ORIGINAL_DRONE is always in unlocked_drones.
-                if "ORIGINAL_DRONE" not in data.get("unlocked_drones", []):
-                    data.setdefault("unlocked_drones", []).append("ORIGINAL_DRONE")
+                # Sanity check: Ensure DRONE is always in unlocked_drones.
+                if "DRONE" not in data.get("unlocked_drones", []):
+                    data.setdefault("unlocked_drones", []).append("DRONE")
 
                 # Sanity check: If selected_drone is not valid or not unlocked, reset.
                 if data.get("selected_drone") not in data.get("unlocked_drones", []) or \
                    data.get("selected_drone") not in DRONE_DATA:
-                    print(f"DroneSystem: Warning - Previously selected drone '{data.get('selected_drone')}' is not valid/unlocked. Resetting to ORIGINAL_DRONE.")
-                    data["selected_drone"] = "ORIGINAL_DRONE"
+                    print(f"DroneSystem: Warning - Previously selected drone '{data.get('selected_drone')}' is not valid/unlocked. Resetting to DRONE.")
+                    data["selected_drone"] = "DRONE"
 
                 # Validate collected_core_fragments against current game definitions
                 if "collected_core_fragments" in data and CORE_FRAGMENT_DETAILS:
@@ -113,7 +113,7 @@ class DroneSystem:
 
     def get_selected_drone_id(self):
         """Returns the ID of the currently selected drone."""
-        return self.unlock_data.get("selected_drone", "ORIGINAL_DRONE")
+        return self.unlock_data.get("selected_drone", "DRONE")
 
     def set_selected_drone_id(self, drone_id):
         """Sets the selected drone if it's valid and unlocked, then saves."""
@@ -128,12 +128,12 @@ class DroneSystem:
     def get_drone_config(self, drone_id):
         """
         Returns the base configuration for a specific drone ID from DRONE_DATA.
-        Returns ORIGINAL_DRONE's config as a fallback if the ID is not found.
+        Returns DRONE's config as a fallback if the ID is not found.
         """
         config = DRONE_DATA.get(drone_id)
         if not config:
-            print(f"DroneSystem: Warning - Drone ID '{drone_id}' not found in DRONE_DATA. Returning ORIGINAL_DRONE config.")
-            return DRONE_DATA.get("ORIGINAL_DRONE", {}) # Ensure ORIGINAL_DRONE itself exists as a fallback
+            print(f"DroneSystem: Warning - Drone ID '{drone_id}' not found in DRONE_DATA. Returning DRONE config.")
+            return DRONE_DATA.get("DRONE", {}) # Ensure DRONE itself exists as a fallback
         return config
 
     def get_all_drone_ids_ordered(self):
@@ -414,7 +414,7 @@ class DroneSystem:
         print("DroneSystem: Resetting all player progress to default.")
         # Create a fresh default_data dictionary
         default_data = {
-            "unlocked_drones": ["ORIGINAL_DRONE"], "selected_drone": "ORIGINAL_DRONE",
+            "unlocked_drones": ["DRONE"], "selected_drone": "DRONE",
             "player_level": 1, "bosses_defeated": [], "player_cores": 0,
             "collected_core_fragments": [], "architect_vault_completed": False,
             "unlocked_blueprints": [], "unlocked_lore_codex_entries": []
@@ -438,8 +438,8 @@ if __name__ == '__main__':
             gs_file.write("ARCHITECT_REWARD_LORE_ID = 'TEST_LORE_ARCH'\n")
     if not os.path.exists("drone_configs.py"):
          with open("drone_configs.py", "w") as dc_file:
-            dc_file.write("DRONE_DATA = {'ORIGINAL_DRONE': {'name': 'Test Drone', 'base_stats': {'hp':100, 'speed':3, 'turn_speed':5, 'fire_rate_multiplier':1, 'bullet_damage_multiplier':1, 'special_ability':None}, 'unlock_condition':{'type':'default'}} }\n")
-            dc_file.write("DRONE_DISPLAY_ORDER = ['ORIGINAL_DRONE']\n")
+            dc_file.write("DRONE_DATA = {'DRONE': {'name': 'Test Drone', 'base_stats': {'hp':100, 'speed':3, 'turn_speed':5, 'fire_rate_multiplier':1, 'bullet_damage_multiplier':1, 'special_ability':None}, 'unlock_condition':{'type':'default'}} }\n")
+            dc_file.write("DRONE_DISPLAY_ORDER = ['DRONE']\n")
             dc_file.write("OMEGA_STAT_RANGES = {}\n")
 
 
