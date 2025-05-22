@@ -5,13 +5,13 @@ import math
 
 import pygame
 
-# Import from sibling modules within the 'hyperdrone_core' package (these are correct)
+# Import from sibling modules within the 'hyperdrone_core' package
 from .scene_manager import SceneManager
 from .event_manager import EventManager
 from .player_actions import PlayerActions
-from . import leaderboard # Allows leaderboard.load_scores(), etc.
+from . import leaderboard 
 
-# Import from other packages (CORRECTED: now absolute from project root)
+# Import from other packages
 from ui import UIManager 
 from entities import ( 
     PlayerDrone,
@@ -20,14 +20,13 @@ from entities import (
     WeaponUpgradeItem,
     ShieldItem,
     SpeedBoostItem,
-    CoreFragmentItem,
+    CoreFragmentItem, # Make sure this is imported
     LightningZap
 )
 from entities.maze import Maze 
 
 from drone_management import DroneSystem, DRONE_DATA, DRONE_DISPLAY_ORDER 
 
-# game_settings.py is assumed to be at the project root (this import is fine)
 import game_settings as gs
 from game_settings import (
     BLACK, WHITE, GOLD, CYAN, RED, YELLOW, GREEN, 
@@ -50,7 +49,6 @@ from game_settings import (
 
 class GameController:
     def __init__(self):
-        """Initializes the GameController and all its subsystems."""
         pygame.init() 
         pygame.mixer.init() 
 
@@ -70,7 +68,9 @@ class GameController:
 
         self.scene_manager = SceneManager(self) 
         self.player_actions = PlayerActions(self) 
-        self.event_manager = EventManager(self, self.scene_manager) 
+        # Pass self to EventManager, it might need access to GameController attributes/methods
+        self.event_manager = EventManager(self, self.scene_manager)
+        # Pass self to UIManager, it needs game_controller_ref for various things
         self.ui_manager = UIManager(self.screen, self.fonts, self, self.scene_manager, self.drone_system) 
 
         self.player = None 
@@ -96,6 +96,10 @@ class GameController:
         self.total_rings_per_level = 5 
         self.animating_rings = [] 
         self.ring_ui_target_pos = (0,0) 
+
+        # Attributes for Core Fragment Animation
+        self.animating_fragments = []
+        self.fragment_ui_target_positions = {} # Will be populated by UIManager
 
         self.all_enemies_killed_this_level = False 
         self.level_cleared_pending_animation = False 
@@ -129,7 +133,6 @@ class GameController:
         self.scene_manager.set_game_state(GAME_STATE_MAIN_MENU) 
 
     def _initialize_fonts(self): 
-        """Loads all fonts required by the UI."""
         font_configs = {
             "ui_text": (self.font_path_neuropol, 28), "ui_values": (self.font_path_neuropol, 30),
             "ui_emoji_general": (self.font_path_emoji, 32), "ui_emoji_small": (self.font_path_emoji, 20),
@@ -156,7 +159,6 @@ class GameController:
                 self.fonts[name] = pygame.font.Font(None, size) 
 
     def _initialize_menu_stars(self, num_stars=150): 
-        """Creates a list of star parameters for the menu background."""
         self.menu_stars = [] 
         for _ in range(num_stars): 
             x = random.randint(0, gs.get_game_setting("WIDTH")) 
@@ -166,7 +168,6 @@ class GameController:
             self.menu_stars.append([x, y, speed, size]) 
 
     def _initialize_settings_menu_items_data(self): 
-        """Defines the data structure for items in the settings menu."""
         self.settings_items_data = [
             {"label":"Base Max Health","key":"PLAYER_MAX_HEALTH","type":"numeric","min":50,"max":200,"step":10,"note":"Original Drone base, others vary"},
             {"label":"Starting Lives","key":"PLAYER_LIVES","type":"numeric","min":1,"max":9,"step":1},
@@ -196,7 +197,6 @@ class GameController:
         self.selected_setting_index = 0 
 
     def _create_fallback_image_surface(self, size=(200,200), text="?", color=(80,80,80), text_color=WHITE, font_key="large_text"): 
-        """Creates a fallback surface for drone images if they fail to load."""
         surface = pygame.Surface(size, pygame.SRCALPHA) 
         surface.fill(color) 
         pygame.draw.rect(surface, WHITE, surface.get_rect(), 2) 
@@ -211,7 +211,6 @@ class GameController:
         return surface 
 
     def _load_drone_main_display_images(self): 
-        """Pre-loads and caches larger preview images for the drone selection screen."""
         self.drone_main_display_cache = {} 
         display_size = (200, 200) 
 
@@ -238,7 +237,6 @@ class GameController:
             self.drone_main_display_cache[drone_id] = image_surface 
 
     def load_sfx(self): 
-        """Loads all sound effects."""
         sound_files = {
             'collect_ring': "collect_ring.wav", 'weapon_upgrade_collect': "collect_powerup.wav",
             'collect_fragment': "collect_fragment.wav", 'crash': "crash.wav",
@@ -263,7 +261,6 @@ class GameController:
                 print(f"GameController: Sound file not found for '{name}': {path}") 
 
     def play_sound(self, name, volume=0.7): 
-        """Plays a loaded sound effect by name."""
         if name in self.sounds and self.sounds[name]: 
             self.sounds[name].set_volume(volume) 
             self.sounds[name].play() 
@@ -289,7 +286,6 @@ class GameController:
         self.player_name_input_display_cache = "" 
 
     def initialize_game_session(self): 
-        """Sets up a new game or a new level within a game session."""
         self.level = 1 
         self.lives = gs.get_game_setting("PLAYER_LIVES") 
         self.score = 0 
@@ -330,12 +326,12 @@ class GameController:
         self.paused = False 
         self.player_name_input_display_cache = "" 
         self.animating_rings.clear() 
+        self.animating_fragments.clear() # Clear animating fragments too
 
         self._place_collectibles_for_level(initial_setup=True) 
         self._reset_level_timer_internal() 
 
     def initialize_architect_vault_session(self): 
-        """Initializes the game state for entering the Architect's Vault."""
         print("GameController: Initializing Architect's Vault session...") 
         self.maze = Maze(game_area_x_offset=0, maze_type="architect_vault") 
 
@@ -374,6 +370,7 @@ class GameController:
         self.enemies.empty() 
         self.rings.empty(); self.power_ups.empty(); self.core_fragments.empty() 
         self.architect_vault_terminals.empty() 
+        self.animating_fragments.clear() # Clear here as well
 
         self.architect_vault_current_phase = "intro" 
         self.architect_vault_phase_timer_start = pygame.time.get_ticks() 
@@ -422,12 +419,10 @@ class GameController:
         self.drone_system.mark_architect_vault_completed(False) 
 
     def handle_game_over_scene_entry(self): 
-        """Prepares data for the game over screen."""
         self.drone_system.set_player_level(self.level) 
         self.drone_system._save_unlocks() 
 
     def update(self): 
-        """Main update logic called every frame by the run loop."""
         current_game_state = self.scene_manager.get_current_state() 
         current_time = pygame.time.get_ticks() 
 
@@ -450,7 +445,6 @@ class GameController:
             self.scene_manager.update() 
 
     def _update_playing_state(self, current_time): 
-        """Update logic for the main gameplay state."""
         if not self.player or not self.maze: 
             print("GameController: Error - Player or Maze not initialized for PLAYING state.") 
             self.scene_manager.set_game_state(GAME_STATE_MAIN_MENU); return 
@@ -480,7 +474,7 @@ class GameController:
             for p_up in list(self.power_ups): 
                 if p_up.update(): p_up.kill() 
             for fragment in list(self.core_fragments): 
-                fragment.update() 
+                fragment.update() # Collectible's own update for lifetime etc.
 
             self._check_collisions_playing() 
 
@@ -488,6 +482,7 @@ class GameController:
                  if len(self.power_ups) < gs.get_game_setting("MAX_POWERUPS_ON_SCREEN"): 
                     self._try_spawn_powerup_item() 
 
+        # Update Ring Animations
         for ring_anim in list(self.animating_rings): 
             dx = ring_anim['target_pos'][0] - ring_anim['pos'][0] 
             dy = ring_anim['target_pos'][1] - ring_anim['pos'][1] 
@@ -499,14 +494,26 @@ class GameController:
             else: 
                 ring_anim['pos'][0] += (dx / dist) * ring_anim['speed'] 
                 ring_anim['pos'][1] += (dy / dist) * ring_anim['speed'] 
+        
+        # Update Fragment Animations
+        for frag_anim in list(self.animating_fragments):
+            dx = frag_anim['target_pos'][0] - frag_anim['pos'][0]
+            dy = frag_anim['target_pos'][1] - frag_anim['pos'][1]
+            dist = math.hypot(dx, dy)
+            if dist < frag_anim['speed']:
+                self.animating_fragments.remove(frag_anim)
+                # No displayed_collected_fragments counter, HUD updates from drone_system
+            else:
+                frag_anim['pos'][0] += (dx / dist) * frag_anim['speed']
+                frag_anim['pos'][1] += (dy / dist) * frag_anim['speed']
 
-        if self.level_cleared_pending_animation and not self.animating_rings: 
+
+        if self.level_cleared_pending_animation and not self.animating_rings and not self.animating_fragments: # Ensure all animations done
             self._prepare_for_next_level() 
             self.level_cleared_pending_animation = False 
 
 
     def _update_bonus_level_state(self, current_time): 
-        """Update logic for the bonus level state."""
         if not self.player or not self.player.alive: 
             self._end_bonus_level(completed=False) 
             return 
@@ -520,7 +527,6 @@ class GameController:
             return 
 
     def _update_architect_vault_state(self, current_time): 
-        """Update logic for various phases of the Architect's Vault."""
         if not self.player or not self.maze: 
             print("GameController: Error - Player or Maze not initialized for ARCHITECT_VAULT state.") 
             self.scene_manager.set_game_state(GAME_STATE_MAIN_MENU); return 
@@ -581,7 +587,6 @@ class GameController:
             self._check_collisions_architect_vault_combat() 
 
     def _check_collisions_playing(self): 
-        """Handles collisions for the standard gameplay state."""
         if not self.player or not self.player.alive: return 
 
         if not self.level_cleared_pending_animation: 
@@ -600,7 +605,7 @@ class GameController:
                 if anim_ring_surf: 
                     self.animating_rings.append({
                         'pos': list(ring_sprite.rect.center),
-                        'target_pos': self.ring_ui_target_pos,
+                        'target_pos': self.ring_ui_target_pos, # Target set by UIManager
                         'speed': 15, 'surface': anim_ring_surf
                     }) 
                 self._check_level_clear_condition() 
@@ -614,16 +619,36 @@ class GameController:
                 self.play_sound('weapon_upgrade_collect') 
                 self.score += 25 
 
-        collided_fragments = pygame.sprite.spritecollide(self.player, self.core_fragments, False, pygame.sprite.collide_rect_ratio(0.7)) 
-        for fragment in collided_fragments: 
-            if not fragment.collected and hasattr(fragment, 'apply_effect'): 
-                if fragment.apply_effect(self.player, self): 
-                    fragment.collected = True; fragment.kill() 
-                    self.play_sound('collect_fragment') 
-                    self.score += 100 
-                    if self.drone_system.are_all_core_fragments_collected(): 
-                        self.architect_vault_message = "All Core Fragments Acquired! Vault Access Imminent!" 
-                        self.architect_vault_message_timer = pygame.time.get_ticks() + 4000 
+        collided_fragments_sprites = pygame.sprite.spritecollide(self.player, self.core_fragments, True, pygame.sprite.collide_rect_ratio(0.7))
+        for fragment_sprite in collided_fragments_sprites: # Changed 'fragment' to 'fragment_sprite'
+            # The CoreFragmentItem itself handles the logic of notifying DroneSystem via apply_effect
+            if hasattr(fragment_sprite, 'apply_effect') and fragment_sprite.apply_effect(self.player, self):
+                # apply_effect now returns True if collection was successful
+                self.play_sound('collect_fragment')
+                self.score += 100
+
+                fragment_id = getattr(fragment_sprite, 'fragment_id', None)
+                if fragment_id and hasattr(self.ui_manager, 'get_scaled_fragment_icon'):
+                    icon_surface = self.ui_manager.get_scaled_fragment_icon(fragment_id)
+                    target_pos = self.fragment_ui_target_positions.get(fragment_id)
+
+                    if icon_surface and target_pos:
+                        self.animating_fragments.append({
+                            'pos': list(fragment_sprite.rect.center),
+                            'target_pos': target_pos,
+                            'speed': 12, # Animation speed for fragments
+                            'surface': icon_surface,
+                            'id': fragment_id 
+                        })
+                    else:
+                        if not icon_surface: print(f"GameCtrl: No icon surface for animating fragment {fragment_id}")
+                        if not target_pos: print(f"GameCtrl: No target_pos for animating fragment {fragment_id}")
+
+
+                if self.drone_system.are_all_core_fragments_collected(): 
+                    self.architect_vault_message = "All Core Fragments Acquired! Vault Access Imminent!" 
+                    self.architect_vault_message_timer = pygame.time.get_ticks() + 4000
+
 
         if self.player.alive: 
             player_projectiles = pygame.sprite.Group() 
@@ -672,7 +697,6 @@ class GameController:
 
 
     def _check_collisions_architect_vault_puzzle(self): 
-        """Handles collisions for the Architect's Vault puzzle phase (player vs terminals)."""
         if not self.player or not self.player.alive or not self.architect_vault_terminals: 
             return 
 
@@ -682,7 +706,6 @@ class GameController:
 
 
     def _check_collisions_architect_vault_combat(self): 
-        """Handles combat collisions within the Architect's Vault (similar to _check_collisions_playing)."""
         if not self.player or not self.player.alive: return 
 
         player_projectiles = pygame.sprite.Group(self.player.bullets_group, self.player.missiles_group, self.player.lightning_zaps_group) 
@@ -724,7 +747,6 @@ class GameController:
                 if not self.player.alive: break 
 
     def _handle_player_death_or_life_loss(self, reason=""): 
-        """Handles logic when player loses a life or timer runs out."""
         if self.player: self.player.reset_active_powerups() 
         self.lives -= 1 
         if self.lives <= 0: 
@@ -734,7 +756,6 @@ class GameController:
             self._reset_level_timer_internal() 
 
     def _check_level_clear_condition(self): 
-        """Checks if conditions to clear the current level are met."""
         if self.player and self.collected_rings >= self.total_rings_per_level and \
            not self.level_cleared_pending_animation: 
             self.player.moving_forward = False 
@@ -742,7 +763,6 @@ class GameController:
             print("Level clear condition met (rings). Pending animation.") 
 
     def _prepare_for_next_level(self, from_bonus_level_completion=False): 
-        """Sets up the game for the next level or transitions after bonus/vault."""
         if self.drone_system.are_all_core_fragments_collected() and \
            not self.drone_system.has_completed_architect_vault() and \
            not from_bonus_level_completion: 
@@ -779,6 +799,7 @@ class GameController:
         self._reset_level_timer_internal() 
         self.play_sound('level_up') 
         self.animating_rings.clear() 
+        self.animating_fragments.clear() # Clear here too
         if self.player: self.player.moving_forward = False 
 
         if not self.scene_manager.get_current_state().startswith("architect_vault"): 
@@ -786,7 +807,6 @@ class GameController:
 
 
     def _reset_player_after_death_internal(self): 
-        """Resets player's position and health after losing a life, without changing level."""
         if not self.player: return 
 
         new_player_pos = self._get_safe_spawn_point(TILE_SIZE * 0.8, TILE_SIZE * 0.8) 
@@ -809,15 +829,14 @@ class GameController:
         self.player._update_weapon_attributes() 
 
         self.animating_rings.clear() 
+        self.animating_fragments.clear() # Clear here as well
         self.level_cleared_pending_animation = False 
 
     def _reset_level_timer_internal(self): 
-        """Resets the timer for the current level."""
         self.level_timer_start_ticks = pygame.time.get_ticks() 
         self.level_time_remaining_ms = gs.get_game_setting("LEVEL_TIMER_DURATION") 
 
     def _end_bonus_level(self, completed=True): 
-        """Handles logic at the end of a bonus level."""
         print(f"GameController: Bonus Level Ended. Completed: {completed}") 
         if completed: 
             self.score += 500 
@@ -826,7 +845,6 @@ class GameController:
         self._prepare_for_next_level(from_bonus_level_completion=True) 
 
     def _get_safe_spawn_point(self, entity_width, entity_height): 
-        """Finds a random valid path cell center for spawning, avoiding walls."""
         if not self.maze: 
             print("GameController: Warning - Attempted to get spawn point without a maze.") 
             return (gs.get_game_setting("WIDTH") // 4, gs.get_game_setting("GAME_PLAY_AREA_HEIGHT") // 2) 
@@ -849,7 +867,6 @@ class GameController:
         return (first_abs_x, first_abs_y) 
 
     def _spawn_enemies_for_level(self): 
-        """Spawns enemies for the current regular level."""
         self.enemies.empty() 
         num_enemies = min(self.level + 1, 7) 
 
@@ -882,7 +899,6 @@ class GameController:
                                          sprite_path=regular_enemy_sprite)) 
 
     def _spawn_prototype_drones(self, count, far_from_player=False): 
-        """Spawns prototype drones for the Architect's Vault."""
         if not self.maze: return 
         
         enemy_shoot_sound = self.sounds.get('enemy_shoot') 
@@ -919,7 +935,6 @@ class GameController:
 
 
     def _spawn_architect_vault_terminals(self): 
-        """Spawns interactive terminals for the Architect's Vault entry puzzle."""
         self.architect_vault_terminals.empty() 
         if not self.maze or not CORE_FRAGMENT_DETAILS: return 
 
@@ -951,7 +966,6 @@ class GameController:
             self.architect_vault_terminals.add(terminal) 
 
     def _try_spawn_powerup_item(self): 
-        """Attempts to spawn a random power-up item (shield, speed, weapon upgrade) in a valid location."""
         if not self.maze: return 
 
         if not POWERUP_TYPES: 
@@ -991,7 +1005,6 @@ class GameController:
             self.power_ups.add(new_powerup) 
 
     def _place_collectibles_for_level(self, initial_setup=False): 
-        """Places rings, core fragments, and potentially initial power-ups for a level."""
         if not self.maze: return 
 
         path_cells_relative = self.maze.get_path_cells() 
@@ -1014,7 +1027,6 @@ class GameController:
 
 
     def _spawn_core_fragments_for_level_internal(self): 
-        """Spawns core fragments in REGULAR levels based on conditions (e.g., specific level)."""
         if not self.maze or not CORE_FRAGMENT_DETAILS: return 
 
         occupied_fragment_tiles_this_level = set() 
@@ -1037,7 +1049,6 @@ class GameController:
                     occupied_fragment_tiles_this_level.add(random_tile_coords_rel) 
 
     def _get_random_valid_fragment_tile_internal(self, existing_fragment_tiles_rel): 
-        """ Helper to find a random valid tile (relative grid coords) for fragment spawning, avoiding occupied ones."""
         if not self.maze or not self.maze.grid: return None 
         
         available_path_tiles_rel = [] 
@@ -1139,7 +1150,7 @@ class GameController:
                             if setting_key == "FULLSCREEN_MODE": 
                                 self.screen_flags = pygame.FULLSCREEN if gs.get_game_setting("FULLSCREEN_MODE") else 0 
                                 self.screen = pygame.display.set_mode((gs.get_game_setting("WIDTH"), gs.get_game_setting("HEIGHT")), self.screen_flags) 
-                        except ValueError: # This is line 1146
+                        except ValueError: 
                             gs.set_game_setting(setting_key, choices[0]) 
         elif key_event == pygame.K_ESCAPE: 
             self.play_sound('ui_select') 
@@ -1176,7 +1187,6 @@ class GameController:
             self.scene_manager.set_game_state(GAME_STATE_MAIN_MENU) 
 
     def submit_leaderboard_name(self, name_cache_from_event_manager): 
-        """Submits the player's name and score to the leaderboard."""
         if leaderboard.add_score(name_cache_from_event_manager, self.score, self.level): 
             self.play_sound('ui_confirm') 
         else: 
@@ -1185,11 +1195,9 @@ class GameController:
         self.scene_manager.set_game_state(GAME_STATE_LEADERBOARD) 
 
     def update_player_name_input_display(self, name_cache_from_event_manager): 
-        """Updates the cache used by UIManager to display the name being entered."""
         self.player_name_input_display_cache = name_cache_from_event_manager 
 
     def try_activate_vault_terminal(self, terminal_idx_pressed): 
-        """Logic for when player tries to activate a vault terminal."""
         if not (0 <= terminal_idx_pressed < len(self.architect_vault_puzzle_terminals_activated)): 
             print(f"GameController: Invalid terminal index {terminal_idx_pressed} attempted.") 
             return 
@@ -1225,7 +1233,8 @@ class GameController:
             if all(self.architect_vault_puzzle_terminals_activated): 
                 self.architect_vault_message = "All terminals active. Lockdown disengaged. Prepare for Gauntlet!" 
                 self.architect_vault_message_timer = pygame.time.get_ticks() + 4000 
-                self.scene_manager.set_game_state(GAME_STATE_ARCHITECT_VAUNTLET) 
+                # Corrected state name from GAME_STATE_ARCHITECT_VAUNTLET to GAME_STATE_ARCHITECT_VAULT_GAUNTLET
+                self.scene_manager.set_game_state(GAME_STATE_ARCHITECT_VAULT_GAUNTLET) 
         else: 
             self.architect_vault_message = f"Terminal {terminal_idx_pressed+1} requires {required_fragment_name}." 
             self.architect_vault_message_timer = pygame.time.get_ticks() + 3000 
@@ -1248,7 +1257,6 @@ class GameController:
 
 
     def unpause_and_set_state(self, new_state): 
-        """Helper to unpause the game and then change its state."""
         if self.paused: self.toggle_pause() 
         self.scene_manager.set_game_state(new_state) 
 
@@ -1259,7 +1267,6 @@ class GameController:
         sys.exit() 
 
     def _draw_game_world(self): 
-        """Draws the core game elements like maze, player, enemies, collectibles. Called by run()."""
         current_game_state = self.scene_manager.get_current_state() 
 
         if current_game_state.startswith("architect_vault"): 
@@ -1271,7 +1278,7 @@ class GameController:
 
         self.rings.draw(self.screen) 
         self.power_ups.draw(self.screen) 
-        self.core_fragments.draw(self.screen) 
+        self.core_fragments.draw(self.screen) # Draw the static collectibles
 
         if current_game_state == GAME_STATE_ARCHITECT_VAULT_ENTRY_PUZZLE: 
             self.architect_vault_terminals.draw(self.screen) 
@@ -1279,8 +1286,12 @@ class GameController:
         if self.enemies: self.enemies.draw(self.screen) 
         if self.player: self.player.draw(self.screen) 
 
+        # Note: Animating fragments and rings are drawn by UIManager.draw_gameplay_hud()
+        # to ensure they are on top of the HUD panel elements if necessary,
+        # or they can be drawn here if preferred to be under the HUD panel itself.
+        # The current UIManager code draws them.
+
     def run(self): 
-        """Main game loop."""
         current_fullscreen_setting = gs.get_game_setting("FULLSCREEN_MODE") 
         if self.screen_flags != (pygame.FULLSCREEN if current_fullscreen_setting else 0): 
             self.screen_flags = pygame.FULLSCREEN if current_fullscreen_setting else 0 
@@ -1295,7 +1306,7 @@ class GameController:
                current_game_state.startswith("architect_vault"): 
                 self._draw_game_world() 
 
-            self.ui_manager.draw_current_scene_ui() 
+            self.ui_manager.draw_current_scene_ui() # This will also draw animating fragments
 
             pygame.display.flip() 
             self.clock.tick(gs.get_game_setting("FPS"))
