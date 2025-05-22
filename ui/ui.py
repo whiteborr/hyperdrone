@@ -20,7 +20,7 @@ from game_settings import (
     GAME_STATE_ARCHITECT_VAULT_GAUNTLET, GAME_STATE_ARCHITECT_VAULT_EXTRACTION, #
     GAME_STATE_ARCHITECT_VAULT_SUCCESS, GAME_STATE_ARCHITECT_VAULT_FAILURE, #
     DEFAULT_SETTINGS, #
-    TOTAL_CORE_FRAGMENTS_NEEDED, CORE_FRAGMENT_DETAILS, #
+    TOTAL_CORE_FRAGMENTS_NEEDED, CORE_FRAGMENT_DETAILS, # Added CORE_FRAGMENT_DETAILS
     get_game_setting # Function from game_settings
 )
 
@@ -41,10 +41,18 @@ class UIManager: #
             "ring_icon": None, #
             "ring_icon_empty": None, #
             "menu_background": None, #
-            "current_drone_life_icon": None #
+            "current_drone_life_icon": None, #
+            "core_fragment_icons": {}, # To store icons for each fragment_id
+            "core_fragment_empty_icon": None, # Placeholder for uncollected fragments
         } #
         self.ui_icon_size_lives = (30, 30) #
         self.ui_icon_size_rings = (20, 20) #
+        self.ui_icon_size_fragments = (20, 20) # Size for fragment icons in HUD
+
+        # Store target positions for fragment animations
+        if hasattr(self.game_controller, 'fragment_ui_target_positions'):
+            self.game_controller.fragment_ui_target_positions = {}
+
 
         self._load_ui_assets() #
         self.update_player_life_icon_surface() #
@@ -83,6 +91,42 @@ class UIManager: #
         else: #
             print(f"UIManager: Menu background not found: {menu_bg_path}") #
             self.ui_assets["menu_background"] = None #
+
+        # Load Core Fragment Icons
+        fragment_empty_icon_path = os.path.join("assets", "images", "collectibles", "fragment_ui_icon_empty.png") # Example path
+        if os.path.exists(fragment_empty_icon_path):
+            try:
+                raw_frag_empty_icon = pygame.image.load(fragment_empty_icon_path).convert_alpha()
+                self.ui_assets["core_fragment_empty_icon"] = pygame.transform.smoothscale(raw_frag_empty_icon, self.ui_icon_size_fragments)
+            except pygame.error as e:
+                print(f"UIManager: Empty fragment icon not found: {fragment_empty_icon_path}. Error: {e}. Using fallback.")
+                self.ui_assets["core_fragment_empty_icon"] = self._create_fallback_icon_surface(self.ui_icon_size_fragments, "F", DARK_GREY, text_color=GREY)
+        else:
+            print(f"UIManager: Empty fragment icon not found: {fragment_empty_icon_path}. Using fallback.")
+            self.ui_assets["core_fragment_empty_icon"] = self._create_fallback_icon_surface(self.ui_icon_size_fragments, "F", DARK_GREY, text_color=GREY)
+
+        if CORE_FRAGMENT_DETAILS:
+            for frag_key, details in CORE_FRAGMENT_DETAILS.items():
+                frag_id = details.get("id")
+                icon_filename = details.get("icon_filename")
+                if frag_id and icon_filename:
+                    # Assuming icons are in "assets/images/collectibles/" like other collectibles
+                    icon_path = os.path.join("assets", "images", "collectibles", icon_filename)
+                    if os.path.exists(icon_path):
+                        try:
+                            raw_icon = pygame.image.load(icon_path).convert_alpha()
+                            self.ui_assets["core_fragment_icons"][frag_id] = pygame.transform.smoothscale(raw_icon, self.ui_icon_size_fragments)
+                        except pygame.error as e:
+                            print(f"UIManager: Error loading fragment icon for {frag_id} ('{icon_path}'): {e}. Using fallback.")
+                            self.ui_assets["core_fragment_icons"][frag_id] = self._create_fallback_icon_surface(self.ui_icon_size_fragments, "?", PURPLE)
+                    else:
+                        print(f"UIManager: Fragment icon not found for {frag_id}: {icon_path}. Using fallback.")
+                        self.ui_assets["core_fragment_icons"][frag_id] = self._create_fallback_icon_surface(self.ui_icon_size_fragments, frag_id[:1], PURPLE)
+                else:
+                     # Fallback for fragment details missing id or icon_filename
+                    if frag_id and frag_id not in self.ui_assets["core_fragment_icons"]:
+                         self.ui_assets["core_fragment_icons"][frag_id] = self._create_fallback_icon_surface(self.ui_icon_size_fragments, "!", DARK_PURPLE)
+
 
     def update_player_life_icon_surface(self): #
         selected_drone_id = self.drone_system.get_selected_drone_id() #
@@ -170,6 +214,9 @@ class UIManager: #
             self.draw_gameplay_hud() #
             if self.game_controller.paused: self.draw_pause_overlay() #
 
+    # ... (draw_main_menu, draw_drone_select_menu, etc. remain unchanged for this request)
+    # ... (ensure these methods are present in your actual file)
+    
     def draw_main_menu(self): #
         """Draws the main menu UI."""
         if self.ui_assets["menu_background"]: #
@@ -233,7 +280,6 @@ class UIManager: #
         title_rect = title_surf.get_rect(center=(WIDTH // 2, 70)) #
         self.screen.blit(title_surf, title_rect) #
 
-        # DRONE_DISPLAY_ORDER is imported from ..drone_management.drone_configs
         drone_options_ids = getattr(self.game_controller, 'drone_select_options', DRONE_DISPLAY_ORDER) #
         selected_preview_idx = getattr(self.game_controller, 'selected_drone_preview_index', 0) #
 
@@ -243,7 +289,6 @@ class UIManager: #
             return #
 
         current_drone_id = drone_options_ids[selected_preview_idx] #
-        # DRONE_DATA is imported from ..drone_management.drone_configs
         drone_config = self.drone_system.get_drone_config(current_drone_id) #
         drone_stats = self.drone_system.get_drone_stats(current_drone_id, is_in_architect_vault=False) #
         is_unlocked = self.drone_system.is_drone_unlocked(current_drone_id) #
@@ -513,6 +558,7 @@ class UIManager: #
             warning_bg.blit(warning_surf, (5,2)) #
             self.screen.blit(warning_bg, warning_bg.get_rect(center=(WIDTH//2, HEIGHT-35))) #
 
+
     def draw_gameplay_hud(self): #
         if not self.game_controller.player: return #
 
@@ -531,6 +577,7 @@ class UIManager: #
         value_font = self.fonts["ui_values"] #
         emoji_general_font = self.fonts["ui_emoji_general"] #
 
+        # --- Vitals Section (Left) ---
         vitals_x_start = h_padding #
         current_vitals_y = panel_y_start + panel_height - v_padding #
         vitals_section_width = int(WIDTH / 3.2) #
@@ -637,9 +684,11 @@ class UIManager: #
                     pygame.draw.rect(self.screen, powerup_bar_fill_color, (bar_start_x_powerup, powerup_bar_y_pos, bar_width_fill_powerup, bar_height)) #
                 pygame.draw.rect(self.screen, WHITE, (bar_start_x_powerup, powerup_bar_y_pos, bar_segment_width_powerup, bar_height), 1) #
 
+        # --- Collectibles Section (Right) ---
         collectibles_x_anchor = WIDTH - h_padding #
         current_collectibles_y = panel_y_start + panel_height - v_padding #
 
+        # Player Cores Display (Remains on the far right)
         cores_emoji_char = "💠" #
         cores_value_str = f" {self.drone_system.get_player_cores()}" #
         cores_icon_surf = self._render_text_safe(cores_emoji_char, "ui_emoji_general", GOLD) #
@@ -654,33 +703,77 @@ class UIManager: #
         self.screen.blit(cores_value_text_surf, (cores_start_x_draw + cores_icon_surf.get_width() + text_icon_spacing, cores_y_pos + (cores_display_height - cores_value_text_surf.get_height()) // 2)) #
         current_collectibles_y = cores_y_pos - element_spacing #
 
-        rings_y_pos_hud = current_collectibles_y #
+        # Fragment Icons Display (To the left of Cores)
+        fragment_icon_h = self.ui_icon_size_fragments[1]
+        fragment_y_pos_hud = current_collectibles_y - fragment_icon_h
+
+        # Define a fixed order for displaying fragments if CORE_FRAGMENT_DETAILS doesn't guarantee order
+        # This order should match the order used for target positions in GameController
+        # Example: based on typical Alpha, Beta, Gamma discovery or a defined constant
+        fragment_display_order_ids = [details["id"] for _, details in sorted(CORE_FRAGMENT_DETAILS.items(), key=lambda item: item[0])] # Sort by key like "fragment_alpha"
+        
+        if hasattr(self.game_controller, 'fragment_ui_target_positions'): # Clear and repopulate target positions
+            self.game_controller.fragment_ui_target_positions.clear()
+
+        if self.ui_assets["core_fragment_icons"] or self.ui_assets["core_fragment_empty_icon"]:
+            total_fragments_width = TOTAL_CORE_FRAGMENTS_NEEDED * (self.ui_icon_size_fragments[0] + icon_spacing) - icon_spacing
+            # Position fragments to the left of the cores display area
+            fragments_block_start_x = cores_start_x_draw - total_fragments_width - (icon_spacing * 3) # Add some gap
+            
+            for i in range(TOTAL_CORE_FRAGMENTS_NEEDED):
+                frag_id_to_display = None
+                if i < len(fragment_display_order_ids):
+                    frag_id_to_display = fragment_display_order_ids[i]
+
+                icon_to_draw = self.ui_assets["core_fragment_empty_icon"] # Default to empty
+                if frag_id_to_display and self.drone_system.has_collected_fragment(frag_id_to_display):
+                    icon_to_draw = self.ui_assets["core_fragment_icons"].get(frag_id_to_display, self.ui_assets["core_fragment_empty_icon"])
+                
+                if icon_to_draw:
+                    current_frag_x = fragments_block_start_x + i * (self.ui_icon_size_fragments[0] + icon_spacing)
+                    self.screen.blit(icon_to_draw, (current_frag_x, fragment_y_pos_hud))
+                    # Store target position for animation
+                    if frag_id_to_display and hasattr(self.game_controller, 'fragment_ui_target_positions'):
+                         self.game_controller.fragment_ui_target_positions[frag_id_to_display] = (
+                             current_frag_x + self.ui_icon_size_fragments[0] // 2,
+                             fragment_y_pos_hud + self.ui_icon_size_fragments[1] // 2
+                         )
+
+            current_collectibles_y = fragment_y_pos_hud - element_spacing
+
+
+        # Rings Display (To the left of Fragments, or adjust as needed)
+        rings_y_pos_hud = current_collectibles_y # Position above or adjust as needed
         
         total_rings_this_level = getattr(self.game_controller, 'total_rings_per_level', 5) #
         displayed_rings_count = getattr(self.game_controller, 'displayed_collected_rings', 0) #
 
         if self.ui_assets["ring_icon"]: #
             ring_icon_h = self.ui_icon_size_rings[1] #
-            rings_y_pos_hud = current_collectibles_y - ring_icon_h #
+            rings_y_pos_hud = current_collectibles_y - ring_icon_h # Update Y based on fragments
             
             total_ring_icons_width_only = max(0, total_rings_this_level * (self.ui_icon_size_rings[0] + icon_spacing) - icon_spacing if total_rings_this_level > 0 else 0) #
-            rings_block_start_x = collectibles_x_anchor - total_ring_icons_width_only #
+            # Position rings to the left of the fragments block
+            rings_block_start_x = fragments_block_start_x - total_ring_icons_width_only - (icon_spacing * 3) if TOTAL_CORE_FRAGMENTS_NEEDED > 0 else \
+                                  cores_start_x_draw - total_ring_icons_width_only - (icon_spacing*3) # If no fragments, left of cores
             
             for i in range(total_rings_this_level): #
                 icon_to_draw = self.ui_assets["ring_icon"] if i < displayed_rings_count else self.ui_assets["ring_icon_empty"] #
                 if icon_to_draw: #
                     self.screen.blit(icon_to_draw, (rings_block_start_x + i * (self.ui_icon_size_rings[0] + icon_spacing), rings_y_pos_hud)) #
-            current_collectibles_y = rings_y_pos_hud - element_spacing #
+            # current_collectibles_y = rings_y_pos_hud - element_spacing # Not strictly needed if this is the last vertical element in this section
         
-        num_fragments_collected = len(self.drone_system.get_collected_fragments_ids()) #
-        if TOTAL_CORE_FRAGMENTS_NEEDED > 0: #
-            frag_text_str = f"Fragments: {num_fragments_collected}/{TOTAL_CORE_FRAGMENTS_NEEDED}" #
-            frag_color = PURPLE if num_fragments_collected < TOTAL_CORE_FRAGMENTS_NEEDED else GOLD #
-            frag_surf = self._render_text_safe(frag_text_str, "ui_text", frag_color) #
-            frag_y_pos = current_collectibles_y - frag_surf.get_height() #
-            frag_x_pos = collectibles_x_anchor - frag_surf.get_width() #
-            self.screen.blit(frag_surf, (frag_x_pos, frag_y_pos)) #
+        # REMOVED old fragment text display
+        # num_fragments_collected = len(self.drone_system.get_collected_fragments_ids()) #
+        # if TOTAL_CORE_FRAGMENTS_NEEDED > 0: #
+        #     frag_text_str = f"Fragments: {num_fragments_collected}/{TOTAL_CORE_FRAGMENTS_NEEDED}" #
+        #     frag_color = PURPLE if num_fragments_collected < TOTAL_CORE_FRAGMENTS_NEEDED else GOLD #
+        #     frag_surf = self._render_text_safe(frag_text_str, "ui_text", frag_color) #
+        #     frag_y_pos = current_collectibles_y - frag_surf.get_height() #
+        #     frag_x_pos = collectibles_x_anchor - frag_surf.get_width() #
+        #     self.screen.blit(frag_surf, (frag_x_pos, frag_y_pos)) #
 
+        # --- Center Info Section (Score, Level, Timer) ---
         info_y_pos = panel_y_start + (panel_height - label_font.get_height()) // 2 #
 
         score_emoji_char = "🏆 " #
@@ -741,9 +834,10 @@ class UIManager: #
             current_info_x += time_icon_surf.get_width() + text_icon_spacing #
             self.screen.blit(time_value_surf, (current_info_x, info_y_pos)) #
 
+        # --- Update Ring Animation Target ---
         if total_rings_this_level > 0 and self.ui_assets["ring_icon"]: #
             _total_ring_icons_display_width = max(0, total_rings_this_level * (self.ui_icon_size_rings[0] + icon_spacing) - icon_spacing) #
-            _rings_block_start_x_no_text = collectibles_x_anchor - _total_ring_icons_display_width #
+            _rings_block_start_x_no_text = rings_block_start_x # Use the calculated start X for rings
             _target_ring_row_y_for_anim = rings_y_pos_hud #
             _next_ring_slot_index = max(0, min(displayed_rings_count, total_rings_this_level - 1)) #
             
@@ -754,11 +848,29 @@ class UIManager: #
             if hasattr(self.game_controller, 'ring_ui_target_pos'): #
                 self.game_controller.ring_ui_target_pos = (target_slot_center_x, target_slot_center_y) #
 
+        # --- Draw Animating Rings and Fragments ---
         if hasattr(self.game_controller, 'animating_rings'): #
             for ring_anim in self.game_controller.animating_rings: #
                 if 'surface' in ring_anim and ring_anim['surface']: #
                     self.screen.blit(ring_anim['surface'], (int(ring_anim['pos'][0]), int(ring_anim['pos'][1]))) #
+        
+        if hasattr(self.game_controller, 'animating_fragments'):
+            for frag_anim in self.game_controller.animating_fragments:
+                if 'surface' in frag_anim and frag_anim['surface']:
+                    self.screen.blit(frag_anim['surface'], (int(frag_anim['pos'][0]), int(frag_anim['pos'][1])))
 
+
+    def get_scaled_fragment_icon(self, fragment_id):
+        """Helper method to get a scaled fragment icon for animations."""
+        if fragment_id in self.ui_assets["core_fragment_icons"]:
+            # Assuming icons in core_fragment_icons are already scaled by _load_ui_assets
+            return self.ui_assets["core_fragment_icons"][fragment_id]
+        # Fallback if a specific icon isn't found (should ideally not happen if loaded correctly)
+        return self._create_fallback_icon_surface(self.ui_icon_size_fragments, "?", PURPLE)
+
+
+    # ... (draw_architect_vault_hud_elements, draw_pause_overlay, etc. remain unchanged for this request)
+    # ... (ensure these methods are present in your actual file)
     def draw_architect_vault_hud_elements(self): #
         self.draw_gameplay_hud() #
 
