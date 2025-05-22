@@ -1176,7 +1176,9 @@ class GameController:
         self.core_fragments.draw(self.screen) 
         if current_game_state == GAME_STATE_ARCHITECT_VAULT_ENTRY_PUZZLE: 
             self.architect_vault_terminals.draw(self.screen) 
-        if self.enemies: self.enemies.draw(self.screen) 
+        if self.enemies:
+            for enemy_sprite in self.enemies: # Iterate through each enemy
+                enemy_sprite.draw(self.screen)   # Call the enemy's custom draw method
         if self.player: self.player.draw(self.screen) 
 
     def run(self): 
