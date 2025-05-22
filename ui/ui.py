@@ -46,7 +46,9 @@ class UIManager:
         } 
         self.ui_icon_size_lives = (30, 30) 
         self.ui_icon_size_rings = (20, 20) 
-        self.ui_icon_size_fragments = (20, 20) 
+        # ------------- CHANGE ICON SIZE HERE -------------
+        self.ui_icon_size_fragments = (28, 28) # Increased from (20, 20)
+        # ----------------------------------------------------
 
         if not hasattr(self.game_controller, 'fragment_ui_target_positions'):
             self.game_controller.fragment_ui_target_positions = {}
@@ -55,39 +57,39 @@ class UIManager:
         self.update_player_life_icon_surface() 
 
     def _load_ui_assets(self): 
-        ring_icon_path = os.path.join("assets", "images", "collectibles", "ring_ui_icon.png") #
-        ring_icon_empty_path = os.path.join("assets", "images", "collectibles", "ring_ui_icon_empty.png") #
+        ring_icon_path = os.path.join("assets", "images", "collectibles", "ring_ui_icon.png") 
+        ring_icon_empty_path = os.path.join("assets", "images", "collectibles", "ring_ui_icon_empty.png") 
         
         try: 
-            if os.path.exists(ring_icon_path): #
-                raw_ring_icon = pygame.image.load(ring_icon_path).convert_alpha() #
-                self.ui_assets["ring_icon"] = pygame.transform.smoothscale(raw_ring_icon, self.ui_icon_size_rings) #
+            if os.path.exists(ring_icon_path): 
+                raw_ring_icon = pygame.image.load(ring_icon_path).convert_alpha() 
+                self.ui_assets["ring_icon"] = pygame.transform.smoothscale(raw_ring_icon, self.ui_icon_size_rings) 
             else: 
-                print(f"UIManager: Ring icon not found: {ring_icon_path}. Using fallback.") #
-                self.ui_assets["ring_icon"] = self._create_fallback_icon_surface(self.ui_icon_size_rings, "O", GOLD) #
+                print(f"UIManager: Ring icon not found: {ring_icon_path}. Using fallback.") 
+                self.ui_assets["ring_icon"] = self._create_fallback_icon_surface(self.ui_icon_size_rings, "O", GOLD) 
 
-            if os.path.exists(ring_icon_empty_path): #
-                raw_ring_empty_icon = pygame.image.load(ring_icon_empty_path).convert_alpha() #
-                self.ui_assets["ring_icon_empty"] = pygame.transform.smoothscale(raw_ring_empty_icon, self.ui_icon_size_rings) #
+            if os.path.exists(ring_icon_empty_path): 
+                raw_ring_empty_icon = pygame.image.load(ring_icon_empty_path).convert_alpha() 
+                self.ui_assets["ring_icon_empty"] = pygame.transform.smoothscale(raw_ring_empty_icon, self.ui_icon_size_rings) 
             else: 
-                print(f"UIManager: Empty ring icon not found: {ring_icon_empty_path}. Using fallback.") #
-                self.ui_assets["ring_icon_empty"] = self._create_fallback_icon_surface(self.ui_icon_size_rings, "O", GREY) #
+                print(f"UIManager: Empty ring icon not found: {ring_icon_empty_path}. Using fallback.") 
+                self.ui_assets["ring_icon_empty"] = self._create_fallback_icon_surface(self.ui_icon_size_rings, "O", GREY) 
 
         except pygame.error as e: 
-            print(f"UIManager: Error loading ring icons: {e}. Using fallbacks.") #
-            self.ui_assets["ring_icon"] = self._create_fallback_icon_surface(self.ui_icon_size_rings, "R", GOLD) #
-            self.ui_assets["ring_icon_empty"] = self._create_fallback_icon_surface(self.ui_icon_size_rings, "R", GREY) #
+            print(f"UIManager: Error loading ring icons: {e}. Using fallbacks.") 
+            self.ui_assets["ring_icon"] = self._create_fallback_icon_surface(self.ui_icon_size_rings, "R", GOLD) 
+            self.ui_assets["ring_icon_empty"] = self._create_fallback_icon_surface(self.ui_icon_size_rings, "R", GREY) 
         
-        menu_bg_path = os.path.join("assets", "images", "ui", "menu_logo_hyperdrone.png") #
-        if os.path.exists(menu_bg_path): #
+        menu_bg_path = os.path.join("assets", "images", "ui", "menu_logo_hyperdrone.png") 
+        if os.path.exists(menu_bg_path): 
             try: 
-                self.ui_assets["menu_background"] = pygame.image.load(menu_bg_path).convert_alpha() #
+                self.ui_assets["menu_background"] = pygame.image.load(menu_bg_path).convert_alpha() 
             except pygame.error as e: 
-                print(f"UIManager: Error loading menu background '{menu_bg_path}': {e}") #
-                self.ui_assets["menu_background"] = None #
+                print(f"UIManager: Error loading menu background '{menu_bg_path}': {e}") 
+                self.ui_assets["menu_background"] = None 
         else: 
-            print(f"UIManager: Menu background not found: {menu_bg_path}") #
-            self.ui_assets["menu_background"] = None #
+            print(f"UIManager: Menu background not found: {menu_bg_path}") 
+            self.ui_assets["menu_background"] = None 
 
         fragment_empty_icon_path = os.path.join("assets", "images", "collectibles", "fragment_ui_icon_empty.png") 
         if os.path.exists(fragment_empty_icon_path):
@@ -202,252 +204,225 @@ class UIManager:
             if self.game_controller.paused: self.draw_pause_overlay() 
 
     def draw_main_menu(self): #
-        if self.ui_assets["menu_background"]: #
-            try: #
-                scaled_bg = pygame.transform.smoothscale(self.ui_assets["menu_background"], (WIDTH, HEIGHT)) # Using directly imported WIDTH, HEIGHT #
-                self.screen.blit(scaled_bg, (0,0)) #
-            except Exception as e: #
-                print(f"UIManager: Error blitting menu background: {e}") #
-                self.screen.fill(BLACK) #
-        menu_options = getattr(self.game_controller, 'menu_options', ["Start", "Quit"]) #
-        selected_option_idx = getattr(self.game_controller, 'selected_menu_option', 0) #
-        menu_item_start_y = HEIGHT // 2 - 80 #
-        item_spacing = 75 #
-        base_font_size = self.fonts["menu_text"].get_height() #
-        for i, option_text in enumerate(menu_options): #
-            is_selected = (i == selected_option_idx) #
-            text_color = GOLD if is_selected else WHITE #
-            active_menu_font = self.fonts["menu_text"] #
-            if is_selected: #
-                 try: #
-                     font_path = getattr(self.game_controller, 'font_path_neuropol', None) #
-                     active_menu_font = pygame.font.Font(font_path, base_font_size + 8) #
-                 except Exception: #
-                     active_menu_font = pygame.font.Font(None, base_font_size + 8) #
-            text_surf = active_menu_font.render(option_text, True, text_color) #
-            if hasattr(text_surf, 'get_rect'): #
-                text_rect = text_surf.get_rect() #
-                button_width = text_rect.width + 60 #
-                button_height = text_rect.height + 25 #
-                button_surface_rect = pygame.Rect(0,0,button_width, button_height) #
-                button_surface_rect.center = (WIDTH // 2, menu_item_start_y + i * item_spacing) #
-                button_bg_surface = pygame.Surface(button_surface_rect.size, pygame.SRCALPHA) #
-                current_bg_color = (70,70,70,220) if is_selected else (50,50,50,180) #
-                pygame.draw.rect(button_bg_surface, current_bg_color, button_bg_surface.get_rect(), border_radius=15) #
-                if is_selected: #
-                    pygame.draw.rect(button_bg_surface, GOLD, button_bg_surface.get_rect(), 3, border_radius=15) #
-                button_bg_surface.blit(text_surf, text_surf.get_rect(center=(button_width//2, button_height//2))) #
-                self.screen.blit(button_bg_surface, button_surface_rect.topleft) #
-        instr_surf = self._render_text_safe("Use UP/DOWN keys, ENTER to select.", "small_text", CYAN) #
-        instr_bg_box=pygame.Surface((instr_surf.get_width()+20,instr_surf.get_height()+10),pygame.SRCALPHA) #
-        instr_bg_box.fill((30,30,30,150)) #
-        instr_bg_box.blit(instr_surf,instr_surf.get_rect(center=(instr_bg_box.get_width()//2,instr_bg_box.get_height()//2))) #
-        self.screen.blit(instr_bg_box, instr_bg_box.get_rect(center=(WIDTH//2, HEIGHT-100))) #
-        if get_game_setting("SETTINGS_MODIFIED"): #
-            warning_surf = self._render_text_safe("Custom settings active: Leaderboard disabled.", "small_text", YELLOW) #
-            self.screen.blit(warning_surf, warning_surf.get_rect(center=(WIDTH//2, HEIGHT-50))) #
+        # ... (Full method from original file)
+        if self.ui_assets["menu_background"]: 
+            try: 
+                scaled_bg = pygame.transform.smoothscale(self.ui_assets["menu_background"], (WIDTH, HEIGHT)) 
+                self.screen.blit(scaled_bg, (0,0)) 
+            except Exception as e: 
+                print(f"UIManager: Error blitting menu background: {e}") 
+                self.screen.fill(BLACK) 
+        menu_options = getattr(self.game_controller, 'menu_options', ["Start", "Quit"]) 
+        selected_option_idx = getattr(self.game_controller, 'selected_menu_option', 0) 
+        menu_item_start_y = HEIGHT // 2 - 80 
+        item_spacing = 75 
+        base_font_size = self.fonts["menu_text"].get_height() 
+        for i, option_text in enumerate(menu_options): 
+            is_selected = (i == selected_option_idx) 
+            text_color = GOLD if is_selected else WHITE 
+            active_menu_font = self.fonts["menu_text"] 
+            if is_selected: 
+                 try: 
+                     font_path = getattr(self.game_controller, 'font_path_neuropol', None) 
+                     active_menu_font = pygame.font.Font(font_path, base_font_size + 8) 
+                 except Exception: 
+                     active_menu_font = pygame.font.Font(None, base_font_size + 8) 
+            text_surf = active_menu_font.render(option_text, True, text_color) 
+            if hasattr(text_surf, 'get_rect'): 
+                text_rect = text_surf.get_rect() 
+                button_width = text_rect.width + 60 
+                button_height = text_rect.height + 25 
+                button_surface_rect = pygame.Rect(0,0,button_width, button_height) 
+                button_surface_rect.center = (WIDTH // 2, menu_item_start_y + i * item_spacing) 
+                button_bg_surface = pygame.Surface(button_surface_rect.size, pygame.SRCALPHA) 
+                current_bg_color = (70,70,70,220) if is_selected else (50,50,50,180) 
+                pygame.draw.rect(button_bg_surface, current_bg_color, button_bg_surface.get_rect(), border_radius=15) 
+                if is_selected: 
+                    pygame.draw.rect(button_bg_surface, GOLD, button_bg_surface.get_rect(), 3, border_radius=15) 
+                button_bg_surface.blit(text_surf, text_surf.get_rect(center=(button_width//2, button_height//2))) 
+                self.screen.blit(button_bg_surface, button_surface_rect.topleft) 
+        instr_surf = self._render_text_safe("Use UP/DOWN keys, ENTER to select.", "small_text", CYAN) 
+        instr_bg_box=pygame.Surface((instr_surf.get_width()+20,instr_surf.get_height()+10),pygame.SRCALPHA) 
+        instr_bg_box.fill((30,30,30,150)) 
+        instr_bg_box.blit(instr_surf,instr_surf.get_rect(center=(instr_bg_box.get_width()//2,instr_bg_box.get_height()//2))) 
+        self.screen.blit(instr_bg_box, instr_bg_box.get_rect(center=(WIDTH//2, HEIGHT-100))) 
+        if get_game_setting("SETTINGS_MODIFIED"): 
+            warning_surf = self._render_text_safe("Custom settings active: Leaderboard disabled.", "small_text", YELLOW) 
+            self.screen.blit(warning_surf, warning_surf.get_rect(center=(WIDTH//2, HEIGHT-50))) 
 
     def draw_drone_select_menu(self): # Restored from original file content
-        title_surf = self._render_text_safe("Select Drone", "title_text", GOLD) #
-        title_rect = title_surf.get_rect(center=(WIDTH // 2, 70)) #
-        self.screen.blit(title_surf, title_rect) #
-
-        drone_options_ids = getattr(self.game_controller, 'drone_select_options', DRONE_DISPLAY_ORDER) #
-        selected_preview_idx = getattr(self.game_controller, 'selected_drone_preview_index', 0) #
-
-        if not drone_options_ids: #
-            no_drones_surf = self._render_text_safe("NO DRONES AVAILABLE", "large_text", RED) #
-            self.screen.blit(no_drones_surf, no_drones_surf.get_rect(center=(WIDTH // 2, HEIGHT // 2))) #
-            return #
-
-        current_drone_id = drone_options_ids[selected_preview_idx] #
-        drone_config = self.drone_system.get_drone_config(current_drone_id) #
-        drone_stats = self.drone_system.get_drone_stats(current_drone_id, is_in_architect_vault=False) #
-        is_unlocked = self.drone_system.is_drone_unlocked(current_drone_id) #
-        is_currently_equipped = (current_drone_id == self.drone_system.get_selected_drone_id()) #
-
-        drone_image_surf = None #
-        if hasattr(self.game_controller, 'drone_main_display_cache'): #
-            drone_image_surf = self.game_controller.drone_main_display_cache.get(current_drone_id) #
-        
-        img_width = drone_image_surf.get_width() if drone_image_surf else 200 #
-        img_height = drone_image_surf.get_height() if drone_image_surf else 200 #
-
-        name_text = drone_config.get("name", "N/A") #
-        name_surf_temp = self.fonts["drone_name_cycle"].render(name_text, True, WHITE) #
-        name_height = name_surf_temp.get_height() #
-
-        hp_stat = drone_stats.get("hp") #
-        speed_stat = drone_stats.get("speed") #
-        turn_speed_stat = drone_stats.get("turn_speed") #
-        fire_rate_mult = drone_stats.get("fire_rate_multiplier", 1.0) #
-        special_ability_key = drone_stats.get("special_ability") #
-
-        hp_display = str(hp_stat) if hp_stat is not None else "N/A" #
-        speed_display = f"{speed_stat:.1f}" if isinstance(speed_stat, (int, float)) else "N/A" #
-        turn_speed_display = f"{turn_speed_stat:.1f}" if isinstance(turn_speed_stat, (int, float)) else "N/A" #
-        
-        fire_rate_text = f"{1/fire_rate_mult:.1f}x" if fire_rate_mult != 0 else "N/A" #
-        if fire_rate_mult == 1.0: fire_rate_text += " (Normal)" #
-        elif fire_rate_mult < 1.0: fire_rate_text += " (Faster)" #
-        else: fire_rate_text += " (Slower)" #
-
-        special_ability_name = "None" #
-        if special_ability_key == "phantom_cloak": special_ability_name = "Phantom Cloak" #
-        elif special_ability_key == "omega_boost": special_ability_name = "Omega Boost" #
-
+        title_surf = self._render_text_safe("Select Drone", "title_text", GOLD)
+        title_rect = title_surf.get_rect(center=(WIDTH // 2, 70))
+        self.screen.blit(title_surf, title_rect)
+        drone_options_ids = getattr(self.game_controller, 'drone_select_options', DRONE_DISPLAY_ORDER)
+        selected_preview_idx = getattr(self.game_controller, 'selected_drone_preview_index', 0)
+        if not drone_options_ids:
+            no_drones_surf = self._render_text_safe("NO DRONES AVAILABLE", "large_text", RED)
+            self.screen.blit(no_drones_surf, no_drones_surf.get_rect(center=(WIDTH // 2, HEIGHT // 2)))
+            return
+        current_drone_id = drone_options_ids[selected_preview_idx]
+        drone_config = self.drone_system.get_drone_config(current_drone_id)
+        drone_stats = self.drone_system.get_drone_stats(current_drone_id, is_in_architect_vault=False)
+        is_unlocked = self.drone_system.is_drone_unlocked(current_drone_id)
+        is_currently_equipped = (current_drone_id == self.drone_system.get_selected_drone_id())
+        drone_image_surf = None
+        if hasattr(self.game_controller, 'drone_main_display_cache'):
+            drone_image_surf = self.game_controller.drone_main_display_cache.get(current_drone_id)
+        img_width = drone_image_surf.get_width() if drone_image_surf else 200
+        img_height = drone_image_surf.get_height() if drone_image_surf else 200
+        name_text = drone_config.get("name", "N/A")
+        name_surf_temp = self.fonts["drone_name_cycle"].render(name_text, True, WHITE)
+        name_height = name_surf_temp.get_height()
+        hp_stat = drone_stats.get("hp")
+        speed_stat = drone_stats.get("speed")
+        turn_speed_stat = drone_stats.get("turn_speed")
+        fire_rate_mult = drone_stats.get("fire_rate_multiplier", 1.0)
+        special_ability_key = drone_stats.get("special_ability")
+        hp_display = str(hp_stat) if hp_stat is not None else "N/A"
+        speed_display = f"{speed_stat:.1f}" if isinstance(speed_stat, (int, float)) else "N/A"
+        turn_speed_display = f"{turn_speed_stat:.1f}" if isinstance(turn_speed_stat, (int, float)) else "N/A"
+        fire_rate_text = f"{1/fire_rate_mult:.1f}x" if fire_rate_mult != 0 else "N/A"
+        if fire_rate_mult == 1.0: fire_rate_text += " (Normal)"
+        elif fire_rate_mult < 1.0: fire_rate_text += " (Faster)"
+        else: fire_rate_text += " (Slower)"
+        special_ability_name = "None"
+        if special_ability_key == "phantom_cloak": special_ability_name = "Phantom Cloak"
+        elif special_ability_key == "omega_boost": special_ability_name = "Omega Boost"
         stats_data_tuples = [
-            ("HP:", hp_display), ("Speed:", speed_display), ("Turn Speed:", turn_speed_display), #
-            ("Fire Rate:", fire_rate_text), ("Special:", special_ability_name) #
-        ] #
-        stats_content_surfaces = [] #
-        max_stat_label_w = 0 #
-        max_stat_value_w = 0 #
-        stat_line_h = self.fonts["drone_stats_label_cycle"].get_height() + 5 #
-
-        for label_str, value_str in stats_data_tuples: #
-            label_s = self._render_text_safe(label_str, "drone_stats_label_cycle", LIGHT_BLUE if is_unlocked else GREY) #
-            value_s = self._render_text_safe(value_str, "drone_stats_value_cycle", WHITE if is_unlocked else GREY) #
-            stats_content_surfaces.append((label_s, value_s)) #
-            max_stat_label_w = max(max_stat_label_w, label_s.get_width()) #
-            max_stat_value_w = max(max_stat_value_w, value_s.get_width()) #
-
-        stats_box_padding = 15 #
-        stats_box_visual_width = max_stat_label_w + max_stat_value_w + 3 * stats_box_padding #
-        stats_box_visual_height = (len(stats_content_surfaces) * stat_line_h) - (5 if stats_content_surfaces else 0) + 2 * stats_box_padding #
-
-        desc_text = drone_config.get("description", "") #
-        desc_color_final = (200,200,200) if is_unlocked else (100,100,100) #
-        desc_max_width_for_card = WIDTH * 0.45 #
-        desc_lines_surfs = [] #
-        words = desc_text.split(' ') #
-        current_line_text_desc = "" #
-        desc_font = self.fonts["drone_desc_cycle"] #
-        for word in words: #
-            test_line = current_line_text_desc + word + " " #
-            if desc_font.size(test_line)[0] < desc_max_width_for_card: #
-                current_line_text_desc = test_line #
-            else: #
-                desc_lines_surfs.append(self._render_text_safe(current_line_text_desc.strip(), "drone_desc_cycle", desc_color_final)) #
-                current_line_text_desc = word + " " #
-        if current_line_text_desc: #
-            desc_lines_surfs.append(self._render_text_safe(current_line_text_desc.strip(), "drone_desc_cycle", desc_color_final)) #
-        total_desc_height = sum(s.get_height() for s in desc_lines_surfs) + (len(desc_lines_surfs)-1)*3 if desc_lines_surfs else 0 #
-
-        unlock_text_str = "" #
-        unlock_text_color = WHITE #
-        unlock_condition = drone_config.get("unlock_condition", {}) #
-        if not is_unlocked: #
-            condition_text_str = unlock_condition.get("description", "Locked") #
-            unlock_cost_val = unlock_condition.get("value") #
-            type_is_cores_unlock = unlock_condition.get("type") == "cores" #
-            unlock_text_str = condition_text_str #
-            if type_is_cores_unlock and unlock_cost_val is not None and self.drone_system.get_player_cores() >= unlock_cost_val: #
-                unlock_text_str += f" (ENTER to Unlock: {unlock_cost_val} 💠)" #
-                unlock_text_color = GREEN #
-            else: #
-                unlock_text_color = YELLOW #
-        elif is_currently_equipped: #
-            unlock_text_str = "EQUIPPED" #
-            unlock_text_color = GREEN #
-        else: #
-            unlock_text_str = "Press ENTER to Select" #
-            unlock_text_color = CYAN #
-
-        unlock_info_surf = self._render_text_safe(unlock_text_str, "drone_unlock_cycle", unlock_text_color) #
-        unlock_info_height = unlock_info_surf.get_height() if unlock_info_surf else 0 #
-
-        spacing_between_elements = 15 #
-        padding_inside_card = 25 #
+            ("HP:", hp_display), ("Speed:", speed_display), ("Turn Speed:", turn_speed_display), 
+            ("Fire Rate:", fire_rate_text), ("Special:", special_ability_name) 
+        ]
+        stats_content_surfaces = []
+        max_stat_label_w = 0
+        max_stat_value_w = 0
+        stat_line_h = self.fonts["drone_stats_label_cycle"].get_height() + 5
+        for label_str, value_str in stats_data_tuples:
+            label_s = self._render_text_safe(label_str, "drone_stats_label_cycle", LIGHT_BLUE if is_unlocked else GREY)
+            value_s = self._render_text_safe(value_str, "drone_stats_value_cycle", WHITE if is_unlocked else GREY)
+            stats_content_surfaces.append((label_s, value_s))
+            max_stat_label_w = max(max_stat_label_w, label_s.get_width())
+            max_stat_value_w = max(max_stat_value_w, value_s.get_width())
+        stats_box_padding = 15
+        stats_box_visual_width = max_stat_label_w + max_stat_value_w + 3 * stats_box_padding
+        stats_box_visual_height = (len(stats_content_surfaces) * stat_line_h) - (5 if stats_content_surfaces else 0) + 2 * stats_box_padding
+        desc_text = drone_config.get("description", "")
+        desc_color_final = (200,200,200) if is_unlocked else (100,100,100)
+        desc_max_width_for_card = WIDTH * 0.45
+        desc_lines_surfs = []
+        words = desc_text.split(' ')
+        current_line_text_desc = ""
+        desc_font = self.fonts["drone_desc_cycle"]
+        for word in words:
+            test_line = current_line_text_desc + word + " "
+            if desc_font.size(test_line)[0] < desc_max_width_for_card:
+                current_line_text_desc = test_line
+            else:
+                desc_lines_surfs.append(self._render_text_safe(current_line_text_desc.strip(), "drone_desc_cycle", desc_color_final))
+                current_line_text_desc = word + " "
+        if current_line_text_desc:
+            desc_lines_surfs.append(self._render_text_safe(current_line_text_desc.strip(), "drone_desc_cycle", desc_color_final))
+        total_desc_height = sum(s.get_height() for s in desc_lines_surfs) + (len(desc_lines_surfs)-1)*3 if desc_lines_surfs else 0
+        unlock_text_str = ""
+        unlock_text_color = WHITE
+        unlock_condition = drone_config.get("unlock_condition", {})
+        if not is_unlocked:
+            condition_text_str = unlock_condition.get("description", "Locked")
+            unlock_cost_val = unlock_condition.get("value")
+            type_is_cores_unlock = unlock_condition.get("type") == "cores"
+            unlock_text_str = condition_text_str
+            if type_is_cores_unlock and unlock_cost_val is not None and self.drone_system.get_player_cores() >= unlock_cost_val:
+                unlock_text_str += f" (ENTER to Unlock: {unlock_cost_val} 💠)"
+                unlock_text_color = GREEN
+            else:
+                unlock_text_color = YELLOW
+        elif is_currently_equipped:
+            unlock_text_str = "EQUIPPED"
+            unlock_text_color = GREEN
+        else:
+            unlock_text_str = "Press ENTER to Select"
+            unlock_text_color = CYAN
+        unlock_info_surf = self._render_text_safe(unlock_text_str, "drone_unlock_cycle", unlock_text_color)
+        unlock_info_height = unlock_info_surf.get_height() if unlock_info_surf else 0
+        spacing_between_elements = 15
+        padding_inside_card = 25
         card_content_total_h = (img_height + spacing_between_elements + name_height + spacing_between_elements +
                                 stats_box_visual_height + spacing_between_elements + total_desc_height +
-                                spacing_between_elements + unlock_info_height) #
+                                spacing_between_elements + unlock_info_height)
         max_content_width_for_card = max(img_width, name_surf_temp.get_width(), stats_box_visual_width,
                                          max(s.get_width() for s in desc_lines_surfs) if desc_lines_surfs else 0,
-                                         unlock_info_surf.get_width() if unlock_info_surf else 0) #
-        card_w = max_content_width_for_card + 2 * padding_inside_card #
-        card_w = min(card_w, WIDTH * 0.6) #
-        card_h = card_content_total_h + 2 * padding_inside_card + 20 #
-
-        title_bottom = title_rect.bottom if title_rect else 100 #
-        main_card_x = (WIDTH - card_w) // 2 #
-        main_card_y = title_bottom + 40 #
-        main_card_rect = pygame.Rect(main_card_x, main_card_y, card_w, card_h) #
-
-        pygame.draw.rect(self.screen, (25,30,40,230), main_card_rect, border_radius=20) #
-        pygame.draw.rect(self.screen, GOLD, main_card_rect, 3, border_radius=20) #
-
-        current_y_in_card = main_card_rect.top + padding_inside_card #
-
-        if drone_image_surf: #
-            display_drone_image = drone_image_surf #
-            if not is_unlocked: #
-                temp_img = drone_image_surf.copy() #
-                temp_img.set_alpha(100) #
-                display_drone_image = temp_img #
-            final_img_rect = display_drone_image.get_rect(centerx=main_card_rect.centerx, top=current_y_in_card) #
-            self.screen.blit(display_drone_image, final_img_rect) #
-            current_y_in_card = final_img_rect.bottom + spacing_between_elements #
-        else: #
-            current_y_in_card += img_height + spacing_between_elements #
-
-        name_color_final = WHITE if is_unlocked else GREY #
-        name_surf_final = self._render_text_safe(name_text, "drone_name_cycle", name_color_final) #
-        final_name_rect = name_surf_final.get_rect(centerx=main_card_rect.centerx, top=current_y_in_card) #
-        self.screen.blit(name_surf_final, final_name_rect) #
-        current_y_in_card = final_name_rect.bottom + spacing_between_elements #
-
+                                         unlock_info_surf.get_width() if unlock_info_surf else 0)
+        card_w = max_content_width_for_card + 2 * padding_inside_card
+        card_w = min(card_w, WIDTH * 0.6)
+        card_h = card_content_total_h + 2 * padding_inside_card + 20
+        title_bottom = title_rect.bottom if title_rect else 100
+        main_card_x = (WIDTH - card_w) // 2
+        main_card_y = title_bottom + 40
+        main_card_rect = pygame.Rect(main_card_x, main_card_y, card_w, card_h)
+        pygame.draw.rect(self.screen, (25,30,40,230), main_card_rect, border_radius=20)
+        pygame.draw.rect(self.screen, GOLD, main_card_rect, 3, border_radius=20)
+        current_y_in_card = main_card_rect.top + padding_inside_card
+        if drone_image_surf:
+            display_drone_image = drone_image_surf
+            if not is_unlocked:
+                temp_img = drone_image_surf.copy()
+                temp_img.set_alpha(100)
+                display_drone_image = temp_img
+            final_img_rect = display_drone_image.get_rect(centerx=main_card_rect.centerx, top=current_y_in_card)
+            self.screen.blit(display_drone_image, final_img_rect)
+            current_y_in_card = final_img_rect.bottom + spacing_between_elements
+        else:
+            current_y_in_card += img_height + spacing_between_elements
+        name_color_final = WHITE if is_unlocked else GREY
+        name_surf_final = self._render_text_safe(name_text, "drone_name_cycle", name_color_final)
+        final_name_rect = name_surf_final.get_rect(centerx=main_card_rect.centerx, top=current_y_in_card)
+        self.screen.blit(name_surf_final, final_name_rect)
+        current_y_in_card = final_name_rect.bottom + spacing_between_elements
         final_stats_box_draw_rect = pygame.Rect(main_card_rect.centerx - stats_box_visual_width // 2, current_y_in_card,
-                                                stats_box_visual_width, stats_box_visual_height) #
-        pygame.draw.rect(self.screen, (40,45,55,200), final_stats_box_draw_rect, border_radius=10) #
-        pygame.draw.rect(self.screen, CYAN, final_stats_box_draw_rect, 1, border_radius=10) #
-        stat_y_pos_render = final_stats_box_draw_rect.top + stats_box_padding #
-        for i, (label_s, value_s) in enumerate(stats_content_surfaces): #
-            self.screen.blit(label_s, (final_stats_box_draw_rect.left + stats_box_padding, stat_y_pos_render)) #
-            self.screen.blit(value_s, (final_stats_box_draw_rect.right - stats_box_padding - value_s.get_width(), stat_y_pos_render)) #
-            stat_y_pos_render += max(label_s.get_height(), value_s.get_height()) + (5 if i < len(stats_content_surfaces)-1 else 0) #
-        current_y_in_card = final_stats_box_draw_rect.bottom + spacing_between_elements #
+                                                stats_box_visual_width, stats_box_visual_height)
+        pygame.draw.rect(self.screen, (40,45,55,200), final_stats_box_draw_rect, border_radius=10)
+        pygame.draw.rect(self.screen, CYAN, final_stats_box_draw_rect, 1, border_radius=10)
+        stat_y_pos_render = final_stats_box_draw_rect.top + stats_box_padding
+        for i, (label_s, value_s) in enumerate(stats_content_surfaces):
+            self.screen.blit(label_s, (final_stats_box_draw_rect.left + stats_box_padding, stat_y_pos_render))
+            self.screen.blit(value_s, (final_stats_box_draw_rect.right - stats_box_padding - value_s.get_width(), stat_y_pos_render))
+            stat_y_pos_render += max(label_s.get_height(), value_s.get_height()) + (5 if i < len(stats_content_surfaces)-1 else 0)
+        current_y_in_card = final_stats_box_draw_rect.bottom + spacing_between_elements
+        desc_start_y_render = current_y_in_card
+        for line_surf in desc_lines_surfs:
+            self.screen.blit(line_surf, line_surf.get_rect(centerx=main_card_rect.centerx, top=desc_start_y_render))
+            desc_start_y_render += line_surf.get_height() + 3
+        current_y_in_card = desc_start_y_render + 5
+        if unlock_info_surf:
+            unlock_info_rect = unlock_info_surf.get_rect(centerx=main_card_rect.centerx, top=current_y_in_card)
+            self.screen.blit(unlock_info_surf, unlock_info_rect)
+        arrow_font = self.fonts.get("arrow_font_key", self.fonts["large_text"])
+        left_arrow_surf = arrow_font.render("◀", True, WHITE if len(drone_options_ids) > 1 else GREY)
+        right_arrow_surf = arrow_font.render("▶", True, WHITE if len(drone_options_ids) > 1 else GREY)
+        arrow_y_center = main_card_rect.centery
+        arrow_padding_from_card_edge = 40
+        if len(drone_options_ids) > 1:
+            left_arrow_rect = left_arrow_surf.get_rect(centery=arrow_y_center, right=main_card_rect.left - arrow_padding_from_card_edge)
+            self.screen.blit(left_arrow_surf, left_arrow_rect)
+            right_arrow_rect = right_arrow_surf.get_rect(centery=arrow_y_center, left=main_card_rect.right + arrow_padding_from_card_edge)
+            self.screen.blit(right_arrow_surf, right_arrow_rect)
+        instr_surf = self._render_text_safe("LEFT/RIGHT: Cycle | ENTER: Select/Unlock | ESC: Back", "small_text", CYAN)
+        instr_bg_rect = pygame.Rect(0, HEIGHT - 70, WIDTH, 30)
+        instr_surf_rect = instr_surf.get_rect(center=instr_bg_rect.center)
+        self.screen.blit(instr_surf, instr_surf_rect)
+        cores_label_text_surf = self._render_text_safe(f"Player Cores: ", "ui_text", GOLD)
+        cores_value_text_surf = self._render_text_safe(f"{self.drone_system.get_player_cores()}", "ui_values", GOLD)
+        cores_emoji_surf = self._render_text_safe(" 💠", "ui_emoji_general", GOLD)
+        total_cores_display_width = cores_label_text_surf.get_width() + cores_value_text_surf.get_width() + cores_emoji_surf.get_width()
+        cores_start_x = WIDTH - 20 - total_cores_display_width
+        max_element_height_cores = max(cores_label_text_surf.get_height(), cores_value_text_surf.get_height(), cores_emoji_surf.get_height())
+        cores_y_baseline = HEIGHT - 20 - max_element_height_cores
+        current_x_offset_cores = cores_start_x
+        self.screen.blit(cores_label_text_surf, (current_x_offset_cores, cores_y_baseline + (max_element_height_cores - cores_label_text_surf.get_height()) // 2))
+        current_x_offset_cores += cores_label_text_surf.get_width()
+        self.screen.blit(cores_value_text_surf, (current_x_offset_cores, cores_y_baseline + (max_element_height_cores - cores_value_text_surf.get_height()) // 2))
+        current_x_offset_cores += cores_value_text_surf.get_width()
+        self.screen.blit(cores_emoji_surf, (current_x_offset_cores, cores_y_baseline + (max_element_height_cores - cores_emoji_surf.get_height()) // 2))
 
-        desc_start_y_render = current_y_in_card #
-        for line_surf in desc_lines_surfs: #
-            self.screen.blit(line_surf, line_surf.get_rect(centerx=main_card_rect.centerx, top=desc_start_y_render)) #
-            desc_start_y_render += line_surf.get_height() + 3 #
-        current_y_in_card = desc_start_y_render + 5 #
-
-        if unlock_info_surf: #
-            unlock_info_rect = unlock_info_surf.get_rect(centerx=main_card_rect.centerx, top=current_y_in_card) #
-            self.screen.blit(unlock_info_surf, unlock_info_rect) #
-
-        arrow_font = self.fonts.get("arrow_font_key", self.fonts["large_text"]) #
-        left_arrow_surf = arrow_font.render("◀", True, WHITE if len(drone_options_ids) > 1 else GREY) #
-        right_arrow_surf = arrow_font.render("▶", True, WHITE if len(drone_options_ids) > 1 else GREY) #
-        arrow_y_center = main_card_rect.centery #
-        arrow_padding_from_card_edge = 40 #
-        if len(drone_options_ids) > 1: #
-            left_arrow_rect = left_arrow_surf.get_rect(centery=arrow_y_center, right=main_card_rect.left - arrow_padding_from_card_edge) #
-            self.screen.blit(left_arrow_surf, left_arrow_rect) #
-            right_arrow_rect = right_arrow_surf.get_rect(centery=arrow_y_center, left=main_card_rect.right + arrow_padding_from_card_edge) #
-            self.screen.blit(right_arrow_surf, right_arrow_rect) #
-
-        instr_surf = self._render_text_safe("LEFT/RIGHT: Cycle | ENTER: Select/Unlock | ESC: Back", "small_text", CYAN) #
-        instr_bg_rect = pygame.Rect(0, HEIGHT - 70, WIDTH, 30) #
-        instr_surf_rect = instr_surf.get_rect(center=instr_bg_rect.center) #
-        self.screen.blit(instr_surf, instr_surf_rect) #
-
-        cores_label_text_surf = self._render_text_safe(f"Player Cores: ", "ui_text", GOLD) #
-        cores_value_text_surf = self._render_text_safe(f"{self.drone_system.get_player_cores()}", "ui_values", GOLD) #
-        cores_emoji_surf = self._render_text_safe(" 💠", "ui_emoji_general", GOLD) #
-        total_cores_display_width = cores_label_text_surf.get_width() + cores_value_text_surf.get_width() + cores_emoji_surf.get_width() #
-        cores_start_x = WIDTH - 20 - total_cores_display_width #
-        max_element_height_cores = max(cores_label_text_surf.get_height(), cores_value_text_surf.get_height(), cores_emoji_surf.get_height()) #
-        cores_y_baseline = HEIGHT - 20 - max_element_height_cores #
-        
-        current_x_offset_cores = cores_start_x #
-        self.screen.blit(cores_label_text_surf, (current_x_offset_cores, cores_y_baseline + (max_element_height_cores - cores_label_text_surf.get_height()) // 2)) #
-        current_x_offset_cores += cores_label_text_surf.get_width() #
-        self.screen.blit(cores_value_text_surf, (current_x_offset_cores, cores_y_baseline + (max_element_height_cores - cores_value_text_surf.get_height()) // 2)) #
-        current_x_offset_cores += cores_value_text_surf.get_width() #
-        self.screen.blit(cores_emoji_surf, (current_x_offset_cores, cores_y_baseline + (max_element_height_cores - cores_emoji_surf.get_height()) // 2)) #
 
     def draw_settings_menu(self): # Restored from original file content
         title_surf = self._render_text_safe("Settings", "title_text", GOLD) #
@@ -529,79 +504,157 @@ class UIManager:
             self.screen.blit(warning_bg, warning_bg.get_rect(center=(WIDTH//2, HEIGHT-35))) #
 
     def draw_gameplay_hud(self): #
-        # ... (This method was updated previously for fragment HUD, ensure it's the correct version)
-        # For brevity, only showing the fragment part that was recently changed
+        # ... (This method was updated for fragment HUD and remains as per the last correct version)
         if not self.game_controller.player: return
-
         panel_y_start = GAME_PLAY_AREA_HEIGHT 
         panel_height = BOTTOM_PANEL_HEIGHT 
-        # ... (rest of HUD setup as in previous correct version) ...
-
-        # --- Collectibles Section (Right) ---
-        collectibles_x_anchor = WIDTH - 20 # h_padding
-        current_collectibles_y = panel_y_start + panel_height - 10 # v_padding
-        icon_spacing = 5; text_icon_spacing = 4
-
-        # Cores
-        cores_emoji_char = "💠"
-        cores_value_str = f" {self.drone_system.get_player_cores()}"
-        cores_icon_surf = self._render_text_safe(cores_emoji_char, "ui_emoji_general", GOLD)
-        cores_value_text_surf = self._render_text_safe(cores_value_str, "ui_values", GOLD)
-        cores_display_height = max(cores_icon_surf.get_height(), cores_value_text_surf.get_height())
-        cores_y_pos = current_collectibles_y - cores_display_height
-        total_cores_width = cores_icon_surf.get_width() + text_icon_spacing + cores_value_text_surf.get_width()
-        cores_start_x_draw = collectibles_x_anchor - total_cores_width
-        self.screen.blit(cores_icon_surf, (cores_start_x_draw, cores_y_pos + (cores_display_height - cores_icon_surf.get_height()) // 2))
-        self.screen.blit(cores_value_text_surf, (cores_start_x_draw + cores_icon_surf.get_width() + text_icon_spacing, cores_y_pos + (cores_display_height - cores_value_text_surf.get_height()) // 2))
-        current_collectibles_y = cores_y_pos - 6 # element_spacing
-
-        # Fragment Icons Display
+        panel_surf = pygame.Surface((WIDTH, panel_height), pygame.SRCALPHA) 
+        panel_surf.fill((20,25,35,220)) 
+        pygame.draw.line(panel_surf, (80,120,170,200), (0,0), (WIDTH,0), 2) 
+        self.screen.blit(panel_surf, (0, panel_y_start)) 
+        h_padding = 20; v_padding = 10; element_spacing = 6; bar_height = 18; 
+        icon_to_bar_gap = 10; icon_spacing = 5; text_icon_spacing = 4 
+        current_time_ticks = pygame.time.get_ticks() 
+        label_font = self.fonts["ui_text"] 
+        value_font = self.fonts["ui_values"] 
+        emoji_general_font = self.fonts["ui_emoji_general"] 
+        vitals_x_start = h_padding 
+        current_vitals_y = panel_y_start + panel_height - v_padding 
+        vitals_section_width = int(WIDTH / 3.2) 
+        min_bar_segment_width = 25 
+        bar_segment_reduction_factor = 0.85 
+        life_icon_surf = self.ui_assets.get("current_drone_life_icon") 
+        if life_icon_surf: 
+            lives_y_pos = current_vitals_y - self.ui_icon_size_lives[1] 
+            lives_draw_x = vitals_x_start 
+            for i in range(self.game_controller.lives): 
+                self.screen.blit(life_icon_surf, (lives_draw_x + i * (self.ui_icon_size_lives[0] + icon_spacing), lives_y_pos)) 
+            current_vitals_y = lives_y_pos - element_spacing 
+        player_obj = self.game_controller.player 
+        health_bar_y_pos = current_vitals_y - bar_height 
+        health_icon_char = "❤️" 
+        health_icon_surf = self._render_text_safe(health_icon_char, "ui_emoji_small", RED) 
+        self.screen.blit(health_icon_surf, (vitals_x_start, health_bar_y_pos + (bar_height - health_icon_surf.get_height()) // 2)) 
+        bar_start_x_health = vitals_x_start + health_icon_surf.get_width() + icon_to_bar_gap 
+        available_width_for_health_bar = vitals_section_width - (health_icon_surf.get_width() + icon_to_bar_gap) 
+        bar_segment_width_health = max(min_bar_segment_width, int(available_width_for_health_bar * bar_segment_reduction_factor)) 
+        health_percentage = player_obj.health / player_obj.max_health if player_obj.max_health > 0 else 0 
+        health_bar_width_fill = int(bar_segment_width_health * health_percentage) 
+        health_fill_color = GREEN if health_percentage > 0.6 else YELLOW if health_percentage > 0.3 else RED 
+        pygame.draw.rect(self.screen, DARK_GREY, (bar_start_x_health, health_bar_y_pos, bar_segment_width_health, bar_height)) 
+        if health_bar_width_fill > 0: 
+            pygame.draw.rect(self.screen, health_fill_color, (bar_start_x_health, health_bar_y_pos, health_bar_width_fill, bar_height)) 
+        pygame.draw.rect(self.screen, WHITE, (bar_start_x_health, health_bar_y_pos, bar_segment_width_health, bar_height), 1) 
+        current_vitals_y = health_bar_y_pos - element_spacing 
+        weapon_bar_y_pos = current_vitals_y - bar_height 
+        weapon_icon_char = WEAPON_MODE_ICONS.get(player_obj.current_weapon_mode, "💥") 
+        weapon_icon_surf = self._render_text_safe(weapon_icon_char, "ui_emoji_small", ORANGE) 
+        self.screen.blit(weapon_icon_surf, (vitals_x_start, weapon_bar_y_pos + (bar_height - weapon_icon_surf.get_height()) // 2)) 
+        bar_start_x_weapon = vitals_x_start + weapon_icon_surf.get_width() + icon_to_bar_gap 
+        bar_segment_width_weapon = max(min_bar_segment_width, int((vitals_section_width - (weapon_icon_surf.get_width() + icon_to_bar_gap)) * bar_segment_reduction_factor)) 
+        charge_fill_pct = 0.0 
+        weapon_ready_color = PLAYER_BULLET_COLOR 
+        cooldown_duration = player_obj.current_shoot_cooldown 
+        time_since_last_shot = current_time_ticks - player_obj.last_shot_time 
+        if player_obj.current_weapon_mode == get_game_setting("WEAPON_MODE_HEATSEEKER") or \
+           player_obj.current_weapon_mode == get_game_setting("WEAPON_MODE_HEATSEEKER_PLUS_BULLETS"): 
+            weapon_ready_color = MISSILE_COLOR 
+            time_since_last_shot = current_time_ticks - player_obj.last_missile_shot_time 
+            cooldown_duration = player_obj.current_missile_cooldown 
+        elif player_obj.current_weapon_mode == get_game_setting("WEAPON_MODE_LIGHTNING"): 
+            weapon_ready_color = LIGHTNING_COLOR 
+            time_since_last_shot = current_time_ticks - player_obj.last_lightning_time 
+            cooldown_duration = player_obj.current_lightning_cooldown 
+        if cooldown_duration > 0: 
+            charge_fill_pct = min(1.0, time_since_last_shot / cooldown_duration) 
+        else: 
+            charge_fill_pct = 1.0 
+        charge_bar_fill_color = weapon_ready_color if charge_fill_pct >= 1.0 else ORANGE 
+        weapon_bar_width_fill = int(bar_segment_width_weapon * charge_fill_pct) 
+        pygame.draw.rect(self.screen, DARK_GREY, (bar_start_x_weapon, weapon_bar_y_pos, bar_segment_width_weapon, bar_height)) 
+        if weapon_bar_width_fill > 0: 
+            pygame.draw.rect(self.screen, charge_bar_fill_color, (bar_start_x_weapon, weapon_bar_y_pos, weapon_bar_width_fill, bar_height)) 
+        pygame.draw.rect(self.screen, WHITE, (bar_start_x_weapon, weapon_bar_y_pos, bar_segment_width_weapon, bar_height), 1) 
+        current_vitals_y = weapon_bar_y_pos - element_spacing 
+        active_powerup_for_ui = player_obj.active_powerup_type 
+        if active_powerup_for_ui and (player_obj.shield_active or player_obj.speed_boost_active): 
+            powerup_bar_y_pos = current_vitals_y - bar_height 
+            powerup_icon_char = "" 
+            powerup_bar_fill_color = WHITE 
+            powerup_fill_percentage = 0.0 
+            powerup_details_config = POWERUP_TYPES.get(active_powerup_for_ui, {}) 
+            if active_powerup_for_ui == "shield" and player_obj.shield_active: 
+                powerup_icon_char = "🛡️" 
+                powerup_bar_fill_color = powerup_details_config.get("color", LIGHT_BLUE) 
+                remaining_time = player_obj.shield_end_time - current_time_ticks 
+                if player_obj.shield_duration > 0 and remaining_time > 0: 
+                    powerup_fill_percentage = remaining_time / player_obj.shield_duration 
+            elif active_powerup_for_ui == "speed_boost" and player_obj.speed_boost_active: 
+                powerup_icon_char = "💨" 
+                powerup_bar_fill_color = powerup_details_config.get("color", GREEN) 
+                remaining_time = player_obj.speed_boost_end_time - current_time_ticks 
+                if player_obj.speed_boost_duration > 0 and remaining_time > 0: 
+                    powerup_fill_percentage = remaining_time / player_obj.speed_boost_duration 
+            powerup_fill_percentage = max(0, min(1, powerup_fill_percentage)) 
+            if powerup_icon_char: 
+                powerup_icon_surf = self._render_text_safe(powerup_icon_char, "ui_emoji_small", WHITE) 
+                self.screen.blit(powerup_icon_surf, (vitals_x_start, powerup_bar_y_pos + (bar_height - powerup_icon_surf.get_height()) // 2)) 
+                bar_start_x_powerup = vitals_x_start + powerup_icon_surf.get_width() + icon_to_bar_gap 
+                bar_segment_width_powerup = max(min_bar_segment_width, int((vitals_section_width - (powerup_icon_surf.get_width() + icon_to_bar_gap)) * bar_segment_reduction_factor)) 
+                bar_width_fill_powerup = int(bar_segment_width_powerup * powerup_fill_percentage) 
+                pygame.draw.rect(self.screen, DARK_GREY, (bar_start_x_powerup, powerup_bar_y_pos, bar_segment_width_powerup, bar_height)) 
+                if bar_width_fill_powerup > 0: 
+                    pygame.draw.rect(self.screen, powerup_bar_fill_color, (bar_start_x_powerup, powerup_bar_y_pos, bar_width_fill_powerup, bar_height)) 
+                pygame.draw.rect(self.screen, WHITE, (bar_start_x_powerup, powerup_bar_y_pos, bar_segment_width_powerup, bar_height), 1) 
+        collectibles_x_anchor = WIDTH - h_padding 
+        current_collectibles_y = panel_y_start + panel_height - v_padding 
+        cores_emoji_char = "💠" 
+        cores_value_str = f" {self.drone_system.get_player_cores()}" 
+        cores_icon_surf = self._render_text_safe(cores_emoji_char, "ui_emoji_general", GOLD) 
+        cores_value_text_surf = self._render_text_safe(cores_value_str, "ui_values", GOLD) 
+        cores_display_height = max(cores_icon_surf.get_height(), cores_value_text_surf.get_height()) 
+        cores_y_pos = current_collectibles_y - cores_display_height 
+        total_cores_width = cores_icon_surf.get_width() + text_icon_spacing + cores_value_text_surf.get_width() 
+        cores_start_x_draw = collectibles_x_anchor - total_cores_width 
+        self.screen.blit(cores_icon_surf, (cores_start_x_draw, cores_y_pos + (cores_display_height - cores_icon_surf.get_height()) // 2)) 
+        self.screen.blit(cores_value_text_surf, (cores_start_x_draw + cores_icon_surf.get_width() + text_icon_spacing, cores_y_pos + (cores_display_height - cores_value_text_surf.get_height()) // 2)) 
+        current_collectibles_y = cores_y_pos - element_spacing 
         fragment_icon_h = self.ui_icon_size_fragments[1]
         fragment_y_pos_hud = current_collectibles_y - fragment_icon_h
-        
         fragment_display_order_ids = []
         if CORE_FRAGMENT_DETAILS:
             try:
                 sorted_frag_keys = sorted(CORE_FRAGMENT_DETAILS.keys())
                 fragment_display_order_ids = [CORE_FRAGMENT_DETAILS[key]["id"] for key in sorted_frag_keys if "id" in CORE_FRAGMENT_DETAILS[key]]
-            except Exception: # Fallback if sorting or access fails
+            except Exception as e:
+                print(f"UIManager: Error creating fragment display order: {e}. Using unsorted.")
                 fragment_display_order_ids = [details["id"] for _, details in CORE_FRAGMENT_DETAILS.items() if details and "id" in details]
-        
         displayable_fragment_ids = fragment_display_order_ids[:TOTAL_CORE_FRAGMENTS_NEEDED]
-
         if hasattr(self.game_controller, 'fragment_ui_target_positions'):
             self.game_controller.fragment_ui_target_positions.clear()
-
         if TOTAL_CORE_FRAGMENTS_NEEDED > 0 :
             total_fragments_width = TOTAL_CORE_FRAGMENTS_NEEDED * (self.ui_icon_size_fragments[0] + icon_spacing)
             if TOTAL_CORE_FRAGMENTS_NEEDED > 0 : total_fragments_width -= icon_spacing 
             fragments_block_start_x = cores_start_x_draw - total_fragments_width - (icon_spacing * 4) 
-            
             for i in range(TOTAL_CORE_FRAGMENTS_NEEDED):
                 frag_id_for_this_slot = None
                 if i < len(displayable_fragment_ids):
                     frag_id_for_this_slot = displayable_fragment_ids[i]
-
                 icon_to_draw = self.ui_assets["core_fragment_empty_icon"] 
                 if frag_id_for_this_slot and frag_id_for_this_slot in self.game_controller.hud_displayed_fragments:
                     icon_to_draw = self.ui_assets["core_fragment_icons"].get(frag_id_for_this_slot, self.ui_assets["core_fragment_empty_icon"])
-                
                 current_frag_x = fragments_block_start_x + i * (self.ui_icon_size_fragments[0] + icon_spacing)
                 if icon_to_draw: 
                     self.screen.blit(icon_to_draw, (current_frag_x, fragment_y_pos_hud))
-                
                 if frag_id_for_this_slot: 
                      self.game_controller.fragment_ui_target_positions[frag_id_for_this_slot] = (
                          current_frag_x + self.ui_icon_size_fragments[0] // 2,
                          fragment_y_pos_hud + self.ui_icon_size_fragments[1] // 2
                      )
-            current_collectibles_y = fragment_y_pos_hud - 6 # element_spacing
-
-        # Rings Display
+            current_collectibles_y = fragment_y_pos_hud - element_spacing
         rings_y_pos_hud = current_collectibles_y 
         total_rings_this_level = getattr(self.game_controller, 'total_rings_per_level', 5) 
         displayed_rings_count = getattr(self.game_controller, 'displayed_collected_rings', 0) 
-
         if self.ui_assets["ring_icon"]: 
             ring_icon_h = self.ui_icon_size_rings[1] 
             rings_y_pos_hud = current_collectibles_y - ring_icon_h 
@@ -612,9 +665,65 @@ class UIManager:
                 icon_to_draw = self.ui_assets["ring_icon"] if i < displayed_rings_count else self.ui_assets["ring_icon_empty"] 
                 if icon_to_draw: 
                     self.screen.blit(icon_to_draw, (rings_block_start_x + i * (self.ui_icon_size_rings[0] + icon_spacing), rings_y_pos_hud)) 
-        
-        # ... (The rest of the HUD drawing, including score, level, timer, and animating_rings/fragments) ...
-        # This part is identical to the previous full version of draw_gameplay_hud
+        info_y_pos = panel_y_start + (panel_height - label_font.get_height()) // 2 
+        score_emoji_char = "🏆 " 
+        score_text_str = f"Score: {self.game_controller.score}" 
+        score_emoji_surf = self._render_text_safe(score_emoji_char, "ui_emoji_general", GOLD) 
+        score_text_surf = self._render_text_safe(score_text_str, "ui_text", GOLD) 
+        level_emoji_char = "🎯 " 
+        level_text_str = f"Level: {self.game_controller.level}" 
+        current_scene_state = self.scene_manager.get_current_state() 
+        if current_scene_state == GAME_STATE_BONUS_LEVEL_PLAYING: level_text_str = "Bonus!" 
+        elif current_scene_state.startswith("architect_vault"): level_text_str = "Architect's Vault" 
+        level_emoji_surf = self._render_text_safe(level_emoji_char, "ui_emoji_general", CYAN) 
+        level_text_surf = self._render_text_safe(level_text_str, "ui_text", CYAN) 
+        time_icon_char = "⏱ " 
+        time_ms_to_display = self.game_controller.level_time_remaining_ms 
+        if current_scene_state == GAME_STATE_BONUS_LEVEL_PLAYING: 
+            elapsed_bonus_time_ms = current_time_ticks - getattr(self.game_controller, 'bonus_level_timer_start', current_time_ticks) 
+            bonus_duration_ms = getattr(self.game_controller, 'bonus_level_duration_ms', 60000) 
+            time_ms_to_display = max(0, bonus_duration_ms - elapsed_bonus_time_ms) 
+        time_seconds_total = max(0, time_ms_to_display // 1000) 
+        time_value_str = f"{time_seconds_total // 60:02d}:{time_seconds_total % 60:02d}" 
+        time_color = WHITE 
+        is_vault_extraction = (current_scene_state.startswith("architect_vault") and \
+                               getattr(self.game_controller, 'architect_vault_current_phase', None) == "extraction") 
+        if not is_vault_extraction: 
+            if time_seconds_total <= 10: time_color = RED if (current_time_ticks // 250) % 2 == 0 else DARK_RED 
+            elif time_seconds_total <= 30: time_color = YELLOW 
+        time_icon_surf = self._render_text_safe(time_icon_char, "ui_emoji_general", time_color) 
+        time_value_surf = self._render_text_safe(time_value_str, self.fonts["ui_values"], time_color) 
+        spacing_between_center_elements = 25 
+        center_elements_total_width = (
+            score_emoji_surf.get_width() + text_icon_spacing + score_text_surf.get_width() + 
+            spacing_between_center_elements + 
+            level_emoji_surf.get_width() + text_icon_spacing + level_text_surf.get_width() + 
+            spacing_between_center_elements + 
+            time_icon_surf.get_width() + text_icon_spacing + time_value_surf.get_width() 
+        ) 
+        current_info_x = (WIDTH - center_elements_total_width) // 2 
+        self.screen.blit(score_emoji_surf, (current_info_x, info_y_pos + (score_text_surf.get_height() - score_emoji_surf.get_height()) // 2)) 
+        current_info_x += score_emoji_surf.get_width() + text_icon_spacing 
+        self.screen.blit(score_text_surf, (current_info_x, info_y_pos)) 
+        current_info_x += score_text_surf.get_width() + spacing_between_center_elements 
+        self.screen.blit(level_emoji_surf, (current_info_x, info_y_pos + (level_text_surf.get_height() - level_emoji_surf.get_height()) // 2)) 
+        current_info_x += level_emoji_surf.get_width() + text_icon_spacing 
+        self.screen.blit(level_text_surf, (current_info_x, info_y_pos)) 
+        current_info_x += level_text_surf.get_width() + spacing_between_center_elements 
+        if not is_vault_extraction: 
+            self.screen.blit(time_icon_surf, (current_info_x, info_y_pos + (time_value_surf.get_height() - time_icon_surf.get_height()) // 2)) 
+            current_info_x += time_icon_surf.get_width() + text_icon_spacing 
+            self.screen.blit(time_value_surf, (current_info_x, info_y_pos)) 
+        if total_rings_this_level > 0 and self.ui_assets["ring_icon"]: 
+            _total_ring_icons_display_width = max(0, total_rings_this_level * (self.ui_icon_size_rings[0] + icon_spacing) - icon_spacing) 
+            _rings_block_start_x_no_text = rings_block_start_x 
+            _target_ring_row_y_for_anim = rings_y_pos_hud 
+            _next_ring_slot_index = max(0, min(displayed_rings_count, total_rings_this_level - 1)) 
+            target_slot_x_offset = _next_ring_slot_index * (self.ui_icon_size_rings[0] + icon_spacing) 
+            target_slot_center_x = _rings_block_start_x_no_text + target_slot_x_offset + self.ui_icon_size_rings[0] // 2 
+            target_slot_center_y = _target_ring_row_y_for_anim + self.ui_icon_size_rings[1] // 2 
+            if hasattr(self.game_controller, 'ring_ui_target_pos'): 
+                self.game_controller.ring_ui_target_pos = (target_slot_center_x, target_slot_center_y) 
         if hasattr(self.game_controller, 'animating_rings'): 
             for ring_anim in self.game_controller.animating_rings: 
                 if 'surface' in ring_anim and ring_anim['surface']: 
@@ -624,7 +733,6 @@ class UIManager:
                 if 'surface' in frag_anim and frag_anim['surface']:
                     self.screen.blit(frag_anim['surface'], (int(frag_anim['pos'][0]), int(frag_anim['pos'][1])))
 
-
     def get_scaled_fragment_icon(self, fragment_id):
         if not self.ui_assets["core_fragment_icons"] and not self.ui_assets["core_fragment_empty_icon"]:
             self._load_ui_assets() 
@@ -633,80 +741,86 @@ class UIManager:
         print(f"UIManager: Warning - Scaled icon for fragment_id '{fragment_id}' not found. Using fallback.")
         return self._create_fallback_icon_surface(self.ui_icon_size_fragments, "?", PURPLE)
 
-    def draw_architect_vault_hud_elements(self): #
-        self.draw_gameplay_hud() #
-        current_time = pygame.time.get_ticks() #
-        current_vault_phase = getattr(self.game_controller, 'architect_vault_current_phase', None) #
-        if current_vault_phase == "extraction": #
-            time_remaining_ms_vault = getattr(self.game_controller, 'level_time_remaining_ms', 0) #
-            time_val_str_vault = f"{max(0, time_remaining_ms_vault // 1000) // 60:02d}:{max(0, time_remaining_ms_vault // 1000) % 60:02d}" #
-            time_color_vault = RED #
-            if (time_remaining_ms_vault // 1000) > 10: time_color_vault = YELLOW #
-            if (current_time // 250) % 2 == 0 and (time_remaining_ms_vault // 1000) <= 10 : time_color_vault = DARK_RED #
-            timer_surf_vault = self._render_text_safe(f"ESCAPE ROUTE COLLAPSING: {time_val_str_vault}", "vault_timer", time_color_vault) #
-            self.screen.blit(timer_surf_vault, timer_surf_vault.get_rect(centerx=WIDTH//2, top=10)) #
-        vault_message = getattr(self.game_controller, 'architect_vault_message', "") #
-        vault_message_timer_end = getattr(self.game_controller, 'architect_vault_message_timer', 0) #
-        if vault_message and current_time < vault_message_timer_end: #
-            msg_surf = self._render_text_safe(vault_message, "vault_message", GOLD) #
-            msg_bg_surf = pygame.Surface((msg_surf.get_width() + 30, msg_surf.get_height() + 15), pygame.SRCALPHA) #
-            msg_bg_surf.fill((10, 0, 20, 200)) #
-            msg_bg_surf.blit(msg_surf, msg_surf.get_rect(center=(msg_bg_surf.get_width()//2, msg_bg_surf.get_height()//2))) #
-            self.screen.blit(msg_bg_surf, msg_bg_surf.get_rect(centerx=WIDTH//2, bottom=GAME_PLAY_AREA_HEIGHT - 20)) #
+    def draw_architect_vault_hud_elements(self): # From original file content
+        self.draw_gameplay_hud()
+        # ... (rest of method from original file)
+        current_time = pygame.time.get_ticks() 
+        current_vault_phase = getattr(self.game_controller, 'architect_vault_current_phase', None) 
+        if current_vault_phase == "extraction": 
+            time_remaining_ms_vault = getattr(self.game_controller, 'level_time_remaining_ms', 0) 
+            time_val_str_vault = f"{max(0, time_remaining_ms_vault // 1000) // 60:02d}:{max(0, time_remaining_ms_vault // 1000) % 60:02d}" 
+            time_color_vault = RED 
+            if (time_remaining_ms_vault // 1000) > 10: time_color_vault = YELLOW 
+            if (current_time // 250) % 2 == 0 and (time_remaining_ms_vault // 1000) <= 10 : time_color_vault = DARK_RED 
+            timer_surf_vault = self._render_text_safe(f"ESCAPE ROUTE COLLAPSING: {time_val_str_vault}", "vault_timer", time_color_vault) 
+            self.screen.blit(timer_surf_vault, timer_surf_vault.get_rect(centerx=WIDTH//2, top=10)) 
+        vault_message = getattr(self.game_controller, 'architect_vault_message', "") 
+        vault_message_timer_end = getattr(self.game_controller, 'architect_vault_message_timer', 0) 
+        if vault_message and current_time < vault_message_timer_end: 
+            msg_surf = self._render_text_safe(vault_message, "vault_message", GOLD) 
+            msg_bg_surf = pygame.Surface((msg_surf.get_width() + 30, msg_surf.get_height() + 15), pygame.SRCALPHA) 
+            msg_bg_surf.fill((10, 0, 20, 200)) 
+            msg_bg_surf.blit(msg_surf, msg_surf.get_rect(center=(msg_bg_surf.get_width()//2, msg_bg_surf.get_height()//2))) 
+            self.screen.blit(msg_bg_surf, msg_bg_surf.get_rect(centerx=WIDTH//2, bottom=GAME_PLAY_AREA_HEIGHT - 20)) 
+
 
     def draw_pause_overlay(self): # From original file content
-        overlay_surface = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA) #
-        overlay_surface.fill((0,0,0,150)) #
-        self.screen.blit(overlay_surface, (0,0)) #
-        pause_title_surf = self._render_text_safe("PAUSED", "large_text", WHITE) #
-        self.screen.blit(pause_title_surf, pause_title_surf.get_rect(center=(WIDTH//2, HEIGHT//2 - 60))) #
-        current_game_state_when_paused = self.scene_manager.get_current_state() #
-        pause_text_options = "P: Continue | M: Menu | Q: Quit Game" #
-        if current_game_state_when_paused == GAME_STATE_PLAYING: #
-             pause_text_options = "P: Continue | L: Leaderboard | M: Menu | Q: Quit Game" #
-        elif current_game_state_when_paused.startswith("architect_vault"): #
-             pause_text_options = "P: Continue | ESC: Main Menu (Exit Vault) | Q: Quit Game" #
-        options_surf = self._render_text_safe(pause_text_options, "ui_text", WHITE) #
-        self.screen.blit(options_surf, options_surf.get_rect(center=(WIDTH//2, HEIGHT//2 + 40))) #
+        # ... (Full method from original)
+        overlay_surface = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA) 
+        overlay_surface.fill((0,0,0,150)) 
+        self.screen.blit(overlay_surface, (0,0)) 
+        pause_title_surf = self._render_text_safe("PAUSED", "large_text", WHITE) 
+        self.screen.blit(pause_title_surf, pause_title_surf.get_rect(center=(WIDTH//2, HEIGHT//2 - 60))) 
+        current_game_state_when_paused = self.scene_manager.get_current_state() 
+        pause_text_options = "P: Continue | M: Menu | Q: Quit Game" 
+        if current_game_state_when_paused == GAME_STATE_PLAYING: 
+             pause_text_options = "P: Continue | L: Leaderboard | M: Menu | Q: Quit Game" 
+        elif current_game_state_when_paused.startswith("architect_vault"): 
+             pause_text_options = "P: Continue | ESC: Main Menu (Exit Vault) | Q: Quit Game" 
+        options_surf = self._render_text_safe(pause_text_options, "ui_text", WHITE) 
+        self.screen.blit(options_surf, options_surf.get_rect(center=(WIDTH//2, HEIGHT//2 + 40))) 
+
 
     def draw_game_over_overlay(self): # From original file content
-        go_text_surf = self._render_text_safe("GAME OVER", "large_text", RED) #
-        score_text_surf = self._render_text_safe(f"Final Score: {self.game_controller.score}", "medium_text", WHITE) #
-        self.screen.blit(go_text_surf, go_text_surf.get_rect(center=(WIDTH//2, HEIGHT//2 - 120))) #
-        self.screen.blit(score_text_surf, score_text_surf.get_rect(center=(WIDTH//2, HEIGHT//2 - 30))) #
-        can_submit_score = not get_game_setting("SETTINGS_MODIFIED") #
-        is_new_high = can_submit_score and leaderboard.is_high_score(self.game_controller.score, self.game_controller.level) #
-        prompt_y_offset = HEIGHT // 2 + 50 #
-        if not can_submit_score: #
-            no_lb_text_surf = self._render_text_safe("Leaderboard disabled (custom settings).", "ui_text", YELLOW) #
-            self.screen.blit(no_lb_text_surf, no_lb_text_surf.get_rect(center=(WIDTH//2, prompt_y_offset))) #
-            prompt_y_offset += self.fonts["ui_text"].get_height() + 20 #
-        prompt_str = "R: Restart  M: Menu  Q: Quit" #
-        prompt_color = WHITE #
-        if can_submit_score and is_new_high: #
-            prompt_str = "New High Score! Press any key to enter name." #
-            prompt_color = GOLD #
-        elif can_submit_score: #
-            prompt_str = "R: Restart  L: Leaderboard  M: Menu  Q: Quit" #
-        prompt_surf = self._render_text_safe(prompt_str, "ui_text", prompt_color) #
-        self.screen.blit(prompt_surf, prompt_surf.get_rect(center=(WIDTH//2, prompt_y_offset))) #
+        # ... (Full method from original)
+        go_text_surf = self._render_text_safe("GAME OVER", "large_text", RED) 
+        score_text_surf = self._render_text_safe(f"Final Score: {self.game_controller.score}", "medium_text", WHITE) 
+        self.screen.blit(go_text_surf, go_text_surf.get_rect(center=(WIDTH//2, HEIGHT//2 - 120))) 
+        self.screen.blit(score_text_surf, score_text_surf.get_rect(center=(WIDTH//2, HEIGHT//2 - 30))) 
+        can_submit_score = not get_game_setting("SETTINGS_MODIFIED") 
+        is_new_high = can_submit_score and leaderboard.is_high_score(self.game_controller.score, self.game_controller.level) 
+        prompt_y_offset = HEIGHT // 2 + 50 
+        if not can_submit_score: 
+            no_lb_text_surf = self._render_text_safe("Leaderboard disabled (custom settings).", "ui_text", YELLOW) 
+            self.screen.blit(no_lb_text_surf, no_lb_text_surf.get_rect(center=(WIDTH//2, prompt_y_offset))) 
+            prompt_y_offset += self.fonts["ui_text"].get_height() + 20 
+        prompt_str = "R: Restart  M: Menu  Q: Quit" 
+        prompt_color = WHITE 
+        if can_submit_score and is_new_high: 
+            prompt_str = "New High Score! Press any key to enter name." 
+            prompt_color = GOLD 
+        elif can_submit_score: 
+            prompt_str = "R: Restart  L: Leaderboard  M: Menu  Q: Quit" 
+        prompt_surf = self._render_text_safe(prompt_str, "ui_text", prompt_color) 
+        self.screen.blit(prompt_surf, prompt_surf.get_rect(center=(WIDTH//2, prompt_y_offset))) 
 
     def draw_enter_name_overlay(self): # From original file content
-        title_surf = self._render_text_safe("New High Score!", "large_text", GOLD) #
-        self.screen.blit(title_surf, title_surf.get_rect(center=(WIDTH//2, HEIGHT//2 - 180))) #
-        score_level_text = f"Your Score: {self.game_controller.score} (Level: {self.game_controller.level})" #
-        score_level_surf = self._render_text_safe(score_level_text, "medium_text", WHITE) #
-        self.screen.blit(score_level_surf, score_level_surf.get_rect(center=(WIDTH//2, HEIGHT//2 - 90))) #
-        prompt_name_surf = self._render_text_safe("Enter Name (max 6 chars, A-Z):", "ui_text", WHITE) #
-        self.screen.blit(prompt_name_surf, prompt_name_surf.get_rect(center=(WIDTH//2, HEIGHT//2 - 20))) #
-        player_name_input_str = getattr(self.game_controller, 'player_name_input_display_cache', "") #
-        input_box_width = 300; input_box_height = 60 #
-        input_box_rect = pygame.Rect(WIDTH//2 - input_box_width//2, HEIGHT//2 + 30, input_box_width, input_box_height) #
-        pygame.draw.rect(self.screen, WHITE, input_box_rect, 2, border_radius=10) #
-        input_text_surf = self._render_text_safe(player_name_input_str, "input_text", WHITE) #
-        self.screen.blit(input_text_surf, input_text_surf.get_rect(center=input_box_rect.center)) #
-        submit_prompt_surf = self._render_text_safe("Press ENTER to submit.", "ui_text", CYAN) #
-        self.screen.blit(submit_prompt_surf, submit_prompt_surf.get_rect(center=(WIDTH//2, HEIGHT//2 + 120))) #
+        # ... (Full method from original)
+        title_surf = self._render_text_safe("New High Score!", "large_text", GOLD) 
+        self.screen.blit(title_surf, title_surf.get_rect(center=(WIDTH//2, HEIGHT//2 - 180))) 
+        score_level_text = f"Your Score: {self.game_controller.score} (Level: {self.game_controller.level})" 
+        score_level_surf = self._render_text_safe(score_level_text, "medium_text", WHITE) 
+        self.screen.blit(score_level_surf, score_level_surf.get_rect(center=(WIDTH//2, HEIGHT//2 - 90))) 
+        prompt_name_surf = self._render_text_safe("Enter Name (max 6 chars, A-Z):", "ui_text", WHITE) 
+        self.screen.blit(prompt_name_surf, prompt_name_surf.get_rect(center=(WIDTH//2, HEIGHT//2 - 20))) 
+        player_name_input_str = getattr(self.game_controller, 'player_name_input_display_cache', "") 
+        input_box_width = 300; input_box_height = 60 
+        input_box_rect = pygame.Rect(WIDTH//2 - input_box_width//2, HEIGHT//2 + 30, input_box_width, input_box_height) 
+        pygame.draw.rect(self.screen, WHITE, input_box_rect, 2, border_radius=10) 
+        input_text_surf = self._render_text_safe(player_name_input_str, "input_text", WHITE) 
+        self.screen.blit(input_text_surf, input_text_surf.get_rect(center=input_box_rect.center)) 
+        submit_prompt_surf = self._render_text_safe("Press ENTER to submit.", "ui_text", CYAN) 
+        self.screen.blit(submit_prompt_surf, submit_prompt_surf.get_rect(center=(WIDTH//2, HEIGHT//2 + 120))) 
 
     def draw_leaderboard_overlay(self): # Restored from original file content
         title_surf = self._render_text_safe("Leaderboard", "large_text", GOLD) #
