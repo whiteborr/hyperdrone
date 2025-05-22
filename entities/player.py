@@ -109,7 +109,8 @@ class Drone(BaseDrone):
         self.speed_boost_end_time = 0 
         self.speed_boost_duration = get_game_setting("SPEED_BOOST_POWERUP_DURATION") 
         self.speed_boost_multiplier = POWERUP_TYPES.get("speed_boost", {}).get("multiplier", 1.8)
-        self.original_speed_before_boost = self.speed  
+        self.original_speed_before_boost = self.speed
+        self.shield_tied_to_speed_boost = False
 
         self.thrust_particles = []
         self.thrust_particle_spawn_timer = 0
@@ -312,6 +313,7 @@ class Drone(BaseDrone):
         rad_angle_shoot = math.radians(self.angle) #
         bullet_start_x = self.x + math.cos(rad_angle_shoot) * nose_offset_factor #
         bullet_start_y = self.y + math.sin(rad_angle_shoot) * nose_offset_factor #
+        
         if self.current_weapon_mode not in [WEAPON_MODE_HEATSEEKER, WEAPON_MODE_LIGHTNING]: #
             if can_shoot_primary: #
                 if sound: sound.play() #
@@ -319,6 +321,7 @@ class Drone(BaseDrone):
                 angles_to_fire = [0] #
                 if self.current_weapon_mode == WEAPON_MODE_TRI_SHOT or self.current_weapon_mode == WEAPON_MODE_RAPID_TRI: #
                     angles_to_fire = [-15, 0, 15] #
+                
                 for angle_offset in angles_to_fire: #
                     effective_bullet_angle = self.angle + angle_offset #
                     bullet_speed = get_game_setting("PLAYER_BULLET_SPEED") #
@@ -326,12 +329,18 @@ class Drone(BaseDrone):
                     bullet_color = get_game_setting("PLAYER_BULLET_COLOR") #
                     current_bullet_damage = 15 * self.bullet_damage_multiplier 
                     if self.current_weapon_mode == WEAPON_MODE_BIG_SHOT: current_bullet_damage *= 2.5 #
+                    
                     bounces = get_game_setting("BOUNCING_BULLET_MAX_BOUNCES") if self.current_weapon_mode == WEAPON_MODE_BOUNCE else 0 #
                     pierces = get_game_setting("PIERCING_BULLET_MAX_PIERCES") if self.current_weapon_mode == WEAPON_MODE_PIERCE else 0 #
+                    
+                    # MODIFIED: Determine if bullets can pierce walls
+                    can_pierce_walls_flag = (self.current_weapon_mode == WEAPON_MODE_PIERCE)
+
                     new_bullet = Bullet(bullet_start_x, bullet_start_y, effective_bullet_angle, 
                                         bullet_speed, bullet_lifetime, self.bullet_size, bullet_color, 
-                                        current_bullet_damage, bounces, pierces) #
-                    self.bullets_group.add(new_bullet) #
+                                        current_bullet_damage, bounces, pierces,
+                                        can_pierce_walls=can_pierce_walls_flag) # MODIFIED: Pass new flag
+                    self.bullets_group.add(new_bullet)
         if self.current_weapon_mode == WEAPON_MODE_HEATSEEKER or self.current_weapon_mode == WEAPON_MODE_HEATSEEKER_PLUS_BULLETS: #
             if can_shoot_missile: #
                 if missile_sound: missile_sound.play() #
@@ -371,12 +380,19 @@ class Drone(BaseDrone):
             self.health = 0 #
             self.alive = False #
 
-    def activate_shield(self, duration, is_from_speed_boost=False):  #
-        self.shield_active = True #
-        self.shield_end_time = pygame.time.get_ticks() + duration #
-        self.shield_duration = duration  #
-        if not is_from_speed_boost: 
-            self.active_powerup_type = "shield"  #
+    def activate_shield(self, duration, is_from_speed_boost=False):
+        self.shield_active = True
+        self.shield_end_time = pygame.time.get_ticks() + duration
+        self.shield_duration = duration # Store the duration of the current shield effect
+
+        if is_from_speed_boost:
+            self.shield_tied_to_speed_boost = True
+            # Do not set active_powerup_type to "shield" if it's from speed boost,
+            # so the HUD doesn't incorrectly show "shield" as the primary powerup type
+            # if the speed_boost is the one granting it.
+        else: # Shield is from a dedicated shield pickup
+            self.active_powerup_type = "shield"
+            self.shield_tied_to_speed_boost = False
 
     def arm_speed_boost(self, duration, multiplier): #
         self.speed_boost_duration = duration #
@@ -387,8 +403,11 @@ class Drone(BaseDrone):
         if self.active_powerup_type == "speed_boost" and not self.speed_boost_active and self.moving_forward: #
             self.speed_boost_active = True #
             self.speed_boost_end_time = pygame.time.get_ticks() + self.speed_boost_duration #
-            self.original_speed_before_boost = self.speed  #
-            self.current_speed = self.speed * self.speed_boost_multiplier #
+            self.original_speed_before_boost = self.speed # Store the drone's current base speed
+            self.current_speed = self.speed * self.speed_boost_multiplier # Apply speed multiplier
+            
+            # Activate shield for the same duration as the speed boost
+            self.activate_shield(self.speed_boost_duration, is_from_speed_boost=True) # ADD THIS LINE
 
     def try_activate_cloak(self, current_time): #
         if self.special_ability == "phantom_cloak" and not self.cloak_active and \
@@ -410,16 +429,25 @@ class Drone(BaseDrone):
     
     def update_powerups(self, current_time_ms):
         if self.shield_active and current_time_ms > self.shield_end_time: 
-            self.shield_active = False 
-            if self.active_powerup_type == "shield": self.active_powerup_type = None 
+            # Check if this shield should deactivate independently or if it's tied to an active speed boost
+            if not (self.shield_tied_to_speed_boost and self.speed_boost_active and current_time_ms <= self.speed_boost_end_time):
+                self.shield_active = False 
+                if self.active_powerup_type == "shield": self.active_powerup_type = None
+                self.shield_tied_to_speed_boost = False # Shield ended, so it's no longer tied
+
         if self.speed_boost_active and current_time_ms > self.speed_boost_end_time: 
             self.speed_boost_active = False 
-            self.current_speed = self.speed 
+            self.current_speed = self.speed  # Revert to the drone's base speed (self.speed)
             if self.active_powerup_type == "speed_boost": self.active_powerup_type = None 
+            
+            if self.shield_tied_to_speed_boost: # If shield was tied to this speed boost
+                self.shield_active = False
+                self.shield_tied_to_speed_boost = False # Reset the flag as speed boost ended
+        
         if self.cloak_active and current_time_ms > self.cloak_end_time: 
             self.cloak_active = False 
             self.is_cloaked_visual = False 
-            self.cloak_cooldown_end_time = current_time_ms + self.phantom_cloak_cooldown_ms 
+            self.cloak_cooldown_end_time = current_time_ms + self.phantom_cloak_cooldown_ms
 
     def reset(self, x, y, drone_id, drone_stats, drone_sprite_path, health_override=None, preserve_weapon=False):
         base_speed_from_stats = drone_stats.get("speed", get_game_setting("PLAYER_SPEED"))
@@ -492,6 +520,7 @@ class Drone(BaseDrone):
         self.cloak_end_time = 0 #
         self.active_powerup_type = None #
         self.thrust_particles.clear()
+        self.shield_tied_to_speed_boost = False
 
 
     def get_position(self): #
