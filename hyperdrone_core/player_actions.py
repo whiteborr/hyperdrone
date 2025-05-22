@@ -73,9 +73,9 @@ class PlayerActions:
         player = self._get_player() #
         if player: #
             if hasattr(player, 'shoot'): #
-                maze_ref = getattr(self.game_controller, 'maze', None) #
-                enemies_group_ref = getattr(self.game_controller, 'enemies', None) #
-                
+                maze_ref = getattr(self.game_controller, 'maze', None) # Already gets maze
+                enemies_group_ref = getattr(self.game_controller, 'enemies', None) # Already gets enemies
+                                
                 primary_shoot_sound = None #
                 missile_launch_sound = None #
                 
@@ -84,11 +84,10 @@ class PlayerActions:
                     missile_launch_sound = self.game_controller.sounds.get('missile_launch') #
 
                 player.shoot(
-                    sound=primary_shoot_sound, #
-                    missile_sound=missile_launch_sound, #
-                    maze=maze_ref, #
-                    enemies_group=enemies_group_ref #
-                    # current_time_ms is implicitly used by player.shoot for cooldown checks via pygame.time.get_ticks()
+                    sound=primary_shoot_sound, 
+                    missile_sound=missile_launch_sound, 
+                    maze=maze_ref, # Pass the maze reference
+                    enemies_group=enemies_group_ref 
                 )
 
     def try_activate_cloak(self, current_time_ms): #
