@@ -20,8 +20,18 @@
         "level": 3
     },
     {
+        "name": "DAD",
+        "score": 480,
+        "level": 3
+    },
+    {
         "name": "KALIM",
         "score": 340,
+        "level": 3
+    },
+    {
+        "name": "DAD",
+        "score": 330,
         "level": 3
     },
     {
@@ -31,22 +41,12 @@
     },
     {
         "name": "DAD",
+        "score": 290,
+        "level": 2
+    },
+    {
+        "name": "DAD",
         "score": 285,
-        "level": 2
-    },
-    {
-        "name": "DAD",
-        "score": 215,
-        "level": 2
-    },
-    {
-        "name": "DAD",
-        "score": 215,
-        "level": 2
-    },
-    {
-        "name": "DAD",
-        "score": 200,
         "level": 2
     }
 ]

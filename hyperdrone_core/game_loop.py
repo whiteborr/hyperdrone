@@ -97,7 +97,7 @@ class GameController:
 
         self.animating_fragments = []
         self.fragment_ui_target_positions = {} 
-        self.hud_displayed_fragments = set() # Stores IDs of fragments whose animation to HUD is complete
+        self.hud_displayed_fragments = set() 
 
         self.all_enemies_killed_this_level = False 
         self.level_cleared_pending_animation = False 
@@ -284,7 +284,7 @@ class GameController:
         self.level = 1 
         self.lives = gs.get_game_setting("PLAYER_LIVES") 
         self.score = 0 
-        self.drone_system.set_player_level(self.level) # This might trigger passive unlocks
+        self.drone_system.set_player_level(self.level) 
         self.level_cleared_pending_animation = False 
         self.all_enemies_killed_this_level = False 
 
@@ -304,7 +304,7 @@ class GameController:
         else: 
             self.player.reset(player_start_pos[0], player_start_pos[1],
                               drone_id=selected_drone_id, drone_stats=effective_drone_stats,
-                              drone_sprite_path=player_ingame_sprite_path) 
+                              drone_sprite_path=player_ingame_sprite_path, preserve_weapon=False) # Reset weapon for new game
 
         self.ui_manager.update_player_life_icon_surface() 
 
@@ -322,12 +322,11 @@ class GameController:
         self.player_name_input_display_cache = "" 
         self.animating_rings.clear() 
         self.animating_fragments.clear()
-        
-        # Initialize hud_displayed_fragments based on DroneSystem's persistent knowledge
         self.hud_displayed_fragments.clear() 
-        if self.drone_system:
+        if self.drone_system: # Check if any fragments are already "collected" by drone system for new game (e.g. if unlocks persist across game sessions)
             for frag_id in self.drone_system.get_collected_fragments_ids():
                 self.hud_displayed_fragments.add(frag_id)
+
 
         self._place_collectibles_for_level(initial_setup=True) 
         self._reset_level_timer_internal() 
@@ -351,7 +350,7 @@ class GameController:
         if self.player: 
             self.player.reset(safe_spawn[0], safe_spawn[1],
                               drone_id=selected_drone_id, drone_stats=effective_drone_stats_vault,
-                              drone_sprite_path=player_ingame_sprite_path) 
+                              drone_sprite_path=player_ingame_sprite_path, preserve_weapon=True) # Preserve weapon entering vault
         else: 
             self.player = PlayerDrone(safe_spawn[0], safe_spawn[1],
                                 drone_id=selected_drone_id, drone_stats=effective_drone_stats_vault,
@@ -359,9 +358,9 @@ class GameController:
                                 crash_sound=self.sounds.get('crash'), drone_system=self.drone_system) 
         
         if self.player: 
-            self.player.weapon_mode_index = prev_weapon_mode_idx 
-            self.player.current_weapon_mode = prev_current_weapon_mode 
-            self.player._update_weapon_attributes() 
+            # self.player.weapon_mode_index = prev_weapon_mode_idx # Already handled by preserve_weapon
+            # self.player.current_weapon_mode = prev_current_weapon_mode
+            # self.player._update_weapon_attributes() 
             self.player.reset_active_powerups() 
             self.player.health = self.player.max_health 
             self.player.moving_forward = False 
@@ -372,15 +371,11 @@ class GameController:
         self.rings.empty(); self.power_ups.empty(); self.core_fragments.empty() 
         self.architect_vault_terminals.empty() 
         self.animating_fragments.clear()
-        # hud_displayed_fragments should persist if already set by initialize_game_session
-        # or carry over from normal gameplay if the vault is entered mid-game.
-        # No, Vault is a special state, let's ensure its HUD state reflects what's actually collected
-        # by DroneSystem for buffs, not necessarily what was animating before.
+        # For vault, hud_displayed_fragments should reflect actual drone_system collection for buffs
         self.hud_displayed_fragments.clear()
         if self.drone_system:
             for frag_id in self.drone_system.get_collected_fragments_ids():
                 self.hud_displayed_fragments.add(frag_id)
-
 
         self.architect_vault_current_phase = "intro" 
         self.architect_vault_phase_timer_start = pygame.time.get_ticks() 
@@ -750,8 +745,6 @@ class GameController:
         self.total_rings_per_level = min(self.total_rings_per_level + 1, 15) 
         self.drone_system.set_player_level(self.level) 
         if self.player: 
-            if self.all_enemies_killed_this_level and hasattr(self.player, 'cycle_weapon_state'): 
-                self.player.cycle_weapon_state(force_cycle=False) 
             self.player.health = min(self.player.health + 25, self.player.max_health) 
             new_player_pos = self._get_safe_spawn_point(TILE_SIZE * 0.8, TILE_SIZE * 0.8) 
             current_drone_id = self.player.drone_id 
@@ -760,7 +753,8 @@ class GameController:
             current_ingame_sprite = current_drone_config.get("ingame_sprite_path") 
             self.player.reset(new_player_pos[0], new_player_pos[1],
                               drone_id=current_drone_id, drone_stats=current_drone_stats,
-                              drone_sprite_path=current_ingame_sprite) 
+                              drone_sprite_path=current_ingame_sprite,
+                              preserve_weapon=True) # Preserve weapon for next level
         self.all_enemies_killed_this_level = False 
         self.maze = Maze(game_area_x_offset=0, maze_type="standard") 
         self._spawn_enemies_for_level() 
@@ -770,7 +764,7 @@ class GameController:
         self.play_sound('level_up') 
         self.animating_rings.clear() 
         self.animating_fragments.clear() 
-        # self.hud_displayed_fragments is NOT cleared here, so HUD visual persists.
+        # hud_displayed_fragments is NOT cleared, to persist visuals across levels
         if self.player: self.player.moving_forward = False 
         if not self.scene_manager.get_current_state().startswith("architect_vault"): 
             self.scene_manager.set_game_state(GAME_STATE_PLAYING) 
@@ -783,18 +777,17 @@ class GameController:
         current_drone_stats = self.drone_system.get_drone_stats(current_drone_id, is_in_architect_vault=is_in_vault) 
         current_drone_config = self.drone_system.get_drone_config(current_drone_id) 
         current_ingame_sprite = current_drone_config.get("ingame_sprite_path") 
-        prev_weapon_idx = self.player.weapon_mode_index 
-        prev_weapon_mode = self.player.current_weapon_mode 
+        
         self.player.reset(new_player_pos[0], new_player_pos[1],
                           drone_id=current_drone_id, drone_stats=current_drone_stats,
                           drone_sprite_path=current_ingame_sprite,
-                          health_override=self.player.max_health) 
-        self.player.weapon_mode_index = prev_weapon_idx 
-        self.player.current_weapon_mode = prev_weapon_mode 
-        self.player._update_weapon_attributes() 
+                          health_override=self.player.max_health,
+                          preserve_weapon=False) # Reset weapon on death
+        
         self.animating_rings.clear() 
         self.animating_fragments.clear() 
-        # Do NOT clear self.hud_displayed_fragments here if collection should persist across lives
+        # self.hud_displayed_fragments is NOT cleared on death to maintain visual persistence
+        # of collected fragments throughout the game session (until new game).
         self.level_cleared_pending_animation = False 
 
     def _reset_level_timer_internal(self): 
