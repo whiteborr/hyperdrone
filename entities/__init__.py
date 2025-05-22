@@ -3,6 +3,7 @@ from .player import Drone as PlayerDrone
 from .enemy import Enemy
 from .bullet import Bullet, Missile, LightningZap
 from .collectibles import Ring, WeaponUpgradeItem, ShieldItem, SpeedBoostItem, CoreFragmentItem
+from .particle import Particle
 
 __all__ = [
     "BaseDrone",
@@ -15,5 +16,6 @@ __all__ = [
     "WeaponUpgradeItem",
     "ShieldItem",
     "SpeedBoostItem",
-    "CoreFragmentItem"
+    "CoreFragmentItem",
+    "Particle"
 ]

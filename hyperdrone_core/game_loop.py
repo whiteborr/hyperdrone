@@ -1,3 +1,4 @@
+# whiteborr/hyperdrone/hyperdrone-e30601dab2e5a5306ae5410d9796700369b67256/hyperdrone_core/game_loop.py
 import sys
 import os
 import random
@@ -21,7 +22,8 @@ from entities import (
     ShieldItem,
     SpeedBoostItem,
     CoreFragmentItem,
-    LightningZap
+    LightningZap,
+    Particle # <-- IMPORT Particle HERE
 )
 from entities.maze import Maze 
 
@@ -29,7 +31,7 @@ from drone_management import DroneSystem, DRONE_DATA, DRONE_DISPLAY_ORDER
 
 import game_settings as gs
 from game_settings import (
-    BLACK, WHITE, GOLD, CYAN, RED, YELLOW, GREEN, 
+    BLACK, WHITE, GOLD, CYAN, RED, YELLOW, GREEN, ORANGE, DARK_RED, GREY, # Added ORANGE, DARK_RED, GREY for particles
     GAME_STATE_MAIN_MENU, GAME_STATE_PLAYING, GAME_STATE_GAME_OVER, 
     GAME_STATE_LEADERBOARD, GAME_STATE_ENTER_NAME, GAME_STATE_SETTINGS, 
     GAME_STATE_DRONE_SELECT, GAME_STATE_BONUS_LEVEL_PLAYING, 
@@ -78,6 +80,7 @@ class GameController:
         self.power_ups = pygame.sprite.Group() 
         self.core_fragments = pygame.sprite.Group() 
         self.architect_vault_terminals = pygame.sprite.Group() 
+        self.explosion_particles = pygame.sprite.Group() # <-- ADDED FOR PARTICLES
 
         self.score = 0 
         self.level = 1 
@@ -242,7 +245,7 @@ class GameController:
             'cloak_activate': "cloak_on.wav",
             'vault_alarm': "vault_alarm.wav",
             'vault_barrier_disable': "vault_barrier_disable.wav",
-            'prototype_drone_explode': "prototype_drone_explode.wav"
+            'prototype_drone_explode': "prototype_drone_explode.wav" # Used for particle explosion sound
         } 
         sound_dir = os.path.join("assets", "sounds") 
         for name, filename in sound_files.items(): 
@@ -258,7 +261,27 @@ class GameController:
     def play_sound(self, name, volume=0.7): 
         if name in self.sounds and self.sounds[name]: 
             self.sounds[name].set_volume(volume) 
-            self.sounds[name].play() 
+            self.sounds[name].play()
+
+    # --- PARTICLE EXPLOSION METHOD ---
+    def _create_explosion(self, x, y, num_particles=20, specific_sound='prototype_drone_explode'):
+        """Helper function to create a particle explosion."""
+        colors = [gs.ORANGE, gs.YELLOW, gs.RED, gs.DARK_RED, gs.GREY] 
+        min_speed = 1
+        max_speed = 4
+        min_size = 2
+        max_size = 5
+        gravity = 0.05 
+        shrink_rate = 0.1 # This is effectively handled by lifetime in Particle class
+        lifetime = random.randint(20, 40) 
+
+        for _ in range(num_particles):
+            particle = Particle(x, y, colors, min_speed, max_speed, min_size, max_size, gravity, shrink_rate, lifetime)
+            self.explosion_particles.add(particle)
+        
+        if specific_sound:
+            self.play_sound(specific_sound)
+
 
     def initialize_main_menu_scene(self): 
         self.selected_menu_option = 0 
@@ -304,7 +327,7 @@ class GameController:
         else: 
             self.player.reset(player_start_pos[0], player_start_pos[1],
                               drone_id=selected_drone_id, drone_stats=effective_drone_stats,
-                              drone_sprite_path=player_ingame_sprite_path, preserve_weapon=False) # Reset weapon for new game
+                              drone_sprite_path=player_ingame_sprite_path, preserve_weapon=False) 
 
         self.ui_manager.update_player_life_icon_surface() 
 
@@ -315,6 +338,7 @@ class GameController:
             self.player.lightning_zaps_group.empty() 
         self.rings.empty(); self.power_ups.empty(); self.core_fragments.empty() 
         self.architect_vault_terminals.empty() 
+        self.explosion_particles.empty() # <-- CLEAR PARTICLES
 
         self.collected_rings = 0; self.displayed_collected_rings = 0 
         self.total_rings_per_level = 5 
@@ -323,10 +347,9 @@ class GameController:
         self.animating_rings.clear() 
         self.animating_fragments.clear()
         self.hud_displayed_fragments.clear() 
-        if self.drone_system: # Check if any fragments are already "collected" by drone system for new game (e.g. if unlocks persist across game sessions)
+        if self.drone_system: 
             for frag_id in self.drone_system.get_collected_fragments_ids():
                 self.hud_displayed_fragments.add(frag_id)
-
 
         self._place_collectibles_for_level(initial_setup=True) 
         self._reset_level_timer_internal() 
@@ -350,7 +373,7 @@ class GameController:
         if self.player: 
             self.player.reset(safe_spawn[0], safe_spawn[1],
                               drone_id=selected_drone_id, drone_stats=effective_drone_stats_vault,
-                              drone_sprite_path=player_ingame_sprite_path, preserve_weapon=True) # Preserve weapon entering vault
+                              drone_sprite_path=player_ingame_sprite_path, preserve_weapon=True) 
         else: 
             self.player = PlayerDrone(safe_spawn[0], safe_spawn[1],
                                 drone_id=selected_drone_id, drone_stats=effective_drone_stats_vault,
@@ -358,9 +381,6 @@ class GameController:
                                 crash_sound=self.sounds.get('crash'), drone_system=self.drone_system) 
         
         if self.player: 
-            # self.player.weapon_mode_index = prev_weapon_mode_idx # Already handled by preserve_weapon
-            # self.player.current_weapon_mode = prev_current_weapon_mode
-            # self.player._update_weapon_attributes() 
             self.player.reset_active_powerups() 
             self.player.health = self.player.max_health 
             self.player.moving_forward = False 
@@ -370,8 +390,8 @@ class GameController:
         self.enemies.empty() 
         self.rings.empty(); self.power_ups.empty(); self.core_fragments.empty() 
         self.architect_vault_terminals.empty() 
+        self.explosion_particles.empty() # <-- CLEAR PARTICLES
         self.animating_fragments.clear()
-        # For vault, hud_displayed_fragments should reflect actual drone_system collection for buffs
         self.hud_displayed_fragments.clear()
         if self.drone_system:
             for frag_id in self.drone_system.get_collected_fragments_ids():
@@ -463,12 +483,20 @@ class GameController:
             else: 
                 self._handle_player_death_or_life_loss("Drone Destroyed!") 
                 return 
+            
             for enemy_obj in list(self.enemies): 
                 if enemy_obj.alive: 
                     player_pixel_pos = self.player.get_position() if self.player and self.player.alive else None
                     enemy_obj.update(player_pixel_pos, self.maze, current_time, 0) 
-                elif not enemy_obj.bullets: 
+                elif not enemy_obj.alive and not hasattr(enemy_obj, '_exploded'): 
+                    self._create_explosion(enemy_obj.rect.centerx, enemy_obj.rect.centery)
+                    enemy_obj._exploded = True 
                     enemy_obj.kill() 
+                elif not enemy_obj.bullets and hasattr(enemy_obj, '_exploded'): 
+                    enemy_obj.kill() 
+
+            self.explosion_particles.update() # <-- UPDATE PARTICLES
+
             self.rings.update() 
             for p_up in list(self.power_ups): 
                 if p_up.update(): p_up.kill() 
@@ -478,6 +506,7 @@ class GameController:
             if random.random() < (gs.get_game_setting("POWERUP_SPAWN_CHANCE") / gs.get_game_setting("FPS")): 
                  if len(self.power_ups) < gs.get_game_setting("MAX_POWERUPS_ON_SCREEN"): 
                     self._try_spawn_powerup_item() 
+        
         for ring_anim in list(self.animating_rings): 
             dx = ring_anim['target_pos'][0] - ring_anim['pos'][0] 
             dy = ring_anim['target_pos'][1] - ring_anim['pos'][1] 
@@ -489,6 +518,7 @@ class GameController:
             else: 
                 ring_anim['pos'][0] += (dx / dist) * ring_anim['speed'] 
                 ring_anim['pos'][1] += (dy / dist) * ring_anim['speed'] 
+        
         for frag_anim in list(self.animating_fragments):
             dx = frag_anim['target_pos'][0] - frag_anim['pos'][0]
             dy = frag_anim['target_pos'][1] - frag_anim['pos'][1]
@@ -500,6 +530,7 @@ class GameController:
             else:
                 frag_anim['pos'][0] += (dx / dist) * frag_anim['speed']
                 frag_anim['pos'][1] += (dy / dist) * frag_anim['speed']
+        
         if self.level_cleared_pending_animation and not self.animating_rings and not self.animating_fragments: 
             self._prepare_for_next_level() 
             self.level_cleared_pending_animation = False 
@@ -514,6 +545,7 @@ class GameController:
         if self.level_time_remaining_ms <= 0: 
             self._end_bonus_level(completed=True) 
             return 
+        self.explosion_particles.update() # Should also update particles in bonus level if they can occur
 
     def _update_architect_vault_state(self, current_time): 
         if not self.player or not self.maze: 
@@ -526,6 +558,7 @@ class GameController:
         if self.paused: return 
         self.player.update(current_time, self.maze, self.enemies, 0) 
         current_phase = self.architect_vault_current_phase 
+        
         if current_phase == "intro": 
             pass 
         elif current_phase == "entry_puzzle": 
@@ -541,9 +574,18 @@ class GameController:
                 self.architect_vault_message_timer = pygame.time.get_ticks() + 2000 
         elif current_phase and current_phase.startswith("gauntlet_wave"): 
             player_pixel_pos = self.player.get_position() if self.player and self.player.alive else None
-            self.enemies.update(player_pixel_pos, self.maze, current_time, 0) 
+            for enemy_obj in list(self.enemies): # Enemy update within vault
+                if enemy_obj.alive:
+                    enemy_obj.update(player_pixel_pos, self.maze, current_time, 0)
+                elif not enemy_obj.alive and not hasattr(enemy_obj, '_exploded'):
+                    self._create_explosion(enemy_obj.rect.centerx, enemy_obj.rect.centery, num_particles=30) 
+                    enemy_obj._exploded = True
+                    enemy_obj.kill()
+                elif not enemy_obj.bullets and hasattr(enemy_obj, '_exploded'):
+                    enemy_obj.kill()
+
             self._check_collisions_architect_vault_combat() 
-            if not self.enemies: 
+            if not self.enemies: # Check if all enemies of the wave are killed
                 self.play_sound('level_up') 
                 self.architect_vault_gauntlet_current_wave += 1 
                 if self.architect_vault_gauntlet_current_wave > ARCHITECT_VAULT_GAUNTLET_WAVES: 
@@ -569,9 +611,20 @@ class GameController:
             if random.random() < 0.008 : 
                  if len(self.enemies) < 3: 
                      self._spawn_prototype_drones(1, far_from_player=True) 
+            
             player_pixel_pos = self.player.get_position() if self.player and self.player.alive else None
-            self.enemies.update(player_pixel_pos, self.maze, current_time, 0) 
+            for enemy_obj in list(self.enemies): # Enemy update during extraction
+                if enemy_obj.alive:
+                    enemy_obj.update(player_pixel_pos, self.maze, current_time, 0)
+                elif not enemy_obj.alive and not hasattr(enemy_obj, '_exploded'):
+                    self._create_explosion(enemy_obj.rect.centerx, enemy_obj.rect.centery, num_particles=25)
+                    enemy_obj._exploded = True
+                    enemy_obj.kill()
+                elif not enemy_obj.bullets and hasattr(enemy_obj, '_exploded'):
+                    enemy_obj.kill()
             self._check_collisions_architect_vault_combat() 
+        
+        self.explosion_particles.update() # <-- UPDATE PARTICLES in vault state
 
     def _check_collisions_playing(self): 
         if not self.player or not self.player.alive: return 
@@ -650,9 +703,11 @@ class GameController:
                                 projectile.pierces_done += 1 
                             else: 
                                 projectile.alive = False; projectile.kill() 
-                            if not enemy_obj.alive: 
+                            if not enemy_obj.alive: # Enemy died from projectile
                                 self.score += 50 
                                 self.drone_system.add_player_cores(25) 
+                                # The _update_playing_state method will now handle creating explosion
+                                # when it sees enemy_obj.alive is False.
                                 self.all_enemies_killed_this_level = all(not e.alive for e in self.enemies) 
                                 if self.all_enemies_killed_this_level: 
                                     self._check_level_clear_condition() 
@@ -669,6 +724,7 @@ class GameController:
             for enemy_obj in enemy_physical_collisions: 
                 if enemy_obj.alive: 
                     self.player.take_damage(34, self.sounds.get('crash')) 
+                    # If physical collision kills enemy, explosion will be handled by _update_playing_state
                 if not self.player.alive: break 
 
     def _check_collisions_architect_vault_puzzle(self): 
@@ -697,10 +753,10 @@ class GameController:
                             projectile.pierces_done +=1 
                         else: 
                             projectile.alive = False; projectile.kill() 
-                        if not enemy_obj.alive: 
+                        if not enemy_obj.alive: # Enemy died from projectile in vault
                             self.score += 75 
                             self.drone_system.add_player_cores(10) 
-                            self.play_sound('prototype_drone_explode') 
+                            # The _update_architect_vault_state method will handle explosion
                         if not projectile.alive: break 
         for enemy_obj in self.enemies: 
             if hasattr(enemy_obj, 'bullets') and enemy_obj.bullets: 
@@ -754,17 +810,17 @@ class GameController:
             self.player.reset(new_player_pos[0], new_player_pos[1],
                               drone_id=current_drone_id, drone_stats=current_drone_stats,
                               drone_sprite_path=current_ingame_sprite,
-                              preserve_weapon=True) # Preserve weapon for next level
+                              preserve_weapon=True) 
         self.all_enemies_killed_this_level = False 
         self.maze = Maze(game_area_x_offset=0, maze_type="standard") 
         self._spawn_enemies_for_level() 
         self.core_fragments.empty() 
+        self.explosion_particles.empty() # <-- CLEAR PARTICLES
         self._place_collectibles_for_level(initial_setup=True) 
         self._reset_level_timer_internal() 
         self.play_sound('level_up') 
         self.animating_rings.clear() 
         self.animating_fragments.clear() 
-        # hud_displayed_fragments is NOT cleared, to persist visuals across levels
         if self.player: self.player.moving_forward = False 
         if not self.scene_manager.get_current_state().startswith("architect_vault"): 
             self.scene_manager.set_game_state(GAME_STATE_PLAYING) 
@@ -782,12 +838,11 @@ class GameController:
                           drone_id=current_drone_id, drone_stats=current_drone_stats,
                           drone_sprite_path=current_ingame_sprite,
                           health_override=self.player.max_health,
-                          preserve_weapon=False) # Reset weapon on death
+                          preserve_weapon=False) 
         
         self.animating_rings.clear() 
         self.animating_fragments.clear() 
-        # self.hud_displayed_fragments is NOT cleared on death to maintain visual persistence
-        # of collected fragments throughout the game session (until new game).
+        self.explosion_particles.empty() # <-- CLEAR PARTICLES
         self.level_cleared_pending_animation = False 
 
     def _reset_level_timer_internal(self): 
@@ -1171,14 +1226,20 @@ class GameController:
         else: 
             self.screen.fill(BLACK) 
             if self.maze: self.maze.draw(self.screen) 
+        
         self.rings.draw(self.screen) 
         self.power_ups.draw(self.screen) 
         self.core_fragments.draw(self.screen) 
+        
         if current_game_state == GAME_STATE_ARCHITECT_VAULT_ENTRY_PUZZLE: 
             self.architect_vault_terminals.draw(self.screen) 
+        
         if self.enemies:
-            for enemy_sprite in self.enemies: # Iterate through each enemy
-                enemy_sprite.draw(self.screen)   # Call the enemy's custom draw method
+            for enemy_sprite in self.enemies: 
+                enemy_sprite.draw(self.screen)   
+        
+        self.explosion_particles.draw(self.screen) # <-- DRAW PARTICLES
+
         if self.player: self.player.draw(self.screen) 
 
     def run(self): 
@@ -1186,13 +1247,17 @@ class GameController:
         if self.screen_flags != (pygame.FULLSCREEN if current_fullscreen_setting else 0): 
             self.screen_flags = pygame.FULLSCREEN if current_fullscreen_setting else 0 
             self.screen = pygame.display.set_mode((gs.get_game_setting("WIDTH"), gs.get_game_setting("HEIGHT")), self.screen_flags) 
+        
         while True: 
             self.event_manager.process_events() 
             self.update() 
+            
             current_game_state = self.scene_manager.get_current_state() 
             if current_game_state in [GAME_STATE_PLAYING, GAME_STATE_BONUS_LEVEL_PLAYING] or \
                current_game_state.startswith("architect_vault"): 
                 self._draw_game_world() 
+            
             self.ui_manager.draw_current_scene_ui() 
+            
             pygame.display.flip() 
             self.clock.tick(gs.get_game_setting("FPS"))
