@@ -9,10 +9,11 @@
     "ZEPHYR"
   ],
   "selected_drone": "VANTIS",
-  "player_level": 1,
+  "player_level": 2,
   "bosses_defeated": [],
-  "player_cores": 0,
+  "player_cores": 110,
   "collected_core_fragments": [
+    "cf_alpha"
   ],
   "architect_vault_completed": false,
   "unlocked_blueprints": [],
