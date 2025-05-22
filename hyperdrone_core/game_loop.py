@@ -5,29 +5,29 @@ import math
 
 import pygame
 
-# Import from sibling modules within the 'hyperdrone_core' package
+# Import from sibling modules within the 'hyperdrone_core' package (these are correct)
 from .scene_manager import SceneManager
 from .event_manager import EventManager
 from .player_actions import PlayerActions
 from . import leaderboard # Allows leaderboard.load_scores(), etc.
 
-# Import from other packages
-from ..ui import UIManager # Assuming ui.py is in a 'ui' package
-from ..entities import ( # Aliases/classes from entities/__init__.py
-    PlayerDrone, # Using the alias 'PlayerDrone'
+# Import from other packages (CORRECTED: now absolute from project root)
+from ui import UIManager # Was: from ..ui import UIManager
+from entities import ( # Was: from ..entities import ...
+    PlayerDrone,
     Enemy,
     Ring,
     WeaponUpgradeItem,
     ShieldItem,
     SpeedBoostItem,
     CoreFragmentItem,
-    LightningZap # Referenced in original game_loop.py
+    LightningZap
 )
-from ..entities.maze import Maze # Assuming maze.py is in entities package
+from entities.maze import Maze # Was: from ..entities.maze import Maze
 
-from ..drone_management import DroneSystem, DRONE_DATA, DRONE_DISPLAY_ORDER
+from drone_management import DroneSystem, DRONE_DATA, DRONE_DISPLAY_ORDER # Was: from ..drone_management import ...
 
-# game_settings.py is assumed to be at the project root.
+# game_settings.py is assumed to be at the project root (this import is fine)
 import game_settings as gs
 from game_settings import (
     # Explicitly import constants that are frequently used or critical for readability
@@ -46,7 +46,7 @@ from game_settings import (
     ARCHITECT_VAULT_DRONES_PER_WAVE, ARCHITECT_VAULT_GAUNTLET_WAVES, #
     DEFAULT_SETTINGS, # Used for reset action
     # Functions from game_settings that are used by GameController
-    get_game_setting, set_game_setting, reset_all_settings_to_default #
+    get_game_setting, set_game_setting, reset_all_settings_to_default
 )
 
 
