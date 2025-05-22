@@ -88,6 +88,7 @@ class Maze: #
     def is_wall(self, obj_center_x_abs, obj_center_y_abs, obj_width, obj_height): #
         """
         Checks for collision between an object and the maze walls using logic from uploaded file.
+        This method is used for entity-wall pixel-based collision, not directly by A* grid checks.
         """
         drone_rect = pygame.Rect(
             int(obj_center_x_abs - obj_width / 2), #
