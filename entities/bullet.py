@@ -266,7 +266,7 @@ class LightningZap(pygame.sprite.Sprite): #
             self.kill()
             return
 
-        prev_x, prev_y = self.x, self.y # Store previous position
+        prev_x, prev_y = self.x, self.y
 
         self.x += self.dx
         self.y += self.dy
@@ -277,38 +277,58 @@ class LightningZap(pygame.sprite.Sprite): #
             self.alive = False
             return
 
+        # --- Wall Collision Check using maze.is_wall() ---
         wall_hit = False
         if maze:
-            # Bullet's diameter. self.size is the radius.
-            bullet_diameter = self.size * 2 
-            # Check collision using the bullet's current center (self.x, self.y) and its diameter
+            bullet_diameter = self.size * 2
             if maze.is_wall(self.x, self.y, bullet_diameter, bullet_diameter):
                 wall_hit = True
         
         if wall_hit:
+            # ALL bullets (including piercing) stop or bounce on walls.
+            # Piercing is for enemies.
             if self.bounces_done < self.max_bounces:
                 self.x, self.y = prev_x, prev_y # Revert to pre-collision position
+                
+                # Simplified bounce logic (as from previous iteration)
+                # A more accurate bounce would need line normal from maze.is_wall
+                temp_rect_x_move = pygame.Rect(0,0, bullet_diameter, bullet_diameter)
+                temp_rect_x_move.center = (self.x + self.dx, self.y)
+                temp_rect_y_move = pygame.Rect(0,0, bullet_diameter, bullet_diameter)
+                temp_rect_y_move.center = (self.x, self.y + self.dy)
 
-                # Simple bounce logic:
-                # A more sophisticated bounce would involve finding the normal of the line segment hit.
-                # For now, try reflecting based on which component of movement likely caused the hit.
-                # This part can be tricky with arbitrary line segments.
+                # Check if hypothetical moves would also collide to guess wall orientation
+                # This logic might need refinement for perfect bounces off arbitrary line segments
+                hit_x_wall = maze.is_wall(self.x + self.dx, self.y, bullet_diameter, bullet_diameter)
+                hit_y_wall = maze.is_wall(self.x, self.y + self.dy, bullet_diameter, bullet_diameter)
 
-                # Test reflecting both dx and dy as a starting point for line segment bounces
-                self.dx *= -1
-                self.dy *= -1
-                self.angle = (self.angle + 180) % 360
+                bounced_this_frame = False
+                if hit_x_wall and not hit_y_wall: # Primarily hit a vertical surface
+                    self.dx *= -1
+                    self.angle = (180 - self.angle) % 360
+                    bounced_this_frame = True
+                elif hit_y_wall and not hit_x_wall: # Primarily hit a horizontal surface
+                    self.dy *= -1
+                    self.angle = (-self.angle) % 360
+                    bounced_this_frame = True
+                
+                if not bounced_this_frame: # If both (corner) or neither (stuck/glitch), reflect both
+                    self.dx *= -1
+                    self.dy *= -1
+                    self.angle = (self.angle + 180) % 360
                 
                 self.bounces_done += 1
-                # Move slightly with new direction to avoid getting stuck in the wall line
-                self.x += self.dx * 0.1 # Small nudge based on new direction
+                # Nudge based on new direction
+                self.x += self.dx * 0.1 
                 self.y += self.dy * 0.1
                 self.rect.center = (int(self.x), int(self.y))
             else:
+                # If not a bouncing bullet, or out of bounces, it's destroyed by the wall.
+                # This applies to standard bullets AND piercing bullets.
                 self.alive = False
-            return # Processed wall hit
+            return # Collision with wall processed
 
-        # Screen Boundary Checks (if not hit a wall)
+        # --- Screen Boundary Checks (if not hit an internal wall) ---
         min_x_bound = game_area_x_offset
         max_x_bound = WIDTH
         min_y_bound = 0
@@ -316,10 +336,10 @@ class LightningZap(pygame.sprite.Sprite): #
 
         if self.rect.left < min_x_bound or self.rect.right > max_x_bound or \
            self.rect.top < min_y_bound or self.rect.bottom > max_y_bound:
-            if self.bounces_done < self.max_bounces:
+            if self.bounces_done < self.max_bounces: # Bouncing bullets can also bounce off screen edges
                 self.x, self.y = prev_x, prev_y # Revert for boundary bounce
+                
                 bounced_on_boundary = False
-                # Reflect based on which boundary was hit
                 if self.rect.left < min_x_bound or self.rect.right > max_x_bound:
                     self.dx *= -1
                     self.angle = (180 - self.angle) % 360
@@ -327,8 +347,8 @@ class LightningZap(pygame.sprite.Sprite): #
                 if self.rect.top < min_y_bound or self.rect.bottom > max_y_bound:
                     self.dy *= -1
                     self.angle = (-self.angle) % 360
-                    if bounced_on_boundary : # Corner hit
-                        self.angle = (self.angle + 180) % 360
+                    if bounced_on_boundary : # Corner hit on boundary
+                        self.angle = (self.angle + 180) % 360 
                     bounced_on_boundary = True
                 
                 if bounced_on_boundary:
@@ -336,9 +356,9 @@ class LightningZap(pygame.sprite.Sprite): #
                     self.x += self.dx # Apply new direction
                     self.y += self.dy
                     self.rect.center = (int(self.x), int(self.y))
-                else:
+                else: # Should ideally not happen if out of bounds
                     self.alive = False 
-            else:
+            else: # Not a bouncing bullet or out of bounces
                 self.alive = False
             return
 
