@@ -1,4 +1,4 @@
-# whiteborr/hyperdrone/hyperdrone-e30601dab2e5a5306ae5410d9796700369b67256/hyperdrone_core/game_loop.py
+
 import sys
 import os
 import random
@@ -23,7 +23,9 @@ from entities import (
     SpeedBoostItem,
     CoreFragmentItem,
     LightningZap,
-    Particle # Imported Particle
+    Particle, # Imported Particle
+    MazeGuardian, # Import the new MazeGuardian boss class
+    SentinelDrone # Import the new SentinelDrone minion class
 )
 from entities.maze import Maze 
 
@@ -45,8 +47,9 @@ from game_settings import (
     CORE_FRAGMENT_DETAILS, TOTAL_CORE_FRAGMENTS_NEEDED, 
     ARCHITECT_VAULT_DRONES_PER_WAVE, ARCHITECT_VAULT_GAUNTLET_WAVES, 
     DEFAULT_SETTINGS, 
-    get_game_setting, set_game_setting, reset_all_settings_to_default
-    # SETTINGS_MODIFIED is a global in game_settings, accessed via gs.SETTINGS_MODIFIED
+    get_game_setting, set_game_setting, reset_all_settings_to_default,
+    MAZE_GUARDIAN_HEALTH, # Needed for boss initial health check
+    WIDTH, GAME_PLAY_AREA_HEIGHT, HEIGHT # Import WIDTH, GAME_PLAY_AREA_HEIGHT, and HEIGHT
 )
 
 
@@ -82,6 +85,8 @@ class GameController:
         self.core_fragments = pygame.sprite.Group() 
         self.architect_vault_terminals = pygame.sprite.Group() 
         self.explosion_particles = pygame.sprite.Group() # For particle explosions
+        self.maze_guardian = None # Initialize MazeGuardian boss
+        self.boss_active = False # Flag to track if boss is active
 
         self.score = 0 
         self.level = 1 
@@ -163,8 +168,8 @@ class GameController:
     def _initialize_menu_stars(self, num_stars=150): 
         self.menu_stars = [] 
         for _ in range(num_stars): 
-            x = random.randint(0, gs.get_game_setting("WIDTH")) 
-            y = random.randint(0, gs.get_game_setting("HEIGHT")) 
+            x = random.randint(0, WIDTH) # Use imported WIDTH
+            y = random.randint(0, HEIGHT) 
             speed = random.uniform(0.1, 0.7) 
             size = random.randint(1, 2) 
             self.menu_stars.append([x, y, speed, size]) 
@@ -238,7 +243,15 @@ class GameController:
             'cloak_activate': "cloak_on.wav",
             'vault_alarm': "vault_alarm.wav",
             'vault_barrier_disable': "vault_barrier_disable.wav",
-            'prototype_drone_explode': "prototype_drone_explode.wav"
+            'prototype_drone_explode': "prototype_drone_explode.wav",
+            'boss_intro': "boss_intro.wav", # New boss sound
+            'laser_charge': "laser_charge.wav", # New boss sound
+            'laser_fire': "laser_fire.wav", # New boss sound
+            'shield_activate': "shield_activate.wav", # New boss sound
+            'minion_spawn': "minion_spawn.wav", # New boss sound
+            'wall_shift': "wall_shift.wav", # New boss sound
+            'boss_hit': "boss_hit.wav", # New boss sound
+            'boss_death': "boss_death.wav", # New boss sound
         } 
         sound_dir = os.path.join("assets", "sounds") 
         for name, filename in sound_files.items(): 
@@ -296,7 +309,7 @@ class GameController:
     def initialize_game_session(self): 
         # Reset persisted core fragments at the very start of a new game session
         if self.drone_system:
-            self.drone_system.reset_collected_fragments_in_storage() # ADDED THIS LINE
+            self.drone_system.reset_collected_fragments_in_storage() 
 
         self.level = 1 
         self.lives = gs.get_game_setting("PLAYER_LIVES") 
@@ -310,6 +323,7 @@ class GameController:
         player_start_pos = self._get_safe_spawn_point(TILE_SIZE * 0.8, TILE_SIZE * 0.8) 
 
         selected_drone_id = self.drone_system.get_selected_drone_id() 
+        # Standardize the call to use is_in_architect_vault
         effective_drone_stats = self.drone_system.get_drone_stats(selected_drone_id, is_in_architect_vault=False) 
         drone_config = self.drone_system.get_drone_config(selected_drone_id) 
         player_ingame_sprite_path = drone_config.get("ingame_sprite_path") 
@@ -333,6 +347,8 @@ class GameController:
             self.player.lightning_zaps_group.empty() 
         self.rings.empty(); self.power_ups.empty(); self.core_fragments.empty() 
         self.architect_vault_terminals.empty() 
+        self.maze_guardian = None # Reset boss instance
+        self.boss_active = False # Reset boss flag
 
         self.collected_rings = 0; self.displayed_collected_rings = 0 
         self.total_rings_per_level = 5 
@@ -341,10 +357,9 @@ class GameController:
         self.animating_rings.clear() 
         self.animating_fragments.clear()
         
-        # This will now correctly reflect the cleared fragments from drone_system
         self.hud_displayed_fragments.clear() 
         if self.drone_system: 
-            for frag_id in self.drone_system.get_collected_fragments_ids(): # Should be empty now
+            for frag_id in self.drone_system.get_collected_fragments_ids(): 
                 self.hud_displayed_fragments.add(frag_id)
 
         self._place_collectibles_for_level(initial_setup=True) 
@@ -354,6 +369,8 @@ class GameController:
         print("GameController: Initializing Architect's Vault session...") 
         self.maze = Maze(game_area_x_offset=0, maze_type="architect_vault") 
         self.explosion_particles.empty()
+        self.maze_guardian = None 
+        self.boss_active = False
 
         prev_weapon_mode_idx = WEAPON_MODES_SEQUENCE.index(gs.get_game_setting("INITIAL_WEAPON_MODE")) 
         prev_current_weapon_mode = gs.get_game_setting("INITIAL_WEAPON_MODE") 
@@ -458,8 +475,8 @@ class GameController:
                 for star in self.menu_stars: 
                     star[0] -= star[2] 
                     if star[0] < 0: 
-                        star[0] = gs.get_game_setting("WIDTH") 
-                        star[1] = random.randint(0, gs.get_game_setting("HEIGHT")) 
+                        star[0] = WIDTH 
+                        star[1] = random.randint(0, HEIGHT) 
         if hasattr(self.scene_manager, 'update'): 
             self.scene_manager.update() 
 
@@ -489,7 +506,6 @@ class GameController:
                     enemy_obj._exploded = True 
                     enemy_obj.kill() 
                 elif not enemy_obj.bullets and hasattr(enemy_obj, '_exploded'): 
-                     # Only fully remove if it has exploded AND its bullets are gone
                     enemy_obj.kill()
 
             self.explosion_particles.update()
@@ -536,7 +552,7 @@ class GameController:
         if not self.player or not self.player.alive: 
             self._end_bonus_level(completed=False) 
             return 
-        self.player.update(current_time, self.maze, None, 0) # Pass None for enemies_group in bonus
+        self.player.update(current_time, self.maze, None, 0) 
         elapsed_bonus_time = current_time - self.bonus_level_timer_start 
         self.level_time_remaining_ms = max(0, self.bonus_level_duration_ms - elapsed_bonus_time) 
         if self.level_time_remaining_ms <= 0: 
@@ -553,10 +569,13 @@ class GameController:
             self.scene_manager.set_game_state(GAME_STATE_ARCHITECT_VAULT_FAILURE) 
             return 
         if self.paused: return 
-        self.player.update(current_time, self.maze, self.enemies, 0) 
-        current_phase = self.architect_vault_current_phase 
         
+        self.player.update(current_time, self.maze, self.enemies, 0) 
+        self.explosion_particles.update()
+
+        current_phase = self.architect_vault_current_phase 
         player_pixel_pos = self.player.get_position() if self.player and self.player.alive else None
+
         if current_phase == "intro": 
             pass 
         elif current_phase == "entry_puzzle": 
@@ -574,7 +593,7 @@ class GameController:
             for enemy_obj in list(self.enemies):
                 if enemy_obj.alive:
                     enemy_obj.update(player_pixel_pos, self.maze, current_time, 0)
-                elif not enemy_obj.alive and not hasattr(enemy_obj, '_exploded'):
+                elif not enemy_obj.alive and not hasattr(enemy_obj, '_exploded'): 
                     self._create_explosion(enemy_obj.rect.centerx, enemy_obj.rect.centery, num_particles=30) 
                     enemy_obj._exploded = True
                     enemy_obj.kill()
@@ -582,20 +601,47 @@ class GameController:
                     enemy_obj.kill()
 
             self._check_collisions_architect_vault_combat() 
+            
             if not self.enemies: 
                 self.play_sound('level_up') 
                 self.architect_vault_gauntlet_current_wave += 1 
                 if self.architect_vault_gauntlet_current_wave > ARCHITECT_VAULT_GAUNTLET_WAVES: 
-                    self.architect_vault_message = "Gauntlet cleared. Accessing core systems..." 
-                    self.architect_vault_message_timer = pygame.time.get_ticks() + 3000 
-                    self.architect_vault_current_phase = "gauntlet_cleared_transition" 
-                    self.architect_vault_phase_timer_start = current_time 
+                    print("GameController: All gauntlet waves cleared. Spawning MAZE_GUARDIAN.")
+                    self.architect_vault_message = "MAZE GUARDIAN DETECTED. PREPARE FOR ENGAGEMENT!"
+                    self.architect_vault_message_timer = pygame.time.get_ticks() + 3000
+                    self.play_sound('boss_intro', 0.8) 
+                    self._spawn_maze_guardian() 
+                    self.architect_vault_current_phase = "architect_vault_boss_fight" 
                 else: 
-                    self.architect_vault_current_phase = f"gauntlet_wave_{self.architect_vault_gauntlet_current_wave}" 
+                    # Corrected variable name for setting next wave phase
+                    self.architect_vault_current_phase = f"gauntlet_wave_{self.architect_vault_gauntlet_current_wave}"
                     num_drones_this_wave = ARCHITECT_VAULT_DRONES_PER_WAVE[self.architect_vault_gauntlet_current_wave - 1] 
                     self._spawn_prototype_drones(num_drones_this_wave) 
                     self.architect_vault_message = f"Wave {self.architect_vault_gauntlet_current_wave} initiated!" 
                     self.architect_vault_message_timer = pygame.time.get_ticks() + 2000 
+        
+        elif current_phase == "architect_vault_boss_fight":
+            if self.boss_active and self.maze_guardian and self.maze_guardian.alive: # Check boss is alive
+                self.maze_guardian.update(player_pixel_pos, self.maze, current_time, 0)
+                for enemy_obj in list(self.enemies): 
+                    if enemy_obj.alive:
+                        enemy_obj.update(player_pixel_pos, self.maze, current_time, 0)
+                    elif not enemy_obj.alive and not hasattr(enemy_obj, '_exploded'):
+                        self._create_explosion(enemy_obj.rect.centerx, enemy_obj.rect.centery, num_particles=30)
+                        enemy_obj._exploded = True
+                        enemy_obj.kill()
+                    elif not enemy_obj.bullets and hasattr(enemy_obj, '_exploded'):
+                        enemy_obj.kill()
+                self._check_collisions_architect_vault_combat()
+            elif self.boss_active and self.maze_guardian and not self.maze_guardian.alive: # Boss defeated
+                # Transition logic is handled by _maze_guardian_defeated, which sets message
+                # This block checks if the message timer for "DEFEATED" has passed
+                if self.architect_vault_message == "MAZE GUARDIAN DEFEATED! ACCESS GRANTED!":
+                    if current_time > self.architect_vault_message_timer:
+                        self.scene_manager.set_game_state(GAME_STATE_ARCHITECT_VAULT_EXTRACTION)
+            # If boss is not active but should be (e.g. error in spawning), this state might hang.
+            # Consider adding a timeout or failsafe if boss doesn't spawn/activate.
+
         elif current_phase == "gauntlet_cleared_transition": 
             if current_time - self.architect_vault_phase_timer_start > 2000: 
                 self.scene_manager.set_game_state(GAME_STATE_ARCHITECT_VAULT_EXTRACTION) 
@@ -609,7 +655,7 @@ class GameController:
                  if len(self.enemies) < 3: 
                      self._spawn_prototype_drones(1, far_from_player=True) 
             
-            for enemy_obj in list(self.enemies):
+            for enemy_obj in list(self.enemies): 
                 if enemy_obj.alive:
                     enemy_obj.update(player_pixel_pos, self.maze, current_time, 0)
                 elif not enemy_obj.alive and not hasattr(enemy_obj, '_exploded'):
@@ -620,8 +666,6 @@ class GameController:
                     enemy_obj.kill()
             self._check_collisions_architect_vault_combat() 
         
-        self.explosion_particles.update()
-
     def _check_collisions_playing(self): 
         if not self.player or not self.player.alive: return 
         
@@ -641,7 +685,7 @@ class GameController:
                     self.animating_rings.append({
                         'pos': list(ring_sprite.rect.center),
                         'target_pos': self.ring_ui_target_pos, 
-                        'speed': 15, 'surface': anim_ring_surf
+                        'speed': 15, 'surface': anim_ring_surf 
                     }) 
                 self._check_level_clear_condition() 
                 if self.level_cleared_pending_animation: break 
@@ -698,7 +742,7 @@ class GameController:
                                 if enemy_hit.alive: 
                                     enemy_hit.take_damage(projectile.damage) 
                             projectile.damage_applied = True
-                else: # For Bullet and Missile
+                else: 
                     hit_enemies = pygame.sprite.spritecollide(projectile, self.enemies, False, pygame.sprite.collide_rect_ratio(0.8)) 
                     for enemy_obj in hit_enemies: 
                         if enemy_obj.alive: 
@@ -733,7 +777,6 @@ class GameController:
     def _check_collisions_architect_vault_puzzle(self): 
         if not self.player or not self.player.alive or not self.architect_vault_terminals: 
             return 
-        # Placeholder for terminal interaction logic if needed beyond key presses
 
     def _check_collisions_architect_vault_combat(self): 
         if not self.player or not self.player.alive: return 
@@ -744,38 +787,76 @@ class GameController:
             
             if isinstance(projectile, LightningZap): 
                 if not projectile.damage_applied:
-                    hit_prototypes_lightning = pygame.sprite.spritecollide(projectile, self.enemies, False, pygame.sprite.collide_rect_ratio(0.8)) 
-                    if hit_prototypes_lightning:
-                        for enemy_hit in hit_prototypes_lightning: 
-                            if enemy_hit.alive: enemy_hit.take_damage(projectile.damage) 
-                        projectile.damage_applied = True
+                    hit_targets_lightning = pygame.sprite.spritecollide(projectile, self.enemies, False, pygame.sprite.collide_rect_ratio(0.8))
+                    if self.boss_active and self.maze_guardian and self.maze_guardian.alive and pygame.sprite.collide_rect_ratio(0.8)(projectile, self.maze_guardian):
+                        hit_targets_lightning.append(self.maze_guardian)
+
+                    if hit_targets_lightning:
+                        for target_hit in hit_targets_lightning:
+                            if target_hit.alive:
+                                target_hit.take_damage(projectile.damage)
+                                if target_hit is self.maze_guardian:
+                                    self.play_sound('boss_hit') 
+                        projectile.damage_applied = True 
+                
             else: 
-                hit_prototypes = pygame.sprite.spritecollide(projectile, self.enemies, False, pygame.sprite.collide_rect_ratio(0.7)) 
-                for enemy_obj in hit_prototypes: 
-                    if enemy_obj.alive: 
-                        enemy_obj.take_damage(projectile.damage) 
+                hit_targets = pygame.sprite.spritecollide(projectile, self.enemies, False, pygame.sprite.collide_rect_ratio(0.7))
+                if self.boss_active and self.maze_guardian and self.maze_guardian.alive and pygame.sprite.collide_rect_ratio(0.7)(projectile, self.maze_guardian):
+                    hit_targets.append(self.maze_guardian)
+
+                for target_obj in hit_targets: 
+                    if target_obj.alive: 
+                        target_obj.take_damage(projectile.damage) 
                         if hasattr(projectile, 'max_pierces') and projectile.pierces_done < projectile.max_pierces: 
-                            projectile.pierces_done +=1 
+                            projectile.pierces_done += 1 
                         else: 
                             projectile.alive = False; projectile.kill() 
-                        if not enemy_obj.alive: 
-                            self.score += 75 
-                            self.drone_system.add_player_cores(10) 
+                        
+                        if not target_obj.alive: 
+                            if target_obj is self.maze_guardian:
+                                self.score += 1000 
+                                self.drone_system.add_player_cores(1000)
+                            elif isinstance(target_obj, SentinelDrone): 
+                                self.score += 75
+                                self.drone_system.add_player_cores(10)
+                            else: 
+                                self.score += 75 
+                                self.drone_system.add_player_cores(10) 
+                        
                         if not projectile.alive: break 
-        
-        for enemy_obj in self.enemies: 
-            if hasattr(enemy_obj, 'bullets') and enemy_obj.bullets: 
-                for bullet_obj in list(enemy_obj.bullets): 
-                    if self.player.alive and bullet_obj.rect.colliderect(self.player.collision_rect): 
-                        self.player.take_damage(gs.get_game_setting("ENEMY_BULLET_DAMAGE") * 1.2, self.sounds.get('crash')) 
-                        bullet_obj.alive = False; bullet_obj.kill() 
+
+        all_enemy_projectiles = pygame.sprite.Group()
+        for enemy_obj in self.enemies:
+            if hasattr(enemy_obj, 'bullets') and enemy_obj.bullets:
+                all_enemy_projectiles.add(enemy_obj.bullets)
+        if self.boss_active and self.maze_guardian and hasattr(self.maze_guardian, 'bullets') and self.maze_guardian.bullets:
+            all_enemy_projectiles.add(self.maze_guardian.bullets)
+        if self.boss_active and self.maze_guardian and hasattr(self.maze_guardian, 'laser_beams') and self.maze_guardian.laser_beams:
+            all_enemy_projectiles.add(self.maze_guardian.laser_beams)
+
+        for projectile_obj in list(all_enemy_projectiles):
+            if self.player.alive and projectile_obj.rect.colliderect(self.player.collision_rect):
+                if isinstance(projectile_obj, LightningZap): 
+                    self.player.take_damage(gs.get_game_setting("MAZE_GUARDIAN_LASER_DAMAGE"), self.sounds.get('crash'))
+                else: 
+                    self.player.take_damage(gs.get_game_setting("ENEMY_BULLET_DAMAGE") * 1.2, self.sounds.get('crash'))
+                
+                if not isinstance(projectile_obj, LightningZap): 
+                    projectile_obj.alive = False; projectile_obj.kill()
         
         if self.player.alive: 
-            enemy_physical_collisions = pygame.sprite.spritecollide(self.player, self.enemies, False,
-                                                                    lambda drone, enemy: drone.collision_rect.colliderect(enemy.collision_rect)) 
-            for enemy_obj in enemy_physical_collisions: 
-                if enemy_obj.alive: 
-                    self.player.take_damage(40, self.sounds.get('crash')) 
+            physical_collisions = pygame.sprite.spritecollide(self.player, self.enemies, False,
+                                                              lambda drone, enemy: drone.collision_rect.colliderect(enemy.collision_rect)) 
+            if self.boss_active and self.maze_guardian and self.maze_guardian.alive and \
+               self.player.collision_rect.colliderect(self.maze_guardian.collision_rect):
+                physical_collisions.append(self.maze_guardian)
+
+            for entity_obj in physical_collisions: 
+                if entity_obj.alive: 
+                    if entity_obj is self.maze_guardian:
+                        self.player.take_damage(gs.get_game_setting("MAZE_GUARDIAN_LASER_DAMAGE") * 1.5, self.sounds.get('crash')) 
+                    else:
+                        self.player.take_damage(40, self.sounds.get('crash')) 
                 if not self.player.alive: break 
 
     def _handle_player_death_or_life_loss(self, reason=""): 
@@ -796,11 +877,19 @@ class GameController:
 
     def _prepare_for_next_level(self, from_bonus_level_completion=False): 
         self.explosion_particles.empty()
+        
+        if self.player and not self.player.alive and self.lives > 0:
+            print("GameController: Player won the level but was destroyed. Reviving for next level transition.")
+            self.player.health = self.player.max_health 
+            self.player.alive = True 
+
         if self.drone_system.are_all_core_fragments_collected() and \
            not self.drone_system.has_completed_architect_vault() and \
            not from_bonus_level_completion: 
-            self.scene_manager.set_game_state(GAME_STATE_ARCHITECT_VAULT_INTRO) 
+            if not self.boss_active or (self.boss_active and self.maze_guardian and not self.maze_guardian.alive): # Check boss is also not alive
+                 self.scene_manager.set_game_state(GAME_STATE_ARCHITECT_VAULT_INTRO) 
             return 
+        
         if not from_bonus_level_completion: 
             self.level += 1 
         self.collected_rings = 0 
@@ -820,6 +909,7 @@ class GameController:
                               preserve_weapon=True) 
         self.all_enemies_killed_this_level = False 
         self.maze = Maze(game_area_x_offset=0, maze_type="standard") 
+        self.enemies.empty() 
         self._spawn_enemies_for_level() 
         self.core_fragments.empty() 
         self._place_collectibles_for_level(initial_setup=True) 
@@ -836,8 +926,13 @@ class GameController:
         self.explosion_particles.empty()
         new_player_pos = self._get_safe_spawn_point(TILE_SIZE * 0.8, TILE_SIZE * 0.8) 
         current_drone_id = self.player.drone_id 
-        is_in_vault = self.scene_manager.get_current_state().startswith("architect_vault") 
-        current_drone_stats = self.drone_system.get_drone_stats(current_drone_id, is_in_architect_vault=is_in_vault) 
+        
+        # Determine if currently in any Architect Vault state
+        is_currently_in_vault_state = self.scene_manager.get_current_state().startswith("architect_vault")
+        
+        # Standardize the call to use is_in_architect_vault
+        current_drone_stats = self.drone_system.get_drone_stats(current_drone_id, is_in_architect_vault=is_currently_in_vault_state) 
+        
         current_drone_config = self.drone_system.get_drone_config(current_drone_id) 
         current_ingame_sprite = current_drone_config.get("ingame_sprite_path") 
         
@@ -847,6 +942,16 @@ class GameController:
                           health_override=self.player.max_health,
                           preserve_weapon=False) 
         
+        if is_currently_in_vault_state and self.architect_vault_current_phase in ["gauntlet_wave", "architect_vault_boss_fight", "extraction"]:
+            self.enemies.empty()
+            if self.maze_guardian:
+                self.maze_guardian.kill()
+                self.maze_guardian = None
+            self.boss_active = False
+            self.architect_vault_failure_reason = "Drone destroyed mid-mission."
+            self.scene_manager.set_game_state(GAME_STATE_ARCHITECT_VAULT_FAILURE)
+            return
+
         self.animating_rings.clear() 
         self.animating_fragments.clear() 
         self.level_cleared_pending_animation = False 
@@ -867,20 +972,25 @@ class GameController:
     def _get_safe_spawn_point(self, entity_width, entity_height): 
         if not self.maze: 
             print("GameController: Warning - Attempted to get spawn point without a maze.") 
-            return (gs.get_game_setting("WIDTH") // 4, gs.get_game_setting("GAME_PLAY_AREA_HEIGHT") // 2) 
+            return (WIDTH // 4, GAME_PLAY_AREA_HEIGHT // 2) 
         path_cells_relative = self.maze.get_path_cells() 
         if not path_cells_relative: 
             print("GameController: Warning - No path cells found in maze for spawning.") 
             return (self.maze.game_area_x_offset + TILE_SIZE//2, TILE_SIZE//2) 
-        path_cells_absolute = [(x + self.maze.game_area_x_offset, y) for x, y in path_cells_relative] 
-        random.shuffle(path_cells_absolute) 
-        for spawn_x_abs, spawn_y_abs in path_cells_absolute: 
-            if not self.maze.is_wall(spawn_x_abs, spawn_y_abs, entity_width, entity_height): 
-                return (spawn_x_abs, spawn_y_abs) 
+        random.shuffle(path_cells_relative) 
+        for spawn_x_rel, spawn_y_rel in path_cells_relative: 
+            abs_x = spawn_x_rel + self.maze.game_area_x_offset 
+            abs_y = spawn_y_rel 
+            if self.player and math.hypot(abs_x - self.player.x, abs_y - self.player.y) < TILE_SIZE * 4:
+                continue
+            if any(math.hypot(abs_x - e.x, abs_y - e.y) < TILE_SIZE * 2 for e in self.enemies):
+                continue
+            if not self.maze.is_wall(abs_x, abs_y, entity_width, entity_height):
+                return (abs_x, abs_y) 
+
         print("GameController: Warning - Could not find a 'perfectly safe' spawn point. Using first available path cell.") 
-        first_abs_x = path_cells_relative[0][0] + self.maze.game_area_x_offset 
-        first_abs_y = path_cells_relative[0][1] 
-        return (first_abs_x, first_abs_y) 
+        first_rel_x, first_rel_y = random.choice(path_cells_relative)
+        return (first_rel_x + self.maze.game_area_x_offset, first_rel_y) 
 
     def _spawn_enemies_for_level(self): 
         self.enemies.empty() 
@@ -889,25 +999,14 @@ class GameController:
         player_bullet_size_setting = gs.get_game_setting("PLAYER_DEFAULT_BULLET_SIZE") 
         regular_enemy_sprite = gs.get_game_setting("REGULAR_ENEMY_SPRITE_PATH") 
         for _ in range(num_enemies): 
-            spawn_attempts = 0 
-            spawned = False 
-            while spawn_attempts < 10 and not spawned: 
-                abs_x, abs_y = self._get_safe_spawn_point(TILE_SIZE * 0.7, TILE_SIZE * 0.7) 
-                if abs_x is None: break 
-                if self.player and math.hypot(abs_x - self.player.x, abs_y - self.player.y) < TILE_SIZE * 4: 
-                    spawn_attempts += 1; continue 
-                if any(math.hypot(abs_x - e.x, abs_y - e.y) < TILE_SIZE * 2 for e in self.enemies): 
-                    spawn_attempts += 1; continue 
+            abs_x, abs_y = self._get_safe_spawn_point(TILE_SIZE * 0.7, TILE_SIZE * 0.7) 
+            if abs_x is not None: 
                 self.enemies.add(Enemy(abs_x, abs_y, player_bullet_size_setting,
                                      shoot_sound=enemy_shoot_sound,
-                                     sprite_path=regular_enemy_sprite)) 
-                spawned = True 
-            if not spawned: 
-                abs_x_fallback, abs_y_fallback = self._get_safe_spawn_point(TILE_SIZE * 0.7, TILE_SIZE * 0.7) 
-                if abs_x_fallback is not None: 
-                    self.enemies.add(Enemy(abs_x_fallback, abs_y_fallback, player_bullet_size_setting,
-                                         shoot_sound=enemy_shoot_sound,
-                                         sprite_path=regular_enemy_sprite)) 
+                                     sprite_path=regular_enemy_sprite,
+                                     target_player_ref=self.player)) 
+            else:
+                print("Could not find safe spawn for enemy.")
 
     def _spawn_prototype_drones(self, count, far_from_player=False): 
         if not self.maze: return 
@@ -915,29 +1014,66 @@ class GameController:
         player_bullet_size_setting = gs.get_game_setting("PLAYER_DEFAULT_BULLET_SIZE") 
         prototype_sprite = gs.get_game_setting("PROTOTYPE_DRONE_SPRITE_PATH") 
         for _ in range(count): 
-            spawn_attempts = 0; spawned = False 
-            while spawn_attempts < 10 and not spawned: 
-                abs_x, abs_y = self._get_safe_spawn_point(TILE_SIZE * 0.7, TILE_SIZE * 0.7) 
-                if abs_x is None: break 
-                if self.player and far_from_player and math.hypot(abs_x - self.player.x, abs_y - self.player.y) < TILE_SIZE * 7: 
-                    spawn_attempts += 1; continue 
-                if any(math.hypot(abs_x - e.x, abs_y - e.y) < TILE_SIZE * 3 for e in self.enemies): 
-                    spawn_attempts += 1; continue 
+            abs_x, abs_y = self._get_safe_spawn_point(TILE_SIZE * 0.7, TILE_SIZE * 0.7) 
+            if abs_x is not None:
                 proto_drone = Enemy(abs_x, abs_y, player_bullet_size_setting,
-                                    shoot_sound=enemy_shoot_sound, sprite_path=prototype_sprite) 
+                                    shoot_sound=enemy_shoot_sound, sprite_path=prototype_sprite,
+                                    target_player_ref=self.player) 
                 proto_drone.health = gs.get_game_setting("PROTOTYPE_DRONE_HEALTH") 
                 proto_drone.max_health = gs.get_game_setting("PROTOTYPE_DRONE_HEALTH") 
                 proto_drone.speed = gs.get_game_setting("PROTOTYPE_DRONE_SPEED") 
                 proto_drone.shoot_cooldown = gs.get_game_setting("PROTOTYPE_DRONE_SHOOT_COOLDOWN") 
                 self.enemies.add(proto_drone) 
-                spawned = True 
-            if not spawned: 
-                abs_x_fb, abs_y_fb = self._get_safe_spawn_point(TILE_SIZE * 0.7, TILE_SIZE * 0.7) 
-                if abs_x_fb is not None: 
-                    proto_drone_fb = Enemy(abs_x_fb, abs_y_fb, player_bullet_size_setting,
-                                           shoot_sound=enemy_shoot_sound, sprite_path=prototype_sprite) 
-                    proto_drone_fb.health = gs.get_game_setting("PROTOTYPE_DRONE_HEALTH"); 
-                    self.enemies.add(proto_drone_fb) 
+            else:
+                print("Could not find safe spawn for prototype drone.")
+
+    def _spawn_maze_guardian(self):
+        self.enemies.empty()
+        boss_spawn_x = WIDTH // 2 
+        boss_spawn_y = GAME_PLAY_AREA_HEIGHT // 2 
+
+        self.maze_guardian = MazeGuardian(
+            x=boss_spawn_x,
+            y=boss_spawn_y,
+            player_ref=self.player,
+            maze_ref=self.maze,
+            game_controller_ref=self
+        )
+        self.boss_active = True
+        print("MAZE_GUARDIAN spawned!")
+    
+    def _maze_guardian_defeated(self):
+        print("GameController: MAZE_GUARDIAN has been defeated!")
+        self.boss_active = False
+        if self.maze_guardian:
+            self.maze_guardian.kill() 
+            self.maze_guardian = None 
+        
+        self.enemies.empty()
+        
+        self.score += 5000 
+        self.drone_system.add_player_cores(1500) 
+        self.drone_system.add_defeated_boss("MAZE_GUARDIAN") 
+        self.drone_system.unlock_blueprint(gs.get_game_setting("ARCHITECT_REWARD_BLUEPRINT_ID")) 
+        
+        vault_core_id = "vault_core" 
+        vault_core_details = CORE_FRAGMENT_DETAILS.get("fragment_vault_core")
+        if vault_core_details:
+            if self.drone_system.collect_core_fragment(vault_core_id):
+                if hasattr(self.ui_manager, 'get_scaled_fragment_icon') and vault_core_id in self.ui_manager.ui_assets["core_fragment_icons"]:
+                    icon_surface = self.ui_manager.ui_assets["core_fragment_icons"][vault_core_id]
+                    target_pos = self.ui_manager.fragment_ui_target_positions.get(vault_core_id)
+                    if target_pos:
+                        self.animating_fragments.append({
+                            'pos': list(self.player.rect.center), 
+                            'target_pos': target_pos,
+                            'speed': 15,
+                            'surface': icon_surface,
+                            'id': vault_core_id
+                        })
+        
+        self.architect_vault_message = "MAZE GUARDIAN DEFEATED! ACCESS GRANTED!"
+        self.architect_vault_message_timer = pygame.time.get_ticks() + 4000
 
     def _spawn_architect_vault_terminals(self): 
         self.architect_vault_terminals.empty() 
@@ -1014,8 +1150,8 @@ class GameController:
         occupied_fragment_tiles_this_level = set() 
         for frag_key, details in CORE_FRAGMENT_DETAILS.items(): 
             if not details or not isinstance(details, dict): continue 
-            spawn_info = details.get("spawn_info", {}) 
-            if spawn_info.get("level") == self.level and \
+            if frag_key != "fragment_vault_core" and \
+               details.get("spawn_info", {}).get("level") == self.level and \
                not self.drone_system.has_collected_fragment(details["id"]): 
                 random_tile_coords_rel = self._get_random_valid_fragment_tile_internal(occupied_fragment_tiles_this_level) 
                 if random_tile_coords_rel: 
@@ -1095,20 +1231,8 @@ class GameController:
         elif key_event == pygame.K_RETURN: 
             if current_setting_item["type"] == "action" and setting_key == "RESET_SETTINGS_ACTION": 
                 gs.reset_all_settings_to_default() 
-                # Check if fullscreen needs to be reapplied after reset
                 if self.screen_flags != (pygame.FULLSCREEN if gs.get_game_setting("FULLSCREEN_MODE") else 0): 
                     self.screen_flags = pygame.FULLSCREEN if gs.get_game_setting("FULLSCREEN_MODE") else 0 
-                    # Only re-set_mode if the FULLSCREEN_MODE setting itself is part of general settings (it's not in filtered list)
-                    # However, reset_all_settings_to_default() in game_settings.py will reset FULLSCREEN_MODE value.
-                    # So we need to react to its new value if it affects the screen.
-                    # This part is tricky if FULLSCREEN_MODE is not in self.settings_items_data
-                    # but can be reset by RESET_SETTINGS_ACTION.
-                    # For now, assuming reset_all_settings_to_default handles the underlying value,
-                    # and the game might need a restart or specific handling for live screen mode change
-                    # if FULLSCREEN_MODE itself is not actively managed in the settings UI loop.
-                    # The current _initialize_settings_menu_items_data does not include FULLSCREEN_MODE.
-                    # So, the following line might not be necessary if Fullscreen is not in the menu.
-                    # self.screen = pygame.display.set_mode((gs.get_game_setting("WIDTH"), gs.get_game_setting("HEIGHT")), self.screen_flags)
                 self.play_sound('ui_confirm') 
         elif key_event == pygame.K_LEFT or key_event == pygame.K_RIGHT: 
             if current_setting_item["type"] != "action": 
@@ -1129,10 +1253,6 @@ class GameController:
                             current_choice_idx = choices.index(current_val) 
                             new_choice_idx = (current_choice_idx + direction + len(choices)) % len(choices) 
                             gs.set_game_setting(setting_key, choices[new_choice_idx]) 
-                            # If FULLSCREEN_MODE were configurable here, this is where screen mode would be updated:
-                            # if setting_key == "FULLSCREEN_MODE": 
-                            #     self.screen_flags = pygame.FULLSCREEN if gs.get_game_setting("FULLSCREEN_MODE") else 0 
-                            #     self.screen = pygame.display.set_mode((gs.get_game_setting("WIDTH"), gs.get_game_setting("HEIGHT")), self.screen_flags) 
                         except ValueError: 
                             gs.set_game_setting(setting_key, choices[0]) 
         elif key_event == pygame.K_ESCAPE: 
@@ -1152,30 +1272,19 @@ class GameController:
             self.toggle_pause() 
 
     def handle_game_over_input(self, key_event): 
-        # Correctly access the SETTINGS_MODIFIED flag directly from the gs module
         settings_were_modified = gs.SETTINGS_MODIFIED 
-        # print(f"DEBUG: Game Over - SETTINGS_MODIFIED = {settings_were_modified}") # Optional debug
-
         can_submit_score = not settings_were_modified
         is_actually_a_new_high_score_and_submittable = can_submit_score and leaderboard.is_high_score(self.score, self.level)
         
         if is_actually_a_new_high_score_and_submittable:
-            # The prompt in ui.py for this case is "New High Score! Press any key to enter name."
             if key_event in [pygame.K_r, pygame.K_l, pygame.K_m, pygame.K_q, pygame.K_RETURN, pygame.K_SPACE, pygame.K_ESCAPE]:
-                # print(f"DEBUG: Transitioning to GAME_STATE_ENTER_NAME. Score: {self.score}, Level: {self.level}") # Optional debug
                 self.scene_manager.set_game_state(GAME_STATE_ENTER_NAME) 
                 return 
         
-        # If not transitioning to enter name, handle other options:
         if key_event == pygame.K_r: 
             self.initialize_game_session() 
             self.scene_manager.set_game_state(GAME_STATE_PLAYING) 
         elif key_event == pygame.K_l: 
-            # UI prompt for 'L' is conditional on can_submit_score (if not a new high)
-            # So, allow viewing leaderboard if the UI would have shown 'L'
-            # Or simply always allow viewing from game over if preferred.
-            # Current UI: 'L' shown if default settings & not new high, or if custom settings (no 'L' prompt then).
-            # For simplicity and consistency with previous state, let's allow leaderboard view:
             self.scene_manager.set_game_state(GAME_STATE_LEADERBOARD)
         elif key_event == pygame.K_m: 
             self.scene_manager.set_game_state(GAME_STATE_MAIN_MENU) 
@@ -1274,18 +1383,16 @@ class GameController:
             for enemy_sprite in self.enemies: 
                 enemy_sprite.draw(self.screen)   
         
+        if self.boss_active and self.maze_guardian:
+            self.maze_guardian.draw(self.screen)
+        
         if self.player: 
             self.player.draw(self.screen) 
 
         self.explosion_particles.draw(self.screen)
 
     def run(self): 
-        # Check current fullscreen setting from game_settings.py (dynamic)
         current_fullscreen_setting = gs.get_game_setting("FULLSCREEN_MODE") 
-        # Update screen flags if the setting has changed (e.g. via settings menu that affects the gs module value)
-        # Note: Fullscreen_mode is not in the filtered settings_items_data, so this check is mainly
-        # for initial setup or if gs.FULLSCREEN_MODE is changed by other means (e.g. directly in game_settings.py and reloaded)
-        # or if reset_all_settings_to_default() changed it.
         required_flags = pygame.FULLSCREEN if current_fullscreen_setting else 0
         if self.screen_flags != required_flags:
             self.screen_flags = required_flags

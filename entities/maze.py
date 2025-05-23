@@ -20,7 +20,22 @@ class Maze:
         self.grid = [[1 for _ in range(self.actual_maze_cols)] for _ in range(self.actual_maze_rows)] 
         self._generate_maze_grid(0, 0) # This populates self.grid
 
-        # This uses the original logic to create the specific line segments for your maze style
+        # Define dynamic wall cells for Architect's Vault. These are grid (row, col) coordinates.
+        # These cells will initially be walls (1) and can be toggled to path (0).
+        # This is a simplification; in a real game, you'd design specific dynamic zones.
+        self.dynamic_wall_cells = []
+        if self.maze_type == "architect_vault":
+            # Example dynamic walls (adjust these coordinates based on expected maze layout)
+            # Pick cells that are typically walls in the maze structure
+            for r in range(1, self.actual_maze_rows - 1, 2): # Odd rows for typical maze walls
+                for c in range(1, self.actual_maze_cols - 1, 2): # Odd cols
+                    if random.random() < 0.1: # 10% chance to be a dynamic wall
+                        self.dynamic_wall_cells.append((r, c))
+                        # Also ensure the adjacent path cell if it exists is a path, and the cell it blocked.
+                        # For now, just mark the cell itself.
+            print(f"Maze: Initializing {len(self.dynamic_wall_cells)} dynamic wall cells.")
+
+
         self.walls = self._create_original_wall_lines() 
 
     def _generate_maze_grid(self, row, col): 
@@ -62,6 +77,21 @@ class Maze:
                     if x1 != x2 or y1 != y2: # Only add if it forms some kind of line (not a single point)
                         lines.append(((x1, y1), (x2, y2))) 
         return lines 
+
+    def toggle_dynamic_walls(self, activate: bool):
+        """
+        Toggles the state of dynamic wall cells between wall (1) and path (0).
+        If activate is True, dynamic cells become walls; if False, they become paths.
+        After modification, re-creates the wall line segments.
+        """
+        for r, c in self.dynamic_wall_cells:
+            if 0 <= r < self.actual_maze_rows and 0 <= c < self.actual_maze_cols:
+                if activate: # Make them walls
+                    self.grid[r][c] = 1
+                else: # Make them paths
+                    self.grid[r][c] = 0
+        self.walls = self._create_original_wall_lines() # Rebuild walls after grid change
+        print(f"Maze: Dynamic walls {'activated' if activate else 'deactivated'}.")
 
 
     def draw(self, surface): 

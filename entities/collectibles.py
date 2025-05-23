@@ -1,3 +1,4 @@
+# entities/collectibles.py
 import os
 import math
 import random

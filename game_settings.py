@@ -1,3 +1,5 @@
+# game_settings.py
+
 import pygame
 
 # ==========================
@@ -6,7 +8,7 @@ import pygame
 WIDTH = 1920
 HEIGHT = 1080
 FPS = 60
-FULLSCREEN_MODE = False # Set to True for fullscreen, False for windowed
+FULLSCREEN_MODE = True # Set to True for fullscreen, False for windowed
 
 # ==========================
 # UI & Layout Settings
@@ -168,6 +170,35 @@ PROTOTYPE_DRONE_BULLET_SPEED = 6
 PROTOTYPE_DRONE_SPRITE_PATH = "assets/images/drones/prototype_enemy.png" # Path to its sprite
 
 # ==========================
+# MAZE_GUARDIAN Boss Settings
+# ==========================
+MAZE_GUARDIAN_HEALTH = 5000
+MAZE_GUARDIAN_SPEED = 1.0 # Boss moves slower but deliberately
+MAZE_GUARDIAN_COLOR = (80, 0, 120) # Dark purple/grey
+MAZE_GUARDIAN_SPRITE_PATH = "assets/images/enemies/maze_guardian.png" # Path to boss sprite
+MAZE_GUARDIAN_BULLET_SPEED = 6
+MAZE_GUARDIAN_BULLET_LIFETIME = 80
+MAZE_GUARDIAN_BULLET_COLOR = RED
+MAZE_GUARDIAN_BULLET_DAMAGE = 15
+
+MAZE_GUARDIAN_LASER_DAMAGE = 20 # Damage per tick if hit by laser
+MAZE_GUARDIAN_LASER_COOLDOWN = 5000 # Milliseconds between laser sweeps
+MAZE_GUARDIAN_LASER_SWEEP_ARC = 90 # Degrees the laser sweeps (for visual/logic)
+
+MAZE_GUARDIAN_SHIELD_DURATION_MS = 6000 # How long shield stays active
+MAZE_GUARDIAN_SHIELD_COOLDOWN_MS = 10000 # Cooldown before shield can activate again
+
+MAZE_GUARDIAN_ARENA_SHIFT_INTERVAL_MS = 3000 # How often walls shift in Phase 3
+MAZE_GUARDIAN_ARENA_SHIFT_DURATION_MS = 1000 # How long walls stay shifted
+MAZE_GUARDIAN_MINION_SPAWN_COOLDOWN_MS = 7000 # Cooldown for summoning mini-drones
+
+# Sentinel Drone (Mini-drone summoned by MazeGuardian)
+SENTINEL_DRONE_HEALTH = 75
+SENTINEL_DRONE_SPEED = 3.0
+SENTINEL_DRONE_SPRITE_PATH = "assets/images/enemies/sentinel_drone.png" # Path to sentinel drone sprite
+
+
+# ==========================
 # Power-up & Collectible Settings
 # ==========================
 POWERUP_SIZE = TILE_SIZE // 3 # Visual size of power-up items
@@ -222,6 +253,11 @@ CORE_FRAGMENT_DETAILS = { # Details for each unique core fragment
         "description": "Seems to be a critical processing unit, heavily damaged.",
         "spawn_info": {"level": 3},
         "buff_alt": {"type": "damage_reduction", "value": 0.05} # Example: 5% damage reduction
+    },
+    "fragment_vault_core": { # New fragment for MAZE_GUARDIAN reward
+        "id": "vault_core", "name": "Vault Core", "icon_filename": "vault_core_icon.png",
+        "description": "The heart of the Architect's Vault defenses. A valuable prize.",
+        "display_color": GOLD # Special color for this fragment
     }
 }
 
@@ -293,6 +329,20 @@ DEFAULT_SETTINGS = {
     "ENEMY_BULLET_LIFETIME": ENEMY_BULLET_LIFETIME, "ENEMY_BULLET_COLOR": ENEMY_BULLET_COLOR, "ENEMY_BULLET_DAMAGE": ENEMY_BULLET_DAMAGE,
     "PROTOTYPE_DRONE_HEALTH": PROTOTYPE_DRONE_HEALTH, "PROTOTYPE_DRONE_SPEED": PROTOTYPE_DRONE_SPEED,
     "PROTOTYPE_DRONE_SHOOT_COOLDOWN": PROTOTYPE_DRONE_SHOOT_COOLDOWN, "PROTOTYPE_DRONE_BULLET_SPEED": PROTOTYPE_DRONE_BULLET_SPEED,
+    # New MAZE_GUARDIAN and Sentinel Drone settings
+    "MAZE_GUARDIAN_HEALTH": MAZE_GUARDIAN_HEALTH, "MAZE_GUARDIAN_SPEED": MAZE_GUARDIAN_SPEED,
+    "MAZE_GUARDIAN_COLOR": MAZE_GUARDIAN_COLOR, "MAZE_GUARDIAN_SPRITE_PATH": MAZE_GUARDIAN_SPRITE_PATH,
+    "MAZE_GUARDIAN_BULLET_SPEED": MAZE_GUARDIAN_BULLET_SPEED, "MAZE_GUARDIAN_BULLET_LIFETIME": MAZE_GUARDIAN_BULLET_LIFETIME,
+    "MAZE_GUARDIAN_BULLET_COLOR": MAZE_GUARDIAN_BULLET_COLOR, "MAZE_GUARDIAN_BULLET_DAMAGE": MAZE_GUARDIAN_BULLET_DAMAGE,
+    "MAZE_GUARDIAN_LASER_DAMAGE": MAZE_GUARDIAN_LASER_DAMAGE, "MAZE_GUARDIAN_LASER_COOLDOWN": MAZE_GUARDIAN_LASER_COOLDOWN,
+    "MAZE_GUARDIAN_LASER_SWEEP_ARC": MAZE_GUARDIAN_LASER_SWEEP_ARC,
+    "MAZE_GUARDIAN_SHIELD_DURATION_MS": MAZE_GUARDIAN_SHIELD_DURATION_MS, "MAZE_GUARDIAN_SHIELD_COOLDOWN_MS": MAZE_GUARDIAN_SHIELD_COOLDOWN_MS,
+    "MAZE_GUARDIAN_ARENA_SHIFT_INTERVAL_MS": MAZE_GUARDIAN_ARENA_SHIFT_INTERVAL_MS,
+    "MAZE_GUARDIAN_ARENA_SHIFT_DURATION_MS": MAZE_GUARDIAN_ARENA_SHIFT_DURATION_MS,
+    "MAZE_GUARDIAN_MINION_SPAWN_COOLDOWN_MS": MAZE_GUARDIAN_MINION_SPAWN_COOLDOWN_MS,
+    "SENTINEL_DRONE_HEALTH": SENTINEL_DRONE_HEALTH, "SENTINEL_DRONE_SPEED": SENTINEL_DRONE_SPEED,
+    "SENTINEL_DRONE_SPRITE_PATH": SENTINEL_DRONE_SPRITE_PATH,
+
     "POWERUP_SPAWN_CHANCE": POWERUP_SPAWN_CHANCE, "MAX_POWERUPS_ON_SCREEN": MAX_POWERUPS_ON_SCREEN,
     "WEAPON_UPGRADE_ITEM_LIFETIME": WEAPON_UPGRADE_ITEM_LIFETIME, "POWERUP_ITEM_LIFETIME": POWERUP_ITEM_LIFETIME,
     "SHIELD_POWERUP_DURATION": SHIELD_POWERUP_DURATION, "SPEED_BOOST_POWERUP_DURATION": SPEED_BOOST_POWERUP_DURATION,
@@ -340,9 +390,9 @@ def set_game_setting(key, value):
             if key == "HEIGHT" or key == "BOTTOM_PANEL_HEIGHT":
                 GAME_PLAY_AREA_HEIGHT = get_game_setting("HEIGHT") - get_game_setting("BOTTOM_PANEL_HEIGHT")
                 globals()["GAME_PLAY_AREA_HEIGHT"] = GAME_PLAY_AREA_HEIGHT # Update global scope
-                if get_game_setting("TILE_SIZE") > 0: 
+                if get_game_setting("TILE_SIZE") > 0:
                     MAZE_ROWS = GAME_PLAY_AREA_HEIGHT // get_game_setting("TILE_SIZE")
-                    globals()["MAZE_ROWS"] = MAZE_ROWS 
+                    globals()["MAZE_ROWS"] = MAZE_ROWS
             elif key == "TILE_SIZE":
                 if get_game_setting("TILE_SIZE") > 0:
                     MAZE_ROWS = get_game_setting("GAME_PLAY_AREA_HEIGHT") // get_game_setting("TILE_SIZE")
@@ -353,14 +403,14 @@ def set_game_setting(key, value):
 def reset_all_settings_to_default():
     """Resets all configurable settings back to their default values."""
     global SETTINGS_MODIFIED, _CURRENT_GAME_SETTINGS
-    global GAME_PLAY_AREA_HEIGHT, MAZE_ROWS 
+    global GAME_PLAY_AREA_HEIGHT, MAZE_ROWS
 
     _CURRENT_GAME_SETTINGS = DEFAULT_SETTINGS.copy()
     SETTINGS_MODIFIED = False
     print("Game settings have been reset to defaults.")
 
     for key, value in _CURRENT_GAME_SETTINGS.items():
-        if key in globals(): 
+        if key in globals():
             globals()[key] = value
 
     GAME_PLAY_AREA_HEIGHT = get_game_setting("HEIGHT") - get_game_setting("BOTTOM_PANEL_HEIGHT")
@@ -371,9 +421,8 @@ def reset_all_settings_to_default():
 
 # Initialize globals that are calculated from other settings
 GAME_PLAY_AREA_HEIGHT = get_game_setting("HEIGHT") - get_game_setting("BOTTOM_PANEL_HEIGHT")
-if TILE_SIZE > 0: 
+if TILE_SIZE > 0:
     MAZE_ROWS = GAME_PLAY_AREA_HEIGHT // TILE_SIZE
 else:
-    MAZE_ROWS = 0 
+    MAZE_ROWS = 0
     print("Warning (game_settings.py): TILE_SIZE is 0 or invalid, MAZE_ROWS set to 0.")
-
