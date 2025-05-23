@@ -6,7 +6,7 @@ import math
 import pygame
 
 # game_settings.py is at the project root
-import game_settings as gs
+import game_settings as gs # gs alias is used
 from game_settings import (
     WIDTH, HEIGHT, GAME_PLAY_AREA_HEIGHT, BOTTOM_PANEL_HEIGHT, TILE_SIZE, 
     BLACK, GOLD, WHITE, GREEN, CYAN, RED, DARK_RED, GREY, YELLOW, LIGHT_BLUE, ORANGE, PURPLE, 
@@ -18,14 +18,15 @@ from game_settings import (
     GAME_STATE_ARCHITECT_VAULT_INTRO, GAME_STATE_ARCHITECT_VAULT_ENTRY_PUZZLE, 
     GAME_STATE_ARCHITECT_VAULT_GAUNTLET, GAME_STATE_ARCHITECT_VAULT_EXTRACTION, 
     GAME_STATE_ARCHITECT_VAULT_SUCCESS, GAME_STATE_ARCHITECT_VAULT_FAILURE, 
-    DEFAULT_SETTINGS, 
+    DEFAULT_SETTINGS, # DEFAULT_SETTINGS is imported for UIManager logic
     TOTAL_CORE_FRAGMENTS_NEEDED, CORE_FRAGMENT_DETAILS, 
-    get_game_setting 
+    get_game_setting # get_game_setting is used for other settings
+    # SETTINGS_MODIFIED is a global in game_settings, accessed via gs.SETTINGS_MODIFIED
 )
 
 # Import from other refactored packages
 from drone_management.drone_configs import DRONE_DATA, DRONE_DISPLAY_ORDER 
-from hyperdrone_core import leaderboard 
+from hyperdrone_core import leaderboard # Ensure leaderboard is imported
 
 
 class UIManager: 
@@ -46,9 +47,7 @@ class UIManager:
         } 
         self.ui_icon_size_lives = (30, 30) 
         self.ui_icon_size_rings = (20, 20) 
-        # ------------- CHANGE ICON SIZE HERE -------------
-        self.ui_icon_size_fragments = (28, 28) # Increased from (20, 20)
-        # ----------------------------------------------------
+        self.ui_icon_size_fragments = (28, 28)
 
         if not hasattr(self.game_controller, 'fragment_ui_target_positions'):
             self.game_controller.fragment_ui_target_positions = {}
@@ -203,8 +202,7 @@ class UIManager:
             self.draw_gameplay_hud() 
             if self.game_controller.paused: self.draw_pause_overlay() 
 
-    def draw_main_menu(self): #
-        # ... (Full method from original file)
+    def draw_main_menu(self):
         if self.ui_assets["menu_background"]: 
             try: 
                 scaled_bg = pygame.transform.smoothscale(self.ui_assets["menu_background"], (WIDTH, HEIGHT)) 
@@ -246,11 +244,13 @@ class UIManager:
         instr_bg_box.fill((30,30,30,150)) 
         instr_bg_box.blit(instr_surf,instr_surf.get_rect(center=(instr_bg_box.get_width()//2,instr_bg_box.get_height()//2))) 
         self.screen.blit(instr_bg_box, instr_bg_box.get_rect(center=(WIDTH//2, HEIGHT-100))) 
-        if get_game_setting("SETTINGS_MODIFIED"): 
+        
+        # Correctly access SETTINGS_MODIFIED flag
+        if gs.SETTINGS_MODIFIED: 
             warning_surf = self._render_text_safe("Custom settings active: Leaderboard disabled.", "small_text", YELLOW) 
             self.screen.blit(warning_surf, warning_surf.get_rect(center=(WIDTH//2, HEIGHT-50))) 
 
-    def draw_drone_select_menu(self): # Restored from original file content
+    def draw_drone_select_menu(self):
         title_surf = self._render_text_safe("Select Drone", "title_text", GOLD)
         title_rect = title_surf.get_rect(center=(WIDTH // 2, 70))
         self.screen.blit(title_surf, title_rect)
@@ -424,87 +424,88 @@ class UIManager:
         self.screen.blit(cores_emoji_surf, (current_x_offset_cores, cores_y_baseline + (max_element_height_cores - cores_emoji_surf.get_height()) // 2))
 
 
-    def draw_settings_menu(self): # Restored from original file content
-        title_surf = self._render_text_safe("Settings", "title_text", GOLD) #
-        title_bg = pygame.Surface((title_surf.get_width()+30, title_surf.get_height()+15), pygame.SRCALPHA) #
-        title_bg.fill((20,20,20,180)) #
-        title_bg.blit(title_surf, title_surf.get_rect(center=(title_bg.get_width()//2, title_bg.get_height()//2))) #
-        self.screen.blit(title_bg, title_bg.get_rect(center=(WIDTH//2, 80))) #
+    def draw_settings_menu(self): 
+        title_surf = self._render_text_safe("Settings", "title_text", GOLD) 
+        title_bg = pygame.Surface((title_surf.get_width()+30, title_surf.get_height()+15), pygame.SRCALPHA) 
+        title_bg.fill((20,20,20,180)) 
+        title_bg.blit(title_surf, title_surf.get_rect(center=(title_bg.get_width()//2, title_bg.get_height()//2))) 
+        self.screen.blit(title_bg, title_bg.get_rect(center=(WIDTH//2, 80))) 
 
-        settings_items = getattr(self.game_controller, 'settings_items_data', []) #
-        selected_idx = getattr(self.game_controller, 'selected_setting_index', 0) #
+        settings_items = getattr(self.game_controller, 'settings_items_data', []) 
+        selected_idx = getattr(self.game_controller, 'selected_setting_index', 0) 
 
-        item_y_start = 180 #
-        item_line_height = self.fonts["ui_text"].get_height() + 20 #
-        max_items_on_screen = (HEIGHT - item_y_start - 120) // item_line_height #
+        item_y_start = 180 
+        item_line_height = self.fonts["ui_text"].get_height() + 20 
+        max_items_on_screen = (HEIGHT - item_y_start - 120) // item_line_height 
 
-        view_start_index = 0 #
-        if len(settings_items) > max_items_on_screen: #
-            view_start_index = max(0, selected_idx - max_items_on_screen // 2) #
-            view_start_index = min(view_start_index, len(settings_items) - max_items_on_screen) #
-        view_end_index = min(view_start_index + max_items_on_screen, len(settings_items)) #
+        view_start_index = 0 
+        if len(settings_items) > max_items_on_screen: 
+            view_start_index = max(0, selected_idx - max_items_on_screen // 2) 
+            view_start_index = min(view_start_index, len(settings_items) - max_items_on_screen) 
+        view_end_index = min(view_start_index + max_items_on_screen, len(settings_items)) 
 
-        for i_display, list_idx in enumerate(range(view_start_index, view_end_index)): #
-            if list_idx >= len(settings_items): continue #
-            item = settings_items[list_idx] #
-            y_pos = item_y_start + i_display * item_line_height #
-            color = YELLOW if list_idx == selected_idx else WHITE #
+        for i_display, list_idx in enumerate(range(view_start_index, view_end_index)): 
+            if list_idx >= len(settings_items): continue 
+            item = settings_items[list_idx] 
+            y_pos = item_y_start + i_display * item_line_height 
+            color = YELLOW if list_idx == selected_idx else WHITE 
 
-            label_surf = self._render_text_safe(item["label"], "ui_text", color) #
-            label_bg_rect_width = max(250, label_surf.get_width() + 20) #
-            label_bg_rect = pygame.Rect(WIDTH // 4 - 150, y_pos - 5, label_bg_rect_width, label_surf.get_height() + 10) #
-            pygame.draw.rect(self.screen, (30,30,30,160), label_bg_rect, border_radius=5) #
-            self.screen.blit(label_surf, (label_bg_rect.left + 10, y_pos)) #
+            label_surf = self._render_text_safe(item["label"], "ui_text", color) 
+            label_bg_rect_width = max(250, label_surf.get_width() + 20) 
+            label_bg_rect = pygame.Rect(WIDTH // 4 - 150, y_pos - 5, label_bg_rect_width, label_surf.get_height() + 10) 
+            pygame.draw.rect(self.screen, (30,30,30,160), label_bg_rect, border_radius=5) 
+            self.screen.blit(label_surf, (label_bg_rect.left + 10, y_pos)) 
 
-            if "note" in item and list_idx == selected_idx: #
-                note_surf = self._render_text_safe(item["note"], "small_text", LIGHT_BLUE) #
-                self.screen.blit(note_surf, note_surf.get_rect(left=label_bg_rect.right + 15, centery=label_bg_rect.centery)) #
+            if "note" in item and list_idx == selected_idx: 
+                note_surf = self._render_text_safe(item["note"], "small_text", LIGHT_BLUE) 
+                self.screen.blit(note_surf, note_surf.get_rect(left=label_bg_rect.right + 15, centery=label_bg_rect.centery)) 
 
-            if item["type"] != "action": #
-                current_value = get_game_setting(item["key"]) #
-                display_value = "" #
-                if item["type"] == "numeric": #
-                    display_format = item.get("display_format", "{}") #
-                    value_to_format = current_value #
-                    if item.get("is_ms_to_sec"): #
-                        value_to_format = current_value / 1000 #
-                    try: #
-                        display_value = display_format.format(value_to_format) #
-                    except (ValueError, TypeError): #
-                        display_value = str(value_to_format) if not item.get("is_ms_to_sec") else f"{value_to_format:.0f}s" #
+            if item["type"] != "action": 
+                current_value = get_game_setting(item["key"]) 
+                display_value = "" 
+                if item["type"] == "numeric": 
+                    display_format = item.get("display_format", "{}") 
+                    value_to_format = current_value 
+                    if item.get("is_ms_to_sec"): 
+                        value_to_format = current_value / 1000 
+                    try: 
+                        display_value = display_format.format(value_to_format) 
+                    except (ValueError, TypeError): 
+                        display_value = str(value_to_format) if not item.get("is_ms_to_sec") else f"{value_to_format:.0f}s" 
 
-                elif item["type"] == "choice": #
-                    display_value = item["get_display"](current_value) #
+                elif item["type"] == "choice": 
+                    display_value = item["get_display"](current_value) 
 
-                value_surf = self._render_text_safe(display_value, "ui_text", color) #
-                value_bg_rect_width = max(100, value_surf.get_width() + 20) #
-                value_bg_rect = pygame.Rect(WIDTH // 2 + 150, y_pos - 5, value_bg_rect_width, value_surf.get_height() + 10) #
-                pygame.draw.rect(self.screen, (30,30,30,160), value_bg_rect, border_radius=5) #
-                self.screen.blit(value_surf, (value_bg_rect.left + 10, y_pos)) #
+                value_surf = self._render_text_safe(display_value, "ui_text", color) 
+                value_bg_rect_width = max(100, value_surf.get_width() + 20) 
+                value_bg_rect = pygame.Rect(WIDTH // 2 + 150, y_pos - 5, value_bg_rect_width, value_surf.get_height() + 10) 
+                pygame.draw.rect(self.screen, (30,30,30,160), value_bg_rect, border_radius=5) 
+                self.screen.blit(value_surf, (value_bg_rect.left + 10, y_pos)) 
 
-                if item["key"] in DEFAULT_SETTINGS and current_value != DEFAULT_SETTINGS[item["key"]]: #
-                    self.screen.blit(self._render_text_safe("*", "small_text", RED), (value_bg_rect.right + 5, y_pos)) #
-            elif list_idx == selected_idx: #
-                 action_hint_surf = self._render_text_safe("<ENTER>", "ui_text", YELLOW) #
-                 action_hint_bg_rect = pygame.Rect(WIDTH // 2 + 150, y_pos - 5, action_hint_surf.get_width() + 20, action_hint_surf.get_height() + 10) #
-                 pygame.draw.rect(self.screen, (40,40,40,180), action_hint_bg_rect, border_radius=5) #
-                 self.screen.blit(action_hint_surf, (action_hint_bg_rect.left + 10, y_pos)) #
+                if item["key"] in DEFAULT_SETTINGS and current_value != DEFAULT_SETTINGS[item["key"]]: 
+                    self.screen.blit(self._render_text_safe("*", "small_text", RED), (value_bg_rect.right + 5, y_pos)) 
+            elif list_idx == selected_idx: 
+                 action_hint_surf = self._render_text_safe("<ENTER>", "ui_text", YELLOW) 
+                 action_hint_bg_rect = pygame.Rect(WIDTH // 2 + 150, y_pos - 5, action_hint_surf.get_width() + 20, action_hint_surf.get_height() + 10) 
+                 pygame.draw.rect(self.screen, (40,40,40,180), action_hint_bg_rect, border_radius=5) 
+                 self.screen.blit(action_hint_surf, (action_hint_bg_rect.left + 10, y_pos)) 
 
-        instr_surf = self._render_text_safe("UP/DOWN: Select | LEFT/RIGHT: Adjust | ENTER: Activate | ESC: Back", "small_text", CYAN) #
-        instr_bg = pygame.Surface((instr_surf.get_width()+20, instr_surf.get_height()+10), pygame.SRCALPHA) #
-        instr_bg.fill((20,20,20,180)) #
-        instr_bg.blit(instr_surf, (10,5)) #
-        self.screen.blit(instr_bg, instr_bg.get_rect(center=(WIDTH//2, HEIGHT-70))) #
+        instr_surf = self._render_text_safe("UP/DOWN: Select | LEFT/RIGHT: Adjust | ENTER: Activate | ESC: Back", "small_text", CYAN) 
+        instr_bg = pygame.Surface((instr_surf.get_width()+20, instr_surf.get_height()+10), pygame.SRCALPHA) 
+        instr_bg.fill((20,20,20,180)) 
+        instr_bg.blit(instr_surf, (10,5)) 
+        self.screen.blit(instr_bg, instr_bg.get_rect(center=(WIDTH//2, HEIGHT-70))) 
 
-        if get_game_setting("SETTINGS_MODIFIED"): #
-            warning_surf = self._render_text_safe("Settings changed. Leaderboard will be disabled.", "small_text", YELLOW) #
-            warning_bg = pygame.Surface((warning_surf.get_width()+10, warning_surf.get_height()+5), pygame.SRCALPHA) #
-            warning_bg.fill((20,20,20,180)) #
-            warning_bg.blit(warning_surf, (5,2)) #
-            self.screen.blit(warning_bg, warning_bg.get_rect(center=(WIDTH//2, HEIGHT-35))) #
+        # Correctly access the SETTINGS_MODIFIED flag
+        if gs.SETTINGS_MODIFIED: 
+            warning_text = "Leaderboard disabled: settings changed from default values!"
+            warning_surf = self._render_text_safe(warning_text, "small_text", RED) 
+            warning_bg = pygame.Surface((warning_surf.get_width()+10, warning_surf.get_height()+5), pygame.SRCALPHA) 
+            warning_bg.fill((20,20,20,180)) 
+            warning_bg.blit(warning_surf, (5,2)) 
+            self.screen.blit(warning_bg, warning_bg.get_rect(center=(WIDTH//2, HEIGHT-35))) 
 
-    def draw_gameplay_hud(self): #
-        # ... (This method was updated for fragment HUD and remains as per the last correct version)
+    def draw_gameplay_hud(self): 
         if not self.game_controller.player: return
         panel_y_start = GAME_PLAY_AREA_HEIGHT 
         panel_height = BOTTOM_PANEL_HEIGHT 
@@ -741,9 +742,8 @@ class UIManager:
         print(f"UIManager: Warning - Scaled icon for fragment_id '{fragment_id}' not found. Using fallback.")
         return self._create_fallback_icon_surface(self.ui_icon_size_fragments, "?", PURPLE)
 
-    def draw_architect_vault_hud_elements(self): # From original file content
+    def draw_architect_vault_hud_elements(self): 
         self.draw_gameplay_hud()
-        # ... (rest of method from original file)
         current_time = pygame.time.get_ticks() 
         current_vault_phase = getattr(self.game_controller, 'architect_vault_current_phase', None) 
         if current_vault_phase == "extraction": 
@@ -764,8 +764,7 @@ class UIManager:
             self.screen.blit(msg_bg_surf, msg_bg_surf.get_rect(centerx=WIDTH//2, bottom=GAME_PLAY_AREA_HEIGHT - 20)) 
 
 
-    def draw_pause_overlay(self): # From original file content
-        # ... (Full method from original)
+    def draw_pause_overlay(self): 
         overlay_surface = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA) 
         overlay_surface.fill((0,0,0,150)) 
         self.screen.blit(overlay_surface, (0,0)) 
@@ -781,31 +780,38 @@ class UIManager:
         self.screen.blit(options_surf, options_surf.get_rect(center=(WIDTH//2, HEIGHT//2 + 40))) 
 
 
-    def draw_game_over_overlay(self): # From original file content
-        # ... (Full method from original)
+    def draw_game_over_overlay(self):
         go_text_surf = self._render_text_safe("GAME OVER", "large_text", RED) 
         score_text_surf = self._render_text_safe(f"Final Score: {self.game_controller.score}", "medium_text", WHITE) 
         self.screen.blit(go_text_surf, go_text_surf.get_rect(center=(WIDTH//2, HEIGHT//2 - 120))) 
         self.screen.blit(score_text_surf, score_text_surf.get_rect(center=(WIDTH//2, HEIGHT//2 - 30))) 
-        can_submit_score = not get_game_setting("SETTINGS_MODIFIED") 
-        is_new_high = can_submit_score and leaderboard.is_high_score(self.game_controller.score, self.game_controller.level) 
+        
+        # Correctly access the SETTINGS_MODIFIED flag
+        can_submit_score = not gs.SETTINGS_MODIFIED
+        is_high = leaderboard.is_high_score(self.game_controller.score, self.game_controller.level)
+
         prompt_y_offset = HEIGHT // 2 + 50 
+        prompt_str = ""
+        prompt_color = WHITE
+
         if not can_submit_score: 
-            no_lb_text_surf = self._render_text_safe("Leaderboard disabled (custom settings).", "ui_text", YELLOW) 
+            # This is the primary message if settings were modified
+            no_lb_text_surf = self._render_text_safe("Leaderboard disabled (custom settings active).", "ui_text", YELLOW) 
             self.screen.blit(no_lb_text_surf, no_lb_text_surf.get_rect(center=(WIDTH//2, prompt_y_offset))) 
             prompt_y_offset += self.fonts["ui_text"].get_height() + 20 
-        prompt_str = "R: Restart  M: Menu  Q: Quit" 
-        prompt_color = WHITE 
-        if can_submit_score and is_new_high: 
+            prompt_str = "R: Restart  M: Menu  Q: Quit" # Standard options when no leaderboard submission
+            prompt_color = WHITE
+        elif is_high: # Settings are default, AND it's a high score
             prompt_str = "New High Score! Press any key to enter name." 
             prompt_color = GOLD 
-        elif can_submit_score: 
-            prompt_str = "R: Restart  L: Leaderboard  M: Menu  Q: Quit" 
+        else: # Settings are default, but not a high score
+            prompt_str = "R: Restart  L: Leaderboard  M: Menu  Q: Quit"
+            prompt_color = WHITE
+            
         prompt_surf = self._render_text_safe(prompt_str, "ui_text", prompt_color) 
-        self.screen.blit(prompt_surf, prompt_surf.get_rect(center=(WIDTH//2, prompt_y_offset))) 
+        self.screen.blit(prompt_surf, prompt_surf.get_rect(center=(WIDTH//2, prompt_y_offset)))
 
-    def draw_enter_name_overlay(self): # From original file content
-        # ... (Full method from original)
+    def draw_enter_name_overlay(self): 
         title_surf = self._render_text_safe("New High Score!", "large_text", GOLD) 
         self.screen.blit(title_surf, title_surf.get_rect(center=(WIDTH//2, HEIGHT//2 - 180))) 
         score_level_text = f"Your Score: {self.game_controller.score} (Level: {self.game_controller.level})" 
@@ -822,67 +828,73 @@ class UIManager:
         submit_prompt_surf = self._render_text_safe("Press ENTER to submit.", "ui_text", CYAN) 
         self.screen.blit(submit_prompt_surf, submit_prompt_surf.get_rect(center=(WIDTH//2, HEIGHT//2 + 120))) 
 
-    def draw_leaderboard_overlay(self): # Restored from original file content
-        title_surf = self._render_text_safe("Leaderboard", "large_text", GOLD) #
-        title_bg_rect_width = title_surf.get_width() + 40 #
-        title_bg_rect_height = title_surf.get_height() + 20 #
-        title_bg_surf = pygame.Surface((title_bg_rect_width, title_bg_rect_height), pygame.SRCALPHA) #
-        title_bg_surf.fill((20,20,20,180)) #
-        title_bg_surf.blit(title_surf, title_surf.get_rect(center=(title_bg_rect_width//2, title_bg_rect_height//2))) #
-        self.screen.blit(title_bg_surf, title_bg_surf.get_rect(center=(WIDTH//2, HEIGHT//2 - 300))) #
-        scores_to_display = getattr(self.game_controller, 'leaderboard_scores', []) #
-        header_y = HEIGHT // 2 - 250 #
-        score_item_y_start = HEIGHT // 2 - 200 #
-        item_line_height = self.fonts["leaderboard_entry"].get_height() + 15 #
-        if not scores_to_display: #
-            no_scores_surf = self._render_text_safe("No scores yet!", "medium_text", WHITE) #
-            no_scores_bg = pygame.Surface((no_scores_surf.get_width()+20, no_scores_surf.get_height()+10), pygame.SRCALPHA) #
-            no_scores_bg.fill((30,30,30,160)) #
-            no_scores_bg.blit(no_scores_surf, no_scores_surf.get_rect(center=(no_scores_bg.get_width()//2, no_scores_bg.get_height()//2))) #
-            self.screen.blit(no_scores_bg, no_scores_bg.get_rect(center=(WIDTH//2, HEIGHT//2))) #
-        else: #
-            cols_x_positions = {"Rank": WIDTH//2 - 350, "Name": WIDTH//2 - 250, "Level": WIDTH//2 + 50, "Score": WIDTH//2 + 200} #
-            header_font = self.fonts.get("leaderboard_header", self.fonts["ui_text"]) #
-            entry_font = self.fonts.get("leaderboard_entry", self.fonts["ui_text"]) #
-            for col_name, x_pos in cols_x_positions.items(): #
-                header_surf = header_font.render(col_name, True, WHITE) #
-                header_bg = pygame.Surface((header_surf.get_width()+15, header_surf.get_height()+8), pygame.SRCALPHA) #
-                header_bg.fill((40,40,40,170)) #
-                header_bg.blit(header_surf, header_surf.get_rect(center=(header_bg.get_width()//2, header_bg.get_height()//2))) #
-                self.screen.blit(header_bg, (x_pos, header_y)) #
-            for i, entry in enumerate(scores_to_display): #
-                if i >= get_game_setting("LEADERBOARD_MAX_ENTRIES"): break #
-                y_pos = score_item_y_start + i * item_line_height #
+    def draw_leaderboard_overlay(self): 
+        title_surf = self._render_text_safe("Leaderboard", "large_text", GOLD) 
+        title_bg_rect_width = title_surf.get_width() + 40 
+        title_bg_rect_height = title_surf.get_height() + 20 
+        title_bg_surf = pygame.Surface((title_bg_rect_width, title_bg_rect_height), pygame.SRCALPHA) 
+        title_bg_surf.fill((20,20,20,180)) 
+        title_bg_surf.blit(title_surf, title_surf.get_rect(center=(title_bg_rect_width//2, title_bg_rect_height//2))) 
+        self.screen.blit(title_bg_surf, title_bg_surf.get_rect(center=(WIDTH//2, HEIGHT//2 - 300))) 
+        scores_to_display = getattr(self.game_controller, 'leaderboard_scores', []) 
+        header_y = HEIGHT // 2 - 250 
+        score_item_y_start = HEIGHT // 2 - 200 
+        item_line_height = self.fonts["leaderboard_entry"].get_height() + 15 
+        if not scores_to_display: 
+            no_scores_surf = self._render_text_safe("No scores yet!", "medium_text", WHITE) 
+            no_scores_bg = pygame.Surface((no_scores_surf.get_width()+20, no_scores_surf.get_height()+10), pygame.SRCALPHA) 
+            no_scores_bg.fill((30,30,30,160)) 
+            no_scores_bg.blit(no_scores_surf, no_scores_surf.get_rect(center=(no_scores_bg.get_width()//2, no_scores_bg.get_height()//2))) 
+            self.screen.blit(no_scores_bg, no_scores_bg.get_rect(center=(WIDTH//2, HEIGHT//2))) 
+        else: 
+            # Using the previously adjusted column positions for better spacing
+            cols_x_positions = {
+                "Rank": WIDTH//2 - 460,
+                "Name": WIDTH//2 - 300,
+                "Level": WIDTH//2 + 100,
+                "Score": WIDTH//2 + 280
+            } 
+            header_font = self.fonts.get("leaderboard_header", self.fonts["ui_text"]) 
+            entry_font = self.fonts.get("leaderboard_entry", self.fonts["ui_text"]) 
+            
+            for col_name, x_pos in cols_x_positions.items(): 
+                header_surf = header_font.render(col_name, True, WHITE) 
+                # Removed the individual header_bg creation and blitting
+                self.screen.blit(header_surf, (x_pos, header_y)) 
+
+            for i, entry in enumerate(scores_to_display): 
+                if i >= get_game_setting("LEADERBOARD_MAX_ENTRIES"): break 
+                y_pos = score_item_y_start + i * item_line_height 
                 texts_to_draw = [
                     (f"{i+1}.", WHITE, cols_x_positions["Rank"]), 
                     (str(entry.get('name','N/A')).upper(), CYAN, cols_x_positions["Name"]), 
                     (str(entry.get('level','-')), GREEN, cols_x_positions["Level"]), 
                     (str(entry.get('score',0)), GOLD, cols_x_positions["Score"]) 
-                ] #
-                for text_str, color, x_coord in texts_to_draw: #
-                    text_surf = entry_font.render(text_str, True, color) #
-                    self.screen.blit(text_surf, (x_coord, y_pos)) #
-        menu_prompt_surf = self._render_text_safe("ESC: Main Menu | Q: Quit Game", "ui_text", WHITE) #
-        prompt_bg = pygame.Surface((menu_prompt_surf.get_width()+20, menu_prompt_surf.get_height()+10), pygame.SRCALPHA) #
-        prompt_bg.fill((20,20,20,180)) #
-        prompt_bg.blit(menu_prompt_surf, prompt_bg.get_rect(center=(prompt_bg.get_width()//2, prompt_bg.get_height()//2))) #
-        self.screen.blit(prompt_bg, prompt_bg.get_rect(center=(WIDTH//2, HEIGHT-100))) #
+                ] 
+                for text_str, color, x_coord in texts_to_draw: 
+                    text_surf = entry_font.render(text_str, True, color) 
+                    self.screen.blit(text_surf, (x_coord, y_pos)) 
+        menu_prompt_surf = self._render_text_safe("ESC: Main Menu | Q: Quit Game", "ui_text", WHITE) 
+        prompt_bg = pygame.Surface((menu_prompt_surf.get_width()+20, menu_prompt_surf.get_height()+10), pygame.SRCALPHA) 
+        prompt_bg.fill((20,20,20,180)) 
+        prompt_bg.blit(menu_prompt_surf, prompt_bg.get_rect(center=(prompt_bg.get_width()//2, prompt_bg.get_height()//2))) 
+        self.screen.blit(prompt_bg, prompt_bg.get_rect(center=(WIDTH//2, HEIGHT-100))) 
 
-    def draw_architect_vault_success_overlay(self): # From original file content
-        msg_surf = self._render_text_safe("Vault Conquered!", "large_text", GOLD) #
-        self.screen.blit(msg_surf, msg_surf.get_rect(center=(WIDTH//2, HEIGHT//2 - 80))) #
-        blueprint_id = get_game_setting("ARCHITECT_REWARD_BLUEPRINT_ID") #
-        reward_text = f"Blueprint Acquired: {blueprint_id}" if blueprint_id else "Ancient Technology Secured!" #
-        reward_surf = self._render_text_safe(reward_text, "medium_text", CYAN) #
-        self.screen.blit(reward_surf, reward_surf.get_rect(center=(WIDTH//2, HEIGHT//2 + 20))) #
-        prompt_surf = self._render_text_safe("Press ENTER or M to Continue", "ui_text", WHITE) #
-        self.screen.blit(prompt_surf, prompt_surf.get_rect(center=(WIDTH//2, HEIGHT//2 + 100))) #
+    def draw_architect_vault_success_overlay(self): 
+        msg_surf = self._render_text_safe("Vault Conquered!", "large_text", GOLD) 
+        self.screen.blit(msg_surf, msg_surf.get_rect(center=(WIDTH//2, HEIGHT//2 - 80))) 
+        blueprint_id = get_game_setting("ARCHITECT_REWARD_BLUEPRINT_ID") 
+        reward_text = f"Blueprint Acquired: {blueprint_id}" if blueprint_id else "Ancient Technology Secured!" 
+        reward_surf = self._render_text_safe(reward_text, "medium_text", CYAN) 
+        self.screen.blit(reward_surf, reward_surf.get_rect(center=(WIDTH//2, HEIGHT//2 + 20))) 
+        prompt_surf = self._render_text_safe("Press ENTER or M to Continue", "ui_text", WHITE) 
+        self.screen.blit(prompt_surf, prompt_surf.get_rect(center=(WIDTH//2, HEIGHT//2 + 100))) 
 
-    def draw_architect_vault_failure_overlay(self): # From original file content
-        msg_surf = self._render_text_safe("Vault Mission Failed", "large_text", RED) #
-        self.screen.blit(msg_surf, msg_surf.get_rect(center=(WIDTH//2, HEIGHT//2 - 50))) #
-        reason_text = getattr(self.game_controller, 'architect_vault_failure_reason', "Critical systems compromised.") #
-        reason_surf = self._render_text_safe(reason_text, "ui_text", YELLOW) #
-        self.screen.blit(reason_surf, reason_surf.get_rect(center=(WIDTH//2, HEIGHT//2 + 20))) #
-        prompt_surf = self._render_text_safe("Press ENTER or M to Return to Menu", "ui_text", WHITE) #
-        self.screen.blit(prompt_surf, prompt_surf.get_rect(center=(WIDTH//2, HEIGHT//2 + 80))) #
+    def draw_architect_vault_failure_overlay(self): 
+        msg_surf = self._render_text_safe("Vault Mission Failed", "large_text", RED) 
+        self.screen.blit(msg_surf, msg_surf.get_rect(center=(WIDTH//2, HEIGHT//2 - 50))) 
+        reason_text = getattr(self.game_controller, 'architect_vault_failure_reason', "Critical systems compromised.") 
+        reason_surf = self._render_text_safe(reason_text, "ui_text", YELLOW) 
+        self.screen.blit(reason_surf, reason_surf.get_rect(center=(WIDTH//2, HEIGHT//2 + 20))) 
+        prompt_surf = self._render_text_safe("Press ENTER or M to Return to Menu", "ui_text", WHITE) 
+        self.screen.blit(prompt_surf, prompt_surf.get_rect(center=(WIDTH//2, HEIGHT//2 + 80)))

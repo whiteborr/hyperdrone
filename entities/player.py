@@ -101,8 +101,7 @@ class Drone(BaseDrone):
         self.shield_active = False 
         self.shield_end_time = 0 
         self.shield_duration = get_game_setting("SHIELD_POWERUP_DURATION")  
-        self.shield_visual_radius = self.rect.width // 2 + 5 if self.rect else TILE_SIZE // 2 + 5
-        self.shield_pulse_angle = 0 
+        self.shield_glow_pulse_time_offset = random.uniform(0, 2 * math.pi) # For glow pulsation
 
         self.speed_boost_active = False 
         self.speed_boost_end_time = 0 
@@ -366,7 +365,7 @@ class Drone(BaseDrone):
                 closest_enemy_for_zap = None 
                 if enemies_group: 
                     min_dist = float('inf') 
-                    for enemy_sprite in enemies_group: # Changed 'enemy' to 'enemy_sprite' for clarity
+                    for enemy_sprite in enemies_group: 
                         if not enemy_sprite.alive: continue 
                         dist = math.hypot(enemy_sprite.rect.centerx - self.x, enemy_sprite.rect.centery - self.y) 
                         if dist < get_game_setting("LIGHTNING_ZAP_RANGE") and dist < min_dist: 
@@ -374,15 +373,12 @@ class Drone(BaseDrone):
                             closest_enemy_for_zap = enemy_sprite 
                 
                 lightning_dmg = get_game_setting("LIGHTNING_DAMAGE") * self.bullet_damage_multiplier
-                # Ensure 'maze' is passed to PlayerDrone.shoot and then here
-                # Assuming 'maze' is now an argument to PlayerDrone.shoot method
-                if maze is None: # Fallback if maze is not passed, though it should be
+                if maze is None: 
                     print("CRITICAL WARNING (Player.shoot): Maze object not provided for LightningZap!")
-                    # Handle error or create zap without wall collision (original behavior)
                 
                 new_zap = LightningZap(self, closest_enemy_for_zap, lightning_dmg, 
                                        get_game_setting("LIGHTNING_LIFETIME"), 
-                                       maze) # Pass the maze object
+                                       maze) 
                 self.lightning_zaps_group.add(new_zap)
 
     def take_damage(self, amount, sound=None): 
@@ -408,6 +404,7 @@ class Drone(BaseDrone):
         self.shield_active = True
         self.shield_end_time = pygame.time.get_ticks() + duration
         self.shield_duration = duration 
+        self.shield_glow_pulse_time_offset = pygame.time.get_ticks() * 0.005 # Reset pulse start for smoothness
 
         if is_from_speed_boost:
             self.shield_tied_to_speed_boost = True
@@ -557,17 +554,51 @@ class Drone(BaseDrone):
                     pygame.draw.circle(temp_particle_surf, draw_color, (particle_radius, particle_radius), particle_radius)
                     surface.blit(temp_particle_surf, (int(p['pos'][0]) - particle_radius, int(p['pos'][1]) - particle_radius))
 
-        if self.alive and self.image:  
-            surface.blit(self.image, self.rect) 
-            if self.shield_active: 
-                current_time = pygame.time.get_ticks() 
-                pulse = abs(math.sin(current_time * 0.005 + self.shield_pulse_angle))  
-                alpha = 50 + int(pulse * 70)  
-                shield_base_color = POWERUP_TYPES.get("shield", {}).get("color", LIGHT_BLUE) 
-                shield_color_with_alpha = (*shield_base_color[:3], alpha) 
+        if self.alive and self.image and self.original_image:  
+            if self.shield_active:
+                current_time = pygame.time.get_ticks()
+                # Pulsating alpha for the glow
+                pulse_factor = (math.sin(current_time * 0.008 + self.shield_glow_pulse_time_offset) + 1) / 2 # Normalized 0-1
+                glow_alpha = int(80 + pulse_factor * 70) # Pulsates between 80 and 150 alpha
                 
-                for i in range(3):  
-                    pygame.draw.circle(surface, shield_color_with_alpha, self.rect.center, self.shield_visual_radius + i, 2) 
+                # Scale factor for the glow (slightly larger than the drone)
+                glow_scale = 1.25 + (pulse_factor * 0.15) # Pulsates size slightly: 1.25x to 1.4x
+
+                glow_color_tuple = POWERUP_TYPES.get("shield", {}).get("color", LIGHT_BLUE)
+                
+                # Create the glow effect based on the original_image (unrotated base sprite)
+                glow_width = int(self.original_image.get_width() * glow_scale)
+                glow_height = int(self.original_image.get_height() * glow_scale)
+                
+                # 1. Scaled version of the original drone image (base for shape)
+                scaled_drone_for_glow_shape = pygame.transform.smoothscale(self.original_image, (glow_width, glow_height))
+                
+                # 2. Create a mask from the scaled drone sprite to define the glow shape
+                try:
+                    glow_shape_mask = pygame.mask.from_surface(scaled_drone_for_glow_shape)
+                    # Convert mask to a surface, colored with the shield color
+                    glow_shape_surface = glow_shape_mask.to_surface(setcolor=glow_color_tuple, unsetcolor=(0,0,0,0))
+                    glow_shape_surface.set_alpha(glow_alpha)
+
+                    # Rotate the glow shape
+                    rotated_glow_shape = pygame.transform.rotate(glow_shape_surface, -self.angle)
+                    glow_rect = rotated_glow_shape.get_rect(center=self.rect.center)
+                    surface.blit(rotated_glow_shape, glow_rect)
+                except pygame.error as e:
+                    # This can happen if the original_image is too small or transparent after scaling
+                    # Or if scaled_drone_for_glow_shape is 0x0.
+                    # As a fallback, could draw a simple circle or skip glow for this frame.
+                    # print(f"Warning: Could not create shield glow mask/surface: {e}")
+                    # Fallback: Draw a simple translucent circle if mask creation fails
+                    fallback_glow_radius = (self.rect.width / 2) * glow_scale
+                    fallback_glow_surface = pygame.Surface((fallback_glow_radius * 2, fallback_glow_radius * 2), pygame.SRCALPHA)
+                    pygame.draw.circle(fallback_glow_surface, (*glow_color_tuple[:3], glow_alpha), 
+                                       (fallback_glow_radius, fallback_glow_radius), fallback_glow_radius)
+                    surface.blit(fallback_glow_surface, fallback_glow_surface.get_rect(center=self.rect.center))
+
+
+            # Draw the main player sprite on top
+            surface.blit(self.image, self.rect) 
         
         self.bullets_group.draw(surface) 
         self.missiles_group.draw(surface) 

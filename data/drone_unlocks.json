@@ -8,11 +8,14 @@
     "PHANTOM",
     "ZEPHYR"
   ],
-  "selected_drone": "DRONE",
+  "selected_drone": "VANTIS",
   "player_level": 1,
   "bosses_defeated": [],
-  "player_cores": 0,
-  "collected_core_fragments": [],
+  "player_cores": 605,
+  "collected_core_fragments": [
+    "cf_alpha",
+    "cf_beta"
+  ],
   "architect_vault_completed": false,
   "unlocked_blueprints": [],
   "unlocked_lore_codex_entries": []
