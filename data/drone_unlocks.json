@@ -8,10 +8,10 @@
     "PHANTOM",
     "ZEPHYR"
   ],
-  "selected_drone": "DRONE",
+  "selected_drone": "RHINOX",
   "player_level": 1,
   "bosses_defeated": [],
-  "player_cores": 1320,
+  "player_cores": 1630,
   "collected_core_fragments": [],
   "architect_vault_completed": false,
   "unlocked_blueprints": [],
