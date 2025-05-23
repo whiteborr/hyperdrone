@@ -645,7 +645,8 @@ class UIManager:
         fragment_display_order_ids = []
         if CORE_FRAGMENT_DETAILS:
             try:
-                sorted_frag_keys = sorted(CORE_FRAGMENT_DETAILS.keys())
+                # Filter out the special 'vault_core' fragment from regular display
+                sorted_frag_keys = sorted([k for k in CORE_FRAGMENT_DETAILS.keys() if k != "fragment_vault_core"])
                 fragment_display_order_ids = [CORE_FRAGMENT_DETAILS[key]["id"] for key in sorted_frag_keys if "id" in CORE_FRAGMENT_DETAILS[key]]
             except Exception as e:
                 print(f"UIManager: Error creating fragment display order: {e}. Using unsorted.")

@@ -4,6 +4,7 @@ from .enemy import Enemy
 from .bullet import Bullet, Missile, LightningZap
 from .collectibles import Ring, WeaponUpgradeItem, ShieldItem, SpeedBoostItem, CoreFragmentItem
 from .particle import Particle
+from .maze_guardian import MazeGuardian, SentinelDrone
 
 __all__ = [
     "BaseDrone",
@@ -17,5 +18,7 @@ __all__ = [
     "ShieldItem",
     "SpeedBoostItem",
     "CoreFragmentItem",
-    "Particle"
+    "Particle",
+    "MazeGuardian",
+    "SentinelDrone"
 ]

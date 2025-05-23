@@ -4,14 +4,14 @@ import random
 
 # Import from sibling drone_configs.py
 from .drone_configs import DRONE_DATA, DRONE_DISPLAY_ORDER, OMEGA_STAT_RANGES #
-
-import game_settings as gs
+# Ensure gs (game_settings) is imported if any gs.get_game_setting() calls are made directly here
+# For now, assuming gs is primarily used by the calling context (e.g., GameController)
+# and that constants needed by DroneSystem are imported directly.
+import game_settings as gs 
 from game_settings import (
     # Constants directly used from game_settings
     CORE_FRAGMENT_DETAILS, TOTAL_CORE_FRAGMENTS_NEEDED, #
     ARCHITECT_REWARD_BLUEPRINT_ID, ARCHITECT_REWARD_LORE_ID #
-    # get_game_setting is not directly used by DroneSystem in the provided code,
-    # but if it were, it would be imported or accessed via gs.get_game_setting
 )
 
 DATA_DIR = "data" # Directory to store save files
@@ -73,6 +73,7 @@ class DroneSystem: #
                     data["selected_drone"] = "DRONE" #
 
                 if "collected_core_fragments" in data and CORE_FRAGMENT_DETAILS: #
+                    # Ensure collected fragments are still valid fragments defined in CORE_FRAGMENT_DETAILS
                     valid_fragment_ids = [details["id"] for cfg_key, details in CORE_FRAGMENT_DETAILS.items() if details and "id" in details] #
                     data["collected_core_fragments"] = [fid for fid in data["collected_core_fragments"] if fid in valid_fragment_ids] #
                 else: #
@@ -141,7 +142,7 @@ class DroneSystem: #
         """
         self.unlock_data["player_level"] = level #
         newly_unlocked = self._check_for_passive_unlocks() #
-        if not newly_unlocked: #
+        if not newly_unlocked: # Only save if no new unlocks, as _check_for_passive_unlocks saves if it finds any
             self._save_unlocks() #
         if newly_unlocked: #
              print(f"DroneSystem: Player level set to {level}. New unlocks: {newly_unlocked}") #
@@ -234,47 +235,55 @@ class DroneSystem: #
             return True #
         return False #
 
-    def get_drone_stats(self, drone_id, is_in_architect_vault=False): #
+    def get_drone_stats(self, drone_id, is_in_architect_vault=False): 
         """
-        Returns the effective stats for a drone, applying special modifications.
+        Returns the effective stats for a drone, applying special modifications
+        and buffs if inside the Architect's Vault.
         """
-        base_config = self.get_drone_config(drone_id) #
-        if not base_config or "base_stats" not in base_config: #
-            print(f"DroneSystem: Error - Base config or base_stats not found for drone '{drone_id}'. Returning minimal stats.") #
-            return {"hp": 100, "speed": 3, "turn_speed": 5, "fire_rate_multiplier": 1.0, "bullet_damage_multiplier": 1.0, "special_ability": None} #
+        base_config = self.get_drone_config(drone_id) 
+        if not base_config or "base_stats" not in base_config: 
+            print(f"DroneSystem: Error - Base config or base_stats not found for drone '{drone_id}'. Returning minimal stats.") 
+            return {
+                "hp": gs.get_game_setting("PLAYER_MAX_HEALTH"), 
+                "speed": gs.get_game_setting("PLAYER_SPEED"), 
+                "turn_speed": gs.get_game_setting("ROTATION_SPEED"), 
+                "fire_rate_multiplier": 1.0, 
+                "bullet_damage_multiplier": 1.0, 
+                "special_ability": None
+            }
 
-        effective_stats = base_config["base_stats"].copy() #
+        effective_stats = base_config["base_stats"].copy() 
 
-        if drone_id == "OMEGA-9" and effective_stats.get("special_ability") == "omega_boost": #
-            for stat_name, (min_mult, max_mult) in OMEGA_STAT_RANGES.items(): # OMEGA_STAT_RANGES from .drone_configs
-                if stat_name in effective_stats: #
-                    original_value = effective_stats[stat_name] #
-                    multiplier = random.uniform(min_mult, max_mult) #
-                    modified_value = original_value * multiplier #
-                    effective_stats[stat_name] = int(modified_value) if stat_name == "hp" else modified_value #
-
-        if is_in_architect_vault and CORE_FRAGMENT_DETAILS: #
-            collected_fragment_ids = self.get_collected_fragments_ids() #
-            for frag_id in collected_fragment_ids: #
-                fragment_config = next((details for _, details in CORE_FRAGMENT_DETAILS.items() if details and details.get("id") == frag_id), None) #
+        if drone_id == "OMEGA-9" and effective_stats.get("special_ability") == "omega_boost": 
+            for stat_name, (min_mult, max_mult) in OMEGA_STAT_RANGES.items(): 
+                if stat_name in effective_stats: 
+                    original_value = DRONE_DATA["OMEGA-9"]["base_stats"][stat_name] 
+                    multiplier = random.uniform(min_mult, max_mult) 
+                    modified_value = original_value * multiplier 
+                    effective_stats[stat_name] = int(modified_value) if stat_name == "hp" else modified_value 
+        
+        if is_in_architect_vault and CORE_FRAGMENT_DETAILS: 
+            collected_fragment_ids = self.get_collected_fragments_ids() 
+            for frag_id in collected_fragment_ids: 
+                fragment_config = next((details for _, details in CORE_FRAGMENT_DETAILS.items() if details and details.get("id") == frag_id), None) 
                 
-                if fragment_config: #
-                    if "buff" in fragment_config: #
-                        buff = fragment_config["buff"] #
-                        buff_type = buff.get("type") #
-                        buff_value = buff.get("value") #
-                        if buff_type == "speed" and "speed" in effective_stats: #
-                            effective_stats["speed"] *= buff_value #
-                        elif buff_type == "bullet_damage_multiplier" and "bullet_damage_multiplier" in effective_stats: # Corrected this line
-                            effective_stats["bullet_damage_multiplier"] *= buff_value #
+                if fragment_config: 
+                    if "buff" in fragment_config: 
+                        buff = fragment_config["buff"] 
+                        buff_type = buff.get("type") 
+                        buff_value = buff.get("value") 
+                        if buff_type == "speed" and "speed" in effective_stats: 
+                            effective_stats["speed"] *= buff_value 
+                        elif buff_type == "bullet_damage_multiplier" and "bullet_damage_multiplier" in effective_stats: 
+                            effective_stats["bullet_damage_multiplier"] *= buff_value 
 
-                    if "buff_alt" in fragment_config: #
-                        buff_alt = fragment_config["buff_alt"] #
-                        buff_alt_type = buff_alt.get("type") #
-                        buff_alt_value = buff_alt.get("value") #
-                        if buff_alt_type == "damage_reduction": #
-                            effective_stats["damage_taken_multiplier"] = effective_stats.get("damage_taken_multiplier", 1.0) * (1.0 - buff_alt_value) #
-        return effective_stats #
+                    if "buff_alt" in fragment_config: 
+                        buff_alt = fragment_config["buff_alt"] 
+                        buff_alt_type = buff_alt.get("type") 
+                        buff_alt_value = buff_alt.get("value") 
+                        if buff_alt_type == "damage_reduction": 
+                            effective_stats["damage_taken_multiplier"] = effective_stats.get("damage_taken_multiplier", 1.0) * (1.0 - buff_alt_value) 
+        return effective_stats 
 
     def collect_core_fragment(self, fragment_id_to_collect): #
         """Adds a fragment_id to the list of collected fragments if not already present and saves."""
@@ -388,7 +397,7 @@ class DroneSystem: #
         } #
         self.unlock_data = default_data #
         self._save_unlocks() #
-        print("DroneSystem: All progress reset.") #
+        print("DroneSystem: All progress reset.")
 
 if __name__ == '__main__': #
     print("DroneSystem: Running self-test...") #
