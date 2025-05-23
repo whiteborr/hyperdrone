@@ -101,8 +101,7 @@ class Drone(BaseDrone):
         self.shield_active = False 
         self.shield_end_time = 0 
         self.shield_duration = get_game_setting("SHIELD_POWERUP_DURATION")  
-        self.shield_visual_radius = self.rect.width // 2 + 5 if self.rect else TILE_SIZE // 2 + 5
-        self.shield_pulse_angle = 0 
+        self.shield_glow_pulse_time_offset = random.uniform(0, 2 * math.pi) 
 
         self.speed_boost_active = False 
         self.speed_boost_end_time = 0 
@@ -157,11 +156,12 @@ class Drone(BaseDrone):
 
         self.image = self.original_image.copy() 
         self.rect = self.image.get_rect(center=(int(self.x), int(self.y))) 
-        self.collision_rect_width = self.rect.width * 0.7 
-        self.collision_rect_height = self.rect.height * 0.7 
-        self.collision_rect = pygame.Rect(0,0, self.collision_rect_width, self.collision_rect_height) 
-        self.collision_rect.center = self.rect.center 
-
+        # Ensure collision_rect is updated after a new sprite is loaded/rect is set
+        if self.rect:
+            self.collision_rect_width = self.rect.width * 0.7 
+            self.collision_rect_height = self.rect.height * 0.7 
+            self.collision_rect = pygame.Rect(0,0, self.collision_rect_width, self.collision_rect_height) 
+            self.collision_rect.center = self.rect.center
 
     def _update_weapon_attributes(self): 
         if self.current_weapon_mode == WEAPON_MODE_BIG_SHOT: 
@@ -268,6 +268,7 @@ class Drone(BaseDrone):
             if self.collision_rect: 
                 self.collision_rect.center = self.rect.center 
         else: 
+            # This case should ideally not be hit if _load_sprite ensures original_image is always set
             if self.rect: self.rect.center = (int(self.x), int(self.y)) 
 
     def _update_movement(self, maze, game_area_x_offset): 
@@ -321,8 +322,41 @@ class Drone(BaseDrone):
         
         nose_offset_factor = (self.rect.height / 2 if self.rect else TILE_SIZE * 0.4) * 0.7 
         rad_angle_shoot = math.radians(self.angle) 
-        bullet_start_x = self.x + math.cos(rad_angle_shoot) * nose_offset_factor 
-        bullet_start_y = self.y + math.sin(rad_angle_shoot) * nose_offset_factor 
+        
+        raw_bullet_start_x = self.x + math.cos(rad_angle_shoot) * nose_offset_factor 
+        raw_bullet_start_y = self.y + math.sin(rad_angle_shoot) * nose_offset_factor 
+
+        bullet_start_x = raw_bullet_start_x
+        bullet_start_y = raw_bullet_start_y
+        
+        projectile_check_diameter = self.bullet_size * 2 
+
+        if maze:
+            if maze.is_wall(raw_bullet_start_x, raw_bullet_start_y, projectile_check_diameter, projectile_check_diameter):
+                max_steps_back = 10 
+                step_dist = nose_offset_factor / max_steps_back 
+                found_clear_spawn = False
+                for i in range(1, max_steps_back + 1):
+                    current_offset = nose_offset_factor - (i * step_dist)
+                    if current_offset < 0: 
+                        current_offset = 0
+                    
+                    test_x = self.x + math.cos(rad_angle_shoot) * current_offset
+                    test_y = self.y + math.sin(rad_angle_shoot) * current_offset
+                    
+                    if not maze.is_wall(test_x, test_y, projectile_check_diameter, projectile_check_diameter):
+                        bullet_start_x = test_x
+                        bullet_start_y = test_y
+                        found_clear_spawn = True
+                        break 
+                    if current_offset == 0: 
+                        bullet_start_x = test_x 
+                        bullet_start_y = test_y
+                        break 
+                
+                if not found_clear_spawn:
+                    bullet_start_x = self.x
+                    bullet_start_y = self.y
         
         if self.current_weapon_mode not in [WEAPON_MODE_HEATSEEKER, WEAPON_MODE_LIGHTNING]: 
             if can_shoot_primary: 
@@ -366,7 +400,7 @@ class Drone(BaseDrone):
                 closest_enemy_for_zap = None 
                 if enemies_group: 
                     min_dist = float('inf') 
-                    for enemy_sprite in enemies_group: # Changed 'enemy' to 'enemy_sprite' for clarity
+                    for enemy_sprite in enemies_group: 
                         if not enemy_sprite.alive: continue 
                         dist = math.hypot(enemy_sprite.rect.centerx - self.x, enemy_sprite.rect.centery - self.y) 
                         if dist < get_game_setting("LIGHTNING_ZAP_RANGE") and dist < min_dist: 
@@ -374,15 +408,12 @@ class Drone(BaseDrone):
                             closest_enemy_for_zap = enemy_sprite 
                 
                 lightning_dmg = get_game_setting("LIGHTNING_DAMAGE") * self.bullet_damage_multiplier
-                # Ensure 'maze' is passed to PlayerDrone.shoot and then here
-                # Assuming 'maze' is now an argument to PlayerDrone.shoot method
-                if maze is None: # Fallback if maze is not passed, though it should be
+                if maze is None: 
                     print("CRITICAL WARNING (Player.shoot): Maze object not provided for LightningZap!")
-                    # Handle error or create zap without wall collision (original behavior)
                 
                 new_zap = LightningZap(self, closest_enemy_for_zap, lightning_dmg, 
                                        get_game_setting("LIGHTNING_LIFETIME"), 
-                                       maze) # Pass the maze object
+                                       maze) 
                 self.lightning_zaps_group.add(new_zap)
 
     def take_damage(self, amount, sound=None): 
@@ -408,6 +439,7 @@ class Drone(BaseDrone):
         self.shield_active = True
         self.shield_end_time = pygame.time.get_ticks() + duration
         self.shield_duration = duration 
+        self.shield_glow_pulse_time_offset = pygame.time.get_ticks() * 0.005 
 
         if is_from_speed_boost:
             self.shield_tied_to_speed_boost = True
@@ -467,15 +499,19 @@ class Drone(BaseDrone):
             self.cloak_cooldown_end_time = current_time_ms + self.phantom_cloak_cooldown_ms
 
     def reset(self, x, y, drone_id, drone_stats, drone_sprite_path, health_override=None, preserve_weapon=False):
-        base_speed_from_stats = drone_stats.get("speed", get_game_setting("PLAYER_SPEED"))
-        super().__init__(x, y, speed=base_speed_from_stats) 
-        
-        self.x = float(x) 
-        self.y = float(y)
+        previous_drone_id = self.drone_id # Store current drone_id before it's overwritten
 
-        self.drone_id = drone_id
+        # Re-initialize relevant BaseDrone attributes directly or by calling super().reset()
+        # super().reset(x,y) # If BaseDrone.reset is sufficient
+        self.x = float(x)
+        self.y = float(y)
+        self.angle = 0.0 # Explicitly reset angle
+        self.alive = True
+        self.moving_forward = False # Explicitly reset movement state
+        
+        self.drone_id = drone_id 
         self.base_hp = drone_stats.get("hp", get_game_setting("PLAYER_MAX_HEALTH"))
-        self.base_speed = base_speed_from_stats 
+        self.base_speed = drone_stats.get("speed", get_game_setting("PLAYER_SPEED"))
         self.base_turn_speed = drone_stats.get("turn_speed", get_game_setting("ROTATION_SPEED"))
         self.base_fire_rate_multiplier = drone_stats.get("fire_rate_multiplier", 1.0)
         self.special_ability = drone_stats.get("special_ability")
@@ -488,12 +524,26 @@ class Drone(BaseDrone):
         self.current_speed = self.speed 
         self.rotation_speed = self.base_turn_speed
 
-        if self.drone_id != drone_id or not self.original_image or (self.original_image and self.original_image.get_width() == 0) : 
+        if previous_drone_id != self.drone_id or \
+           not self.original_image or \
+           (self.original_image and self.original_image.get_width() == 0): # Check if sprite needs to be reloaded
             self._load_sprite(drone_sprite_path)
-        else: 
-            if self.original_image: self.image = self.original_image.copy()
-            if self.image and self.rect: self.rect.center = (int(self.x), int(self.y))
-            elif self.image: self.rect = self.image.get_rect(center=(int(self.x), int(self.y)))
+        else: # Same drone, just ensure rect is updated for new position
+            if self.original_image: # Should always exist if loaded once
+                self.image = pygame.transform.rotate(self.original_image, -self.angle) # Use current angle (likely 0 after reset)
+                self.rect = self.image.get_rect(center=(int(self.x), int(self.y)))
+                if self.collision_rect: # Update collision rect too
+                    self.collision_rect.center = self.rect.center
+
+
+        # This block might be redundant if _load_sprite already sets self.image and self.rect
+        # and updates collision_rect. However, it ensures rects are set if _load_sprite isn't called.
+        if self.original_image and not self.image: # If image was somehow cleared but original exists
+             self.image = pygame.transform.rotate(self.original_image, -self.angle)
+        if self.image and not self.rect: # If rect was somehow cleared
+            self.rect = self.image.get_rect(center=(int(self.x), int(self.y)))
+        elif self.rect: # Always update rect center
+            self.rect.center = (int(self.x), int(self.y))
 
         if self.rect: 
             self.collision_rect_width = self.rect.width * 0.7
@@ -518,8 +568,6 @@ class Drone(BaseDrone):
         self.last_missile_shot_time = 0
         self.last_lightning_time = 0
         
-        self.alive = True 
-        self.moving_forward = False
         self.reset_active_powerups()
 
     def reset_active_powerups(self): 
@@ -557,17 +605,34 @@ class Drone(BaseDrone):
                     pygame.draw.circle(temp_particle_surf, draw_color, (particle_radius, particle_radius), particle_radius)
                     surface.blit(temp_particle_surf, (int(p['pos'][0]) - particle_radius, int(p['pos'][1]) - particle_radius))
 
-        if self.alive and self.image:  
-            surface.blit(self.image, self.rect) 
-            if self.shield_active: 
-                current_time = pygame.time.get_ticks() 
-                pulse = abs(math.sin(current_time * 0.005 + self.shield_pulse_angle))  
-                alpha = 50 + int(pulse * 70)  
-                shield_base_color = POWERUP_TYPES.get("shield", {}).get("color", LIGHT_BLUE) 
-                shield_color_with_alpha = (*shield_base_color[:3], alpha) 
+        if self.alive and self.image and self.original_image:  
+            if self.shield_active:
+                current_time = pygame.time.get_ticks()
+                pulse_factor = (math.sin(current_time * 0.008 + self.shield_glow_pulse_time_offset) + 1) / 2 
+                glow_alpha = int(80 + pulse_factor * 70) 
+                glow_scale = 1.25 + (pulse_factor * 0.15) 
+                glow_color_tuple = POWERUP_TYPES.get("shield", {}).get("color", LIGHT_BLUE)
                 
-                for i in range(3):  
-                    pygame.draw.circle(surface, shield_color_with_alpha, self.rect.center, self.shield_visual_radius + i, 2) 
+                glow_width = int(self.original_image.get_width() * glow_scale)
+                glow_height = int(self.original_image.get_height() * glow_scale)
+                
+                if glow_width > 0 and glow_height > 0: 
+                    scaled_drone_for_glow_shape = pygame.transform.smoothscale(self.original_image, (glow_width, glow_height))
+                    try:
+                        glow_shape_mask = pygame.mask.from_surface(scaled_drone_for_glow_shape)
+                        glow_shape_surface = glow_shape_mask.to_surface(setcolor=glow_color_tuple, unsetcolor=(0,0,0,0))
+                        glow_shape_surface.set_alpha(glow_alpha)
+                        rotated_glow_shape = pygame.transform.rotate(glow_shape_surface, -self.angle)
+                        glow_rect = rotated_glow_shape.get_rect(center=self.rect.center)
+                        surface.blit(rotated_glow_shape, glow_rect)
+                    except pygame.error: 
+                        fallback_glow_radius = (self.rect.width / 2) * glow_scale
+                        if fallback_glow_radius > 0:
+                            fallback_glow_surface = pygame.Surface((fallback_glow_radius * 2, fallback_glow_radius * 2), pygame.SRCALPHA)
+                            pygame.draw.circle(fallback_glow_surface, (*glow_color_tuple[:3], glow_alpha), 
+                                            (fallback_glow_radius, fallback_glow_radius), fallback_glow_radius)
+                            surface.blit(fallback_glow_surface, fallback_glow_surface.get_rect(center=self.rect.center))
+            surface.blit(self.image, self.rect) 
         
         self.bullets_group.draw(surface) 
         self.missiles_group.draw(surface) 

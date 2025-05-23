@@ -29,9 +29,9 @@ from entities.maze import Maze
 
 from drone_management import DroneSystem, DRONE_DATA, DRONE_DISPLAY_ORDER 
 
-import game_settings as gs
+import game_settings as gs # gs alias is used
 from game_settings import (
-    BLACK, WHITE, GOLD, CYAN, RED, YELLOW, GREEN, ORANGE, DARK_RED, GREY, # Ensure all needed colors are here
+    BLACK, WHITE, GOLD, CYAN, RED, YELLOW, GREEN, ORANGE, DARK_RED, GREY, 
     GAME_STATE_MAIN_MENU, GAME_STATE_PLAYING, GAME_STATE_GAME_OVER, 
     GAME_STATE_LEADERBOARD, GAME_STATE_ENTER_NAME, GAME_STATE_SETTINGS, 
     GAME_STATE_DRONE_SELECT, GAME_STATE_BONUS_LEVEL_PLAYING, 
@@ -46,6 +46,7 @@ from game_settings import (
     ARCHITECT_VAULT_DRONES_PER_WAVE, ARCHITECT_VAULT_GAUNTLET_WAVES, 
     DEFAULT_SETTINGS, 
     get_game_setting, set_game_setting, reset_all_settings_to_default
+    # SETTINGS_MODIFIED is a global in game_settings, accessed via gs.SETTINGS_MODIFIED
 )
 
 
@@ -129,7 +130,7 @@ class GameController:
         self.menu_stars = [] 
         self._initialize_menu_stars() 
 
-        self._initialize_settings_menu_items_data() 
+        self._initialize_settings_menu_items_data() # This will now use the filtered list
 
         self.scene_manager.set_game_state(GAME_STATE_MAIN_MENU) 
 
@@ -169,20 +170,14 @@ class GameController:
             self.menu_stars.append([x, y, speed, size]) 
 
     def _initialize_settings_menu_items_data(self): 
+        # Filtered list of settings as per previous user request
         self.settings_items_data = [
             {"label":"Base Max Health","key":"PLAYER_MAX_HEALTH","type":"numeric","min":50,"max":200,"step":10,"note":"Original Drone base, others vary"},
             {"label":"Starting Lives","key":"PLAYER_LIVES","type":"numeric","min":1,"max":9,"step":1},
             {"label":"Base Speed","key":"PLAYER_SPEED","type":"numeric","min":1,"max":10,"step":1,"note":"Original Drone base, others vary"},
             {"label":"Initial Weapon","key":"INITIAL_WEAPON_MODE","type":"choice",
-             "choices":WEAPON_MODES_SEQUENCE, "get_display":lambda val:WEAPON_MODE_NAMES.get(val,"Unknown")}, 
-            {"label":"Bullet Speed","key":"PLAYER_BULLET_SPEED","type":"numeric","min":2,"max":15,"step":1},
-            {"label":"Bullet Lifetime (frames)","key":"PLAYER_BULLET_LIFETIME","type":"numeric","min":30,"max":300,"step":10},
-            {"label":"Base Shoot Cooldown (ms)","key":"PLAYER_BASE_SHOOT_COOLDOWN","type":"numeric","min":100,"max":1000,"step":50},
-            {"label":"Rapid Fire Cooldown (ms)","key":"PLAYER_RAPID_FIRE_COOLDOWN","type":"numeric","min":50,"max":500,"step":25},
-            {"label":"Missile Cooldown (ms)","key":"MISSILE_COOLDOWN","type":"numeric","min":1000,"max":10000,"step":500},
+             "choices":WEAPON_MODES_SEQUENCE, "get_display":lambda val:WEAPON_MODE_NAMES.get(val,"Unknown")},
             {"label":"Missile Damage","key":"MISSILE_DAMAGE","type":"numeric","min":10,"max":100,"step":5},
-            {"label":"Lightning Cooldown (ms)","key":"LIGHTNING_COOLDOWN","type":"numeric","min":200,"max":2000,"step":50},
-            {"label":"Lightning Damage","key":"LIGHTNING_DAMAGE","type":"numeric","min":5,"max":50,"step":1},
             {"label":"Enemy Speed","key":"ENEMY_SPEED","type":"numeric","min":0.5,"max":5,"step":0.5},
             {"label":"Enemy Health","key":"ENEMY_HEALTH","type":"numeric","min":25,"max":300,"step":25},
             {"label":"Level Timer (sec)","key":"LEVEL_TIMER_DURATION","type":"numeric","min":60000,"max":300000,"step":15000,
@@ -191,8 +186,6 @@ class GameController:
              "is_ms_to_sec":True, "display_format": "{:.0f}s"},
             {"label":"Speed Boost Duration (sec)","key":"SPEED_BOOST_POWERUP_DURATION","type":"numeric","min":3000,"max":30000,"step":2000,
              "is_ms_to_sec":True, "display_format": "{:.0f}s"},
-            {"label":"Fullscreen Mode","key":"FULLSCREEN_MODE","type":"choice",
-             "choices":[False, True], "get_display":lambda val: "ON" if val else "OFF"},
             {"label":"Reset to Defaults","key":"RESET_SETTINGS_ACTION","type":"action"},
         ] 
         self.selected_setting_index = 0 
@@ -301,6 +294,10 @@ class GameController:
         self.player_name_input_display_cache = "" 
 
     def initialize_game_session(self): 
+        # Reset persisted core fragments at the very start of a new game session
+        if self.drone_system:
+            self.drone_system.reset_collected_fragments_in_storage() # ADDED THIS LINE
+
         self.level = 1 
         self.lives = gs.get_game_setting("PLAYER_LIVES") 
         self.score = 0 
@@ -343,9 +340,11 @@ class GameController:
         self.player_name_input_display_cache = "" 
         self.animating_rings.clear() 
         self.animating_fragments.clear()
+        
+        # This will now correctly reflect the cleared fragments from drone_system
         self.hud_displayed_fragments.clear() 
         if self.drone_system: 
-            for frag_id in self.drone_system.get_collected_fragments_ids():
+            for frag_id in self.drone_system.get_collected_fragments_ids(): # Should be empty now
                 self.hud_displayed_fragments.add(frag_id)
 
         self._place_collectibles_for_level(initial_setup=True) 
@@ -1096,9 +1095,20 @@ class GameController:
         elif key_event == pygame.K_RETURN: 
             if current_setting_item["type"] == "action" and setting_key == "RESET_SETTINGS_ACTION": 
                 gs.reset_all_settings_to_default() 
+                # Check if fullscreen needs to be reapplied after reset
                 if self.screen_flags != (pygame.FULLSCREEN if gs.get_game_setting("FULLSCREEN_MODE") else 0): 
                     self.screen_flags = pygame.FULLSCREEN if gs.get_game_setting("FULLSCREEN_MODE") else 0 
-                    self.screen = pygame.display.set_mode((gs.get_game_setting("WIDTH"), gs.get_game_setting("HEIGHT")), self.screen_flags) 
+                    # Only re-set_mode if the FULLSCREEN_MODE setting itself is part of general settings (it's not in filtered list)
+                    # However, reset_all_settings_to_default() in game_settings.py will reset FULLSCREEN_MODE value.
+                    # So we need to react to its new value if it affects the screen.
+                    # This part is tricky if FULLSCREEN_MODE is not in self.settings_items_data
+                    # but can be reset by RESET_SETTINGS_ACTION.
+                    # For now, assuming reset_all_settings_to_default handles the underlying value,
+                    # and the game might need a restart or specific handling for live screen mode change
+                    # if FULLSCREEN_MODE itself is not actively managed in the settings UI loop.
+                    # The current _initialize_settings_menu_items_data does not include FULLSCREEN_MODE.
+                    # So, the following line might not be necessary if Fullscreen is not in the menu.
+                    # self.screen = pygame.display.set_mode((gs.get_game_setting("WIDTH"), gs.get_game_setting("HEIGHT")), self.screen_flags)
                 self.play_sound('ui_confirm') 
         elif key_event == pygame.K_LEFT or key_event == pygame.K_RIGHT: 
             if current_setting_item["type"] != "action": 
@@ -1119,9 +1129,10 @@ class GameController:
                             current_choice_idx = choices.index(current_val) 
                             new_choice_idx = (current_choice_idx + direction + len(choices)) % len(choices) 
                             gs.set_game_setting(setting_key, choices[new_choice_idx]) 
-                            if setting_key == "FULLSCREEN_MODE": 
-                                self.screen_flags = pygame.FULLSCREEN if gs.get_game_setting("FULLSCREEN_MODE") else 0 
-                                self.screen = pygame.display.set_mode((gs.get_game_setting("WIDTH"), gs.get_game_setting("HEIGHT")), self.screen_flags) 
+                            # If FULLSCREEN_MODE were configurable here, this is where screen mode would be updated:
+                            # if setting_key == "FULLSCREEN_MODE": 
+                            #     self.screen_flags = pygame.FULLSCREEN if gs.get_game_setting("FULLSCREEN_MODE") else 0 
+                            #     self.screen = pygame.display.set_mode((gs.get_game_setting("WIDTH"), gs.get_game_setting("HEIGHT")), self.screen_flags) 
                         except ValueError: 
                             gs.set_game_setting(setting_key, choices[0]) 
         elif key_event == pygame.K_ESCAPE: 
@@ -1141,18 +1152,35 @@ class GameController:
             self.toggle_pause() 
 
     def handle_game_over_input(self, key_event): 
-        can_submit_score = not gs.get_game_setting("SETTINGS_MODIFIED") 
-        is_new_high = can_submit_score and leaderboard.is_high_score(self.score, self.level) 
-        if is_new_high and key_event in [pygame.K_r, pygame.K_l, pygame.K_m, pygame.K_q, pygame.K_RETURN, pygame.K_SPACE, pygame.K_ESCAPE]: 
-            self.scene_manager.set_game_state(GAME_STATE_ENTER_NAME) 
-            return 
+        # Correctly access the SETTINGS_MODIFIED flag directly from the gs module
+        settings_were_modified = gs.SETTINGS_MODIFIED 
+        # print(f"DEBUG: Game Over - SETTINGS_MODIFIED = {settings_were_modified}") # Optional debug
+
+        can_submit_score = not settings_were_modified
+        is_actually_a_new_high_score_and_submittable = can_submit_score and leaderboard.is_high_score(self.score, self.level)
+        
+        if is_actually_a_new_high_score_and_submittable:
+            # The prompt in ui.py for this case is "New High Score! Press any key to enter name."
+            if key_event in [pygame.K_r, pygame.K_l, pygame.K_m, pygame.K_q, pygame.K_RETURN, pygame.K_SPACE, pygame.K_ESCAPE]:
+                # print(f"DEBUG: Transitioning to GAME_STATE_ENTER_NAME. Score: {self.score}, Level: {self.level}") # Optional debug
+                self.scene_manager.set_game_state(GAME_STATE_ENTER_NAME) 
+                return 
+        
+        # If not transitioning to enter name, handle other options:
         if key_event == pygame.K_r: 
             self.initialize_game_session() 
             self.scene_manager.set_game_state(GAME_STATE_PLAYING) 
-        elif key_event == pygame.K_l and can_submit_score: 
-            self.scene_manager.set_game_state(GAME_STATE_LEADERBOARD) 
+        elif key_event == pygame.K_l: 
+            # UI prompt for 'L' is conditional on can_submit_score (if not a new high)
+            # So, allow viewing leaderboard if the UI would have shown 'L'
+            # Or simply always allow viewing from game over if preferred.
+            # Current UI: 'L' shown if default settings & not new high, or if custom settings (no 'L' prompt then).
+            # For simplicity and consistency with previous state, let's allow leaderboard view:
+            self.scene_manager.set_game_state(GAME_STATE_LEADERBOARD)
         elif key_event == pygame.K_m: 
             self.scene_manager.set_game_state(GAME_STATE_MAIN_MENU) 
+        elif key_event == pygame.K_q:
+            self.quit_game()
 
     def submit_leaderboard_name(self, name_cache_from_event_manager): 
         if leaderboard.add_score(name_cache_from_event_manager, self.score, self.level): 
@@ -1243,19 +1271,25 @@ class GameController:
             self.architect_vault_terminals.draw(self.screen) 
         
         if self.enemies:
-            for enemy_sprite in self.enemies: # Draw enemies that are still alive or have active bullets
+            for enemy_sprite in self.enemies: 
                 enemy_sprite.draw(self.screen)   
         
         if self.player: 
-            self.player.draw(self.screen) # Player.draw also handles its projectiles
+            self.player.draw(self.screen) 
 
-        self.explosion_particles.draw(self.screen) # Draw particles on top
+        self.explosion_particles.draw(self.screen)
 
     def run(self): 
+        # Check current fullscreen setting from game_settings.py (dynamic)
         current_fullscreen_setting = gs.get_game_setting("FULLSCREEN_MODE") 
-        if self.screen_flags != (pygame.FULLSCREEN if current_fullscreen_setting else 0): 
-            self.screen_flags = pygame.FULLSCREEN if current_fullscreen_setting else 0 
-            self.screen = pygame.display.set_mode((gs.get_game_setting("WIDTH"), gs.get_game_setting("HEIGHT")), self.screen_flags) 
+        # Update screen flags if the setting has changed (e.g. via settings menu that affects the gs module value)
+        # Note: Fullscreen_mode is not in the filtered settings_items_data, so this check is mainly
+        # for initial setup or if gs.FULLSCREEN_MODE is changed by other means (e.g. directly in game_settings.py and reloaded)
+        # or if reset_all_settings_to_default() changed it.
+        required_flags = pygame.FULLSCREEN if current_fullscreen_setting else 0
+        if self.screen_flags != required_flags:
+            self.screen_flags = required_flags
+            self.screen = pygame.display.set_mode((gs.get_game_setting("WIDTH"), gs.get_game_setting("HEIGHT")), self.screen_flags)
         
         while True: 
             self.event_manager.process_events() 
