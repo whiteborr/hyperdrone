@@ -138,7 +138,8 @@ class Drone(BaseDrone):
                                                self.collision_rect_width, self.collision_rect_height)
 
     def _load_sprite(self, sprite_path): 
-        default_size = (int(TILE_SIZE * 0.8), int(TILE_SIZE * 0.8)) 
+        # MODIFIED: Changed 0.8 to 0.7 for a slightly smaller drone
+        default_size = (int(TILE_SIZE * 0.7), int(TILE_SIZE * 0.7)) 
         loaded_successfully = False
         if sprite_path and os.path.exists(sprite_path): 
             try: 
@@ -156,7 +157,6 @@ class Drone(BaseDrone):
 
         self.image = self.original_image.copy() 
         self.rect = self.image.get_rect(center=(int(self.x), int(self.y))) 
-        # Ensure collision_rect is updated after a new sprite is loaded/rect is set
         if self.rect:
             self.collision_rect_width = self.rect.width * 0.7 
             self.collision_rect_height = self.rect.height * 0.7 
@@ -268,7 +268,6 @@ class Drone(BaseDrone):
             if self.collision_rect: 
                 self.collision_rect.center = self.rect.center 
         else: 
-            # This case should ideally not be hit if _load_sprite ensures original_image is always set
             if self.rect: self.rect.center = (int(self.x), int(self.y)) 
 
     def _update_movement(self, maze, game_area_x_offset): 
@@ -499,15 +498,13 @@ class Drone(BaseDrone):
             self.cloak_cooldown_end_time = current_time_ms + self.phantom_cloak_cooldown_ms
 
     def reset(self, x, y, drone_id, drone_stats, drone_sprite_path, health_override=None, preserve_weapon=False):
-        previous_drone_id = self.drone_id # Store current drone_id before it's overwritten
+        previous_drone_id = self.drone_id 
 
-        # Re-initialize relevant BaseDrone attributes directly or by calling super().reset()
-        # super().reset(x,y) # If BaseDrone.reset is sufficient
         self.x = float(x)
         self.y = float(y)
-        self.angle = 0.0 # Explicitly reset angle
-        self.alive = True
-        self.moving_forward = False # Explicitly reset movement state
+        self.angle = 0.0 
+        self.alive = True 
+        self.moving_forward = False 
         
         self.drone_id = drone_id 
         self.base_hp = drone_stats.get("hp", get_game_setting("PLAYER_MAX_HEALTH"))
@@ -526,23 +523,20 @@ class Drone(BaseDrone):
 
         if previous_drone_id != self.drone_id or \
            not self.original_image or \
-           (self.original_image and self.original_image.get_width() == 0): # Check if sprite needs to be reloaded
+           (self.original_image and self.original_image.get_width() == 0): 
             self._load_sprite(drone_sprite_path)
-        else: # Same drone, just ensure rect is updated for new position
-            if self.original_image: # Should always exist if loaded once
-                self.image = pygame.transform.rotate(self.original_image, -self.angle) # Use current angle (likely 0 after reset)
+        else: 
+            if self.original_image: 
+                self.image = pygame.transform.rotate(self.original_image, -self.angle) 
                 self.rect = self.image.get_rect(center=(int(self.x), int(self.y)))
-                if self.collision_rect: # Update collision rect too
+                if self.collision_rect: 
                     self.collision_rect.center = self.rect.center
 
-
-        # This block might be redundant if _load_sprite already sets self.image and self.rect
-        # and updates collision_rect. However, it ensures rects are set if _load_sprite isn't called.
-        if self.original_image and not self.image: # If image was somehow cleared but original exists
+        if self.original_image and not self.image: 
              self.image = pygame.transform.rotate(self.original_image, -self.angle)
-        if self.image and not self.rect: # If rect was somehow cleared
+        if self.image and not self.rect: 
             self.rect = self.image.get_rect(center=(int(self.x), int(self.y)))
-        elif self.rect: # Always update rect center
+        elif self.rect: 
             self.rect.center = (int(self.x), int(self.y))
 
         if self.rect: 

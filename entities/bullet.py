@@ -1,4 +1,4 @@
-# whiteborr/hyperdrone/hyperdrone-e30601dab2e5a5306ae5410d9796700369b67256/entities/bullet.py
+# entities/bullet.py
 
 import math
 import random
@@ -8,7 +8,8 @@ import game_settings as gs
 from game_settings import (
     PLAYER_BULLET_COLOR, PLAYER_BULLET_SPEED, PLAYER_BULLET_LIFETIME, PLAYER_DEFAULT_BULLET_SIZE,
     MISSILE_COLOR, MISSILE_SPEED, MISSILE_LIFETIME, MISSILE_SIZE, MISSILE_TURN_RATE,
-    LIGHTNING_COLOR, LIGHTNING_LIFETIME, LIGHTNING_ZAP_RANGE,
+    LIGHTNING_COLOR, LIGHTNING_LIFETIME, LIGHTNING_ZAP_RANGE, # Original lightning settings
+    # New visual settings for lightning will be accessed via gs.LIGHTNING_...
     WIDTH, GAME_PLAY_AREA_HEIGHT, TILE_SIZE
 )
 
@@ -79,7 +80,7 @@ class Bullet(pygame.sprite.Sprite):
                         self.angle = (-self.angle) % 360
                         bounced_this_frame = True
                     
-                    if not bounced_this_frame: 
+                    if not bounced_this_frame and (hit_x_wall and hit_y_wall): # Corner hit, simple reverse
                         self.dx *= -1
                         self.dy *= -1
                         self.angle = (self.angle + 180) % 360
@@ -93,9 +94,9 @@ class Bullet(pygame.sprite.Sprite):
                 return 
 
         min_x_bound = game_area_x_offset
-        max_x_bound = WIDTH
+        max_x_bound = WIDTH # Use gs.WIDTH if imported and used consistently
         min_y_bound = 0
-        max_y_bound = GAME_PLAY_AREA_HEIGHT
+        max_y_bound = GAME_PLAY_AREA_HEIGHT # Use gs.GAME_PLAY_AREA_HEIGHT
 
         if self.rect.left < min_x_bound or self.rect.right > max_x_bound or \
            self.rect.top < min_y_bound or self.rect.bottom > max_y_bound:
@@ -109,16 +110,17 @@ class Bullet(pygame.sprite.Sprite):
                     bounced_on_boundary = True
                 if self.rect.top < min_y_bound or self.rect.bottom > max_y_bound:
                     self.dy *= -1
-                    self.angle = (-self.angle) % 360 if not bounced_on_boundary else (self.angle + 180) % 360 
-                    bounced_on_boundary = True
+                    # Adjust angle correctly if it already bounced on x-axis
+                    self.angle = (-self.angle) % 360 if not bounced_on_boundary else (self.angle + 180 + (-2 * self.angle)) % 360
+                    bounced_on_boundary = True # Ensure this is set
                 
                 if bounced_on_boundary:
                     self.bounces_done += 1
-                    self.x += self.dx 
+                    self.x += self.dx # Move slightly after bounce to clear boundary
                     self.y += self.dy
                     self.rect.center = (int(self.x), int(self.y))
                 else: 
-                    self.alive = False
+                    self.alive = False # Should not happen if boundary conditions are met
             else:
                 self.alive = False
             return
@@ -267,9 +269,9 @@ class Missile(pygame.sprite.Sprite):
 
         self.lifetime -= 1
         min_x_bound = game_area_x_offset
-        max_x_bound = WIDTH
+        max_x_bound = WIDTH # Use gs.WIDTH
         min_y_bound = 0
-        max_y_bound = GAME_PLAY_AREA_HEIGHT
+        max_y_bound = GAME_PLAY_AREA_HEIGHT # Use gs.GAME_PLAY_AREA_HEIGHT
         if self.lifetime <= 0 or \
            not (min_x_bound < self.rect.centerx < max_x_bound and 
                 min_y_bound < self.rect.centery < max_y_bound):
@@ -281,7 +283,7 @@ class Missile(pygame.sprite.Sprite):
             surface.blit(self.image, self.rect)
 
 class LightningZap(pygame.sprite.Sprite):
-    def __init__(self, player_ref, initial_target_enemy_ref, damage, lifetime_frames, maze_ref, game_area_x_offset=0): 
+    def __init__(self, player_ref, initial_target_enemy_ref, damage, lifetime_frames, maze_ref, game_area_x_offset=0, color_override=None): 
         super().__init__()
         self.player_ref = player_ref
         self.locked_target_enemy = initial_target_enemy_ref
@@ -292,18 +294,27 @@ class LightningZap(pygame.sprite.Sprite):
         self.lifetime_frames = int(lifetime_frames)
         self.frames_elapsed = 0
         self.alive = True 
-        self.color = LIGHTNING_COLOR
+        self.color = color_override if color_override is not None else gs.LIGHTNING_COLOR # Use override or default
         self.damage_applied = False
 
         self.current_start_pos = self.player_ref.rect.center
-        
-        # CORRECTED THE METHOD NAME HERE
-        self.current_target_pos = self._calculate_potential_target_pos() # Was _calculate_initial_target_pos
-
+        self.current_target_pos = self._calculate_potential_target_pos()
         self.current_target_pos = self._get_wall_collision_point(self.current_start_pos, self.current_target_pos)
-        self._update_rect_and_image()
+        
+        # Initial rect calculation based on start/end points for collision detection
+        # The visual representation will be drawn directly, not blitted from self.image
+        all_x = [self.current_start_pos[0], self.current_target_pos[0]]
+        all_y = [self.current_start_pos[1], self.current_target_pos[1]]
+        min_x, max_x = min(all_x), max(all_x)
+        min_y, max_y = min(all_y), max(all_y)
+        rect_width = max(1, int(max_x - min_x)) # Ensure width is at least 1
+        rect_height = max(1, int(max_y - min_y)) # Ensure height is at least 1
+        self.image = pygame.Surface((rect_width, rect_height), pygame.SRCALPHA) # Transparent surface
+        self.rect = self.image.get_rect(topleft=(int(min_x), int(min_y)))
+
 
     def _pixel_to_grid_coords(self, pixel_x, pixel_y):
+        if not self.maze_ref: return None, None # Guard against no maze_ref
         col = int((pixel_x - self.maze_ref.game_area_x_offset) / TILE_SIZE)
         row = int(pixel_y / TILE_SIZE)
         return row, col
@@ -322,16 +333,18 @@ class LightningZap(pygame.sprite.Sprite):
         dir_x = dx_total / distance
         dir_y = dy_total / distance
         
-        step_size = TILE_SIZE / 3 
+        step_size = TILE_SIZE / 4 # Increased granularity for collision checking
         num_steps = steps_override if steps_override is not None else int(distance / step_size) + 1
         if num_steps <= 0 : num_steps = 1
-
 
         current_x, current_y = start_point
         last_safe_x, last_safe_y = start_point
 
         for i in range(num_steps):
             grid_r, grid_c = self._pixel_to_grid_coords(current_x, current_y)
+
+            if grid_r is None: # Should not happen if maze_ref exists
+                return last_safe_x, last_safe_y
 
             if not (0 <= grid_r < self.maze_ref.actual_maze_rows and \
                     0 <= grid_c < self.maze_ref.actual_maze_cols):
@@ -346,46 +359,60 @@ class LightningZap(pygame.sprite.Sprite):
                 current_x += dir_x * step_size
                 current_y += dir_y * step_size
                 if math.hypot(current_x - start_point[0], current_y - start_point[1]) > distance:
-                    # Check the original end_point for wall
                     grid_r_end, grid_c_end = self._pixel_to_grid_coords(end_point[0], end_point[1])
-                    if (0 <= grid_r_end < self.maze_ref.actual_maze_rows and \
+                    if grid_r_end is not None and \
+                       (0 <= grid_r_end < self.maze_ref.actual_maze_rows and \
                         0 <= grid_c_end < self.maze_ref.actual_maze_cols and \
                         self.maze_ref.grid[grid_r_end][grid_c_end] == 1):
                         return last_safe_x, last_safe_y 
                     return end_point 
         
         grid_r_end, grid_c_end = self._pixel_to_grid_coords(end_point[0], end_point[1])
-        if (0 <= grid_r_end < self.maze_ref.actual_maze_rows and \
+        if grid_r_end is not None and \
+           (0 <= grid_r_end < self.maze_ref.actual_maze_rows and \
             0 <= grid_c_end < self.maze_ref.actual_maze_cols and \
             self.maze_ref.grid[grid_r_end][grid_c_end] == 1):
             return last_safe_x, last_safe_y 
             
         return end_point
 
-
-    def _calculate_potential_target_pos(self): # This is the correctly named method
+    def _calculate_potential_target_pos(self):
         if self.locked_target_enemy and self.locked_target_enemy.alive:
             return self.locked_target_enemy.rect.center
         else: 
             self.locked_target_enemy = None 
+            # Use player_ref's angle (which could be a drone or the MazeGuardian boss)
             angle_rad = math.radians(self.player_ref.angle)
             return (
-                self.current_start_pos[0] + math.cos(angle_rad) * LIGHTNING_ZAP_RANGE,
-                self.current_start_pos[1] + math.sin(angle_rad) * LIGHTNING_ZAP_RANGE
+                self.current_start_pos[0] + math.cos(angle_rad) * gs.LIGHTNING_ZAP_RANGE,
+                self.current_start_pos[1] + math.sin(angle_rad) * gs.LIGHTNING_ZAP_RANGE
             )
 
-    def _update_rect_and_image(self):
+    def _update_rect_for_collision(self):
+        """Updates the self.rect to encompass the current lightning bolt for collision purposes."""
         all_x = [self.current_start_pos[0], self.current_target_pos[0]]
         all_y = [self.current_start_pos[1], self.current_target_pos[1]]
-        padding = 15 
-        min_x, max_x = min(all_x) - padding, max(all_x) + padding
-        min_y, max_y = min(all_y) - padding, max(all_y) + padding
+        min_x, max_x = min(all_x), max(all_x)
+        min_y, max_y = min(all_y), max(all_y)
+        
+        # Add padding based on lightning thickness for better collision coverage
+        padding = gs.LIGHTNING_BASE_THICKNESS 
+        min_x -= padding
+        max_x += padding
+        min_y -= padding
+        max_y += padding
+
         rect_width = max(1, int(max_x - min_x))
         rect_height = max(1, int(max_y - min_y))
         
-        if not hasattr(self, 'image') or self.image is None or self.image.get_size() != (rect_width, rect_height):
-            self.image = pygame.Surface((rect_width, rect_height), pygame.SRCALPHA)
-        self.rect = self.image.get_rect(topleft=(int(min_x), int(min_y)))
+        self.rect.x = int(min_x)
+        self.rect.y = int(min_y)
+        self.rect.width = rect_width
+        self.rect.height = rect_height
+        # self.image is not used for blitting, so its size doesn't need to match rect exactly.
+        # However, if you were to blit self.image for debug, you might want to resize it.
+        # self.image = pygame.transform.scale(self.image, (rect_width, rect_height))
+
 
     def update(self, current_time): 
         if not self.alive or not self.player_ref.alive:
@@ -402,40 +429,133 @@ class LightningZap(pygame.sprite.Sprite):
         self.current_start_pos = self.player_ref.rect.center
         potential_target_pos = self._calculate_potential_target_pos()
         self.current_target_pos = self._get_wall_collision_point(self.current_start_pos, potential_target_pos)
-        self._update_rect_and_image()
+        self._update_rect_for_collision() # Update rect for collision detection
+
+    def _draw_lightning_bolt_effect(self, surface, p1, p2, base_bolt_color, alpha):
+        """Draws a multi-layered, jagged lightning bolt."""
+        
+        num_segments = gs.LIGHTNING_SEGMENTS
+        outer_max_offset = gs.LIGHTNING_MAX_OFFSET
+        outer_thickness = gs.LIGHTNING_BASE_THICKNESS
+        
+        inner_core_thickness = max(1, int(outer_thickness * gs.LIGHTNING_CORE_THICKNESS_RATIO))
+        inner_max_offset = outer_max_offset * gs.LIGHTNING_CORE_OFFSET_RATIO
+        core_color = gs.LIGHTNING_CORE_COLOR
+        
+        branch_chance = gs.LIGHTNING_BRANCH_CHANCE
+        branch_max_segments = gs.LIGHTNING_BRANCH_MAX_SEGMENTS
+        branch_max_offset = gs.LIGHTNING_BRANCH_MAX_OFFSET
+        branch_thickness = max(1, int(inner_core_thickness * gs.LIGHTNING_BRANCH_THICKNESS_RATIO))
+
+        dx_total = p2[0] - p1[0]
+        dy_total = p2[1] - p1[1]
+        
+        dist_total = math.hypot(dx_total, dy_total)
+        if dist_total == 0: return
+
+        # Normalized perpendicular vector
+        perp_dx = -dy_total / dist_total
+        perp_dy = dx_total / dist_total
+
+        # --- Main Bolt Path Generation (Outer and Inner) ---
+        main_points_outer = [p1]
+        main_points_inner = [p1]
+
+        for i in range(1, num_segments + 1): # Iterate to create num_segments
+            t = i / num_segments # Progress along the main line segment
+            
+            base_x = p1[0] + dx_total * t
+            base_y = p1[1] + dy_total * t
+
+            # Common random factor for this segment to make outer and inner somewhat correlated but still distinct
+            segment_rand_factor = (random.random() - 0.5) * 2 
+            # Sinusoidal modulation for more natural bulging in the middle
+            mid_factor = math.sin(t * math.pi) 
+
+            # Outer bolt point
+            offset_outer = outer_max_offset * segment_rand_factor * mid_factor
+            # Corrected line:
+            main_points_outer.append((base_x + perp_dx * offset_outer, base_y + perp_dy * offset_outer))
+            
+            # Inner core point (less offset)
+            offset_inner = inner_max_offset * segment_rand_factor * mid_factor # Can use a different rand_factor if desired
+            main_points_inner.append((base_x + perp_dx * offset_inner, base_y + perp_dy * offset_inner))
+
+        # Ensure the very last point is exactly p2 for both
+        main_points_outer[-1] = p2
+        main_points_inner[-1] = p2
+        
+        # --- Draw Outer Glow/Main Bolt ---
+        outer_color_with_alpha = (*base_bolt_color[:3], int(alpha * 0.65)) # Outer part more transparent
+        if len(main_points_outer) > 1:
+            pygame.draw.lines(surface, outer_color_with_alpha, False, main_points_outer, outer_thickness)
+
+        # --- Draw Inner Core Bolt ---
+        inner_color_with_alpha = (*core_color[:3], alpha) # Core is brighter
+        if len(main_points_inner) > 1 and inner_core_thickness > 0:
+            pygame.draw.lines(surface, inner_color_with_alpha, False, main_points_inner, inner_core_thickness)
+
+        # --- Draw Branches ---
+        for i in range(len(main_points_inner) - 1): # Iterate through segments of the core bolt
+            if random.random() < branch_chance:
+                branch_start_point = main_points_inner[i]
+                
+                # Branch direction: roughly perpendicular to the segment, with some randomness
+                seg_dx = main_points_inner[i+1][0] - branch_start_point[0]
+                seg_dy = main_points_inner[i+1][1] - branch_start_point[1]
+                seg_len = math.hypot(seg_dx, seg_dy)
+                if seg_len == 0: continue
+
+                # Perpendicular to current segment
+                branch_perp_dx = -seg_dy / seg_len
+                branch_perp_dy = seg_dx / seg_len
+                
+                # Add some randomness to the main direction of the branch
+                angle_perturb = random.uniform(-math.pi / 4, math.pi / 4) # Deviate up to 45 degrees
+                c, s = math.cos(angle_perturb), math.sin(angle_perturb)
+                final_branch_dir_x = branch_perp_dx * c - branch_perp_dy * s
+                final_branch_dir_y = branch_perp_dx * s + branch_perp_dy * c
+                
+                # Ensure branches tend to go outwards
+                if random.random() < 0.5:
+                    final_branch_dir_x *= -1
+                    final_branch_dir_y *= -1
+
+                branch_points = [branch_start_point]
+                current_branch_pos = list(branch_start_point)
+                branch_segment_len = dist_total / num_segments * 0.7 # Branches are shorter
+
+                for j in range(random.randint(1, branch_max_segments)):
+                    # Move along the main branch direction
+                    current_branch_pos[0] += final_branch_dir_x * branch_segment_len * (1 - j*0.1) # Branches get shorter
+                    current_branch_pos[1] += final_branch_dir_y * branch_segment_len * (1 - j*0.1)
+                    
+                    # Add jaggedness to the branch segment
+                    branch_offset_mag = random.uniform(-branch_max_offset, branch_max_offset) * math.sin(((j+1)/branch_max_segments) * math.pi)
+                    # Perpendicular to the branch's main direction for this segment's jaggedness
+                    # (using the overall lightning bolt's perpendicular for simplicity here, or could recalculate for branch dir)
+                    branch_jag_x = perp_dx * branch_offset_mag 
+                    branch_jag_y = perp_dy * branch_offset_mag
+                    
+                    branch_points.append((current_branch_pos[0] + branch_jag_x, current_branch_pos[1] + branch_jag_y))
+                    if len(branch_points) > branch_max_segments : break
+
+
+                if len(branch_points) > 1:
+                    branch_alpha = int(alpha * 0.8) # Branches slightly less opaque
+                    branch_color_with_alpha = (*core_color[:3], branch_alpha) # Branches use core color
+                    pygame.draw.lines(surface, branch_color_with_alpha, False, branch_points, branch_thickness)
+
 
     def draw(self, surface): 
         if self.alive:
             current_alpha_perc = 1.0 - (self.frames_elapsed / self.lifetime_frames)
-            current_alpha = int(255 * (current_alpha_perc ** 0.5))
+            # Make fade out quicker or more pronounced
+            current_alpha = int(255 * (current_alpha_perc ** 2.0)) # Faster fade with power 2.0
             current_alpha = int(max(0, min(255, current_alpha))) 
             
-            if current_alpha > 5:
-                self._draw_jagged_line(surface, self.current_start_pos, self.current_target_pos, self.color, current_alpha, 3, 5, 10)
+            if current_alpha > 5: # Lower threshold to draw for longer, but alpha handles fade
+                self._draw_lightning_bolt_effect(surface, self.current_start_pos, self.current_target_pos, 
+                                                 self.color, # This is LIGHTNING_COLOR from game_settings
+                                                 current_alpha)
 
-    def _draw_jagged_line(self, surface, p1, p2, color, alpha, thickness, num_segments=5, max_offset=10):
-        points = [p1]
-        dx_total = p2[0] - p1[0]
-        dy_total = p2[1] - p1[1]
-
-        for i in range(1, num_segments):
-            t = i / num_segments
-            base_x = p1[0] + dx_total * t
-            base_y = p1[1] + dy_total * t
-            norm_dx, norm_dy = -dy_total, dx_total
-            dist_norm = math.hypot(norm_dx, norm_dy)
-            if dist_norm == 0: dist_norm = 1
-            norm_dx /= dist_norm
-            norm_dy /= dist_norm
-            offset_magnitude = (random.random() - 0.5) * 2 * max_offset * (math.sin(t * math.pi))
-            offset_x = norm_dx * offset_magnitude
-            offset_y = norm_dy * offset_magnitude
-            points.append((base_x + offset_x, base_y + offset_y))
-        points.append(p2)
-
-        if len(points) > 1:
-            final_color_tuple = (*color[:3], alpha) if len(color) == 3 else (*color[:3], min(alpha, color[3] if len(color) > 3 else alpha))
-            try:
-                pygame.draw.lines(surface, final_color_tuple, False, points, thickness)
-            except Exception:
-                 pygame.draw.lines(surface, (LIGHTNING_COLOR[0],LIGHTNING_COLOR[1],LIGHTNING_COLOR[2],alpha), False, points, thickness)
