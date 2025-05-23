@@ -294,6 +294,10 @@ class GameController:
         self.player_name_input_display_cache = "" 
 
     def initialize_game_session(self): 
+        # Reset persisted core fragments at the very start of a new game session
+        if self.drone_system:
+            self.drone_system.reset_collected_fragments_in_storage() # ADDED THIS LINE
+
         self.level = 1 
         self.lives = gs.get_game_setting("PLAYER_LIVES") 
         self.score = 0 
@@ -336,9 +340,11 @@ class GameController:
         self.player_name_input_display_cache = "" 
         self.animating_rings.clear() 
         self.animating_fragments.clear()
+        
+        # This will now correctly reflect the cleared fragments from drone_system
         self.hud_displayed_fragments.clear() 
         if self.drone_system: 
-            for frag_id in self.drone_system.get_collected_fragments_ids():
+            for frag_id in self.drone_system.get_collected_fragments_ids(): # Should be empty now
                 self.hud_displayed_fragments.add(frag_id)
 
         self._place_collectibles_for_level(initial_setup=True) 

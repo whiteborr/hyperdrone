@@ -307,12 +307,19 @@ class DroneSystem: #
         """Checks if the number of collected fragments meets the required total."""
         num_collected = len(self.unlock_data.get("collected_core_fragments", [])) #
         return num_collected >= TOTAL_CORE_FRAGMENTS_NEEDED #
+    
+    def reset_collected_fragments_in_storage(self):
+        """Resets the persistently stored list of collected core fragments and saves."""
+        if "collected_core_fragments" in self.unlock_data:
+            self.unlock_data["collected_core_fragments"] = []
+            self._save_unlocks()
+            print("DroneSystem: Persisted collected core fragments have been reset.")
+        else:
+            # If the key somehow doesn't exist, ensure it's initialized as empty
+            self.unlock_data["collected_core_fragments"] = []
+            self._save_unlocks() # Save to ensure the key is present for next time
+            print("DroneSystem: Persisted collected_core_fragments key initialized and reset.")
 
-    def reset_collected_fragments(self): #
-        """Resets the list of collected fragments and saves."""
-        self.unlock_data["collected_core_fragments"] = [] #
-        self._save_unlocks() #
-        print("DroneSystem: Collected core fragments have been reset.") #
 
     def mark_architect_vault_completed(self, completed_successfully=True): #
         """Marks the Architect's Vault as completed and handles related rewards."""
@@ -350,7 +357,6 @@ class DroneSystem: #
         if newly_unlocked_blueprint or newly_unlocked_drone_via_blueprint: #
             self._save_unlocks() #
         return newly_unlocked_blueprint or newly_unlocked_drone_via_blueprint #
-
 
     def has_unlocked_blueprint(self, blueprint_id): #
         """Checks if a specific blueprint has been unlocked."""

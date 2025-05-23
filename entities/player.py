@@ -320,8 +320,46 @@ class Drone(BaseDrone):
         
         nose_offset_factor = (self.rect.height / 2 if self.rect else TILE_SIZE * 0.4) * 0.7 
         rad_angle_shoot = math.radians(self.angle) 
-        bullet_start_x = self.x + math.cos(rad_angle_shoot) * nose_offset_factor 
-        bullet_start_y = self.y + math.sin(rad_angle_shoot) * nose_offset_factor 
+        
+        raw_bullet_start_x = self.x + math.cos(rad_angle_shoot) * nose_offset_factor 
+        raw_bullet_start_y = self.y + math.sin(rad_angle_shoot) * nose_offset_factor 
+
+        bullet_start_x = raw_bullet_start_x
+        bullet_start_y = raw_bullet_start_y
+        
+        projectile_check_diameter = self.bullet_size * 2 
+
+        if maze:
+            if maze.is_wall(raw_bullet_start_x, raw_bullet_start_y, projectile_check_diameter, projectile_check_diameter):
+                max_steps_back = 10 
+                step_dist = nose_offset_factor / max_steps_back 
+                found_clear_spawn = False
+                for i in range(1, max_steps_back + 1):
+                    current_offset = nose_offset_factor - (i * step_dist)
+                    if current_offset < 0: 
+                        current_offset = 0
+                    
+                    test_x = self.x + math.cos(rad_angle_shoot) * current_offset
+                    test_y = self.y + math.sin(rad_angle_shoot) * current_offset
+                    
+                    if not maze.is_wall(test_x, test_y, projectile_check_diameter, projectile_check_diameter):
+                        bullet_start_x = test_x
+                        bullet_start_y = test_y
+                        found_clear_spawn = True
+                        break 
+                    if current_offset == 0: 
+                        bullet_start_x = test_x 
+                        bullet_start_y = test_y
+                        break 
+                
+                if not found_clear_spawn:
+                    # Fallback to player's center if no clear spot by pulling back is found
+                    bullet_start_x = self.x
+                    bullet_start_y = self.y
+                    # If even center is in wall, projectile might be destroyed on its first update by its own collision check.
+                    # To prevent firing at all in such extreme (and unlikely) cases:
+                    # if maze.is_wall(bullet_start_x, bullet_start_y, projectile_check_diameter, projectile_check_diameter):
+                    #     return # Do not fire
         
         if self.current_weapon_mode not in [WEAPON_MODE_HEATSEEKER, WEAPON_MODE_LIGHTNING]: 
             if can_shoot_primary: 
@@ -404,7 +442,7 @@ class Drone(BaseDrone):
         self.shield_active = True
         self.shield_end_time = pygame.time.get_ticks() + duration
         self.shield_duration = duration 
-        self.shield_glow_pulse_time_offset = pygame.time.get_ticks() * 0.005 # Reset pulse start for smoothness
+        self.shield_glow_pulse_time_offset = pygame.time.get_ticks() * 0.005 
 
         if is_from_speed_boost:
             self.shield_tied_to_speed_boost = True
@@ -557,47 +595,30 @@ class Drone(BaseDrone):
         if self.alive and self.image and self.original_image:  
             if self.shield_active:
                 current_time = pygame.time.get_ticks()
-                # Pulsating alpha for the glow
-                pulse_factor = (math.sin(current_time * 0.008 + self.shield_glow_pulse_time_offset) + 1) / 2 # Normalized 0-1
-                glow_alpha = int(80 + pulse_factor * 70) # Pulsates between 80 and 150 alpha
-                
-                # Scale factor for the glow (slightly larger than the drone)
-                glow_scale = 1.25 + (pulse_factor * 0.15) # Pulsates size slightly: 1.25x to 1.4x
-
+                pulse_factor = (math.sin(current_time * 0.008 + self.shield_glow_pulse_time_offset) + 1) / 2 
+                glow_alpha = int(80 + pulse_factor * 70) 
+                glow_scale = 1.25 + (pulse_factor * 0.15) 
                 glow_color_tuple = POWERUP_TYPES.get("shield", {}).get("color", LIGHT_BLUE)
                 
-                # Create the glow effect based on the original_image (unrotated base sprite)
                 glow_width = int(self.original_image.get_width() * glow_scale)
                 glow_height = int(self.original_image.get_height() * glow_scale)
                 
-                # 1. Scaled version of the original drone image (base for shape)
-                scaled_drone_for_glow_shape = pygame.transform.smoothscale(self.original_image, (glow_width, glow_height))
-                
-                # 2. Create a mask from the scaled drone sprite to define the glow shape
-                try:
-                    glow_shape_mask = pygame.mask.from_surface(scaled_drone_for_glow_shape)
-                    # Convert mask to a surface, colored with the shield color
-                    glow_shape_surface = glow_shape_mask.to_surface(setcolor=glow_color_tuple, unsetcolor=(0,0,0,0))
-                    glow_shape_surface.set_alpha(glow_alpha)
-
-                    # Rotate the glow shape
-                    rotated_glow_shape = pygame.transform.rotate(glow_shape_surface, -self.angle)
-                    glow_rect = rotated_glow_shape.get_rect(center=self.rect.center)
-                    surface.blit(rotated_glow_shape, glow_rect)
-                except pygame.error as e:
-                    # This can happen if the original_image is too small or transparent after scaling
-                    # Or if scaled_drone_for_glow_shape is 0x0.
-                    # As a fallback, could draw a simple circle or skip glow for this frame.
-                    # print(f"Warning: Could not create shield glow mask/surface: {e}")
-                    # Fallback: Draw a simple translucent circle if mask creation fails
-                    fallback_glow_radius = (self.rect.width / 2) * glow_scale
-                    fallback_glow_surface = pygame.Surface((fallback_glow_radius * 2, fallback_glow_radius * 2), pygame.SRCALPHA)
-                    pygame.draw.circle(fallback_glow_surface, (*glow_color_tuple[:3], glow_alpha), 
-                                       (fallback_glow_radius, fallback_glow_radius), fallback_glow_radius)
-                    surface.blit(fallback_glow_surface, fallback_glow_surface.get_rect(center=self.rect.center))
-
-
-            # Draw the main player sprite on top
+                if glow_width > 0 and glow_height > 0: 
+                    scaled_drone_for_glow_shape = pygame.transform.smoothscale(self.original_image, (glow_width, glow_height))
+                    try:
+                        glow_shape_mask = pygame.mask.from_surface(scaled_drone_for_glow_shape)
+                        glow_shape_surface = glow_shape_mask.to_surface(setcolor=glow_color_tuple, unsetcolor=(0,0,0,0))
+                        glow_shape_surface.set_alpha(glow_alpha)
+                        rotated_glow_shape = pygame.transform.rotate(glow_shape_surface, -self.angle)
+                        glow_rect = rotated_glow_shape.get_rect(center=self.rect.center)
+                        surface.blit(rotated_glow_shape, glow_rect)
+                    except pygame.error: 
+                        fallback_glow_radius = (self.rect.width / 2) * glow_scale
+                        if fallback_glow_radius > 0:
+                            fallback_glow_surface = pygame.Surface((fallback_glow_radius * 2, fallback_glow_radius * 2), pygame.SRCALPHA)
+                            pygame.draw.circle(fallback_glow_surface, (*glow_color_tuple[:3], glow_alpha), 
+                                            (fallback_glow_radius, fallback_glow_radius), fallback_glow_radius)
+                            surface.blit(fallback_glow_surface, fallback_glow_surface.get_rect(center=self.rect.center))
             surface.blit(self.image, self.rect) 
         
         self.bullets_group.draw(surface) 

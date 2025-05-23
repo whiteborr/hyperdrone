@@ -18,15 +18,15 @@ from game_settings import (
     GAME_STATE_ARCHITECT_VAULT_INTRO, GAME_STATE_ARCHITECT_VAULT_ENTRY_PUZZLE, 
     GAME_STATE_ARCHITECT_VAULT_GAUNTLET, GAME_STATE_ARCHITECT_VAULT_EXTRACTION, 
     GAME_STATE_ARCHITECT_VAULT_SUCCESS, GAME_STATE_ARCHITECT_VAULT_FAILURE, 
-    DEFAULT_SETTINGS, # DEFAULT_SETTINGS is imported for UIManager logic
+    DEFAULT_SETTINGS, 
     TOTAL_CORE_FRAGMENTS_NEEDED, CORE_FRAGMENT_DETAILS, 
-    get_game_setting # get_game_setting is used for other settings
+    get_game_setting 
     # SETTINGS_MODIFIED is a global in game_settings, accessed via gs.SETTINGS_MODIFIED
 )
 
 # Import from other refactored packages
 from drone_management.drone_configs import DRONE_DATA, DRONE_DISPLAY_ORDER 
-from hyperdrone_core import leaderboard # Ensure leaderboard is imported
+from hyperdrone_core import leaderboard 
 
 
 class UIManager: 
@@ -245,7 +245,6 @@ class UIManager:
         instr_bg_box.blit(instr_surf,instr_surf.get_rect(center=(instr_bg_box.get_width()//2,instr_bg_box.get_height()//2))) 
         self.screen.blit(instr_bg_box, instr_bg_box.get_rect(center=(WIDTH//2, HEIGHT-100))) 
         
-        # Correctly access SETTINGS_MODIFIED flag
         if gs.SETTINGS_MODIFIED: 
             warning_surf = self._render_text_safe("Custom settings active: Leaderboard disabled.", "small_text", YELLOW) 
             self.screen.blit(warning_surf, warning_surf.get_rect(center=(WIDTH//2, HEIGHT-50))) 
@@ -496,7 +495,6 @@ class UIManager:
         instr_bg.blit(instr_surf, (10,5)) 
         self.screen.blit(instr_bg, instr_bg.get_rect(center=(WIDTH//2, HEIGHT-70))) 
 
-        # Correctly access the SETTINGS_MODIFIED flag
         if gs.SETTINGS_MODIFIED: 
             warning_text = "Leaderboard disabled: settings changed from default values!"
             warning_surf = self._render_text_safe(warning_text, "small_text", RED) 
@@ -513,17 +511,28 @@ class UIManager:
         panel_surf.fill((20,25,35,220)) 
         pygame.draw.line(panel_surf, (80,120,170,200), (0,0), (WIDTH,0), 2) 
         self.screen.blit(panel_surf, (0, panel_y_start)) 
-        h_padding = 20; v_padding = 10; element_spacing = 6; bar_height = 18; 
-        icon_to_bar_gap = 10; icon_spacing = 5; text_icon_spacing = 4 
+        
+        h_padding = 20
+        v_padding = 10
+        element_spacing = 6 
+        bar_height = 18
+        icon_to_bar_gap = 10
+        icon_spacing = 5 
+        text_icon_spacing = 2 # Adjusted for core display
         current_time_ticks = pygame.time.get_ticks() 
+        
         label_font = self.fonts["ui_text"] 
         value_font = self.fonts["ui_values"] 
-        emoji_general_font = self.fonts["ui_emoji_general"] 
+        emoji_general_font = self.fonts["ui_emoji_general"]
+        small_value_font = self.fonts.get("small_text") # Font for the core number
+        
+        # --- Left Vitals Section ---
         vitals_x_start = h_padding 
         current_vitals_y = panel_y_start + panel_height - v_padding 
         vitals_section_width = int(WIDTH / 3.2) 
         min_bar_segment_width = 25 
         bar_segment_reduction_factor = 0.85 
+        
         life_icon_surf = self.ui_assets.get("current_drone_life_icon") 
         if life_icon_surf: 
             lives_y_pos = current_vitals_y - self.ui_icon_size_lives[1] 
@@ -531,22 +540,9 @@ class UIManager:
             for i in range(self.game_controller.lives): 
                 self.screen.blit(life_icon_surf, (lives_draw_x + i * (self.ui_icon_size_lives[0] + icon_spacing), lives_y_pos)) 
             current_vitals_y = lives_y_pos - element_spacing 
+        
         player_obj = self.game_controller.player 
-        health_bar_y_pos = current_vitals_y - bar_height 
-        health_icon_char = "❤️" 
-        health_icon_surf = self._render_text_safe(health_icon_char, "ui_emoji_small", RED) 
-        self.screen.blit(health_icon_surf, (vitals_x_start, health_bar_y_pos + (bar_height - health_icon_surf.get_height()) // 2)) 
-        bar_start_x_health = vitals_x_start + health_icon_surf.get_width() + icon_to_bar_gap 
-        available_width_for_health_bar = vitals_section_width - (health_icon_surf.get_width() + icon_to_bar_gap) 
-        bar_segment_width_health = max(min_bar_segment_width, int(available_width_for_health_bar * bar_segment_reduction_factor)) 
-        health_percentage = player_obj.health / player_obj.max_health if player_obj.max_health > 0 else 0 
-        health_bar_width_fill = int(bar_segment_width_health * health_percentage) 
-        health_fill_color = GREEN if health_percentage > 0.6 else YELLOW if health_percentage > 0.3 else RED 
-        pygame.draw.rect(self.screen, DARK_GREY, (bar_start_x_health, health_bar_y_pos, bar_segment_width_health, bar_height)) 
-        if health_bar_width_fill > 0: 
-            pygame.draw.rect(self.screen, health_fill_color, (bar_start_x_health, health_bar_y_pos, health_bar_width_fill, bar_height)) 
-        pygame.draw.rect(self.screen, WHITE, (bar_start_x_health, health_bar_y_pos, bar_segment_width_health, bar_height), 1) 
-        current_vitals_y = health_bar_y_pos - element_spacing 
+        
         weapon_bar_y_pos = current_vitals_y - bar_height 
         weapon_icon_char = WEAPON_MODE_ICONS.get(player_obj.current_weapon_mode, "💥") 
         weapon_icon_surf = self._render_text_safe(weapon_icon_char, "ui_emoji_small", ORANGE) 
@@ -577,6 +573,7 @@ class UIManager:
             pygame.draw.rect(self.screen, charge_bar_fill_color, (bar_start_x_weapon, weapon_bar_y_pos, weapon_bar_width_fill, bar_height)) 
         pygame.draw.rect(self.screen, WHITE, (bar_start_x_weapon, weapon_bar_y_pos, bar_segment_width_weapon, bar_height), 1) 
         current_vitals_y = weapon_bar_y_pos - element_spacing 
+        
         active_powerup_for_ui = player_obj.active_powerup_type 
         if active_powerup_for_ui and (player_obj.shield_active or player_obj.speed_boost_active): 
             powerup_bar_y_pos = current_vitals_y - bar_height 
@@ -607,19 +604,41 @@ class UIManager:
                 if bar_width_fill_powerup > 0: 
                     pygame.draw.rect(self.screen, powerup_bar_fill_color, (bar_start_x_powerup, powerup_bar_y_pos, bar_width_fill_powerup, bar_height)) 
                 pygame.draw.rect(self.screen, WHITE, (bar_start_x_powerup, powerup_bar_y_pos, bar_segment_width_powerup, bar_height), 1) 
+        
+        # --- Right Collectibles Section ---
         collectibles_x_anchor = WIDTH - h_padding 
         current_collectibles_y = panel_y_start + panel_height - v_padding 
+
+        # 1. Cores (Bottom-most on the right)
         cores_emoji_char = "💠" 
-        cores_value_str = f" {self.drone_system.get_player_cores()}" 
-        cores_icon_surf = self._render_text_safe(cores_emoji_char, "ui_emoji_general", GOLD) 
-        cores_value_text_surf = self._render_text_safe(cores_value_str, "ui_values", GOLD) 
-        cores_display_height = max(cores_icon_surf.get_height(), cores_value_text_surf.get_height()) 
-        cores_y_pos = current_collectibles_y - cores_display_height 
-        total_cores_width = cores_icon_surf.get_width() + text_icon_spacing + cores_value_text_surf.get_width() 
+        cores_x_char = "x" 
+        cores_value_str = str(self.drone_system.get_player_cores())
+
+        cores_icon_surf = self._render_text_safe(cores_emoji_char, "ui_emoji_general", GOLD)
+        cores_x_surf = self._render_text_safe(cores_x_char, "small_text", WHITE) # Changed font and color for "x"
+        cores_value_text_surf = self._render_text_safe(cores_value_str, "small_text", GOLD) 
+        
+        total_cores_width = (cores_icon_surf.get_width() + 
+                             text_icon_spacing + 
+                             cores_x_surf.get_width() + 
+                             text_icon_spacing + 
+                             cores_value_text_surf.get_width())
+        
         cores_start_x_draw = collectibles_x_anchor - total_cores_width 
-        self.screen.blit(cores_icon_surf, (cores_start_x_draw, cores_y_pos + (cores_display_height - cores_icon_surf.get_height()) // 2)) 
-        self.screen.blit(cores_value_text_surf, (cores_start_x_draw + cores_icon_surf.get_width() + text_icon_spacing, cores_y_pos + (cores_display_height - cores_value_text_surf.get_height()) // 2)) 
-        current_collectibles_y = cores_y_pos - element_spacing 
+        
+        cores_display_max_height = max(cores_icon_surf.get_height(), cores_x_surf.get_height(), cores_value_text_surf.get_height())
+        cores_y_pos = current_collectibles_y - cores_display_max_height
+        
+        current_x_offset = cores_start_x_draw
+        self.screen.blit(cores_icon_surf, (current_x_offset, cores_y_pos + (cores_display_max_height - cores_icon_surf.get_height()) // 2))
+        current_x_offset += cores_icon_surf.get_width() + text_icon_spacing
+        self.screen.blit(cores_x_surf, (current_x_offset, cores_y_pos + (cores_display_max_height - cores_x_surf.get_height()) // 2))
+        current_x_offset += cores_x_surf.get_width() + text_icon_spacing
+        self.screen.blit(cores_value_text_surf, (current_x_offset, cores_y_pos + (cores_display_max_height - cores_value_text_surf.get_height()) // 2))
+        
+        current_collectibles_y = cores_y_pos - element_spacing
+
+        # 2. Core Fragments (Above Cores)
         fragment_icon_h = self.ui_icon_size_fragments[1]
         fragment_y_pos_hud = current_collectibles_y - fragment_icon_h
         fragment_display_order_ids = []
@@ -631,12 +650,12 @@ class UIManager:
                 print(f"UIManager: Error creating fragment display order: {e}. Using unsorted.")
                 fragment_display_order_ids = [details["id"] for _, details in CORE_FRAGMENT_DETAILS.items() if details and "id" in details]
         displayable_fragment_ids = fragment_display_order_ids[:TOTAL_CORE_FRAGMENTS_NEEDED]
-        if hasattr(self.game_controller, 'fragment_ui_target_positions'):
+        if hasattr(self.game_controller, 'fragment_ui_target_positions'): 
             self.game_controller.fragment_ui_target_positions.clear()
         if TOTAL_CORE_FRAGMENTS_NEEDED > 0 :
-            total_fragments_width = TOTAL_CORE_FRAGMENTS_NEEDED * (self.ui_icon_size_fragments[0] + icon_spacing)
-            if TOTAL_CORE_FRAGMENTS_NEEDED > 0 : total_fragments_width -= icon_spacing 
-            fragments_block_start_x = cores_start_x_draw - total_fragments_width - (icon_spacing * 4) 
+            total_fragments_width = TOTAL_CORE_FRAGMENTS_NEEDED * self.ui_icon_size_fragments[0] + \
+                                    max(0, TOTAL_CORE_FRAGMENTS_NEEDED - 1) * icon_spacing
+            fragments_block_start_x = collectibles_x_anchor - total_fragments_width
             for i in range(TOTAL_CORE_FRAGMENTS_NEEDED):
                 frag_id_for_this_slot = None
                 if i < len(displayable_fragment_ids):
@@ -653,19 +672,28 @@ class UIManager:
                          fragment_y_pos_hud + self.ui_icon_size_fragments[1] // 2
                      )
             current_collectibles_y = fragment_y_pos_hud - element_spacing
-        rings_y_pos_hud = current_collectibles_y 
+
+        # 3. Rings (Above Fragments)
         total_rings_this_level = getattr(self.game_controller, 'total_rings_per_level', 5) 
         displayed_rings_count = getattr(self.game_controller, 'displayed_collected_rings', 0) 
-        if self.ui_assets["ring_icon"]: 
+        if self.ui_assets["ring_icon"] and total_rings_this_level > 0: 
             ring_icon_h = self.ui_icon_size_rings[1] 
             rings_y_pos_hud = current_collectibles_y - ring_icon_h 
-            total_ring_icons_width_only = max(0, total_rings_this_level * (self.ui_icon_size_rings[0] + icon_spacing) - icon_spacing if total_rings_this_level > 0 else 0) 
-            current_rightmost_collectible_x = fragments_block_start_x if TOTAL_CORE_FRAGMENTS_NEEDED > 0 else cores_start_x_draw
-            rings_block_start_x = current_rightmost_collectible_x - total_ring_icons_width_only - (icon_spacing * 4)
+            total_ring_icons_width_only = total_rings_this_level * self.ui_icon_size_rings[0] + \
+                                          max(0, total_rings_this_level - 1) * icon_spacing
+            rings_block_start_x = collectibles_x_anchor - total_ring_icons_width_only
             for i in range(total_rings_this_level): 
                 icon_to_draw = self.ui_assets["ring_icon"] if i < displayed_rings_count else self.ui_assets["ring_icon_empty"] 
                 if icon_to_draw: 
                     self.screen.blit(icon_to_draw, (rings_block_start_x + i * (self.ui_icon_size_rings[0] + icon_spacing), rings_y_pos_hud)) 
+            _next_ring_slot_index = max(0, min(displayed_rings_count, total_rings_this_level - 1)) 
+            target_slot_x_offset = _next_ring_slot_index * (self.ui_icon_size_rings[0] + icon_spacing) 
+            target_slot_center_x = rings_block_start_x + target_slot_x_offset + self.ui_icon_size_rings[0] // 2 
+            target_slot_center_y = rings_y_pos_hud + self.ui_icon_size_rings[1] // 2 
+            if hasattr(self.game_controller, 'ring_ui_target_pos'): 
+                self.game_controller.ring_ui_target_pos = (target_slot_center_x, target_slot_center_y)
+        
+        # --- Central HUD Elements ---
         info_y_pos = panel_y_start + (panel_height - label_font.get_height()) // 2 
         score_emoji_char = "🏆 " 
         score_text_str = f"Score: {self.game_controller.score}" 
@@ -715,24 +743,22 @@ class UIManager:
             self.screen.blit(time_icon_surf, (current_info_x, info_y_pos + (time_value_surf.get_height() - time_icon_surf.get_height()) // 2)) 
             current_info_x += time_icon_surf.get_width() + text_icon_spacing 
             self.screen.blit(time_value_surf, (current_info_x, info_y_pos)) 
-        if total_rings_this_level > 0 and self.ui_assets["ring_icon"]: 
-            _total_ring_icons_display_width = max(0, total_rings_this_level * (self.ui_icon_size_rings[0] + icon_spacing) - icon_spacing) 
-            _rings_block_start_x_no_text = rings_block_start_x 
-            _target_ring_row_y_for_anim = rings_y_pos_hud 
-            _next_ring_slot_index = max(0, min(displayed_rings_count, total_rings_this_level - 1)) 
-            target_slot_x_offset = _next_ring_slot_index * (self.ui_icon_size_rings[0] + icon_spacing) 
-            target_slot_center_x = _rings_block_start_x_no_text + target_slot_x_offset + self.ui_icon_size_rings[0] // 2 
-            target_slot_center_y = _target_ring_row_y_for_anim + self.ui_icon_size_rings[1] // 2 
-            if hasattr(self.game_controller, 'ring_ui_target_pos'): 
-                self.game_controller.ring_ui_target_pos = (target_slot_center_x, target_slot_center_y) 
+        
+        # Draw animating collectibles
         if hasattr(self.game_controller, 'animating_rings'): 
             for ring_anim in self.game_controller.animating_rings: 
                 if 'surface' in ring_anim and ring_anim['surface']: 
-                    self.screen.blit(ring_anim['surface'], (int(ring_anim['pos'][0]), int(ring_anim['pos'][1]))) 
+                    anim_surf = ring_anim['surface']
+                    draw_x = int(ring_anim['pos'][0] - anim_surf.get_width() / 2)
+                    draw_y = int(ring_anim['pos'][1] - anim_surf.get_height() / 2)
+                    self.screen.blit(anim_surf, (draw_x, draw_y))
         if hasattr(self.game_controller, 'animating_fragments'):
             for frag_anim in self.game_controller.animating_fragments:
                 if 'surface' in frag_anim and frag_anim['surface']:
-                    self.screen.blit(frag_anim['surface'], (int(frag_anim['pos'][0]), int(frag_anim['pos'][1])))
+                    anim_surf = frag_anim['surface']
+                    draw_x = int(frag_anim['pos'][0] - anim_surf.get_width() / 2)
+                    draw_y = int(frag_anim['pos'][1] - anim_surf.get_height() / 2)
+                    self.screen.blit(anim_surf, (draw_x, draw_y))
 
     def get_scaled_fragment_icon(self, fragment_id):
         if not self.ui_assets["core_fragment_icons"] and not self.ui_assets["core_fragment_empty_icon"]:
@@ -786,7 +812,6 @@ class UIManager:
         self.screen.blit(go_text_surf, go_text_surf.get_rect(center=(WIDTH//2, HEIGHT//2 - 120))) 
         self.screen.blit(score_text_surf, score_text_surf.get_rect(center=(WIDTH//2, HEIGHT//2 - 30))) 
         
-        # Correctly access the SETTINGS_MODIFIED flag
         can_submit_score = not gs.SETTINGS_MODIFIED
         is_high = leaderboard.is_high_score(self.game_controller.score, self.game_controller.level)
 
@@ -795,16 +820,15 @@ class UIManager:
         prompt_color = WHITE
 
         if not can_submit_score: 
-            # This is the primary message if settings were modified
             no_lb_text_surf = self._render_text_safe("Leaderboard disabled (custom settings active).", "ui_text", YELLOW) 
             self.screen.blit(no_lb_text_surf, no_lb_text_surf.get_rect(center=(WIDTH//2, prompt_y_offset))) 
             prompt_y_offset += self.fonts["ui_text"].get_height() + 20 
-            prompt_str = "R: Restart  M: Menu  Q: Quit" # Standard options when no leaderboard submission
+            prompt_str = "R: Restart  M: Menu  Q: Quit" 
             prompt_color = WHITE
-        elif is_high: # Settings are default, AND it's a high score
+        elif is_high: 
             prompt_str = "New High Score! Press any key to enter name." 
             prompt_color = GOLD 
-        else: # Settings are default, but not a high score
+        else: 
             prompt_str = "R: Restart  L: Leaderboard  M: Menu  Q: Quit"
             prompt_color = WHITE
             
@@ -847,7 +871,6 @@ class UIManager:
             no_scores_bg.blit(no_scores_surf, no_scores_surf.get_rect(center=(no_scores_bg.get_width()//2, no_scores_bg.get_height()//2))) 
             self.screen.blit(no_scores_bg, no_scores_bg.get_rect(center=(WIDTH//2, HEIGHT//2))) 
         else: 
-            # Using the previously adjusted column positions for better spacing
             cols_x_positions = {
                 "Rank": WIDTH//2 - 460,
                 "Name": WIDTH//2 - 300,
@@ -859,7 +882,6 @@ class UIManager:
             
             for col_name, x_pos in cols_x_positions.items(): 
                 header_surf = header_font.render(col_name, True, WHITE) 
-                # Removed the individual header_bg creation and blitting
                 self.screen.blit(header_surf, (x_pos, header_y)) 
 
             for i, entry in enumerate(scores_to_display): 
