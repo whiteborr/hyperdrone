@@ -8,14 +8,13 @@
     "PHANTOM",
     "ZEPHYR"
   ],
-  "selected_drone": "STRIX",
-  "player_level": 3,
+  "selected_drone": "DRONE",
+  "player_level": 2,
   "bosses_defeated": [],
-  "player_cores": 5475,
+  "player_cores": 6585,
   "collected_core_fragments": [
     "cf_alpha",
-    "cf_beta",
-    "cf_gamma"
+    "cf_beta"
   ],
   "architect_vault_completed": false,
   "unlocked_blueprints": [],

@@ -1,5 +1,3 @@
-# game_settings.py
-
 import pygame
 
 # ==========================
@@ -80,11 +78,23 @@ MISSILE_COOLDOWN = 3000 # Milliseconds
 MISSILE_DAMAGE = 50
 
 # Lightning Specific Settings
-LIGHTNING_COLOR = ELECTRIC_BLUE
+LIGHTNING_COLOR = ELECTRIC_BLUE # (0, 128, 255) - This is the base/outer color
 LIGHTNING_DAMAGE = 15
-LIGHTNING_LIFETIME = 30 # Frames the visual effect lasts
+LIGHTNING_LIFETIME = 20 # Frames the visual effect lasts (reduced for a quicker flash)
 LIGHTNING_COOLDOWN = 750 # Milliseconds
 LIGHTNING_ZAP_RANGE = 250 # Max distance for lightning to jump to a target
+
+# New Visual Settings for Lightning Bolt Effect
+LIGHTNING_BASE_THICKNESS = 5        # Thickness of the main/outer part of the bolt
+LIGHTNING_CORE_THICKNESS_RATIO = 0.4 # Core will be base_thickness * this ratio (e.g., 2 pixels if base is 5)
+LIGHTNING_SEGMENTS = 12             # Number of segments to create the jagged effect
+LIGHTNING_MAX_OFFSET = 18           # Max perpendicular offset for the main bolt's jaggedness
+LIGHTNING_CORE_OFFSET_RATIO = 0.3   # Core bolt offset will be outer_max_offset * this ratio (less erratic)
+LIGHTNING_CORE_COLOR = WHITE        # Color of the bright inner core, e.g., (255, 255, 255)
+LIGHTNING_BRANCH_CHANCE = 0.25      # Chance (0.0 to 1.0) for a branch to spawn from a segment
+LIGHTNING_BRANCH_MAX_SEGMENTS = 5   # Max segments for a branch
+LIGHTNING_BRANCH_MAX_OFFSET = 10    # Max offset for branches
+LIGHTNING_BRANCH_THICKNESS_RATIO = 0.5 # Thickness of branches relative to core
 
 # ==========================
 # Player Weapon Modes
@@ -304,8 +314,6 @@ GAME_STATE_ARCHITECT_VAULT_FAILURE = "architect_vault_failure"
 # Dynamic Settings Management (allows changing settings via UI and affects game)
 # ==============================================================================
 
-# Dictionary to store the default values of all configurable settings.
-# This MUST mirror the global constants defined above that you want to be configurable.
 DEFAULT_SETTINGS = {
     "WIDTH": WIDTH, "HEIGHT": HEIGHT, "FPS": FPS, "FULLSCREEN_MODE": FULLSCREEN_MODE,
     "BOTTOM_PANEL_HEIGHT": BOTTOM_PANEL_HEIGHT,
@@ -319,8 +327,20 @@ DEFAULT_SETTINGS = {
     "BOUNCING_BULLET_MAX_BOUNCES": BOUNCING_BULLET_MAX_BOUNCES, "PIERCING_BULLET_MAX_PIERCES": PIERCING_BULLET_MAX_PIERCES,
     "MISSILE_COLOR": MISSILE_COLOR, "MISSILE_SPEED": MISSILE_SPEED, "MISSILE_LIFETIME": MISSILE_LIFETIME,
     "MISSILE_SIZE": MISSILE_SIZE, "MISSILE_TURN_RATE": MISSILE_TURN_RATE, "MISSILE_COOLDOWN": MISSILE_COOLDOWN, "MISSILE_DAMAGE": MISSILE_DAMAGE,
+    
     "LIGHTNING_COLOR": LIGHTNING_COLOR, "LIGHTNING_DAMAGE": LIGHTNING_DAMAGE, "LIGHTNING_LIFETIME": LIGHTNING_LIFETIME,
     "LIGHTNING_COOLDOWN": LIGHTNING_COOLDOWN, "LIGHTNING_ZAP_RANGE": LIGHTNING_ZAP_RANGE,
+    "LIGHTNING_BASE_THICKNESS": LIGHTNING_BASE_THICKNESS, # New
+    "LIGHTNING_CORE_THICKNESS_RATIO": LIGHTNING_CORE_THICKNESS_RATIO, # New
+    "LIGHTNING_SEGMENTS": LIGHTNING_SEGMENTS, # New
+    "LIGHTNING_MAX_OFFSET": LIGHTNING_MAX_OFFSET, # New
+    "LIGHTNING_CORE_OFFSET_RATIO": LIGHTNING_CORE_OFFSET_RATIO, # New
+    "LIGHTNING_CORE_COLOR": LIGHTNING_CORE_COLOR, # New
+    "LIGHTNING_BRANCH_CHANCE": LIGHTNING_BRANCH_CHANCE, # New
+    "LIGHTNING_BRANCH_MAX_SEGMENTS": LIGHTNING_BRANCH_MAX_SEGMENTS, # New
+    "LIGHTNING_BRANCH_MAX_OFFSET": LIGHTNING_BRANCH_MAX_OFFSET, # New
+    "LIGHTNING_BRANCH_THICKNESS_RATIO": LIGHTNING_BRANCH_THICKNESS_RATIO, # New
+
     "INITIAL_WEAPON_MODE": INITIAL_WEAPON_MODE,
     "PHANTOM_CLOAK_DURATION_MS": PHANTOM_CLOAK_DURATION_MS, "PHANTOM_CLOAK_COOLDOWN_MS": PHANTOM_CLOAK_COOLDOWN_MS,
     "PHANTOM_CLOAK_ALPHA_SETTING": PHANTOM_CLOAK_ALPHA_SETTING,
@@ -329,7 +349,7 @@ DEFAULT_SETTINGS = {
     "ENEMY_BULLET_LIFETIME": ENEMY_BULLET_LIFETIME, "ENEMY_BULLET_COLOR": ENEMY_BULLET_COLOR, "ENEMY_BULLET_DAMAGE": ENEMY_BULLET_DAMAGE,
     "PROTOTYPE_DRONE_HEALTH": PROTOTYPE_DRONE_HEALTH, "PROTOTYPE_DRONE_SPEED": PROTOTYPE_DRONE_SPEED,
     "PROTOTYPE_DRONE_SHOOT_COOLDOWN": PROTOTYPE_DRONE_SHOOT_COOLDOWN, "PROTOTYPE_DRONE_BULLET_SPEED": PROTOTYPE_DRONE_BULLET_SPEED,
-    # New MAZE_GUARDIAN and Sentinel Drone settings
+    
     "MAZE_GUARDIAN_HEALTH": MAZE_GUARDIAN_HEALTH, "MAZE_GUARDIAN_SPEED": MAZE_GUARDIAN_SPEED,
     "MAZE_GUARDIAN_COLOR": MAZE_GUARDIAN_COLOR, "MAZE_GUARDIAN_SPRITE_PATH": MAZE_GUARDIAN_SPRITE_PATH,
     "MAZE_GUARDIAN_BULLET_SPEED": MAZE_GUARDIAN_BULLET_SPEED, "MAZE_GUARDIAN_BULLET_LIFETIME": MAZE_GUARDIAN_BULLET_LIFETIME,
@@ -350,58 +370,52 @@ DEFAULT_SETTINGS = {
     "LEVEL_TIMER_DURATION": LEVEL_TIMER_DURATION,
     "BONUS_LEVEL_DURATION_MS": BONUS_LEVEL_DURATION_MS,
     "LEADERBOARD_MAX_ENTRIES": LEADERBOARD_MAX_ENTRIES, "LEADERBOARD_FILE_NAME": LEADERBOARD_FILE_NAME,
-    # Dependent calculated values are not in DEFAULT_SETTINGS as they derive from others.
 }
 
-# Global flag to track if any setting has been modified from its default.
 SETTINGS_MODIFIED = False
-# Internal dictionary to hold the current (potentially modified) settings.
 _CURRENT_GAME_SETTINGS = DEFAULT_SETTINGS.copy()
 
-def get_game_setting(key):
+def get_game_setting(key, default_override=None): # Added default_override
     """Retrieves the current value of a game setting."""
-    return _CURRENT_GAME_SETTINGS.get(key, DEFAULT_SETTINGS.get(key)) # Fallback to default if key somehow missing
+    # If default_override is provided, use it if key is not in _CURRENT_GAME_SETTINGS
+    # Otherwise, fallback to DEFAULT_SETTINGS if key is not in _CURRENT_GAME_SETTINGS
+    if key not in _CURRENT_GAME_SETTINGS and default_override is not None:
+        return default_override
+    return _CURRENT_GAME_SETTINGS.get(key, DEFAULT_SETTINGS.get(key))
+
 
 def set_game_setting(key, value):
-    """
-    Sets a game setting to a new value and updates the SETTINGS_MODIFIED flag.
-    Also updates the global variable for direct access if it exists.
-    """
     global SETTINGS_MODIFIED, _CURRENT_GAME_SETTINGS
-    global GAME_PLAY_AREA_HEIGHT, MAZE_ROWS # Globals that depend on other settings
+    global GAME_PLAY_AREA_HEIGHT, MAZE_ROWS 
 
     if key in _CURRENT_GAME_SETTINGS:
         _CURRENT_GAME_SETTINGS[key] = value
-        # Check if this change makes it different from the default
         if _CURRENT_GAME_SETTINGS[key] != DEFAULT_SETTINGS.get(key):
             SETTINGS_MODIFIED = True
         else:
-            # If set back to default, re-check if any *other* settings are still modified
             SETTINGS_MODIFIED = any(
                 _CURRENT_GAME_SETTINGS[k] != DEFAULT_SETTINGS.get(k)
                 for k in DEFAULT_SETTINGS if k in _CURRENT_GAME_SETTINGS
             )
 
-        # If the changed key corresponds to a global variable, update it too.
         if key in globals():
             globals()[key] = value
 
-            # Handle dependent global variables
             if key == "HEIGHT" or key == "BOTTOM_PANEL_HEIGHT":
                 GAME_PLAY_AREA_HEIGHT = get_game_setting("HEIGHT") - get_game_setting("BOTTOM_PANEL_HEIGHT")
-                globals()["GAME_PLAY_AREA_HEIGHT"] = GAME_PLAY_AREA_HEIGHT # Update global scope
+                globals()["GAME_PLAY_AREA_HEIGHT"] = GAME_PLAY_AREA_HEIGHT 
                 if get_game_setting("TILE_SIZE") > 0:
                     MAZE_ROWS = GAME_PLAY_AREA_HEIGHT // get_game_setting("TILE_SIZE")
                     globals()["MAZE_ROWS"] = MAZE_ROWS
             elif key == "TILE_SIZE":
-                if get_game_setting("TILE_SIZE") > 0:
-                    MAZE_ROWS = get_game_setting("GAME_PLAY_AREA_HEIGHT") // get_game_setting("TILE_SIZE")
+                if get_game_setting("TILE_SIZE") > 0: # Check TILE_SIZE directly from globals or get_game_setting
+                    current_game_play_height = get_game_setting("GAME_PLAY_AREA_HEIGHT") # Use the dynamic value
+                    MAZE_ROWS = current_game_play_height // get_game_setting("TILE_SIZE")
                     globals()["MAZE_ROWS"] = MAZE_ROWS
     else:
         print(f"Warning (game_settings.py): Attempted to set an unknown game setting '{key}'.")
 
 def reset_all_settings_to_default():
-    """Resets all configurable settings back to their default values."""
     global SETTINGS_MODIFIED, _CURRENT_GAME_SETTINGS
     global GAME_PLAY_AREA_HEIGHT, MAZE_ROWS
 
@@ -413,13 +427,17 @@ def reset_all_settings_to_default():
         if key in globals():
             globals()[key] = value
 
+    # Recalculate dependent globals after resetting all
     GAME_PLAY_AREA_HEIGHT = get_game_setting("HEIGHT") - get_game_setting("BOTTOM_PANEL_HEIGHT")
     globals()["GAME_PLAY_AREA_HEIGHT"] = GAME_PLAY_AREA_HEIGHT
     if get_game_setting("TILE_SIZE") > 0:
         MAZE_ROWS = GAME_PLAY_AREA_HEIGHT // get_game_setting("TILE_SIZE")
         globals()["MAZE_ROWS"] = MAZE_ROWS
+    else: # Handle case where TILE_SIZE might be invalid after reset (though unlikely with DEFAULT_SETTINGS)
+        MAZE_ROWS = 0
+        globals()["MAZE_ROWS"] = MAZE_ROWS
 
-# Initialize globals that are calculated from other settings
+
 GAME_PLAY_AREA_HEIGHT = get_game_setting("HEIGHT") - get_game_setting("BOTTOM_PANEL_HEIGHT")
 if TILE_SIZE > 0:
     MAZE_ROWS = GAME_PLAY_AREA_HEIGHT // TILE_SIZE
