@@ -518,36 +518,46 @@ class UIManager:
         bar_height = 18
         icon_to_bar_gap = 10
         icon_spacing = 5 
-        text_icon_spacing = 2 # Adjusted for core display
+        text_icon_spacing = 2 
         current_time_ticks = pygame.time.get_ticks() 
         
         label_font = self.fonts["ui_text"] 
         value_font = self.fonts["ui_values"] 
         emoji_general_font = self.fonts["ui_emoji_general"]
-        small_value_font = self.fonts.get("small_text") # Font for the core number
+        small_value_font = self.fonts.get("small_text") 
         
         # --- Left Vitals Section ---
         vitals_x_start = h_padding 
-        current_vitals_y = panel_y_start + panel_height - v_padding 
+        current_vitals_y = panel_y_start + panel_height - v_padding # Start from bottom of panel for this section
         vitals_section_width = int(WIDTH / 3.2) 
         min_bar_segment_width = 25 
         bar_segment_reduction_factor = 0.85 
         
+        player_obj = self.game_controller.player 
+
+        # Define a common starting X for bar rectangles if icons have variable widths
+        # For simplicity, we'll calculate it based on the first icon drawn (weapon icon)
+        # and reuse this starting X for the lives icons.
+        temp_weapon_icon_surf = self._render_text_safe(WEAPON_MODE_ICONS.get(player_obj.current_weapon_mode, "💥"), "ui_emoji_small", ORANGE)
+        bar_elements_start_x = vitals_x_start + temp_weapon_icon_surf.get_width() + icon_to_bar_gap
+
+        # 1. Lives Icons (Drawn first, at the bottom of this stack, aligned with bar starts)
         life_icon_surf = self.ui_assets.get("current_drone_life_icon") 
         if life_icon_surf: 
-            lives_y_pos = current_vitals_y - self.ui_icon_size_lives[1] 
-            lives_draw_x = vitals_x_start 
+            lives_y_pos = current_vitals_y - self.ui_icon_size_lives[1]
+            lives_draw_x = bar_elements_start_x # Use the common bar start X
+            
             for i in range(self.game_controller.lives): 
                 self.screen.blit(life_icon_surf, (lives_draw_x + i * (self.ui_icon_size_lives[0] + icon_spacing), lives_y_pos)) 
-            current_vitals_y = lives_y_pos - element_spacing 
+            current_vitals_y = lives_y_pos - element_spacing # Update Y for next element above
         
-        player_obj = self.game_controller.player 
-        
+        # 2. Weapon Bar (Above Lives)
         weapon_bar_y_pos = current_vitals_y - bar_height 
-        weapon_icon_char = WEAPON_MODE_ICONS.get(player_obj.current_weapon_mode, "💥") 
-        weapon_icon_surf = self._render_text_safe(weapon_icon_char, "ui_emoji_small", ORANGE) 
+        # weapon_icon_surf is already available as temp_weapon_icon_surf, or render again if style changes
+        weapon_icon_surf = temp_weapon_icon_surf # Reuse the already rendered surface
         self.screen.blit(weapon_icon_surf, (vitals_x_start, weapon_bar_y_pos + (bar_height - weapon_icon_surf.get_height()) // 2)) 
-        bar_start_x_weapon = vitals_x_start + weapon_icon_surf.get_width() + icon_to_bar_gap 
+        
+        # bar_start_x_weapon is now bar_elements_start_x
         bar_segment_width_weapon = max(min_bar_segment_width, int((vitals_section_width - (weapon_icon_surf.get_width() + icon_to_bar_gap)) * bar_segment_reduction_factor)) 
         charge_fill_pct = 0.0 
         weapon_ready_color = PLAYER_BULLET_COLOR 
@@ -568,12 +578,13 @@ class UIManager:
             charge_fill_pct = 1.0 
         charge_bar_fill_color = weapon_ready_color if charge_fill_pct >= 1.0 else ORANGE 
         weapon_bar_width_fill = int(bar_segment_width_weapon * charge_fill_pct) 
-        pygame.draw.rect(self.screen, DARK_GREY, (bar_start_x_weapon, weapon_bar_y_pos, bar_segment_width_weapon, bar_height)) 
+        pygame.draw.rect(self.screen, DARK_GREY, (bar_elements_start_x, weapon_bar_y_pos, bar_segment_width_weapon, bar_height)) 
         if weapon_bar_width_fill > 0: 
-            pygame.draw.rect(self.screen, charge_bar_fill_color, (bar_start_x_weapon, weapon_bar_y_pos, weapon_bar_width_fill, bar_height)) 
-        pygame.draw.rect(self.screen, WHITE, (bar_start_x_weapon, weapon_bar_y_pos, bar_segment_width_weapon, bar_height), 1) 
+            pygame.draw.rect(self.screen, charge_bar_fill_color, (bar_elements_start_x, weapon_bar_y_pos, weapon_bar_width_fill, bar_height)) 
+        pygame.draw.rect(self.screen, WHITE, (bar_elements_start_x, weapon_bar_y_pos, bar_segment_width_weapon, bar_height), 1) 
         current_vitals_y = weapon_bar_y_pos - element_spacing 
         
+        # 3. Power-up Bar (Top-most in this stack, if active)
         active_powerup_for_ui = player_obj.active_powerup_type 
         if active_powerup_for_ui and (player_obj.shield_active or player_obj.speed_boost_active): 
             powerup_bar_y_pos = current_vitals_y - bar_height 
@@ -597,50 +608,40 @@ class UIManager:
             if powerup_icon_char: 
                 powerup_icon_surf = self._render_text_safe(powerup_icon_char, "ui_emoji_small", WHITE) 
                 self.screen.blit(powerup_icon_surf, (vitals_x_start, powerup_bar_y_pos + (bar_height - powerup_icon_surf.get_height()) // 2)) 
-                bar_start_x_powerup = vitals_x_start + powerup_icon_surf.get_width() + icon_to_bar_gap 
+                # bar_start_x_powerup should also use bar_elements_start_x for alignment
                 bar_segment_width_powerup = max(min_bar_segment_width, int((vitals_section_width - (powerup_icon_surf.get_width() + icon_to_bar_gap)) * bar_segment_reduction_factor)) 
                 bar_width_fill_powerup = int(bar_segment_width_powerup * powerup_fill_percentage) 
-                pygame.draw.rect(self.screen, DARK_GREY, (bar_start_x_powerup, powerup_bar_y_pos, bar_segment_width_powerup, bar_height)) 
+                pygame.draw.rect(self.screen, DARK_GREY, (bar_elements_start_x, powerup_bar_y_pos, bar_segment_width_powerup, bar_height)) 
                 if bar_width_fill_powerup > 0: 
-                    pygame.draw.rect(self.screen, powerup_bar_fill_color, (bar_start_x_powerup, powerup_bar_y_pos, bar_width_fill_powerup, bar_height)) 
-                pygame.draw.rect(self.screen, WHITE, (bar_start_x_powerup, powerup_bar_y_pos, bar_segment_width_powerup, bar_height), 1) 
+                    pygame.draw.rect(self.screen, powerup_bar_fill_color, (bar_elements_start_x, powerup_bar_y_pos, bar_width_fill_powerup, bar_height)) 
+                pygame.draw.rect(self.screen, WHITE, (bar_elements_start_x, powerup_bar_y_pos, bar_segment_width_powerup, bar_height), 1) 
         
-        # --- Right Collectibles Section ---
+        # --- Right Collectibles Section (remains the same) ---
         collectibles_x_anchor = WIDTH - h_padding 
-        current_collectibles_y = panel_y_start + panel_height - v_padding 
-
-        # 1. Cores (Bottom-most on the right)
+        current_collectibles_y_right = panel_y_start + panel_height - v_padding # Use a different y_tracker for right side
         cores_emoji_char = "💠" 
         cores_x_char = "x" 
         cores_value_str = str(self.drone_system.get_player_cores())
-
         cores_icon_surf = self._render_text_safe(cores_emoji_char, "ui_emoji_general", GOLD)
-        cores_x_surf = self._render_text_safe(cores_x_char, "small_text", WHITE) # Changed font and color for "x"
+        cores_x_surf = self._render_text_safe(cores_x_char, "small_text", WHITE) 
         cores_value_text_surf = self._render_text_safe(cores_value_str, "small_text", GOLD) 
-        
         total_cores_width = (cores_icon_surf.get_width() + 
                              text_icon_spacing + 
                              cores_x_surf.get_width() + 
                              text_icon_spacing + 
                              cores_value_text_surf.get_width())
-        
         cores_start_x_draw = collectibles_x_anchor - total_cores_width 
-        
         cores_display_max_height = max(cores_icon_surf.get_height(), cores_x_surf.get_height(), cores_value_text_surf.get_height())
-        cores_y_pos = current_collectibles_y - cores_display_max_height
-        
+        cores_y_pos = current_collectibles_y_right - cores_display_max_height
         current_x_offset = cores_start_x_draw
         self.screen.blit(cores_icon_surf, (current_x_offset, cores_y_pos + (cores_display_max_height - cores_icon_surf.get_height()) // 2))
         current_x_offset += cores_icon_surf.get_width() + text_icon_spacing
         self.screen.blit(cores_x_surf, (current_x_offset, cores_y_pos + (cores_display_max_height - cores_x_surf.get_height()) // 2))
         current_x_offset += cores_x_surf.get_width() + text_icon_spacing
         self.screen.blit(cores_value_text_surf, (current_x_offset, cores_y_pos + (cores_display_max_height - cores_value_text_surf.get_height()) // 2))
-        
-        current_collectibles_y = cores_y_pos - element_spacing
-
-        # 2. Core Fragments (Above Cores)
+        current_collectibles_y_right = cores_y_pos - element_spacing
         fragment_icon_h = self.ui_icon_size_fragments[1]
-        fragment_y_pos_hud = current_collectibles_y - fragment_icon_h
+        fragment_y_pos_hud = current_collectibles_y_right - fragment_icon_h
         fragment_display_order_ids = []
         if CORE_FRAGMENT_DETAILS:
             try:
@@ -671,14 +672,12 @@ class UIManager:
                          current_frag_x + self.ui_icon_size_fragments[0] // 2,
                          fragment_y_pos_hud + self.ui_icon_size_fragments[1] // 2
                      )
-            current_collectibles_y = fragment_y_pos_hud - element_spacing
-
-        # 3. Rings (Above Fragments)
+            current_collectibles_y_right = fragment_y_pos_hud - element_spacing
         total_rings_this_level = getattr(self.game_controller, 'total_rings_per_level', 5) 
         displayed_rings_count = getattr(self.game_controller, 'displayed_collected_rings', 0) 
         if self.ui_assets["ring_icon"] and total_rings_this_level > 0: 
             ring_icon_h = self.ui_icon_size_rings[1] 
-            rings_y_pos_hud = current_collectibles_y - ring_icon_h 
+            rings_y_pos_hud = current_collectibles_y_right - ring_icon_h 
             total_ring_icons_width_only = total_rings_this_level * self.ui_icon_size_rings[0] + \
                                           max(0, total_rings_this_level - 1) * icon_spacing
             rings_block_start_x = collectibles_x_anchor - total_ring_icons_width_only
@@ -693,8 +692,7 @@ class UIManager:
             if hasattr(self.game_controller, 'ring_ui_target_pos'): 
                 self.game_controller.ring_ui_target_pos = (target_slot_center_x, target_slot_center_y)
         
-        # --- Central HUD Elements ---
-        info_y_pos = panel_y_start + (panel_height - label_font.get_height()) // 2 
+        # --- Central HUD Elements (remains the same) ---
         score_emoji_char = "🏆 " 
         score_text_str = f"Score: {self.game_controller.score}" 
         score_emoji_surf = self._render_text_safe(score_emoji_char, "ui_emoji_general", GOLD) 
@@ -721,28 +719,39 @@ class UIManager:
             if time_seconds_total <= 10: time_color = RED if (current_time_ticks // 250) % 2 == 0 else DARK_RED 
             elif time_seconds_total <= 30: time_color = YELLOW 
         time_icon_surf = self._render_text_safe(time_icon_char, "ui_emoji_general", time_color) 
-        time_value_surf = self._render_text_safe(time_value_str, self.fonts["ui_values"], time_color) 
+        time_value_surf = self._render_text_safe(time_value_str, "ui_text", time_color) 
+        max_central_element_height = 0
+        if score_emoji_surf: max_central_element_height = max(max_central_element_height, score_emoji_surf.get_height())
+        if score_text_surf: max_central_element_height = max(max_central_element_height, score_text_surf.get_height())
+        if level_emoji_surf: max_central_element_height = max(max_central_element_height, level_emoji_surf.get_height())
+        if level_text_surf: max_central_element_height = max(max_central_element_height, level_text_surf.get_height())
+        if time_icon_surf and not is_vault_extraction: max_central_element_height = max(max_central_element_height, time_icon_surf.get_height())
+        if time_value_surf and not is_vault_extraction: max_central_element_height = max(max_central_element_height, time_value_surf.get_height())
+        info_y_baseline = panel_y_start + (panel_height - max_central_element_height) // 2
         spacing_between_center_elements = 25 
         center_elements_total_width = (
             score_emoji_surf.get_width() + text_icon_spacing + score_text_surf.get_width() + 
             spacing_between_center_elements + 
-            level_emoji_surf.get_width() + text_icon_spacing + level_text_surf.get_width() + 
-            spacing_between_center_elements + 
-            time_icon_surf.get_width() + text_icon_spacing + time_value_surf.get_width() 
-        ) 
+            level_emoji_surf.get_width() + text_icon_spacing + level_text_surf.get_width()
+        )
+        if not is_vault_extraction:
+            center_elements_total_width += (
+                spacing_between_center_elements +
+                time_icon_surf.get_width() + text_icon_spacing + time_value_surf.get_width()
+            )
         current_info_x = (WIDTH - center_elements_total_width) // 2 
-        self.screen.blit(score_emoji_surf, (current_info_x, info_y_pos + (score_text_surf.get_height() - score_emoji_surf.get_height()) // 2)) 
+        self.screen.blit(score_emoji_surf, (current_info_x, info_y_baseline + (max_central_element_height - score_emoji_surf.get_height()) // 2)) 
         current_info_x += score_emoji_surf.get_width() + text_icon_spacing 
-        self.screen.blit(score_text_surf, (current_info_x, info_y_pos)) 
+        self.screen.blit(score_text_surf, (current_info_x, info_y_baseline + (max_central_element_height - score_text_surf.get_height()) // 2)) 
         current_info_x += score_text_surf.get_width() + spacing_between_center_elements 
-        self.screen.blit(level_emoji_surf, (current_info_x, info_y_pos + (level_text_surf.get_height() - level_emoji_surf.get_height()) // 2)) 
+        self.screen.blit(level_emoji_surf, (current_info_x, info_y_baseline + (max_central_element_height - level_emoji_surf.get_height()) // 2)) 
         current_info_x += level_emoji_surf.get_width() + text_icon_spacing 
-        self.screen.blit(level_text_surf, (current_info_x, info_y_pos)) 
+        self.screen.blit(level_text_surf, (current_info_x, info_y_baseline + (max_central_element_height - level_text_surf.get_height()) // 2)) 
         current_info_x += level_text_surf.get_width() + spacing_between_center_elements 
         if not is_vault_extraction: 
-            self.screen.blit(time_icon_surf, (current_info_x, info_y_pos + (time_value_surf.get_height() - time_icon_surf.get_height()) // 2)) 
+            self.screen.blit(time_icon_surf, (current_info_x, info_y_baseline + (max_central_element_height - time_icon_surf.get_height()) // 2)) 
             current_info_x += time_icon_surf.get_width() + text_icon_spacing 
-            self.screen.blit(time_value_surf, (current_info_x, info_y_pos)) 
+            self.screen.blit(time_value_surf, (current_info_x, info_y_baseline + (max_central_element_height - time_value_surf.get_height()) // 2)) 
         
         # Draw animating collectibles
         if hasattr(self.game_controller, 'animating_rings'): 
