@@ -22,7 +22,7 @@ from game_settings import (
     MISSILE_COLOR, 
     LIGHTNING_COLOR, CORE_FRAGMENT_DETAILS,
     SPEED_BOOST_POWERUP_DURATION, SHIELD_POWERUP_DURATION, 
-    get_game_setting 
+    get_game_setting # Ensure get_game_setting is imported
 )
 try:
     from .bullet import Bullet, Missile, LightningZap 
@@ -138,7 +138,6 @@ class Drone(BaseDrone):
                                                self.collision_rect_width, self.collision_rect_height)
 
     def _load_sprite(self, sprite_path): 
-        # MODIFIED: Changed 0.8 to 0.7 for a slightly smaller drone
         default_size = (int(TILE_SIZE * 0.7), int(TILE_SIZE * 0.7)) 
         loaded_successfully = False
         if sprite_path and os.path.exists(sprite_path): 
@@ -197,7 +196,7 @@ class Drone(BaseDrone):
                 num_particles_to_spawn = self.PARTICLES_PER_EMISSION
                 for _ in range(num_particles_to_spawn):
                     offset_distance = self.rect.height / 2.0 
-                    spawn_angle_rad = math.radians(self.angle + 180) 
+                    # spawn_angle_rad = math.radians(self.angle + 180) # This was unused
                     pos_spread_angle = random.uniform(-15, 15) 
                     pos_angle_rad = math.radians(self.angle + 180 + pos_spread_angle)
                     start_x = self.x + math.cos(pos_angle_rad) * offset_distance
@@ -301,7 +300,7 @@ class Drone(BaseDrone):
         if self.collision_rect : self.collision_rect.center = self.rect.center 
 
     def _handle_wall_collision(self, wall_hit_boolean, dx, dy): 
-        if wall_hit_boolean and not self.shield_active:  
+        if wall_hit_boolean and not self.shield_active and not get_game_setting("PLAYER_INVINCIBILITY", False):  
             self.take_damage(10, self.crash_sound)  
         self.moving_forward = False  
 
@@ -416,6 +415,10 @@ class Drone(BaseDrone):
                 self.lightning_zaps_group.add(new_zap)
 
     def take_damage(self, amount, sound=None): 
+        # NEW: Check for global invincibility setting
+        if get_game_setting("PLAYER_INVINCIBILITY", False): # Default to False if somehow not set
+            return # Player is invincible, do not take damage
+
         effective_amount = amount
         if self.drone_system and hasattr(self.drone_system, 'get_collected_fragments_ids') and CORE_FRAGMENT_DETAILS:
             for frag_id in self.drone_system.get_collected_fragments_ids():
@@ -486,7 +489,7 @@ class Drone(BaseDrone):
 
         if self.speed_boost_active and current_time_ms > self.speed_boost_end_time: 
             self.speed_boost_active = False 
-            self.current_speed = self.speed  
+            self.current_speed = self.speed  # Reset to original speed (should be self.original_speed_before_boost or just self.base_speed)
             if self.active_powerup_type == "speed_boost": self.active_powerup_type = None 
             if self.shield_tied_to_speed_boost: 
                 self.shield_active = False
@@ -651,3 +654,4 @@ class Drone(BaseDrone):
         elif health_percentage >= 0.3: fill_color = YELLOW 
         if filled_width > 0: pygame.draw.rect(surface, fill_color, (bar_x, bar_y, filled_width, bar_height)) 
         pygame.draw.rect(surface, WHITE, (bar_x, bar_y, bar_width, bar_height), 1)
+

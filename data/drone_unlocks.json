@@ -8,13 +8,17 @@
     "PHANTOM",
     "ZEPHYR"
   ],
-  "selected_drone": "DRONE",
-  "player_level": 2,
-  "bosses_defeated": [],
-  "player_cores": 6585,
+  "selected_drone": "VANTIS",
+  "player_level": 3,
+  "bosses_defeated": [
+    "MAZE_GUARDIAN"
+  ],
+  "player_cores": 15885,
   "collected_core_fragments": [
     "cf_alpha",
-    "cf_beta"
+    "cf_beta",
+    "cf_gamma",
+    "vault_core"
   ],
   "architect_vault_completed": false,
   "unlocked_blueprints": [],
