@@ -41,6 +41,10 @@ PINK = (255, 192, 203)
 GREY = (100, 100, 100)
 DARK_GREY = (50, 50, 50)
 ELECTRIC_BLUE = (0, 128, 255) # For lightning effects
+ESCAPE_ZONE_COLOR = (0, 255, 120) 
+
+# Particle Colors
+FLAME_COLORS = [(255, 100, 0), (255, 165, 0), (255, 215, 0), (255, 255, 100)] 
 
 # Architect's Vault Specific Colors
 ARCHITECT_VAULT_BG_COLOR = (20, 0, 30)
@@ -51,9 +55,9 @@ ARCHITECT_VAULT_ACCENT_COLOR = GOLD
 # Player Drone Base Settings
 # ==========================
 PLAYER_MAX_HEALTH = 100
-PLAYER_SPEED = 3          # Base movement speed
+PLAYER_SPEED = 3          
 PLAYER_LIVES = 3
-ROTATION_SPEED = 5        # Base rotation speed in degrees per frame/tick
+ROTATION_SPEED = 5        
 PLAYER_INVINCIBILITY = False 
 
 # Player Bullet & Weapon Base Settings
@@ -80,7 +84,7 @@ MISSILE_DAMAGE = 50
 
 # Lightning Specific Settings
 LIGHTNING_COLOR = ELECTRIC_BLUE 
-LIGHTNING_DAMAGE = 100
+LIGHTNING_DAMAGE = 15
 LIGHTNING_LIFETIME = 20 
 LIGHTNING_COOLDOWN = 750 
 LIGHTNING_ZAP_RANGE = 250 
@@ -146,17 +150,28 @@ WEAPON_MODE_ICONS = {
     WEAPON_MODE_BIG_SHOT: "🔵",
     WEAPON_MODE_BOUNCE: "🏀",
     WEAPON_MODE_PIERCE: "➤",
-    WEAPON_MODE_HEATSEEKER: "🚀",
+    WEAPON_MODE_HEATSEEKER: "�",
     WEAPON_MODE_HEATSEEKER_PLUS_BULLETS: "🚀💨",
     WEAPON_MODE_LIGHTNING: "⚡",
 }
 
 # ==========================
-# Player Abilities Settings (e.g., Cloak)
+# Player Abilities Settings
 # ==========================
 PHANTOM_CLOAK_DURATION_MS = 5000
 PHANTOM_CLOAK_COOLDOWN_MS = 15000
 PHANTOM_CLOAK_ALPHA_SETTING = 70 
+
+# ==========================
+# Player Thrust Particle Settings
+# ==========================
+THRUST_PARTICLE_SPREAD_ANGLE = 45  
+THRUST_PARTICLE_LIFETIME_BLAST = 25 
+THRUST_PARTICLE_START_SIZE_BLAST_MIN = 5
+THRUST_PARTICLE_START_SIZE_BLAST_MAX = 10
+THRUST_PARTICLE_SPEED_MIN_BLAST = 1.5
+THRUST_PARTICLE_SPEED_MAX_BLAST = 3.0
+THRUST_PARTICLE_SHRINK_RATE_BLAST = 0.15 
 
 # ==========================
 # Enemy Base Settings
@@ -164,20 +179,20 @@ PHANTOM_CLOAK_ALPHA_SETTING = 70
 ENEMY_SPEED = 1.5
 ENEMY_HEALTH = 100
 ENEMY_COLOR = RED 
-REGULAR_ENEMY_SPRITE_PATH = "assets/images/enemies/TR-3B_enemy.png"
+REGULAR_ENEMY_SPRITE_PATH = "assets/images/enemies/TR-3B_enemy.png" 
 ENEMY_BULLET_SPEED = 5
 ENEMY_BULLET_COOLDOWN = 1500 
 ENEMY_BULLET_LIFETIME = 75   
 ENEMY_BULLET_COLOR = ORANGE
 ENEMY_BULLET_DAMAGE = 10
 
-# Architect's Vault Prototype Drone Settings (Example of specific enemy type)
+# Architect's Vault Prototype Drone Settings
 PROTOTYPE_DRONE_HEALTH = 150
 PROTOTYPE_DRONE_SPEED = 2.0
 PROTOTYPE_DRONE_COLOR = MAGENTA 
 PROTOTYPE_DRONE_SHOOT_COOLDOWN = 1200
 PROTOTYPE_DRONE_BULLET_SPEED = 6
-PROTOTYPE_DRONE_SPRITE_PATH = "assets/images/enemies/prototype_enemy.png" # CORRECTED PATH
+PROTOTYPE_DRONE_SPRITE_PATH = "assets/images/enemies/prototype_enemy.png" 
 
 # ==========================
 # MAZE_GUARDIAN Boss Settings
@@ -202,7 +217,7 @@ MAZE_GUARDIAN_ARENA_SHIFT_INTERVAL_MS = 3000
 MAZE_GUARDIAN_ARENA_SHIFT_DURATION_MS = 1000 
 MAZE_GUARDIAN_MINION_SPAWN_COOLDOWN_MS = 7000 
 
-# Sentinel Drone (Mini-drone summoned by MazeGuardian)
+# Sentinel Drone 
 SENTINEL_DRONE_HEALTH = 75
 SENTINEL_DRONE_SPEED = 3.0
 SENTINEL_DRONE_SPRITE_PATH = "assets/images/enemies/sentinel_drone.png" 
@@ -309,7 +324,7 @@ GAME_STATE_ARCHITECT_VAULT_SUCCESS = "architect_vault_success"
 GAME_STATE_ARCHITECT_VAULT_FAILURE = "architect_vault_failure"
 
 # ==============================================================================
-# Dynamic Settings Management (allows changing settings via UI and affects game)
+# Dynamic Settings Management
 # ==============================================================================
 
 DEFAULT_SETTINGS = {
@@ -343,12 +358,21 @@ DEFAULT_SETTINGS = {
     "INITIAL_WEAPON_MODE": INITIAL_WEAPON_MODE,
     "PHANTOM_CLOAK_DURATION_MS": PHANTOM_CLOAK_DURATION_MS, "PHANTOM_CLOAK_COOLDOWN_MS": PHANTOM_CLOAK_COOLDOWN_MS,
     "PHANTOM_CLOAK_ALPHA_SETTING": PHANTOM_CLOAK_ALPHA_SETTING,
+
+    "THRUST_PARTICLE_SPREAD_ANGLE": THRUST_PARTICLE_SPREAD_ANGLE,
+    "THRUST_PARTICLE_LIFETIME_BLAST": THRUST_PARTICLE_LIFETIME_BLAST,
+    "THRUST_PARTICLE_START_SIZE_BLAST_MIN": THRUST_PARTICLE_START_SIZE_BLAST_MIN,
+    "THRUST_PARTICLE_START_SIZE_BLAST_MAX": THRUST_PARTICLE_START_SIZE_BLAST_MAX,
+    "THRUST_PARTICLE_SPEED_MIN_BLAST": THRUST_PARTICLE_SPEED_MIN_BLAST,
+    "THRUST_PARTICLE_SPEED_MAX_BLAST": THRUST_PARTICLE_SPEED_MAX_BLAST,
+    "THRUST_PARTICLE_SHRINK_RATE_BLAST": THRUST_PARTICLE_SHRINK_RATE_BLAST,
+
     "ENEMY_SPEED": ENEMY_SPEED, "ENEMY_HEALTH": ENEMY_HEALTH, "ENEMY_COLOR": ENEMY_COLOR,
     "ENEMY_BULLET_SPEED": ENEMY_BULLET_SPEED, "ENEMY_BULLET_COOLDOWN": ENEMY_BULLET_COOLDOWN,
     "ENEMY_BULLET_LIFETIME": ENEMY_BULLET_LIFETIME, "ENEMY_BULLET_COLOR": ENEMY_BULLET_COLOR, "ENEMY_BULLET_DAMAGE": ENEMY_BULLET_DAMAGE,
     "PROTOTYPE_DRONE_HEALTH": PROTOTYPE_DRONE_HEALTH, "PROTOTYPE_DRONE_SPEED": PROTOTYPE_DRONE_SPEED,
     "PROTOTYPE_DRONE_SHOOT_COOLDOWN": PROTOTYPE_DRONE_SHOOT_COOLDOWN, "PROTOTYPE_DRONE_BULLET_SPEED": PROTOTYPE_DRONE_BULLET_SPEED,
-    "PROTOTYPE_DRONE_SPRITE_PATH": PROTOTYPE_DRONE_SPRITE_PATH, # Path updated here
+    "PROTOTYPE_DRONE_SPRITE_PATH": PROTOTYPE_DRONE_SPRITE_PATH,
     
     "MAZE_GUARDIAN_HEALTH": MAZE_GUARDIAN_HEALTH, "MAZE_GUARDIAN_SPEED": MAZE_GUARDIAN_SPEED,
     "MAZE_GUARDIAN_COLOR": MAZE_GUARDIAN_COLOR, "MAZE_GUARDIAN_SPRITE_PATH": MAZE_GUARDIAN_SPRITE_PATH,
@@ -366,10 +390,12 @@ DEFAULT_SETTINGS = {
     "POWERUP_SPAWN_CHANCE": POWERUP_SPAWN_CHANCE, "MAX_POWERUPS_ON_SCREEN": MAX_POWERUPS_ON_SCREEN,
     "WEAPON_UPGRADE_ITEM_LIFETIME": WEAPON_UPGRADE_ITEM_LIFETIME, "POWERUP_ITEM_LIFETIME": POWERUP_ITEM_LIFETIME,
     "SHIELD_POWERUP_DURATION": SHIELD_POWERUP_DURATION, "SPEED_BOOST_POWERUP_DURATION": SPEED_BOOST_POWERUP_DURATION,
-    "REGULAR_ENEMY_SPRITE_PATH" : REGULAR_ENEMY_SPRITE_PATH,
+    "REGULAR_ENEMY_SPRITE_PATH" : REGULAR_ENEMY_SPRITE_PATH, 
     "LEVEL_TIMER_DURATION": LEVEL_TIMER_DURATION,
     "BONUS_LEVEL_DURATION_MS": BONUS_LEVEL_DURATION_MS,
+    "ARCHITECT_VAULT_EXTRACTION_TIMER_MS": ARCHITECT_VAULT_EXTRACTION_TIMER_MS, 
     "LEADERBOARD_MAX_ENTRIES": LEADERBOARD_MAX_ENTRIES, "LEADERBOARD_FILE_NAME": LEADERBOARD_FILE_NAME,
+    "ESCAPE_ZONE_COLOR": ESCAPE_ZONE_COLOR 
 }
 
 SETTINGS_MODIFIED = False
@@ -385,48 +411,43 @@ def set_game_setting(key, value):
     global SETTINGS_MODIFIED, _CURRENT_GAME_SETTINGS
     global GAME_PLAY_AREA_HEIGHT, MAZE_ROWS 
 
-    if key in _CURRENT_GAME_SETTINGS or key == "PLAYER_INVINCIBILITY": 
-        _CURRENT_GAME_SETTINGS[key] = value
+    _CURRENT_GAME_SETTINGS[key] = value 
+    
+    if key in DEFAULT_SETTINGS: 
         if _CURRENT_GAME_SETTINGS.get(key) != DEFAULT_SETTINGS.get(key): 
             SETTINGS_MODIFIED = True
-        else:
+        else: 
             SETTINGS_MODIFIED = any(
                 _CURRENT_GAME_SETTINGS.get(k) != DEFAULT_SETTINGS.get(k)
                 for k in DEFAULT_SETTINGS if k in _CURRENT_GAME_SETTINGS 
             )
-            if "PLAYER_INVINCIBILITY" in _CURRENT_GAME_SETTINGS and \
-               _CURRENT_GAME_SETTINGS["PLAYER_INVINCIBILITY"] != DEFAULT_SETTINGS.get("PLAYER_INVINCIBILITY", False): 
-                SETTINGS_MODIFIED = True
+    
+    if key in globals(): 
+        globals()[key] = value
+        if key == "HEIGHT" or key == "BOTTOM_PANEL_HEIGHT":
+            GAME_PLAY_AREA_HEIGHT = get_game_setting("HEIGHT") - get_game_setting("BOTTOM_PANEL_HEIGHT")
+            globals()["GAME_PLAY_AREA_HEIGHT"] = GAME_PLAY_AREA_HEIGHT 
+            if get_game_setting("TILE_SIZE") > 0:
+                MAZE_ROWS = GAME_PLAY_AREA_HEIGHT // get_game_setting("TILE_SIZE")
+                globals()["MAZE_ROWS"] = MAZE_ROWS
+        elif key == "TILE_SIZE":
+            if get_game_setting("TILE_SIZE") > 0: 
+                current_game_play_height = get_game_setting("GAME_PLAY_AREA_HEIGHT") 
+                MAZE_ROWS = current_game_play_height // get_game_setting("TILE_SIZE")
+                globals()["MAZE_ROWS"] = MAZE_ROWS
 
-
-        if key in globals(): 
-            globals()[key] = value
-            if key == "HEIGHT" or key == "BOTTOM_PANEL_HEIGHT":
-                GAME_PLAY_AREA_HEIGHT = get_game_setting("HEIGHT") - get_game_setting("BOTTOM_PANEL_HEIGHT")
-                globals()["GAME_PLAY_AREA_HEIGHT"] = GAME_PLAY_AREA_HEIGHT 
-                if get_game_setting("TILE_SIZE") > 0:
-                    MAZE_ROWS = GAME_PLAY_AREA_HEIGHT // get_game_setting("TILE_SIZE")
-                    globals()["MAZE_ROWS"] = MAZE_ROWS
-            elif key == "TILE_SIZE":
-                if get_game_setting("TILE_SIZE") > 0: 
-                    current_game_play_height = get_game_setting("GAME_PLAY_AREA_HEIGHT") 
-                    MAZE_ROWS = current_game_play_height // get_game_setting("TILE_SIZE")
-                    globals()["MAZE_ROWS"] = MAZE_ROWS
-    else:
-        print(f"Warning (game_settings.py): Attempted to set an unknown game setting '{key}'.")
 
 def reset_all_settings_to_default():
     global SETTINGS_MODIFIED, _CURRENT_GAME_SETTINGS
     global GAME_PLAY_AREA_HEIGHT, MAZE_ROWS
 
     _CURRENT_GAME_SETTINGS = DEFAULT_SETTINGS.copy()
-    _CURRENT_GAME_SETTINGS["PLAYER_INVINCIBILITY"] = DEFAULT_SETTINGS.get("PLAYER_INVINCIBILITY", False)
-
+    
     SETTINGS_MODIFIED = False
     print("Game settings have been reset to defaults.")
 
     for key, value in _CURRENT_GAME_SETTINGS.items():
-        if key in globals():
+        if key in globals(): 
             globals()[key] = value
 
     GAME_PLAY_AREA_HEIGHT = get_game_setting("HEIGHT") - get_game_setting("BOTTOM_PANEL_HEIGHT")
@@ -445,4 +466,3 @@ if TILE_SIZE > 0:
 else:
     MAZE_ROWS = 0
     print("Warning (game_settings.py): TILE_SIZE is 0 or invalid, MAZE_ROWS set to 0.")
-

@@ -3,6 +3,7 @@ import math
 import os
 import random 
 
+import game_settings as gs 
 from game_settings import (
     TILE_SIZE, WIDTH, HEIGHT, GAME_PLAY_AREA_HEIGHT,
     WEAPON_MODES_SEQUENCE, INITIAL_WEAPON_MODE,
@@ -16,28 +17,39 @@ from game_settings import (
     WEAPON_MODE_PIERCE, WEAPON_MODE_HEATSEEKER, WEAPON_MODE_HEATSEEKER_PLUS_BULLETS,
     WEAPON_MODE_LIGHTNING, POWERUP_TYPES, 
     PHANTOM_CLOAK_ALPHA_SETTING, PHANTOM_CLOAK_DURATION_MS, PHANTOM_CLOAK_COOLDOWN_MS,
-    GREEN, YELLOW, RED, WHITE, LIGHT_BLUE, ORANGE, 
+    GREEN, YELLOW, RED, WHITE, LIGHT_BLUE, ORANGE, CYAN, ELECTRIC_BLUE, 
     PLAYER_SPEED, PLAYER_MAX_HEALTH, ROTATION_SPEED, 
     PLAYER_BULLET_COLOR, PLAYER_BULLET_SPEED, PLAYER_BULLET_LIFETIME, 
     MISSILE_COLOR, 
     LIGHTNING_COLOR, CORE_FRAGMENT_DETAILS,
     SPEED_BOOST_POWERUP_DURATION, SHIELD_POWERUP_DURATION, 
-    get_game_setting # Ensure get_game_setting is imported
+    FLAME_COLORS, 
+    THRUST_PARTICLE_SPREAD_ANGLE, 
+    THRUST_PARTICLE_LIFETIME_BLAST,
+    THRUST_PARTICLE_START_SIZE_BLAST_MIN,
+    THRUST_PARTICLE_START_SIZE_BLAST_MAX,
+    THRUST_PARTICLE_SPEED_MIN_BLAST,
+    THRUST_PARTICLE_SPEED_MAX_BLAST,
+    THRUST_PARTICLE_SHRINK_RATE_BLAST,
+    get_game_setting 
 )
 try:
     from .bullet import Bullet, Missile, LightningZap 
+    from .particle import Particle 
 except ImportError:
-    print("Warning (player.py): Could not import Bullet, Missile, or LightningZap from .bullet. Shooting will be affected.")
+    print("Warning (player.py): Could not import Bullet, Missile, LightningZap or Particle. Effects will be affected.")
     class Bullet(pygame.sprite.Sprite): pass
     class Missile(pygame.sprite.Sprite): pass
     class LightningZap(pygame.sprite.Sprite): pass
+    class Particle(pygame.sprite.Sprite): pass
+
 
 try:
     from .base_drone import BaseDrone 
 except ImportError:
     print("Warning (player.py): Could not import BaseDrone from .base_drone. Player class might not function correctly.")
     class BaseDrone(pygame.sprite.Sprite): 
-        def __init__(self, x,y,speed): 
+        def __init__(self, x,y,speed, size=None): 
             super().__init__()
             self.x = x
             self.y = y
@@ -45,14 +57,50 @@ except ImportError:
             self.angle = 0.0 
             self.moving_forward = False
             self.alive = True
-            self.rect = pygame.Rect(x - TILE_SIZE * 0.4, y - TILE_SIZE * 0.4, TILE_SIZE * 0.8, TILE_SIZE * 0.8) 
+            self.size = size if size is not None else TILE_SIZE * 0.8
+            self.rect = pygame.Rect(x - self.size / 2, y - self.size / 2, self.size, self.size) 
             self.collision_rect = self.rect.copy()
+        
+        def update_movement(self, maze=None, game_area_x_offset=0):
+            if self.moving_forward and self.alive:
+                angle_rad = math.radians(self.angle)
+                dx = math.cos(angle_rad) * self.speed 
+                dy = math.sin(angle_rad) * self.speed
+                next_x = self.x + dx
+                next_y = self.y + dy
+
+                collided = False
+                if maze and self.collision_rect:
+                    temp_collision_rect = self.collision_rect.copy()
+                    temp_collision_rect.center = (next_x, next_y)
+                    if maze.is_wall(temp_collision_rect.centerx, temp_collision_rect.centery, 
+                                    self.collision_rect.width, self.collision_rect.height):
+                        collided = True
+                
+                if not collided:
+                    self.x = next_x
+                    self.y = next_y
+                else:
+                    self.moving_forward = False 
+
+            if self.collision_rect and self.rect: 
+                half_col_width = self.collision_rect.width / 2
+                half_col_height = self.collision_rect.height / 2
+                min_x_bound = game_area_x_offset + half_col_width
+                max_x_bound = WIDTH - half_col_width
+                min_y_bound = half_col_height
+                max_y_bound = GAME_PLAY_AREA_HEIGHT - half_col_height
+                self.x = max(min_x_bound, min(self.x, max_x_bound))
+                self.y = max(min_y_bound, min(self.y, max_y_bound))
+                self.rect.center = (int(self.x), int(self.y))
+                self.collision_rect.center = self.rect.center
 
 
 class Drone(BaseDrone): 
     def __init__(self, x, y, drone_id, drone_stats, drone_sprite_path, crash_sound, drone_system): 
         base_speed_from_stats = drone_stats.get("speed", get_game_setting("PLAYER_SPEED"))
-        super().__init__(x, y, speed=base_speed_from_stats) 
+        self.drone_visual_size = (int(TILE_SIZE * 0.7), int(TILE_SIZE * 0.7)) 
+        super().__init__(x, y, size=self.drone_visual_size[0], speed=base_speed_from_stats) 
         
         self.drone_id = drone_id 
         self.drone_system = drone_system  
@@ -74,8 +122,8 @@ class Drone(BaseDrone):
         
         self.original_image = None 
         self.image = None 
-        self.rect = None 
         self._load_sprite(drone_sprite_path)  
+
 
         initial_weapon_mode_gs = get_game_setting("INITIAL_WEAPON_MODE")
         try:
@@ -110,10 +158,11 @@ class Drone(BaseDrone):
         self.original_speed_before_boost = self.speed 
         self.shield_tied_to_speed_boost = False
 
-        self.thrust_particles = []
+        self.thrust_particles = pygame.sprite.Group() 
         self.thrust_particle_spawn_timer = 0
-        self.THRUST_PARTICLE_SPAWN_INTERVAL = 30 
-        self.PARTICLES_PER_EMISSION = random.randint(3, 5) 
+        self.THRUST_PARTICLE_SPAWN_INTERVAL = 25 
+        self.PARTICLES_PER_EMISSION = random.randint(2, 4) 
+        self.flame_port_offset_distance = self.drone_visual_size[1] * 0.4 
 
         self.cloak_active = False 
         self.cloak_start_time = 0  
@@ -132,13 +181,14 @@ class Drone(BaseDrone):
             self.collision_rect = pygame.Rect(0,0, self.collision_rect_width, self.collision_rect_height) 
             self.collision_rect.center = self.rect.center 
         else: 
-            self.collision_rect_width = TILE_SIZE * 0.7
-            self.collision_rect_height = TILE_SIZE * 0.7
-            self.collision_rect = pygame.Rect(self.x - self.collision_rect_width/2, self.y - self.collision_rect_height/2, 
-                                               self.collision_rect_width, self.collision_rect_height)
+            col_size = self.size * 0.7 
+            self.collision_rect_width = col_size
+            self.collision_rect_height = col_size
+            self.collision_rect = pygame.Rect(self.x - col_size/2, self.y - col_size/2, 
+                                               col_size, col_size)
 
     def _load_sprite(self, sprite_path): 
-        default_size = (int(TILE_SIZE * 0.7), int(TILE_SIZE * 0.7)) 
+        default_size = self.drone_visual_size 
         loaded_successfully = False
         if sprite_path and os.path.exists(sprite_path): 
             try: 
@@ -156,11 +206,20 @@ class Drone(BaseDrone):
 
         self.image = self.original_image.copy() 
         self.rect = self.image.get_rect(center=(int(self.x), int(self.y))) 
-        if self.rect:
+        if self.rect: 
+            self.drone_visual_size = self.rect.size 
+            self.flame_port_offset_distance = self.drone_visual_size[1] * 0.4 
             self.collision_rect_width = self.rect.width * 0.7 
             self.collision_rect_height = self.rect.height * 0.7 
             self.collision_rect = pygame.Rect(0,0, self.collision_rect_width, self.collision_rect_height) 
             self.collision_rect.center = self.rect.center
+        else: 
+            col_size = self.size * 0.7 
+            self.collision_rect_width = col_size
+            self.collision_rect_height = col_size
+            self.collision_rect = pygame.Rect(self.x - col_size/2, self.y - col_size/2, 
+                                               col_size, col_size)
+
 
     def _update_weapon_attributes(self): 
         if self.current_weapon_mode == WEAPON_MODE_BIG_SHOT: 
@@ -194,63 +253,82 @@ class Drone(BaseDrone):
             if current_time > self.thrust_particle_spawn_timer:
                 self.thrust_particle_spawn_timer = current_time + self.THRUST_PARTICLE_SPAWN_INTERVAL
                 num_particles_to_spawn = self.PARTICLES_PER_EMISSION
+                
+                emission_base_angle_deg = (self.angle + 180) % 360
+                emission_angle_rad_for_offset = math.radians(self.angle + 180) 
+                
+                offset_x = math.cos(emission_angle_rad_for_offset) * self.flame_port_offset_distance
+                offset_y = math.sin(emission_angle_rad_for_offset) * self.flame_port_offset_distance
+                
                 for _ in range(num_particles_to_spawn):
-                    offset_distance = self.rect.height / 2.0 
-                    # spawn_angle_rad = math.radians(self.angle + 180) # This was unused
-                    pos_spread_angle = random.uniform(-15, 15) 
-                    pos_angle_rad = math.radians(self.angle + 180 + pos_spread_angle)
-                    start_x = self.x + math.cos(pos_angle_rad) * offset_distance
-                    start_y = self.y + math.sin(pos_angle_rad) * offset_distance
-                    particle_base_speed = self.current_speed * random.uniform(0.4, 0.8) 
-                    vel_spread_angle = random.uniform(-15, 15) 
-                    vel_angle_rad = math.radians(self.angle + 180 + vel_spread_angle) 
-                    vel_x = math.cos(vel_angle_rad) * particle_base_speed
-                    vel_y = math.sin(vel_angle_rad) * particle_base_speed
-                    lifetime = random.randint(7, 12) 
-                    start_size = random.randint(4, 8) 
-                    r_base, g_base, b_base = random.choice([(255, 165, 0), (255,140,0), (255,180,20)])
-                    r = min(255, r_base + random.randint(0,30))
-                    g = min(255, g_base + random.randint(0,30))
-                    b = b_base 
-                    alpha = random.randint(200, 255) 
-                    color = (r, g, b, alpha)
-                    self.thrust_particles.append({
-                        'pos': [start_x, start_y], 
-                        'vel': [vel_x, vel_y], 
-                        'lifetime': lifetime, 
-                        'max_lifetime': lifetime, 
-                        'size': start_size,
-                        'start_size': start_size, 
-                        'color': color,
-                        'type': 'flame' 
-                    })
+                    particle = Particle(
+                        x=self.x,  
+                        y=self.y,  
+                        color_list=gs.FLAME_COLORS, 
+                        min_speed=gs.get_game_setting("THRUST_PARTICLE_SPEED_MIN_BLAST"),
+                        max_speed=gs.get_game_setting("THRUST_PARTICLE_SPEED_MAX_BLAST"),
+                        min_size=gs.get_game_setting("THRUST_PARTICLE_START_SIZE_BLAST_MIN"),
+                        max_size=gs.get_game_setting("THRUST_PARTICLE_START_SIZE_BLAST_MAX"),
+                        lifetime_frames=gs.get_game_setting("THRUST_PARTICLE_LIFETIME_BLAST"),
+                        base_angle_deg=emission_base_angle_deg, 
+                        spread_angle_deg=gs.get_game_setting("THRUST_PARTICLE_SPREAD_ANGLE"), 
+                        x_offset=offset_x, 
+                        y_offset=offset_y,
+                        blast_mode=True 
+                    )
+                    self.thrust_particles.add(particle)
 
     def _update_thrust_particles(self):
-        for p in list(self.thrust_particles):
-            p['pos'][0] += p['vel'][0]
-            p['pos'][1] += p['vel'][1]
-            p['lifetime'] -= 1
-            life_ratio = max(0, p['lifetime'] / p['max_lifetime'])
-            p['size'] = p['start_size'] * (life_ratio ** 0.7) 
-            if len(p['color']) == 4:
-                r, g, b, initial_alpha = p['color']
-                current_alpha = int(initial_alpha * (life_ratio ** 1.5)) 
-                p['current_draw_color'] = (r, g, b, max(0, current_alpha))
+        self.thrust_particles.update()
+
+    def update_movement(self, maze=None, game_area_x_offset=0): 
+        if self.moving_forward and self.alive:
+            angle_rad = math.radians(self.angle)
+            dx = math.cos(angle_rad) * self.current_speed 
+            dy = math.sin(angle_rad) * self.current_speed
+            next_x = self.x + dx
+            next_y = self.y + dy
+
+            collided_wall_type = False 
+            if maze and self.collision_rect: 
+                temp_collision_rect = self.collision_rect.copy()
+                temp_collision_rect.center = (next_x, next_y)
+                wall_check_result = maze.is_wall(temp_collision_rect.centerx, temp_collision_rect.centery,
+                                                 self.collision_rect.width, self.collision_rect.height)
+                if wall_check_result: 
+                    collided_wall_type = True 
+            
+            if collided_wall_type:
+                self._handle_wall_collision(collided_wall_type, dx, dy) 
             else:
-                 r,g,b = p['color']
-                 current_alpha = int(255 * (life_ratio ** 1.5))
-                 p['current_draw_color'] = (r,g,b, max(0, current_alpha))
-            if p['lifetime'] <= 0 or p['size'] < 1:
-                self.thrust_particles.remove(p)
+                self.x = next_x
+                self.y = next_y
+        
+        if self.collision_rect and self.rect: 
+            half_col_width = self.collision_rect.width / 2
+            half_col_height = self.collision_rect.height / 2
+            min_x_bound = game_area_x_offset + half_col_width
+            max_x_bound = WIDTH - half_col_width
+            min_y_bound = half_col_height
+            max_y_bound = GAME_PLAY_AREA_HEIGHT - half_col_height
+            self.x = max(min_x_bound, min(self.x, max_x_bound))
+            self.y = max(min_y_bound, min(self.y, max_y_bound))
+            self.rect.center = (int(self.x), int(self.y))
+            self.collision_rect.center = self.rect.center
+
 
     def update(self, current_time, maze, enemies_group, game_area_x_offset=0): 
         if not self.alive: 
             return 
         self.update_powerups(current_time) 
-        self._update_movement(maze, game_area_x_offset) 
+        self.update_movement(maze, game_area_x_offset) 
+        
         if self.speed_boost_active and self.moving_forward:
             self._emit_thrust_particles(current_time)
-        self._update_thrust_particles()
+        self._update_thrust_particles() 
+        
+        # No shield spark particles to update
+        
         self.bullets_group.update(maze, game_area_x_offset) 
         self.missiles_group.update(enemies_group, maze, game_area_x_offset) 
         self.lightning_zaps_group.update(current_time) 
@@ -263,45 +341,28 @@ class Drone(BaseDrone):
             rotated_image = pygame.transform.rotate(self.original_image, -self.angle) 
             self.image = rotated_image.convert_alpha() 
             self.image.set_alpha(current_alpha_to_set) 
-            self.rect = self.image.get_rect(center=(int(self.x), int(self.y))) 
-            if self.collision_rect: 
-                self.collision_rect.center = self.rect.center 
-        else: 
-            if self.rect: self.rect.center = (int(self.x), int(self.y)) 
-
-    def _update_movement(self, maze, game_area_x_offset): 
-        if self.moving_forward and self.alive: 
-            angle_rad = math.radians(self.angle) 
-            dx = math.cos(angle_rad) * self.current_speed 
-            dy = math.sin(angle_rad) * self.current_speed 
-            next_x = self.x + dx 
-            next_y = self.y + dy 
-            temp_collision_rect = self.collision_rect.copy() 
-            temp_collision_rect.center = (next_x, next_y) 
-            collided_wall_type = None 
-            if maze:  
-                collided_wall_type = maze.is_wall(temp_collision_rect.centerx, temp_collision_rect.centery, 
-                                                  self.collision_rect_width, self.collision_rect_height) 
-            if collided_wall_type: 
-                self._handle_wall_collision(collided_wall_type, dx, dy) 
+            if self.rect: 
+                self.rect = self.image.get_rect(center=(int(self.x), int(self.y))) 
+                if self.collision_rect: 
+                    self.collision_rect.center = self.rect.center
             else: 
-                self.x = next_x 
-                self.y = next_y 
-        
-        half_col_width = self.collision_rect_width / 2 
-        half_col_height = self.collision_rect_height / 2 
-        min_x_bound = game_area_x_offset + half_col_width 
-        max_x_bound = WIDTH - half_col_width  
-        min_y_bound = half_col_height 
-        max_y_bound = GAME_PLAY_AREA_HEIGHT - half_col_height 
-        self.x = max(min_x_bound, min(self.x, max_x_bound)) 
-        self.y = max(min_y_bound, min(self.y, max_y_bound)) 
-        if self.rect : self.rect.center = (int(self.x), int(self.y)) 
-        if self.collision_rect : self.collision_rect.center = self.rect.center 
+                self.rect = self.image.get_rect(center=(int(self.x), int(self.y)))
+                if self.collision_rect: 
+                    self.collision_rect.center = self.rect.center
+                 
+        elif self.rect: 
+             self.rect.center = (int(self.x), int(self.y))
+             if self.collision_rect: self.collision_rect.center = self.rect.center
+
 
     def _handle_wall_collision(self, wall_hit_boolean, dx, dy): 
-        if wall_hit_boolean and not self.shield_active and not get_game_setting("PLAYER_INVINCIBILITY", False):  
-            self.take_damage(10, self.crash_sound)  
+        is_invincible_setting = get_game_setting("PLAYER_INVINCIBILITY", False)
+        # print(f"DEBUG PLAYER _handle_wall_collision: wall_hit={wall_hit_boolean}, shield_active={self.shield_active}, setting_invincible={is_invincible_setting}, current_health_before_damage_check={self.health}") 
+        if wall_hit_boolean and not self.shield_active and not is_invincible_setting:
+            # print(f"DEBUG PLAYER _handle_wall_collision: Conditions met for wall collision damage. Calling take_damage(10).")
+            self.take_damage(10, self.crash_sound)
+        # else:
+            # print(f"DEBUG PLAYER _handle_wall_collision: Conditions NOT met for wall damage. wall_hit={wall_hit_boolean}, shield={self.shield_active}, invinc_setting={is_invincible_setting}")
         self.moving_forward = False  
 
     def rotate(self, direction, rotation_speed_override=None): 
@@ -332,7 +393,7 @@ class Drone(BaseDrone):
         if maze:
             if maze.is_wall(raw_bullet_start_x, raw_bullet_start_y, projectile_check_diameter, projectile_check_diameter):
                 max_steps_back = 10 
-                step_dist = nose_offset_factor / max_steps_back 
+                step_dist = nose_offset_factor / max_steps_back if max_steps_back > 0 else 0
                 found_clear_spawn = False
                 for i in range(1, max_steps_back + 1):
                     current_offset = nose_offset_factor - (i * step_dist)
@@ -415,9 +476,12 @@ class Drone(BaseDrone):
                 self.lightning_zaps_group.add(new_zap)
 
     def take_damage(self, amount, sound=None): 
-        # NEW: Check for global invincibility setting
-        if get_game_setting("PLAYER_INVINCIBILITY", False): # Default to False if somehow not set
-            return # Player is invincible, do not take damage
+        is_invincible_setting = get_game_setting("PLAYER_INVINCIBILITY", False)
+        # print(f"DEBUG PLAYER take_damage: Called with amount={amount}. InvincibleSetting: {is_invincible_setting}, ShieldActive: {self.shield_active}, CurrentHealth: {self.health}")
+
+        if is_invincible_setting:
+            # print("DEBUG PLAYER take_damage: Damage prevented by Invincibility setting.")
+            return 
 
         effective_amount = amount
         if self.drone_system and hasattr(self.drone_system, 'get_collected_fragments_ids') and CORE_FRAGMENT_DETAILS:
@@ -426,16 +490,24 @@ class Drone(BaseDrone):
                 if frag_conf and frag_conf.get("buff_alt", {}).get("type") == "damage_reduction":
                     effective_amount *= (1.0 - frag_conf["buff_alt"]["value"])
         
-        if not self.alive or self.shield_active: 
-            if self.shield_active and effective_amount > 0 :  
-                if sound: sound.play()  
+        # print(f"DEBUG PLAYER take_damage: Effective amount after fragment reduction (if any): {effective_amount}")
+        
+        if not self.alive:
+            # print("DEBUG PLAYER take_damage: Player already not alive. Returning.")
+            return
+        if self.shield_active: 
+            # print("DEBUG PLAYER take_damage: Damage prevented by shield.")
+            if sound: sound.play()  
             return 
+            
         self.health -= effective_amount 
+        # print(f"DEBUG PLAYER take_damage: Health after damage: {self.health}")
         if sound: 
             sound.play() 
         if self.health <= 0: 
             self.health = 0 
             self.alive = False 
+            # print("DEBUG PLAYER take_damage: Player died.")
 
     def activate_shield(self, duration, is_from_speed_boost=False):
         self.shield_active = True
@@ -458,8 +530,8 @@ class Drone(BaseDrone):
         if self.active_powerup_type == "speed_boost" and not self.speed_boost_active and self.moving_forward: 
             self.speed_boost_active = True 
             self.speed_boost_end_time = pygame.time.get_ticks() + self.speed_boost_duration 
-            self.original_speed_before_boost = self.speed 
-            self.current_speed = self.speed * self.speed_boost_multiplier 
+            self.original_speed_before_boost = self.current_speed 
+            self.current_speed = self.current_speed * self.speed_boost_multiplier 
             self.activate_shield(self.speed_boost_duration, is_from_speed_boost=True)
 
     def try_activate_cloak(self, current_time): 
@@ -489,7 +561,7 @@ class Drone(BaseDrone):
 
         if self.speed_boost_active and current_time_ms > self.speed_boost_end_time: 
             self.speed_boost_active = False 
-            self.current_speed = self.speed  # Reset to original speed (should be self.original_speed_before_boost or just self.base_speed)
+            self.current_speed = self.original_speed_before_boost 
             if self.active_powerup_type == "speed_boost": self.active_powerup_type = None 
             if self.shield_tied_to_speed_boost: 
                 self.shield_active = False
@@ -523,6 +595,7 @@ class Drone(BaseDrone):
         self.speed = self.base_speed 
         self.current_speed = self.speed 
         self.rotation_speed = self.base_turn_speed
+        self.original_speed_before_boost = self.speed 
 
         if previous_drone_id != self.drone_id or \
            not self.original_image or \
@@ -543,6 +616,8 @@ class Drone(BaseDrone):
             self.rect.center = (int(self.x), int(self.y))
 
         if self.rect: 
+            self.drone_visual_size = self.rect.size 
+            self.flame_port_offset_distance = self.drone_visual_size[1] * 0.4
             self.collision_rect_width = self.rect.width * 0.7
             self.collision_rect_height = self.rect.height * 0.7
             self.collision_rect = pygame.Rect(0,0, self.collision_rect_width, self.collision_rect_height)
@@ -572,13 +647,14 @@ class Drone(BaseDrone):
         self.shield_end_time = 0 
         self.speed_boost_active = False 
         self.speed_boost_end_time = 0 
-        self.current_speed = self.speed  
-        self.original_speed_before_boost = self.speed 
+        self.current_speed = self.base_speed  
+        self.original_speed_before_boost = self.base_speed 
         self.cloak_active = False 
         self.is_cloaked_visual = False 
         self.cloak_end_time = 0 
         self.active_powerup_type = None 
-        self.thrust_particles.clear()
+        self.thrust_particles.empty() 
+        # self.shield_spark_particles.empty() # Removed as shield_spark_particles attribute is removed
         self.shield_tied_to_speed_boost = False
 
 
@@ -586,50 +662,38 @@ class Drone(BaseDrone):
         return (self.x, self.y) 
 
     def draw(self, surface): 
-        if not self.alive and not self.bullets_group and not self.missiles_group and not self.lightning_zaps_group:  
+        # Corrected conditional check
+        if not self.alive and not self.bullets_group and not self.missiles_group and not self.lightning_zaps_group and not self.thrust_particles:  
             return 
         
-        for p in self.thrust_particles:
-            if p['size'] > 0:
-                draw_color = p.get('current_draw_color', p['color']) 
-                if len(draw_color) == 3: 
-                    draw_color = (*draw_color, 255) 
-                
-                particle_radius = max(1, int(p['size']))
-                temp_surf_size = particle_radius * 2
-                if temp_surf_size > 0:
-                    temp_particle_surf = pygame.Surface((temp_surf_size, temp_surf_size), pygame.SRCALPHA)
-                    pygame.draw.circle(temp_particle_surf, draw_color, (particle_radius, particle_radius), particle_radius)
-                    surface.blit(temp_particle_surf, (int(p['pos'][0]) - particle_radius, int(p['pos'][1]) - particle_radius))
+        self.thrust_particles.draw(surface) 
 
         if self.alive and self.image and self.original_image:  
+            surface.blit(self.image, self.rect) 
+
             if self.shield_active:
                 current_time = pygame.time.get_ticks()
-                pulse_factor = (math.sin(current_time * 0.008 + self.shield_glow_pulse_time_offset) + 1) / 2 
-                glow_alpha = int(80 + pulse_factor * 70) 
-                glow_scale = 1.25 + (pulse_factor * 0.15) 
-                glow_color_tuple = POWERUP_TYPES.get("shield", {}).get("color", LIGHT_BLUE)
+                pulse_factor = (math.sin(current_time * 0.012 + self.shield_glow_pulse_time_offset) + 1) / 2 
                 
-                glow_width = int(self.original_image.get_width() * glow_scale)
-                glow_height = int(self.original_image.get_height() * glow_scale)
+                shield_alpha = int(180 + pulse_factor * 75) 
+                shield_color_tuple = POWERUP_TYPES.get("shield", {}).get("color", LIGHT_BLUE)
+                final_shield_color = (*shield_color_tuple[:3], shield_alpha)
                 
-                if glow_width > 0 and glow_height > 0: 
-                    scaled_drone_for_glow_shape = pygame.transform.smoothscale(self.original_image, (glow_width, glow_height))
-                    try:
-                        glow_shape_mask = pygame.mask.from_surface(scaled_drone_for_glow_shape)
-                        glow_shape_surface = glow_shape_mask.to_surface(setcolor=glow_color_tuple, unsetcolor=(0,0,0,0))
-                        glow_shape_surface.set_alpha(glow_alpha)
-                        rotated_glow_shape = pygame.transform.rotate(glow_shape_surface, -self.angle)
-                        glow_rect = rotated_glow_shape.get_rect(center=self.rect.center)
-                        surface.blit(rotated_glow_shape, glow_rect)
-                    except pygame.error: 
-                        fallback_glow_radius = (self.rect.width / 2) * glow_scale
-                        if fallback_glow_radius > 0:
-                            fallback_glow_surface = pygame.Surface((fallback_glow_radius * 2, fallback_glow_radius * 2), pygame.SRCALPHA)
-                            pygame.draw.circle(fallback_glow_surface, (*glow_color_tuple[:3], glow_alpha), 
-                                            (fallback_glow_radius, fallback_glow_radius), fallback_glow_radius)
-                            surface.blit(fallback_glow_surface, fallback_glow_surface.get_rect(center=self.rect.center))
-            surface.blit(self.image, self.rect) 
+                try:
+                    # Ensure self.image is valid before creating a mask
+                    if self.image.get_width() > 0 and self.image.get_height() > 0:
+                        drone_mask = pygame.mask.from_surface(self.image)
+                        outline_points = drone_mask.outline(1) 
+
+                        if outline_points:
+                            screen_outline_points = [(p[0] + self.rect.left, p[1] + self.rect.top) for p in outline_points]
+                            
+                            line_thickness = int(2 + pulse_factor * 2) 
+                            pygame.draw.polygon(surface, final_shield_color, screen_outline_points, line_thickness)
+                    else:
+                        print("Warning (Player.draw): self.image has zero dimension, cannot create mask for shield.")
+                except pygame.error as e:
+                    print(f"Error creating mask or drawing shield outline: {e}")
         
         self.bullets_group.draw(surface) 
         self.missiles_group.draw(surface) 

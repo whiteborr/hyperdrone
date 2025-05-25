@@ -16,7 +16,6 @@ from .enemy_manager import EnemyManager
 from ui import UIManager 
 from entities import ( 
     PlayerDrone,
-    # Enemy, # Enemy class is used by EnemyManager, not directly by GameController for groups
     Ring,
     WeaponUpgradeItem,
     ShieldItem,
@@ -25,7 +24,8 @@ from entities import (
     LightningZap,
     Particle, 
     MazeGuardian, 
-    SentinelDrone 
+    SentinelDrone,
+    EscapeZone 
 )
 from entities.maze import Maze 
 
@@ -87,6 +87,10 @@ class GameController:
         self.explosion_particles = pygame.sprite.Group() 
         self.maze_guardian = None 
         self.boss_active = False 
+        
+        self.escape_zone = None 
+        self.escape_zone_group = pygame.sprite.GroupSingle()
+
 
         self.score = 0 
         self.level = 1 
@@ -309,8 +313,13 @@ class GameController:
         self.player_name_input_display_cache = "" 
 
     def initialize_game_session(self): 
+        print("DEBUG: Initializing new game session...")
         if self.drone_system:
             self.drone_system.reset_collected_fragments_in_storage() 
+            self.drone_system.reset_architect_vault_status() 
+            self.drone_system._save_unlocks() 
+            print(f"DEBUG INIT: Vault completed status after reset: {self.drone_system.has_completed_architect_vault()}")
+
 
         self.level = 1 
         self.lives = gs.get_game_setting("PLAYER_LIVES") 
@@ -319,6 +328,9 @@ class GameController:
         self.level_cleared_pending_animation = False 
         self.all_enemies_killed_this_level = False 
         self.explosion_particles.empty()
+        
+        if self.escape_zone: self.escape_zone.kill(); self.escape_zone = None
+
 
         self.maze = Maze(game_area_x_offset=0, maze_type="standard") 
         player_start_pos = self._get_safe_spawn_point(TILE_SIZE * 0.8, TILE_SIZE * 0.8) 
@@ -371,6 +383,8 @@ class GameController:
         self.explosion_particles.empty()
         self.maze_guardian = None 
         self.boss_active = False
+        if self.escape_zone: self.escape_zone.kill(); self.escape_zone = None
+
 
         prev_weapon_mode_idx = WEAPON_MODES_SEQUENCE.index(gs.get_game_setting("INITIAL_WEAPON_MODE")) 
         prev_current_weapon_mode = gs.get_game_setting("INITIAL_WEAPON_MODE") 
@@ -436,27 +450,74 @@ class GameController:
         self.architect_vault_message_timer = pygame.time.get_ticks() + 3000 
 
     def start_architect_vault_extraction(self): 
+        print("DEBUG: start_architect_vault_extraction called")
         self.architect_vault_current_phase = "extraction" 
         self.architect_vault_phase_timer_start = pygame.time.get_ticks() 
         self.play_sound('vault_alarm', 0.7) 
-        self.architect_vault_message = "SELF-DESTRUCT SEQUENCE ACTIVATED! ESCAPE NOW!" 
+        self.architect_vault_message = "SELF-DESTRUCT SEQUENCE ACTIVATED! REACH THE EXTRACTION POINT!" 
+        
+        if self.maze and self.player:
+            spawn_attempts = 0
+            max_attempts = 10
+            min_dist_from_player = TILE_SIZE * 5 
+            
+            zone_x, zone_y = None, None
+            path_cells = self.maze.get_path_cells() 
+            if path_cells:
+                random.shuffle(path_cells) 
+                for rel_x, rel_y in path_cells:
+                    abs_x = rel_x + self.maze.game_area_x_offset
+                    abs_y = rel_y
+                    if math.hypot(abs_x - self.player.x, abs_y - self.player.y) > min_dist_from_player:
+                        zone_x, zone_y = abs_x, abs_y
+                        break
+                    spawn_attempts +=1
+                    if spawn_attempts >= max_attempts : break 
+            
+            if zone_x is None or zone_y is None: 
+                if path_cells: 
+                    rel_x, rel_y = random.choice(path_cells)
+                    zone_x = rel_x + self.maze.game_area_x_offset
+                    zone_y = rel_y
+                else: 
+                    zone_x, zone_y = WIDTH / 2, GAME_PLAY_AREA_HEIGHT / 2
+                    print("WARNING: No path cells found for escape zone, placing at center.")
+
+
+            if zone_x is not None and zone_y is not None:
+                self.escape_zone = EscapeZone(zone_x, zone_y)
+                self.escape_zone_group.add(self.escape_zone)
+                print(f"DEBUG: Escape zone spawned at ({zone_x}, {zone_y})")
+            else:
+                print("ERROR: Could not determine spawn location for escape zone!")
+                self.escape_zone = None
+
+
         self.level_time_remaining_ms = gs.get_game_setting("ARCHITECT_VAULT_EXTRACTION_TIMER_MS") 
-        self.architect_vault_message_timer = pygame.time.get_ticks() + self.level_time_remaining_ms 
+        self.architect_vault_message_timer = pygame.time.get_ticks() + 5000 
+        print(f"DEBUG: Extraction started. Timer: {self.level_time_remaining_ms}ms. Escape zone: {self.escape_zone}")
 
     def handle_architect_vault_success_scene(self): 
+        print("DEBUG: handle_architect_vault_success_scene called")
         self.architect_vault_message = "Vault Conquered! Blueprint Acquired!" 
-        self.architect_vault_message_timer = pygame.time.get_ticks() + 5000 
+        self.architect_vault_message_timer = pygame.time.get_ticks() + 3000 
         self.drone_system.mark_architect_vault_completed(True) 
         self.score += 2500 
         self.drone_system.add_player_cores(500) 
         self.drone_system._save_unlocks() 
+        if self.escape_zone: self.escape_zone.kill(); self.escape_zone = None 
+        
+        print("Architect Vault Success: Preparing for next standard level.")
+        self._prepare_for_next_level(from_bonus_level_completion=False)
 
     def handle_architect_vault_failure_scene(self): 
         self.architect_vault_message = f"Vault Mission Failed: {self.architect_vault_failure_reason}" 
         self.architect_vault_message_timer = pygame.time.get_ticks() + 5000 
         self.drone_system.mark_architect_vault_completed(False) 
+        if self.escape_zone: self.escape_zone.kill(); self.escape_zone = None 
 
     def handle_game_over_scene_entry(self): 
+        if self.escape_zone: self.escape_zone.kill(); self.escape_zone = None 
         self.drone_system.set_player_level(self.level) 
         self.drone_system._save_unlocks() 
 
@@ -557,12 +618,15 @@ class GameController:
             self.scene_manager.set_game_state(GAME_STATE_MAIN_MENU); return 
         if not self.player.alive: 
             self.architect_vault_failure_reason = "Drone critically damaged." 
+            if self.escape_zone: self.escape_zone.kill(); self.escape_zone = None
             self.scene_manager.set_game_state(GAME_STATE_ARCHITECT_VAULT_FAILURE) 
             return 
         if self.paused: return 
         
         self.player.update(current_time, self.maze, self.enemy_manager.get_sprites(), 0) 
         self.explosion_particles.update()
+        if self.escape_zone_group: self.escape_zone_group.update()
+
 
         current_phase = self.architect_vault_current_phase 
         player_pixel_pos = self.player.get_position() if self.player and self.player.alive else None
@@ -607,9 +671,16 @@ class GameController:
                 self.enemy_manager.update_all(player_pixel_pos, self.maze, current_time, 0) 
                 self._check_collisions_architect_vault_combat()
             elif self.boss_active and self.maze_guardian and not self.maze_guardian.alive: 
+                print(f"DEBUG (Boss Fight Update): Boss defeated. Message: '{self.architect_vault_message}', Timer ends: {self.architect_vault_message_timer}, Current time: {current_time}")
                 if self.architect_vault_message == "MAZE GUARDIAN DEFEATED! ACCESS GRANTED!":
-                    if current_time > self.architect_vault_message_timer:
+                    if current_time > self.architect_vault_message_timer: 
+                        print("DEBUG (Boss Fight Update): Transitioning to EXTRACTION")
                         self.scene_manager.set_game_state(GAME_STATE_ARCHITECT_VAULT_EXTRACTION)
+                        self.boss_active = False 
+                        if self.maze_guardian: self.maze_guardian.kill(); self.maze_guardian = None
+            elif not self.boss_active and not self.maze_guardian: 
+                 pass
+
 
         elif current_phase == "gauntlet_cleared_transition": 
             if current_time - self.architect_vault_phase_timer_start > 2000: 
@@ -617,9 +688,22 @@ class GameController:
         elif current_phase == "extraction": 
             time_elapsed_extraction = current_time - self.architect_vault_phase_timer_start 
             self.level_time_remaining_ms = max(0, gs.get_game_setting("ARCHITECT_VAULT_EXTRACTION_TIMER_MS") - time_elapsed_extraction) 
+            
+            if self.escape_zone and self.player and self.player.rect.colliderect(self.escape_zone.rect):
+                print("DEBUG: Player reached escape zone!")
+                self.scene_manager.set_game_state(GAME_STATE_ARCHITECT_VAULT_SUCCESS)
+                if self.escape_zone: self.escape_zone.kill(); self.escape_zone = None
+                self.boss_active = False 
+                return
+
             if self.level_time_remaining_ms <= 0: 
-                self.scene_manager.set_game_state(GAME_STATE_ARCHITECT_VAULT_SUCCESS) 
+                print("DEBUG: Extraction timer ran out before reaching escape zone!")
+                self.architect_vault_failure_reason = "Extraction Failed: Time Expired."
+                self.scene_manager.set_game_state(GAME_STATE_ARCHITECT_VAULT_FAILURE)
+                if self.escape_zone: self.escape_zone.kill(); self.escape_zone = None
+                self.boss_active = False 
                 return 
+                
             if random.random() < 0.008 : 
                  if self.enemy_manager.get_active_enemies_count() < 3: 
                      self.enemy_manager.spawn_prototype_drones(1, far_from_player=True) 
@@ -685,6 +769,7 @@ class GameController:
                                 'id': fragment_id 
                             })
                 if self.drone_system.are_all_core_fragments_collected(): 
+                    print("DEBUG: All fragments collected, setting vault message.")
                     self.architect_vault_message = "All Core Fragments Acquired! Vault Access Imminent!" 
                     self.architect_vault_message_timer = pygame.time.get_ticks() + 4000
         
@@ -821,6 +906,7 @@ class GameController:
         if self.player: self.player.reset_active_powerups() 
         self.lives -= 1 
         if self.lives <= 0: 
+            if self.escape_zone: self.escape_zone.kill(); self.escape_zone = None
             self.scene_manager.set_game_state(GAME_STATE_GAME_OVER) 
         else: 
             self._reset_player_after_death_internal() 
@@ -834,26 +920,49 @@ class GameController:
             print("Level clear condition met (rings). Pending animation.") 
 
     def _prepare_for_next_level(self, from_bonus_level_completion=False): 
+        print(f"DEBUG PREPARE_LEVEL: Called. from_bonus: {from_bonus_level_completion}, Current Lvl: {self.level}, Rings: {self.collected_rings}/{self.total_rings_per_level}, Vault Completed: {self.drone_system.has_completed_architect_vault()}, Fragments: {self.drone_system.get_collected_fragments_ids()} (Need {gs.TOTAL_CORE_FRAGMENTS_NEEDED})")
         self.explosion_particles.empty()
+        if self.escape_zone: self.escape_zone.kill(); self.escape_zone = None 
         
         if self.player and not self.player.alive and self.lives > 0:
             print("GameController: Player won the level but was destroyed. Reviving for next level transition.")
             self.player.health = self.player.max_health 
             self.player.alive = True 
 
-        if self.drone_system.are_all_core_fragments_collected() and \
-           not self.drone_system.has_completed_architect_vault() and \
-           not from_bonus_level_completion: 
-            if not self.boss_active or (self.boss_active and self.maze_guardian and not self.maze_guardian.alive): 
-                 self.scene_manager.set_game_state(GAME_STATE_ARCHITECT_VAULT_INTRO) 
-            return 
+        all_fragments_collected = self.drone_system.are_all_core_fragments_collected()
+        vault_not_completed_yet = not self.drone_system.has_completed_architect_vault()
         
-        if not from_bonus_level_completion: 
+        should_trigger_vault = (
+            not from_bonus_level_completion and 
+            all_fragments_collected and 
+            vault_not_completed_yet and
+            (not self.boss_active or (self.boss_active and self.maze_guardian and not self.maze_guardian.alive)) and
+            not self.scene_manager.get_current_state().startswith("architect_vault") 
+        )
+        print(f"DEBUG PREPARE_LEVEL: Should trigger vault? {should_trigger_vault}")
+        print(f"  - from_bonus_level_completion: {from_bonus_level_completion}")
+        print(f"  - all_fragments_collected: {all_fragments_collected}")
+        print(f"  - vault_not_completed_yet: {vault_not_completed_yet}")
+        print(f"  - boss_active: {self.boss_active}, maze_guardian: {self.maze_guardian}, guardian_alive: {self.maze_guardian.alive if self.maze_guardian else 'N/A'}")
+        print(f"  - current_state starts with architect_vault: {self.scene_manager.get_current_state().startswith('architect_vault')}")
+
+
+        if should_trigger_vault:
+            print("GameController: Conditions met for Architect's Vault. Setting state to GAME_STATE_ARCHITECT_VAULT_INTRO")
+            self.scene_manager.set_game_state(GAME_STATE_ARCHITECT_VAULT_INTRO)
+            return 
+
+        if not from_bonus_level_completion:
             self.level += 1 
+            print(f"DEBUG: Incremented level to: {self.level}")
+        else:
+            print(f"DEBUG: Returning to level {self.level} after bonus level.")
+        
         self.collected_rings = 0 
         self.displayed_collected_rings = 0 
         self.total_rings_per_level = min(self.total_rings_per_level + 1, 15) 
         self.drone_system.set_player_level(self.level) 
+
         if self.player: 
             self.player.health = min(self.player.health + 25, self.player.max_health) 
             new_player_pos = self._get_safe_spawn_point(TILE_SIZE * 0.8, TILE_SIZE * 0.8) 
@@ -865,9 +974,10 @@ class GameController:
                               drone_id=current_drone_id, drone_stats=current_drone_stats,
                               drone_sprite_path=current_ingame_sprite,
                               preserve_weapon=True) 
+        
         self.all_enemies_killed_this_level = False 
         self.maze = Maze(game_area_x_offset=0, maze_type="standard") 
-        self.enemy_manager.spawn_enemies_for_level(self.level)
+        self.enemy_manager.spawn_enemies_for_level(self.level) 
         self.core_fragments.empty() 
         self._place_collectibles_for_level(initial_setup=True) 
         self._reset_level_timer_internal() 
@@ -875,12 +985,15 @@ class GameController:
         self.animating_rings.clear() 
         self.animating_fragments.clear() 
         if self.player: self.player.moving_forward = False 
-        if not self.scene_manager.get_current_state().startswith("architect_vault"): 
-            self.scene_manager.set_game_state(GAME_STATE_PLAYING) 
+        
+        print(f"DEBUG: Setting game state to PLAYING for level {self.level}")
+        self.scene_manager.set_game_state(GAME_STATE_PLAYING) 
 
     def _reset_player_after_death_internal(self): 
         if not self.player: return 
         self.explosion_particles.empty()
+        if self.escape_zone: self.escape_zone.kill(); self.escape_zone = None 
+
         new_player_pos = self._get_safe_spawn_point(TILE_SIZE * 0.8, TILE_SIZE * 0.8) 
         current_drone_id = self.player.drone_id 
         
@@ -918,6 +1031,7 @@ class GameController:
     def _end_bonus_level(self, completed=True): 
         print(f"GameController: Bonus Level Ended. Completed: {completed}") 
         self.explosion_particles.empty()
+        if self.escape_zone: self.escape_zone.kill(); self.escape_zone = None 
         if completed: 
             self.score += 500 
             self.drone_system.add_player_cores(250) 
@@ -936,10 +1050,16 @@ class GameController:
         for spawn_x_rel, spawn_y_rel in path_cells_relative: 
             abs_x = spawn_x_rel + self.maze.game_area_x_offset 
             abs_y = spawn_y_rel 
+            
             if self.player and math.hypot(abs_x - self.player.x, abs_y - self.player.y) < TILE_SIZE * 4:
                 continue
+            
             if any(math.hypot(abs_x - e.x, abs_y - e.y) < TILE_SIZE * 2 for e in self.enemy_manager.get_sprites()):
                 continue
+
+            if self.escape_zone and math.hypot(abs_x - self.escape_zone.rect.centerx, abs_y - self.escape_zone.rect.centery) < TILE_SIZE * 3 :
+                continue
+
             if not self.maze.is_wall(abs_x, abs_y, entity_width, entity_height):
                 return (abs_x, abs_y) 
 
@@ -963,13 +1083,11 @@ class GameController:
         print("MAZE_GUARDIAN spawned!")
     
     def _maze_guardian_defeated(self):
-        print("GameController: MAZE_GUARDIAN has been defeated!")
-        self.boss_active = False
+        print("DEBUG: _maze_guardian_defeated called.")
         if self.maze_guardian:
-            self.maze_guardian.kill() 
-            self.maze_guardian = None 
+            self.maze_guardian.alive = False 
         
-        self.enemy_manager.reset_all()
+        self.enemy_manager.reset_all() 
         
         self.score += 5000 
         self.drone_system.add_player_cores(1500) 
@@ -982,7 +1100,7 @@ class GameController:
             if self.drone_system.collect_core_fragment(vault_core_id):
                 if hasattr(self.ui_manager, 'get_scaled_fragment_icon') and vault_core_id in self.ui_manager.ui_assets["core_fragment_icons"]:
                     icon_surface = self.ui_manager.ui_assets["core_fragment_icons"][vault_core_id]
-                    target_pos = self.fragment_ui_target_positions.get(vault_core_id) # Corrected access
+                    target_pos = self.fragment_ui_target_positions.get(vault_core_id) 
                     if target_pos:
                         self.animating_fragments.append({
                             'pos': list(self.player.rect.center), 
@@ -993,7 +1111,9 @@ class GameController:
                         })
         
         self.architect_vault_message = "MAZE GUARDIAN DEFEATED! ACCESS GRANTED!"
-        self.architect_vault_message_timer = pygame.time.get_ticks() + 4000
+        self.architect_vault_message_timer = pygame.time.get_ticks() + 4000 
+        print(f"DEBUG: Maze Guardian defeated message set. Timer ends at: {self.architect_vault_message_timer}")
+
 
     def _spawn_architect_vault_terminals(self): 
         self.architect_vault_terminals.empty() 
@@ -1309,6 +1429,7 @@ class GameController:
         self.rings.draw(self.screen) 
         self.power_ups.draw(self.screen) 
         self.core_fragments.draw(self.screen) 
+        self.escape_zone_group.draw(self.screen) 
         
         if current_game_state == GAME_STATE_ARCHITECT_VAULT_ENTRY_PUZZLE: 
             self.architect_vault_terminals.draw(self.screen) 
