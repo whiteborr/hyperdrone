@@ -123,7 +123,7 @@ DRONE_DATA = {
             "bullet_damage_multiplier": 1.0, #
             "special_ability": "phantom_cloak" #
         },
-        "unlock_condition": {"type": "cores", "value": 50000, "description": "Unlock: 50000 Cores"}, #
+        "unlock_condition": {"type": "cores", "value": 50, "description": "Unlock: 50000 Cores"}, #
         "description": "Features a shimmer-based cloaking device. Can briefly turn invisible but is delicate.", #
     },
     # Ensure ARCHITECT_REWARD_BLUEPRINT_ID is correctly used from imported game_settings

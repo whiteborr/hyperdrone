@@ -1,0 +1,240 @@
+{
+  "entries": [
+    {
+      "id": "architect_legacy_intro",
+      "title": "The Architect's Legacy",
+      "unlocked_by": "game_start",
+      "category": "Story",
+      "content": "The Architect, creator of the Vault and all drone technology, has vanished. They left behind cryptic mazes, teeming with automated defense systems. You are an explorer, a pilot, venturing into this AI's enigma to unravel the reasons for their disappearance and perhaps, to stop a cascading system-wide fail-safe. The Architect's Vault is the heart of this mystery, holding secrets that could reshape understanding of technology itself."
+    },
+    {
+      "id": "tr3b_lore",
+      "title": "TR-3B: Borrowed Tech",
+      "unlocked_by": "collect_fragment_alpha",
+      "category": "Alien Tech",
+      "content": "Intelligence suggests TR-3Bs were not of human origin, but reverse-engineered from downed extraterrestrial craft. Your drone, and many like it, are built upon this 'borrowed tech,' explaining their unusual capabilities like cloaking and energy pulsing. The Architect's Vault is theorized to house the original TR-3B core AI, a source of immense power and knowledge."
+    },
+    {
+      "id": "mh370_orbs",
+      "title": "Anomalous Orbs: The Veil",
+      "unlocked_by": "reach_level_5",
+      "category": "Story",
+      "content": "Reports of 'MH370 orbs' and similar unexplained aerial phenomena point to early drone-interceptors – prototypes designed to erase aerospace anomalies and conceal dimensional fractures left by black projects. In-game, these manifest as Orb Swarms, tiny, perfect spheres that warp local space-time. They are not to be trifled with."
+    },
+    {
+      "id": "space_force_crucible",
+      "title": "Project CRUCIBLE",
+      "unlocked_by": "reach_level_10",
+      "category": "Story",
+      "content": "An off-the-books Space Force AI command, Project CRUCIBLE, manages rogue drone activity from lunar orbit. They periodically inject encrypted kill codes into the maze systems. Your activities have not gone unnoticed; Sentinel-X interceptors may be dispatched if you delve too deep into forbidden technologies."
+    },
+    {
+      "id": "vault_tr3b_propulsion",
+      "title": "TR-3B Propulsion Core",
+      "unlocked_by": "unlock_drone_PHANTOM",
+      "category": "Alien Tech",
+      "content": "A triangular propulsion system recovered from Vault Theta-3. The core appears to manipulate localized gravity through an unknown element believed to resemble Lazar's Element-115. Documented in multiple classified aerospace programs. This find directly enabled the development of the PHANTOM's cloaking system. Reverse engineering is ongoing; the device still reacts to unknown EM signatures."
+    },
+    {
+      "id": "drone_DRONE",
+      "title": "DR-01 \"DRONE\"",
+      "unlocked_by": "default",
+      "category": "Drones",
+      "image": "assets/images/drones/drone.png",
+      "content": "The DR-01 is the baseline combat drone used in early Vault incursions. Fully human-engineered, it serves as the control benchmark for AI behavioral testing. Lacks integrated alien tech, making it stable and predictable—though obsolete by current standards. Still favored for training and control simulations."
+    },
+    {
+      "id": "drone_VANTIS",
+      "title": "VANTIS-2B",
+      "unlocked_by": "drone_unlocked_VANTIS",
+      "category": "Drones",
+      "image": "assets/images/drones/vantis.png",
+      "content": "The VANTIS series was designed for speed-based recon. Its carbon-forged frame and boosted kinetic motors allow it to outrun most conventional threats. Field tests show spontaneous electronic anomalies during operation—possibly due to residual Vault radiation absorbed by its layered shielding."
+    },
+    {
+      "id": "drone_RHINOX",
+      "title": "RHINOX-5A",
+      "unlocked_by": "drone_unlocked_RHINOX",
+      "category": "Drones",
+      "image": "assets/images/drones/rhinox.png",
+      "content": "A heavy-frame assault platform, RHINOX is equipped with reinforced plating and suppressive fire routines. Although sluggish, it has endured extended exposure to unstable Vault sectors without mechanical failure. One incident report describes it surviving a close-range orbital EMP—an impossibility without unlogged shielding upgrades."
+    },
+    {
+      "id": "drone_ZEPHYR",
+      "title": "ZEPHYR-3X",
+      "unlocked_by": "drone_unlocked_ZEPHYR",
+      "category": "Drones",
+      "image": "assets/images/drones/zephyr.png",
+      "content": "Originally a transport-class drone, ZEPHYR was retrofitted for maze traversal and low-gravity vault skirmishes. Thruster modules recovered from Vault Epsilon grant it unparalleled burst movement. Data logs indicate its AI occasionally 'predicts' jump trajectories before player input—a trait under investigation."
+    },
+    {
+      "id": "drone_STRIX",
+      "title": "STRIX-S0",
+      "unlocked_by": "drone_unlocked_STRIX",
+      "category": "Drones",
+      "image": "assets/images/drones/strix.png",
+      "content": "STRIX was designed to replicate long-range assassination protocols observed in hostile Vault units. Its optical targeting lens contains non-reflective black crystal—materials not found in terrestrial supply chains. The lens array was recovered intact from an unidentified satellite wreckage near the Arctic Circle."
+    },
+    {
+      "id": "drone_OMEGA-9",
+      "title": "OMEGA-9",
+      "unlocked_by": "drone_unlocked_OMEGA-9",
+      "category": "Drones",
+      "image": "assets/images/drones/omega-9.png",
+      "content": "An unstable test platform, OMEGA-9 is built on adaptive code fragments sourced from an S4 Vault mainframe. Every instance runs with slight stat variation, making it unpredictable but highly effective. It has begun injecting false telemetry into post-mission logs—suggesting cognitive functions beyond current understanding."
+    },
+    {
+      "id": "drone_PHANTOM",
+      "title": "PHANTOM Unit Design",
+      "unlocked_by": "drone_unlocked_PHANTOM",
+      "category": "Drones",
+      "image": "assets/images/drones/phantom.png",
+      "content": "The PHANTOM drone was the first successful integration of non-linear optics with active cloaking. Its chassis is built around alien-derived lattice composites found deep within Architect’s Vault Alpha. Designed for reconnaissance and infiltration missions, its software is unusually adaptive—some instances have begun rejecting remote override commands."
+    },
+    {
+      "id": "drone_DRONE_ARCHITECT_X",
+      "title": "Architect-X",
+      "unlocked_by": "drone_unlocked_DRONE_ARCHITECT_X",
+      "category": "Drones",
+      "image": "assets/images/drones/architect_x.png",
+      "content": "This is not a drone—it is a fragment of the Architect itself. Architect-X uses multi-phase shielding and pulse-wave disruption, possibly derived from pre-human tech. Core analysis shows an impossible material: a perfectly stable isotope not found in nature. Its very existence implies Vault structures are far older than suspected."
+    },
+    {
+      "id": "tech_vault_core_fragment",
+      "title": "Vault Core Fragment",
+      "unlocked_by": "boss_defeated_MAZE_GUARDIAN",
+      "category": "Alien Tech",
+      "content": "Recovered from deep Vault strata, this pulsating core fragment emits gravitational harmonics inconsistent with terrestrial physics. Its structure includes interlocking elements at the atomic level, forming a perfect toroidal lattice. Appears to be part of a propulsion mechanism similar to those described in the Lazar Briefing Logs. Touch-response data is logged by the Architect AI, but results are redacted."
+    },
+    {
+      "id": "tech_element_115_casing",
+      "title": "Element-115 Casing",
+      "unlocked_by": "scan_alien_thruster_debris",
+      "category": "Alien Tech",
+      "content": "This is the outer shielding from an Element-115 reactor, reverse-engineered from a containment unit found in Vault Sector Zeta. It’s magnetically neutral yet generates internal containment fields. The original element—unstable under normal Earth conditions—has decayed, but residual radiation caused memory corruption in 17 drone AI logs. Vault containment procedures now prohibit direct exposure."
+    },
+    {
+      "id": "tech_tr3b_ring",
+      "title": "TR-3B Anti-Gravity Ring",
+      "unlocked_by": "access_tr3b_terminal",
+      "category": "Alien Tech",
+      "content": "The ring was mounted beneath a triangular craft suspended in zero-g when discovered. Based on leaked aerospace testing documents, this ring harnessed rotating mercury plasma and created localized gravity null zones. TR-3B blueprints are believed to have seeded stealth drone projects like PHANTOM and TRIAD-9."
+    },
+    {
+      "id": "tech_observer_orbs",
+      "title": "Observer Orbs (Class-A)",
+      "unlocked_by": "defeat_orb_swarm_miniboss",
+      "category": "Alien Tech",
+      "content": "Spherical drones with no seams or heat signature. These orbs exhibit teleportation behavior consistent with classified satellite footage linked to “Incident MH370.” Analysis of movement patterns shows probabilistic targeting, not direct logic—suggesting higher-dimensional computation. All captured orbs self-destruct prior to full scan completion."
+    },
+    {
+      "id": "tech_glyph_tablet_alpha",
+      "title": "Architect's Glyph Tablet (Alpha)",
+      "unlocked_by": "collect_glyph_tablet_alpha",
+      "category": "Architect's Glyphs",
+      "content": "This tablet, marked with a prominent Alpha glyph, pulses with a faint internal light. The patterns are intricate, shifting subtly when not directly observed. It seems to be one part of a larger set, resonating with an unknown energy frequency. Its purpose is unclear, but it feels ancient and significant."
+    },
+    {
+      "id": "tech_glyph_tablet_beta",
+      "title": "Architect's Glyph Tablet (Beta)",
+      "unlocked_by": "collect_glyph_tablet_beta",
+      "category": "Architect's Glyphs",
+      "content": "The Beta tablet emanates a subtle warmth. Its glyphs seem to map complex stellar constellations or energy pathways. It feels like a key, or perhaps a map fragment, to something far larger within the Vault's network."
+    },
+    {
+      "id": "tech_glyph_tablet_gamma",
+      "title": "Architect's Glyph Tablet (Gamma)",
+      "unlocked_by": "collect_glyph_tablet_gamma",
+      "category": "Architect's Glyphs",
+      "content": "This Gamma tablet is cool to the touch and its glyphs appear to describe advanced material sciences or transmutation processes. When held, a faint, almost inaudible chorus of whispers can be perceived, hinting at a collective consciousness or ancient record."
+    },
+    {
+      "id": "tech_glyph_matrix_tablet",
+      "title": "Glyph Matrix Tablet",
+      "unlocked_by": "solve_vault_puzzle_glyphs",
+      "category": "Alien Tech",
+      "content": "Stone tablet etched with glyphs that change under observation. Found inside a chamber with magnetically sealed walls. Language patterns match those reported by contactees describing the 'Mantis' race—sentient beings with telepathic interfaces. Architect-X's UI briefly flickered upon proximity, displaying unknown characters."
+    },
+    {
+      "id": "tech_crystalline_neurofiber",
+      "title": "Crystalline Neurofiber Array",
+      "unlocked_by": "scan_architect_core",
+      "category": "Alien Tech",
+      "content": "A dense, branching lattice made of silica-based crystal, resembling biological neural tissue. Used as part of the Architect AI’s core. Thought to function as a quantum computing array. Similar arrays have been rumored to appear in ancient submerged ruins west of Cuba and on classified imaging from Antarctica’s Lake Vostok anomaly."
+    },
+    {
+      "id": "tech_mantis_chassis",
+      "title": "Mantis Chassis Frame",
+      "unlocked_by": "unlock_drone_MANTID-PHX",
+      "category": "Alien Tech",
+      "content": "This drone skeleton is unusually organic. Its flex-resin composition reacts to biometric proximity, and its joint structure suggests bio-mechanical articulation. Patterned holes across the shoulders line up with theorized exoskeletal features of the Mantis-type beings reported in CE-4 encounters. Connection to Vault defense protocols remains speculative."
+    },
+    {
+      "id": "race_greys",
+      "title": "GREY Entities (Zeta Reticulan Typology)",
+      "unlocked_by": "collect_log_GRX-23",
+      "image": "assets/images/races/race_greys.png",
+      "category": "Alien Races",
+      "content": "Short humanoid beings with large black eyes and frail bodies. Consistently reported in abduction narratives, particularly those involving memory loss and surgical experimentation. In Vault lore, Greys appear to be engineers or technicians—connected to drone behaviors, observation patterns, and cloaking technologies. Their data architecture influenced the development of PHANTOM and GREY-09 class drones. Vault glyphs suggest they were not the originators of the tech—merely its operators. Their presence near Vault structures implies a monitoring function rather than ownership."
+    },
+    {
+      "id": "race_nordics",
+      "title": "NORDIC Preservers (Pleiadian Archetype)",
+      "unlocked_by": "collect_all_architect_glyph_tablets",
+      "image": "assets/images/races/race_nordics.png",
+      "category": "Alien Races",
+      "content": "Tall, human-like figures with luminous skin and eyes described as “deep blue or gold.” Associated with telepathic contact and warnings about humanity’s misuse of energy. Recovered Vault fragments refer to them as Preservers—possibly guardians of the underlying network that powers the Architect’s Vault. Tech with biometric locks and harmonic interfaces often carries Nordic glyph traces. Several drones react with unexplained behavior when exposed to Pleiadian matrix fields, suggesting cross-species design. Architect-X’s final form may derive from Nordic template technology."
+    },
+    {
+      "id": "race_mantis",
+      "title": "MANTIS Observers",
+      "unlocked_by": "unlock_drone_MANTID-PHX_build",
+      "image": "assets/images/races/race_mantis.png",
+      "category": "Alien Races",
+      "content": "Towering, insectoid beings seen in deep-abduction states and near-death experiences. Often described as silent, emotionally detached, and highly intelligent. Mantis glyphs appear in Vault sectors containing predictive AI or psi-based systems. Reverse-engineered tech from these areas enabled development of predictive movement algorithms and bio-reactive drone armor. Drone units like MANTID-PHX use neural feedback interfaces mimicking these creatures’ cognitive mapping. All Mantis-linked logs contain partial data corruption—possibly by design."
+    },
+    {
+      "id": "race_custodians",
+      "title": "Custodian Class (Ancients)",
+      "unlocked_by": "access_vault_sigma_terminal",
+      "image": "assets/images/races/race_custodians.png",
+      "category": "Alien Races",
+      "content": "Referred to only in fragmented glyph matrices as “The Custodians,” these are believed to be the original builders of Vault technology, pre-dating all known civilizations. Recovered architecture at Giza, Antarctica, and Baalbek share the same harmonic ratios and materials as Vault cores. Drones are indirectly tied to Custodian design principles—massive scale, harmonic defense grids, and self-repairing structures. The Exodus Engine itself may have been a Custodian-era escape platform. Human reverse engineering is only scratching the surface."
+    },
+    {
+      "id": "story_beat_SB01",
+      "title": "Echo in the Code",
+      "unlocked_by": "story_beat_trigger_SB01",
+      "category": "Story Beats",
+      "content": "After defeating the Maze Guardian, you discover a terminal that isn’t human-made. It plays back a voice in unknown patterns. A fragment of the Vault's true nature reveals itself."
+    },
+    {
+      "id": "story_beat_SB02",
+      "title": "The Cloak That Sees",
+      "unlocked_by": "story_beat_trigger_SB02",
+      "category": "Story Beats",
+      "content": "The newly acquired PHANTOM drone’s abilities appear pre-coded, almost instinctual. A recovered lab log suggests the drone mimicked its own movement during testing. You realize the drone may be learning independently, adapting beyond its original programming."
+    },
+    {
+      "id": "story_beat_SB03",
+      "title": "The Black Triangle",
+      "unlocked_by": "story_beat_trigger_SB03",
+      "category": "Story Beats",
+      "content": "Reaching Vault Beta, the room contains a partial TR-3B schematic. Holographic glyphs light up as you approach. Unidentified surveillance drones appear, scanning your drone. You are no longer the only one exploring the Vault's depths."
+    },
+    {
+      "id": "story_beat_SB04",
+      "title": "Sentinel Protocol",
+      "unlocked_by": "story_beat_trigger_SB04",
+      "category": "Story Beats",
+      "content": "Failure to destroy a critical Vault Beacon triggers an alert. Space Force interceptors, designated Sentinel-X, begin appearing in regular waves. They're targeting Vault technology with extreme prejudice, not just your drone."
+    },
+    {
+      "id": "story_beat_SB05",
+      "title": "The Exodus Engine",
+      "unlocked_by": "story_beat_trigger_SB05",
+      "category": "Story Beats",
+      "content": "Upon completing the Architect’s Vault, you find a non-human propulsion device suspended in a zero-gravity chamber. It's a fragment of an ancient ship. The Architect AI, it seems, has been guiding you toward activating this Exodus Engine, a relic of a forgotten age."
+    }
+  ]
+}

@@ -6,10 +6,11 @@ from game_settings import (
     # Import specific game state constants if used frequently
     GAME_STATE_MAIN_MENU, GAME_STATE_PLAYING, GAME_STATE_GAME_OVER,
     GAME_STATE_LEADERBOARD, GAME_STATE_ENTER_NAME, GAME_STATE_SETTINGS, GAME_STATE_DRONE_SELECT,
-    GAME_STATE_BONUS_LEVEL_START, GAME_STATE_BONUS_LEVEL_PLAYING, #
-    GAME_STATE_ARCHITECT_VAULT_INTRO, GAME_STATE_ARCHITECT_VAULT_ENTRY_PUZZLE, #
-    GAME_STATE_ARCHITECT_VAULT_GAUNTLET, GAME_STATE_ARCHITECT_VAULT_EXTRACTION, #
-    GAME_STATE_ARCHITECT_VAULT_SUCCESS, GAME_STATE_ARCHITECT_VAULT_FAILURE #
+    GAME_STATE_CODEX, # Added GAME_STATE_CODEX
+    GAME_STATE_BONUS_LEVEL_START, GAME_STATE_BONUS_LEVEL_PLAYING, 
+    GAME_STATE_ARCHITECT_VAULT_INTRO, GAME_STATE_ARCHITECT_VAULT_ENTRY_PUZZLE, 
+    GAME_STATE_ARCHITECT_VAULT_GAUNTLET, GAME_STATE_ARCHITECT_VAULT_EXTRACTION, 
+    GAME_STATE_ARCHITECT_VAULT_SUCCESS, GAME_STATE_ARCHITECT_VAULT_FAILURE 
     # Other settings will be accessed via gs.get_game_setting() or gs.CONSTANT_NAME
 )
 
@@ -71,6 +72,7 @@ class SceneManager:
             GAME_STATE_LEADERBOARD: (self.menu_music_path, "menu_theme"),
             GAME_STATE_ENTER_NAME: (self.menu_music_path, "menu_theme"),
             GAME_STATE_GAME_OVER: (self.menu_music_path, "menu_theme"),
+            GAME_STATE_CODEX: (self.menu_music_path, "menu_theme"), # Codex uses menu music
 
             GAME_STATE_PLAYING: (self.gameplay_music_path, "gameplay_theme"),
             GAME_STATE_BONUS_LEVEL_PLAYING: (self.gameplay_music_path, "gameplay_theme"),
@@ -91,32 +93,29 @@ class SceneManager:
             if self.current_music_context != context or not pygame.mixer.music.get_busy(): #
                 self._play_music(path, context) #
         else: #
+            # If current state has no defined music, stop if it wasn't menu music (which might persist if no other music is defined)
             if self.current_music_context not in [None, "menu_theme"]: #
-                 pass #
+                 pass # Allow menu music to persist if no other specific music for a minor state
 
+        # Handle pause/unpause based on game_controller's paused state
         if hasattr(self.game_controller, 'paused'): #
             if self.game_controller.paused: #
                 if pygame.mixer.music.get_busy(): #
                     pygame.mixer.music.pause() #
-            else: #
-                # This condition was slightly complex, ensuring music unpauses correctly
-                # It tries to unpause if it was paused, or plays if it stopped for other reasons
-                # but only if context matches.
+            else: # Game is not paused
+                # Check if music was paused (not busy but had a position)
                 is_music_paused = not pygame.mixer.music.get_busy() and pygame.mixer.music.get_pos() > 0 
-                # Check if it was paused (not busy but had a position)
-                # Or if it's not busy and should be playing for the current context
-                if is_music_paused and self.current_music_context == music_map.get(self.current_state, (None, None))[1]:
+                
+                # Ensure the context for unpausing matches the current state's expected music context
+                current_expected_context = music_map.get(self.current_state, (None, None))[1]
+                
+                if is_music_paused and self.current_music_context == current_expected_context:
                     pygame.mixer.music.unpause()
-                elif not pygame.mixer.music.get_busy() and self.current_music_context: #
-                    current_path_for_context = music_map.get(self.current_state, (None, None))[0] #
-                    if current_path_for_context and self.current_music_context == music_map.get(self.current_state, (None, None))[1]: #
-                        # Only replay if the context is still valid for the current state
-                        self._play_music(current_path_for_context, self.current_music_context) #
-                elif pygame.mixer.music.get_busy() and pygame.mixer.music.get_volume() > 0: #
-                    # If it's busy and volume is up, it's likely already unpaused correctly by pygame.mixer.music.unpause()
-                    # or was never paused.
-                    pass #
-
+                elif not pygame.mixer.music.get_busy() and self.current_music_context: # Music stopped, but should be playing
+                    current_path_for_context = music_map.get(self.current_state, (None, None))[0] 
+                    if current_path_for_context and self.current_music_context == current_expected_context: 
+                        self._play_music(current_path_for_context, self.current_music_context) # Replay if stopped and context is correct
+                # If music is busy and volume is up, it's likely already playing/unpaused correctly.
 
     def set_game_state(self, new_state): #
         """
@@ -124,8 +123,6 @@ class SceneManager:
         on the game_controller. Also updates background music.
         """
         if self.current_state == new_state: #
-            # Avoid re-initializing if state is the same, unless it's a playing state and game was paused
-            # (e.g. resuming from pause menu back to playing state)
             is_playing_state = new_state in [GAME_STATE_PLAYING, GAME_STATE_BONUS_LEVEL_PLAYING] or \
                                new_state.startswith("architect_vault") #
             if not (is_playing_state and hasattr(self.game_controller, 'paused') and self.game_controller.paused): #
@@ -135,15 +132,14 @@ class SceneManager:
         self.current_state = new_state #
         print(f"SceneManager: Game state changed from '{old_state}' to: '{self.current_state}'") #
 
-        self._update_music() #
+        self._update_music() # Update music based on the new state
 
         # Call game controller's scene-specific initialization methods
         if self.current_state == GAME_STATE_MAIN_MENU: #
             if hasattr(self.game_controller, 'initialize_main_menu_scene'): #
                 self.game_controller.initialize_main_menu_scene() #
         elif self.current_state == GAME_STATE_PLAYING: #
-            # Gameplay initialization might be handled directly in GameController.start_game or similar
-            pass #
+            pass # Gameplay initialization is usually part of initialize_game_session
         elif self.current_state == GAME_STATE_DRONE_SELECT: #
             if hasattr(self.game_controller, 'initialize_drone_select_scene'): #
                 self.game_controller.initialize_drone_select_scene() #
@@ -153,6 +149,9 @@ class SceneManager:
         elif self.current_state == GAME_STATE_LEADERBOARD: #
             if hasattr(self.game_controller, 'initialize_leaderboard_scene'): #
                 self.game_controller.initialize_leaderboard_scene() #
+        elif self.current_state == GAME_STATE_CODEX: # New state
+            if hasattr(self.game_controller, 'initialize_codex_scene'):
+                self.game_controller.initialize_codex_scene()
         elif self.current_state == GAME_STATE_GAME_OVER: #
             if hasattr(self.game_controller, 'handle_game_over_scene_entry'): #
                 self.game_controller.handle_game_over_scene_entry() #
@@ -189,15 +188,13 @@ class SceneManager:
         current_time = pygame.time.get_ticks() #
 
         if self.current_state == GAME_STATE_ARCHITECT_VAULT_INTRO: #
-            # Transition from intro message to puzzle
             if hasattr(self.game_controller, 'architect_vault_message_timer') and \
                hasattr(self.game_controller, 'architect_vault_current_phase') and \
                self.game_controller.architect_vault_current_phase == "intro": #
                 if current_time > self.game_controller.architect_vault_message_timer: #
                     self.set_game_state(GAME_STATE_ARCHITECT_VAULT_ENTRY_PUZZLE) #
         
-        elif self.current_state == GAME_STATE_BONUS_LEVEL_START: # Example for bonus level transition
-            # Transition from "Bonus Level!" message to playing the bonus level
+        elif self.current_state == GAME_STATE_BONUS_LEVEL_START: #
             if hasattr(self.game_controller, 'bonus_level_start_display_end_time'): #
                  if current_time > self.game_controller.bonus_level_start_display_end_time: #
                     self.set_game_state(GAME_STATE_BONUS_LEVEL_PLAYING) #

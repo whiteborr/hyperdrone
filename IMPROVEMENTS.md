@@ -4,6 +4,7 @@
 This document outlines potential improvements, new features, and modding ideas for the HYPERDRONE game. It builds upon the existing features and aims to expand the gameplay experience.
 
 ## I. Storyline
+
 ✅ General Story Concepts
 These are narrative frameworks that can tie the game together:
 
@@ -57,6 +58,7 @@ To keep pacing tight:
 - Voice Fragments / AI Messages: From the Architect or rogue drones, to drop exposition mid-run.
 
 Notes:
+
 1. Make it a unified story.
 2. Design unlock triggers (e.g., time survived, special kills, reaching hidden areas).
 3. Create a lore database file (e.g., data/lore_entries.json) and UI panel to show them.
@@ -162,6 +164,7 @@ A map of story beats tied to game levels or unlocks
 
 1. Sample Codex System (JSON Schema + Entry)
 Structure (Codex Data File - codex_entries.json):
+
 ```json
 {
   "entries": [
@@ -182,6 +185,7 @@ Structure (Codex Data File - codex_entries.json):
   ]
 }
 ```
+
 These can load and render these in your UI panel when the player pauses, unlocks content, or enters a “Vault Room.”
 
 ***
