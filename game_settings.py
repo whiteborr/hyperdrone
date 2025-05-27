@@ -324,6 +324,8 @@ GAME_STATE_ARCHITECT_VAULT_EXTRACTION = "architect_vault_extraction"
 GAME_STATE_ARCHITECT_VAULT_SUCCESS = "architect_vault_success"
 GAME_STATE_ARCHITECT_VAULT_FAILURE = "architect_vault_failure"
 
+GAME_STATE_RING_PUZZLE = "ring_puzzle_active"
+
 # ==============================================================================
 # Dynamic Settings Management
 # ==============================================================================

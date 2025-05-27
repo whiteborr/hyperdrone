@@ -3,16 +3,22 @@
     "DRONE",
     "VANTIS",
     "STRIX",
-    "DRONE_ARCHITECT_X"
+    "DRONE_ARCHITECT_X",
+    "ZEPHYR"
   ],
   "selected_drone": "DRONE",
-  "player_level": 1,
+  "player_level": 18,
   "bosses_defeated": [
     "MAZE_GUARDIAN"
   ],
-  "player_cores": 2975,
-  "collected_core_fragments": [],
-  "architect_vault_completed": false,
+  "player_cores": 9675,
+  "collected_core_fragments": [
+    "cf_alpha",
+    "cf_beta",
+    "cf_gamma",
+    "vault_core"
+  ],
+  "architect_vault_completed": true,
   "unlocked_blueprints": [
     "DRONE_ARCHITECT_X"
   ],
@@ -31,7 +37,9 @@
     "tech_glyph_tablet_beta",
     "story_beat_SB03",
     "tech_glyph_tablet_gamma",
-    "race_nordics"
+    "race_nordics",
+    "drone_ZEPHYR",
+    "story_beat_SB04"
   ],
   "collected_glyph_tablet_ids": []
 }
