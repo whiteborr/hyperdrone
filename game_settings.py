@@ -289,7 +289,7 @@ ARCHITECT_VAULT_GAUNTLET_WAVES = 3
 ARCHITECT_VAULT_DRONES_PER_WAVE = [3, 4, 5]
 
 ARCHITECT_REWARD_BLUEPRINT_ID = "DRONE_ARCHITECT_X"
-ARCHITECT_REWARD_LORE_ID = "lore_architect_origin" # As per IMPROVEMENTS.md for Vault completion
+ARCHITECT_REWARD_LORE_ID = "lore_architect_origin"
 
 # ==========================
 # Game Progression & Miscellaneous
@@ -311,7 +311,7 @@ GAME_STATE_LEADERBOARD = "leaderboard_display"
 GAME_STATE_ENTER_NAME = "enter_name"
 GAME_STATE_SETTINGS = "settings_menu"
 GAME_STATE_DRONE_SELECT = "drone_select_menu"
-GAME_STATE_CODEX = "codex_screen" # New game state for Codex
+GAME_STATE_CODEX = "codex_screen"
 
 GAME_STATE_BONUS_LEVEL_TRANSITION = "bonus_level_transition"
 GAME_STATE_BONUS_LEVEL_START = "bonus_level_start"
@@ -323,6 +323,8 @@ GAME_STATE_ARCHITECT_VAULT_GAUNTLET = "architect_vault_gauntlet"
 GAME_STATE_ARCHITECT_VAULT_EXTRACTION = "architect_vault_extraction"
 GAME_STATE_ARCHITECT_VAULT_SUCCESS = "architect_vault_success"
 GAME_STATE_ARCHITECT_VAULT_FAILURE = "architect_vault_failure"
+
+GAME_STATE_RING_PUZZLE = "ring_puzzle_active"
 
 # ==============================================================================
 # Dynamic Settings Management

@@ -14,6 +14,14 @@
       "category": "Alien Tech",
       "content": "Intelligence suggests TR-3Bs were not of human origin, but reverse-engineered from downed extraterrestrial craft. Your drone, and many like it, are built upon this 'borrowed tech,' explaining their unusual capabilities like cloaking and energy pulsing. The Architect's Vault is theorized to house the original TR-3B core AI, a source of immense power and knowledge."
     },
+  {
+    "id": "lore_element115_casing_opened",
+    "title": "E-115 Casing: Contents Analyzed",
+    "unlocked_by": "element115_puzzle_solved",
+    "category": "Alien Tech",
+    "image": "assets/images/lore/element_115_core.png",
+    "content": "The intricate locking mechanism yields. Inside the casing, trace amounts of a highly unstable isotope are detected, along with data fragments hinting at its use as a potent energy source for advanced propulsion or weaponry. The full implications are yet to be understood, but the energy signature is unlike anything known. Further research is required."
+  },
     {
       "id": "mh370_orbs",
       "title": "Anomalous Orbs: The Veil",
