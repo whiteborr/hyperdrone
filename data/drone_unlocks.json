@@ -1,43 +1,23 @@
 {
   "unlocked_drones": [
     "DRONE",
-    "VANTIS",
-    "STRIX",
-    "DRONE_ARCHITECT_X",
-    "ZEPHYR",
-    "PHANTOM"
+    "VANTIS"
   ],
-  "selected_drone": "DRONE_ARCHITECT_X",
-  "player_level": 1,
-  "bosses_defeated": [
-    "MAZE_GUARDIAN"
+  "selected_drone": "DRONE",
+  "player_level": 3,
+  "bosses_defeated": [],
+  "player_cores": 190,
+  "collected_core_fragments": [
+    "cf_alpha",
+    "cf_beta",
+    "cf_gamma"
   ],
-  "player_cores": 16455,
-  "collected_core_fragments": [],
   "architect_vault_completed": false,
-  "unlocked_blueprints": [
-    "DRONE_ARCHITECT_X"
-  ],
+  "unlocked_blueprints": [],
   "unlocked_lore_codex_entries": [
     "architect_legacy_intro",
     "drone_DRONE",
-    "race_greys",
-    "drone_VANTIS",
-    "tech_vault_core_fragment",
-    "story_beat_SB01",
-    "drone_DRONE_ARCHITECT_X",
-    "lore_architect_origin",
-    "story_beat_SB05",
-    "drone_STRIX",
-    "tech_glyph_tablet_alpha",
-    "tech_glyph_tablet_beta",
-    "story_beat_SB03",
-    "tech_glyph_tablet_gamma",
-    "race_nordics",
-    "drone_ZEPHYR",
-    "story_beat_SB04",
-    "drone_PHANTOM",
-    "story_beat_SB02"
+    "drone_VANTIS"
   ],
   "collected_glyph_tablet_ids": []
 }
