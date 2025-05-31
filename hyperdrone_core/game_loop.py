@@ -123,29 +123,29 @@ class GameController:
         # --- Cinematic Intro Attributes ---
         self.intro_screens_data = [
             {
-                "text": "The Architect — creator of the Vault\nand all drone intelligence — has vanished.\n\nNo warning. No trace. Only silence.",
+                "text": "\n\nThe Architect — creator of the Vault — \nhas vanished.\n\nNo signal. No trace.  \nJust... gone.",
                 "image_path": "assets/images/lore/scene1.png"
             },
             {
-                "text": "In their absence, the Vault has shifted.\n\nIts corridors twisted into cryptic mazes,\nteeming with automated defences.",
+                "text": "Without its creator, the Vault has become unstable.\n\nIts corridors twisted.\nIts defenses lethal.",
                 "image_path": "assets/images/lore/scene2.png"
             },
             {
-                "text": "You are a pilot. An explorer.\n\nEntering the Vault to unravel the AI’s enigma —\n\nand stop a system-wide fail-safe\nbefore it activates.",
+                "text": "You are a pilot\n— tasked with breaching the Vault.\n\nTo uncover what happened… ",
                 "image_path": "assets/images/lore/scene3.png"
             },
             {
-                "text": "The Architect’s secrets lie ahead.\n\nSolve the puzzles. Survive the machines.\n\nOr be erased with everything else.",
+                "text": "The Architect's secrets lie ahead.\n\nSolve the puzzles. Survive the machines.\n\nOr be erased with everything else.",
                 "image_path": "assets/images/lore/scene4.png"
             }
         ]
         self.current_intro_screen_index = 0
         self.intro_screen_start_time = 0
-        self.INTRO_SCREEN_DURATION_MS = 6000 # 6 seconds per screen
+        self.INTRO_SCREEN_DURATION_MS = 8000 # 6 seconds per screen
         self.intro_screen_text_surfaces_current = []
         self.current_intro_image_surface = None
         self.intro_font_key = "codex_category_font"
-        self.intro_text_color = gs.GOLD
+        self.intro_text_color = gs.WHITE
         self.intro_text_max_width_ratio = 0.8
         self.intro_sequence_finished = False
 

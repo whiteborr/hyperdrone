@@ -4,14 +4,10 @@
     "VANTIS"
   ],
   "selected_drone": "DRONE",
-  "player_level": 3,
+  "player_level": 1,
   "bosses_defeated": [],
   "player_cores": 190,
-  "collected_core_fragments": [
-    "cf_alpha",
-    "cf_beta",
-    "cf_gamma"
-  ],
+  "collected_core_fragments": [],
   "architect_vault_completed": false,
   "unlocked_blueprints": [],
   "unlocked_lore_codex_entries": [

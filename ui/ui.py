@@ -55,6 +55,15 @@ class UIManager:
         self.codex_max_visible_items_list = 0
         self.codex_max_visible_lines_content = 0
         self.codex_image_cache = {} # Unified cache for all images, including intro
+        
+        # Standard Y position for bottom instruction text
+        self.BOTTOM_INSTRUCTION_CENTER_Y = HEIGHT - 100
+        self.SECONDARY_INSTRUCTION_CENTER_Y = HEIGHT - 70 
+        self.INSTRUCTION_TEXT_COLOR = CYAN
+        self.INSTRUCTION_BG_COLOR = (30, 30, 30, 150)
+        self.INSTRUCTION_PADDING_X = 20
+        self.INSTRUCTION_PADDING_Y = 10
+
 
         self._load_ui_assets()
         self.update_player_life_icon_surface()
@@ -370,7 +379,7 @@ class UIManager:
 
         nav_instr = ""
         list_panel_rect = pygame.Rect(list_panel_x, top_y_start, list_panel_width, bottom_y_end - top_y_start)
-        current_list_y = top_y_start + 10
+        current_list_y = top_y_start + 20 
 
         if current_view == "categories":
             categories = getattr(self.game_controller, 'codex_categories_list', [])
@@ -549,55 +558,153 @@ class UIManager:
         else:
             nav_instr = "ESC: Main Menu"
 
-        nav_surf = self._render_text_safe(nav_instr, "small_text", CYAN)
-        self.screen.blit(nav_surf, nav_surf.get_rect(center=(WIDTH // 2, HEIGHT - 40)))
+        # Standardized bottom instruction drawing
+        nav_surf = self._render_text_safe(nav_instr, "small_text", self.INSTRUCTION_TEXT_COLOR)
+        nav_bg_box = pygame.Surface((nav_surf.get_width() + self.INSTRUCTION_PADDING_X, nav_surf.get_height() + self.INSTRUCTION_PADDING_Y), pygame.SRCALPHA)
+        nav_bg_box.fill(self.INSTRUCTION_BG_COLOR)
+        nav_bg_box.blit(nav_surf, nav_surf.get_rect(center=(nav_bg_box.get_width() // 2, nav_bg_box.get_height() // 2)))
+        self.screen.blit(nav_bg_box, nav_bg_box.get_rect(center=(WIDTH // 2, self.BOTTOM_INSTRUCTION_CENTER_Y)))
+
 
     def draw_main_menu(self):
+        # Background image
         if self.ui_assets["menu_background"]:
             try:
                 scaled_bg = pygame.transform.smoothscale(self.ui_assets["menu_background"], (WIDTH, HEIGHT))
                 self.screen.blit(scaled_bg, (0,0))
             except Exception as e:
                 print(f"UIManager: Error blitting menu background: {e}")
-                self.screen.fill(BLACK)
-        menu_options = getattr(self.game_controller, 'menu_options', ["Start", "Quit"])
+                self.screen.fill(BLACK) 
+        else:
+            self.screen.fill(BLACK) 
+
+        # Starfield effect
+        if hasattr(self.game_controller, 'menu_stars') and self.game_controller.menu_stars:
+            for star_params in self.game_controller.menu_stars:
+                pygame.draw.circle(self.screen, WHITE, (int(star_params[0]), int(star_params[1])), star_params[3])
+        
         selected_option_idx = getattr(self.game_controller, 'selected_menu_option', 0)
-        menu_item_start_y = HEIGHT // 2 - 80
-        item_spacing = 75
-        base_font_size = self.fonts["menu_text"].get_height()
-        for i, option_text in enumerate(menu_options):
+        # This is the Y for the center of the *first* menu button
+        menu_item_start_y = HEIGHT // 2 - 80 
+        item_spacing = 85 
+
+        unselected_label_font_size = 48
+        selected_label_font_size = 54
+
+        temp_icon_font = self.fonts.get("ui_emoji_general", self.fonts.get("menu_text"))
+        font_path_neuropol = getattr(self.game_controller, 'font_path_neuropol', None)
+
+        menu_options_with_icons = {
+            "Start Game": "🛸 Start Game",
+            "Select Drone": "\U0001F579 Select Drone",
+            "Codex": "📜 Codex",
+            "Settings": "\u2699 Settings",
+            "Leaderboard": "🏆 Leaderboard",
+            "Quit": "❌ Quit"
+        }
+        actual_menu_options = getattr(self.game_controller, 'menu_options', [])
+
+        max_combined_width = 0
+        max_content_height = 0
+        icon_label_spacing = 10
+
+        for option_key_calc in actual_menu_options:
+            full_label_calc = menu_options_with_icons.get(option_key_calc, option_key_calc)
+            icon_char_calc = ""
+            label_text_calc = full_label_calc
+            if len(full_label_calc) >= 2 and full_label_calc[1] == " " and not full_label_calc[0].isalnum():
+                icon_char_calc = full_label_calc[0]
+                label_text_calc = full_label_calc[2:]
+
+            try:
+                temp_label_font_for_calc = pygame.font.Font(font_path_neuropol, selected_label_font_size) if font_path_neuropol else pygame.font.Font(None, selected_label_font_size)
+            except Exception:
+                temp_label_font_for_calc = pygame.font.Font(None, selected_label_font_size)
+
+            icon_surf_calc = temp_icon_font.render(icon_char_calc, True, WHITE) if icon_char_calc else None
+            label_surf_calc = temp_label_font_for_calc.render(label_text_calc, True, WHITE)
+
+            current_combined_width = 0
+            current_content_height = 0
+
+            if icon_surf_calc:
+                current_combined_width += icon_surf_calc.get_width() + icon_label_spacing
+                current_content_height = max(current_content_height, icon_surf_calc.get_height())
+            
+            current_combined_width += label_surf_calc.get_width()
+            current_content_height = max(current_content_height, label_surf_calc.get_height())
+            
+            max_combined_width = max(max_combined_width, current_combined_width)
+            max_content_height = max(max_content_height, current_content_height)
+
+        horizontal_padding = 40 
+        vertical_padding = 20 
+        
+        min_button_width = 300 
+        fixed_button_width = max(min_button_width, max_combined_width + horizontal_padding)
+        fixed_button_height = max_content_height + vertical_padding
+        
+        for i, option_key in enumerate(actual_menu_options):
+            full_label = menu_options_with_icons.get(option_key, option_key)
             is_selected = (i == selected_option_idx)
             text_color = GOLD if is_selected else WHITE
-            active_menu_font = self.fonts["menu_text"]
+
+            icon_char = ""
+            label_text = full_label
+            if len(full_label) >= 2 and full_label[1] == " " and not full_label[0].isalnum():
+                icon_char = full_label[0]
+                label_text = full_label[2:]
+            
+            current_label_font_size = selected_label_font_size if is_selected else unselected_label_font_size
+            try:
+                label_font = pygame.font.Font(font_path_neuropol, current_label_font_size) if font_path_neuropol else pygame.font.Font(None, current_label_font_size)
+            except Exception:
+                label_font = pygame.font.Font(None, current_label_font_size)
+            
+            icon_font = temp_icon_font
+
+            icon_surf = icon_font.render(icon_char, True, text_color) if icon_char else None
+            label_surf = label_font.render(label_text, True, text_color)
+
+            button_surface = pygame.Surface((fixed_button_width, fixed_button_height), pygame.SRCALPHA)
+            bg_color = (70, 70, 70, 220) if is_selected else (50, 50, 50, 180)
+            pygame.draw.rect(button_surface, bg_color, button_surface.get_rect(), border_radius=15)
             if is_selected:
-                 try:
-                     font_path = getattr(self.game_controller, 'font_path_neuropol', None)
-                     active_menu_font = pygame.font.Font(font_path, base_font_size + 8) if font_path else pygame.font.Font(None, base_font_size + 8)
-                 except Exception:
-                     active_menu_font = pygame.font.Font(None, base_font_size + 8)
-            text_surf = active_menu_font.render(option_text, True, text_color)
-            if hasattr(text_surf, 'get_rect'):
-                text_rect = text_surf.get_rect()
-                button_width = text_rect.width + 60
-                button_height = text_rect.height + 25
-                button_surface_rect = pygame.Rect(0,0,button_width, button_height)
-                button_surface_rect.center = (WIDTH // 2, menu_item_start_y + i * item_spacing)
-                button_bg_surface = pygame.Surface(button_surface_rect.size, pygame.SRCALPHA)
-                current_bg_color = (70,70,70,220) if is_selected else (50,50,50,180)
-                pygame.draw.rect(button_bg_surface, current_bg_color, button_bg_surface.get_rect(), border_radius=15)
-                if is_selected:
-                    pygame.draw.rect(button_bg_surface, GOLD, button_bg_surface.get_rect(), 3, border_radius=15)
-                button_bg_surface.blit(text_surf, text_surf.get_rect(center=(button_width//2, button_height//2)))
-                self.screen.blit(button_bg_surface, button_surface_rect.topleft)
-        instr_surf = self._render_text_safe("Use UP/DOWN keys, ENTER to select.", "small_text", CYAN)
-        instr_bg_box=pygame.Surface((instr_surf.get_width()+20,instr_surf.get_height()+10),pygame.SRCALPHA)
-        instr_bg_box.fill((30,30,30,150))
-        instr_bg_box.blit(instr_surf,instr_surf.get_rect(center=(instr_bg_box.get_width()//2,instr_bg_box.get_height()//2)))
-        self.screen.blit(instr_bg_box, instr_bg_box.get_rect(center=(WIDTH//2, HEIGHT-100)))
+                pygame.draw.rect(button_surface, GOLD, button_surface.get_rect(), 3, border_radius=15)
+
+            content_start_x = horizontal_padding // 2 
+            y_center_content = fixed_button_height // 2
+            
+            if icon_surf:
+                icon_rect = icon_surf.get_rect(centery=y_center_content)
+                icon_rect.left = content_start_x
+                button_surface.blit(icon_surf, icon_rect)
+                content_start_x = icon_rect.right + icon_label_spacing
+            
+            label_rect = label_surf.get_rect(centery=y_center_content)
+            label_rect.left = content_start_x
+            button_surface.blit(label_surf, label_rect)
+
+            current_button_y = menu_item_start_y + i * item_spacing
+            button_screen_rect = button_surface.get_rect(center=(WIDTH // 2, current_button_y))
+            self.screen.blit(button_surface, button_screen_rect)
+
+        # Standardized bottom instruction drawing
+        instr_text = "Use UP/DOWN keys, ENTER to select."
+        instr_surf = self._render_text_safe(instr_text, "small_text", self.INSTRUCTION_TEXT_COLOR)
+        instr_bg_box = pygame.Surface((instr_surf.get_width() + self.INSTRUCTION_PADDING_X, instr_surf.get_height() + self.INSTRUCTION_PADDING_Y), pygame.SRCALPHA)
+        instr_bg_box.fill(self.INSTRUCTION_BG_COLOR)
+        instr_bg_box.blit(instr_surf, instr_surf.get_rect(center=(instr_bg_box.get_width() // 2, instr_bg_box.get_height() // 2)))
+        self.screen.blit(instr_bg_box, instr_bg_box.get_rect(center=(WIDTH // 2, self.BOTTOM_INSTRUCTION_CENTER_Y)))
+
 
         if gs.SETTINGS_MODIFIED:
             warning_surf = self._render_text_safe("Custom settings active: Leaderboard disabled.", "small_text", YELLOW)
-            self.screen.blit(warning_surf, warning_surf.get_rect(center=(WIDTH//2, HEIGHT-50)))
+            warning_bg_box = pygame.Surface((warning_surf.get_width() + self.INSTRUCTION_PADDING_X, warning_surf.get_height() + self.INSTRUCTION_PADDING_Y), pygame.SRCALPHA)
+            warning_bg_box.fill(self.INSTRUCTION_BG_COLOR) 
+            warning_bg_box.blit(warning_surf, warning_surf.get_rect(center=(warning_bg_box.get_width() // 2, warning_bg_box.get_height() // 2)))
+            self.screen.blit(warning_bg_box, warning_bg_box.get_rect(center=(WIDTH // 2, self.SECONDARY_INSTRUCTION_CENTER_Y)))
+
 
     def draw_drone_select_menu(self):
         title_surf = self._render_text_safe("Select Drone", "title_text", GOLD)
@@ -683,7 +790,7 @@ class UIManager:
             unlock_text_str = condition_text_str
             if type_is_cores_unlock and unlock_cost_val is not None:
                  can_afford = self.drone_system.get_player_cores() >= unlock_cost_val
-                 unlock_text_str = f"Unlock: {unlock_cost_val} 💠 "
+                 unlock_text_str = f"Unlock: {unlock_cost_val} � "
                  unlock_text_str += "(ENTER)" if can_afford else "(Not Enough Cores)"
                  unlock_text_color = GREEN if can_afford else YELLOW
             else:
@@ -758,17 +865,23 @@ class UIManager:
             self.screen.blit(left_arrow_surf, left_arrow_rect)
             right_arrow_rect = right_arrow_surf.get_rect(centery=arrow_y_center, left=main_card_rect.right + arrow_padding_from_card_edge)
             self.screen.blit(right_arrow_surf, right_arrow_rect)
-        instr_surf = self._render_text_safe("LEFT/RIGHT: Cycle | ENTER: Select/Unlock | ESC: Back", "small_text", CYAN)
-        instr_bg_rect = pygame.Rect(0, HEIGHT - 70, WIDTH, 30)
-        instr_surf_rect = instr_surf.get_rect(center=instr_bg_rect.center)
-        self.screen.blit(instr_surf, instr_surf_rect)
+        
+        # Standardized bottom instruction drawing
+        instr_text = "LEFT/RIGHT: Cycle | ENTER: Select/Unlock | ESC: Back"
+        instr_surf = self._render_text_safe(instr_text, "small_text", self.INSTRUCTION_TEXT_COLOR)
+        instr_bg_box = pygame.Surface((instr_surf.get_width() + self.INSTRUCTION_PADDING_X, instr_surf.get_height() + self.INSTRUCTION_PADDING_Y), pygame.SRCALPHA)
+        instr_bg_box.fill(self.INSTRUCTION_BG_COLOR)
+        instr_bg_box.blit(instr_surf, instr_surf.get_rect(center=(instr_bg_box.get_width() // 2, instr_bg_box.get_height() // 2)))
+        self.screen.blit(instr_bg_box, instr_bg_box.get_rect(center=(WIDTH // 2, self.BOTTOM_INSTRUCTION_CENTER_Y)))
+
         cores_label_text_surf = self._render_text_safe(f"Player Cores: ", "ui_text", GOLD)
         cores_value_text_surf = self._render_text_safe(f"{self.drone_system.get_player_cores()}", "ui_values", GOLD)
         cores_emoji_surf = self._render_text_safe(" 💠", "ui_emoji_general", GOLD)
         total_cores_display_width = cores_label_text_surf.get_width() + cores_value_text_surf.get_width() + cores_emoji_surf.get_width()
         cores_start_x = WIDTH - 20 - total_cores_display_width
         max_element_height_cores = max(cores_label_text_surf.get_height(), cores_value_text_surf.get_height(), cores_emoji_surf.get_height())
-        cores_y_baseline = HEIGHT - 20 - max_element_height_cores
+        
+        cores_y_baseline = self.BOTTOM_INSTRUCTION_CENTER_Y - (instr_bg_box.get_height() // 2) - 10 - max_element_height_cores 
         current_x_offset_cores = cores_start_x
         self.screen.blit(cores_label_text_surf, (current_x_offset_cores, cores_y_baseline + (max_element_height_cores - cores_label_text_surf.get_height()) // 2))
         current_x_offset_cores += cores_label_text_surf.get_width()
@@ -788,7 +901,7 @@ class UIManager:
 
         item_y_start = 180
         item_line_height = self.fonts["ui_text"].get_height() + 20
-        max_items_on_screen = (HEIGHT - item_y_start - 120) // item_line_height
+        max_items_on_screen = (HEIGHT - item_y_start - 120) // item_line_height 
 
         view_start_index = 0
         if len(settings_items) > max_items_on_screen:
@@ -842,19 +955,23 @@ class UIManager:
                  pygame.draw.rect(self.screen, (40,40,40,180), action_hint_bg_rect, border_radius=5)
                  self.screen.blit(action_hint_surf, (action_hint_bg_rect.left + 10, y_pos))
 
-        instr_surf = self._render_text_safe("UP/DOWN: Select | LEFT/RIGHT: Adjust | ENTER: Activate | ESC: Back", "small_text", CYAN)
-        instr_bg = pygame.Surface((instr_surf.get_width()+20, instr_surf.get_height()+10), pygame.SRCALPHA)
-        instr_bg.fill((20,20,20,180))
-        instr_bg.blit(instr_surf, (10,5))
-        self.screen.blit(instr_bg, instr_bg.get_rect(center=(WIDTH//2, HEIGHT-70)))
+        # Standardized bottom instruction drawing
+        instr_text = "UP/DOWN: Select | LEFT/RIGHT: Adjust | ENTER: Activate | ESC: Back"
+        instr_surf = self._render_text_safe(instr_text, "small_text", self.INSTRUCTION_TEXT_COLOR)
+        instr_bg_box = pygame.Surface((instr_surf.get_width() + self.INSTRUCTION_PADDING_X, instr_surf.get_height() + self.INSTRUCTION_PADDING_Y), pygame.SRCALPHA)
+        instr_bg_box.fill(self.INSTRUCTION_BG_COLOR)
+        instr_bg_box.blit(instr_surf, instr_surf.get_rect(center=(instr_bg_box.get_width() // 2, instr_bg_box.get_height() // 2)))
+        self.screen.blit(instr_bg_box, instr_bg_box.get_rect(center=(WIDTH // 2, self.BOTTOM_INSTRUCTION_CENTER_Y)))
+
 
         if gs.SETTINGS_MODIFIED:
             warning_text = "Leaderboard disabled: settings changed from default values!"
             warning_surf = self._render_text_safe(warning_text, "small_text", RED)
-            warning_bg = pygame.Surface((warning_surf.get_width()+10, warning_surf.get_height()+5), pygame.SRCALPHA)
-            warning_bg.fill((20,20,20,180))
-            warning_bg.blit(warning_surf, (5,2))
-            self.screen.blit(warning_bg, warning_bg.get_rect(center=(WIDTH//2, HEIGHT-35)))
+            warning_bg_box = pygame.Surface((warning_surf.get_width() + self.INSTRUCTION_PADDING_X, warning_surf.get_height() + self.INSTRUCTION_PADDING_Y), pygame.SRCALPHA)
+            warning_bg_box.fill(self.INSTRUCTION_BG_COLOR) 
+            warning_bg_box.blit(warning_surf, warning_surf.get_rect(center=(warning_bg_box.get_width() // 2, warning_bg_box.get_height() // 2)))
+            self.screen.blit(warning_bg_box, warning_bg_box.get_rect(center=(WIDTH // 2, self.SECONDARY_INSTRUCTION_CENTER_Y)))
+
 
     def draw_gameplay_hud(self):
         if not self.game_controller.player: return
@@ -1254,11 +1371,15 @@ class UIManager:
                 for text_str, color, x_coord in texts_to_draw:
                     text_surf = entry_font.render(text_str, True, color)
                     self.screen.blit(text_surf, (x_coord, y_pos))
-        menu_prompt_surf = self._render_text_safe("ESC: Main Menu | Q: Quit Game", "ui_text", WHITE)
-        prompt_bg = pygame.Surface((menu_prompt_surf.get_width()+20, menu_prompt_surf.get_height()+10), pygame.SRCALPHA)
-        prompt_bg.fill((20,20,20,180))
-        prompt_bg.blit(menu_prompt_surf, prompt_bg.get_rect(center=(prompt_bg.get_width()//2, prompt_bg.get_height()//2)))
-        self.screen.blit(prompt_bg, prompt_bg.get_rect(center=(WIDTH//2, HEIGHT-100)))
+        
+        # Standardized bottom instruction drawing
+        instr_text = "ESC: Main Menu | Q: Quit Game"
+        instr_surf = self._render_text_safe(instr_text, "ui_text", self.INSTRUCTION_TEXT_COLOR) 
+        instr_bg_box = pygame.Surface((instr_surf.get_width() + self.INSTRUCTION_PADDING_X, instr_surf.get_height() + self.INSTRUCTION_PADDING_Y), pygame.SRCALPHA)
+        instr_bg_box.fill(self.INSTRUCTION_BG_COLOR)
+        instr_bg_box.blit(instr_surf, instr_surf.get_rect(center=(instr_bg_box.get_width() // 2, instr_bg_box.get_height() // 2)))
+        self.screen.blit(instr_bg_box, instr_bg_box.get_rect(center=(WIDTH // 2, self.BOTTOM_INSTRUCTION_CENTER_Y)))
+
 
     def draw_architect_vault_success_overlay(self):
         msg_surf = self._render_text_safe("Vault Conquered!", "large_text", GOLD)
@@ -1278,4 +1399,3 @@ class UIManager:
         self.screen.blit(reason_surf, reason_surf.get_rect(center=(WIDTH//2, HEIGHT//2 + 20)))
         prompt_surf = self._render_text_safe("Press ENTER or M to Return to Menu", "ui_text", WHITE)
         self.screen.blit(prompt_surf, prompt_surf.get_rect(center=(WIDTH//2, HEIGHT//2 + 80)))
-

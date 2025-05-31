@@ -73,7 +73,7 @@
     {
       "id": "drone_architect_x_detailed",
       "title": "Architect-X",
-      "unlocked_by_dev_note": "Unlock Architect-X drone (Complete the Architect’s Vault)",
+      "unlocked_by_dev_note": "Unlock Architect-X drone (Complete the Architect's Vault)",
       "category": "Drones",
       "content": "This is not a drone—it is a fragment of the Architect itself. Architect-X uses multi-phase shielding and pulse-wave disruption, possibly derived from pre-human tech. Core analysis shows an impossible material: a perfectly stable isotope not found in nature. Its very existence implies Vault structures are far older than suspected."
     },
@@ -89,7 +89,7 @@
       "title": "Element-115 Casing",
       "unlocked_by_dev_note": "Scan Alien Thruster Debris (conceptual, link to reaching a high level or specific event TBD)",
       "category": "Alien Tech",
-      "content": "This is the outer shielding from an Element-115 reactor, reverse-engineered from a containment unit found in Vault Sector Zeta. It’s magnetically neutral yet generates internal containment fields. The original element—unstable under normal Earth conditions—has decayed, but residual radiation caused memory corruption in 17 drone AI logs. Vault containment procedures now prohibit direct exposure."
+      "content": "This is the outer shielding from an Element-115 reactor, reverse-engineered from a containment unit found in Vault Sector Zeta. It's magnetically neutral yet generates internal containment fields. The original element—unstable under normal Earth conditions—has decayed, but residual radiation caused memory corruption in 17 drone AI logs. Vault containment procedures now prohibit direct exposure."
     },
     {
       "id": "alien_tech_tr3b_antigravity_ring",
@@ -117,7 +117,7 @@
       "title": "Crystalline Neurofiber Array",
       "unlocked_by_dev_note": "Scan Architect’s Core (conceptual, related to Architect-X or Vault completion)",
       "category": "Alien Tech",
-      "content": "A dense, branching lattice made of silica-based crystal, resembling biological neural tissue. Used as part of the Architect AI’s core. Thought to function as a quantum computing array. Similar arrays have been rumored to appear in ancient submerged ruins west of Cuba and on classified imaging from Antarctica’s Lake Vostok anomaly."
+      "content": "A dense, branching lattice made of silica-based crystal, resembling biological neural tissue. Used as part of the Architect AI's core. Thought to function as a quantum computing array. Similar arrays have been rumored to appear in ancient submerged ruins west of Cuba and on classified imaging from Antarctica’s Lake Vostok anomaly."
     },
     {
       "id": "alien_tech_mantis_chassis_frame",
@@ -138,7 +138,7 @@
       "title": "NORDIC Preservers (Pleiadian Archetype)",
       "unlocked_by_dev_note": "Collect all “Architect Glyph Tablets” (conceptual, link to collecting a series of items)",
       "category": "Alien Races",
-      "content": "Tall, human-like figures with luminous skin and eyes described as “deep blue or gold.” Associated with telepathic contact and warnings about humanity’s misuse of energy. Recovered Vault fragments refer to them as Preservers—possibly guardians of the underlying network that powers the Architect’s Vault. Tech with biometric locks and harmonic interfaces often carries Nordic glyph traces. Several drones react with unexplained behavior when exposed to Pleiadian matrix fields, suggesting cross-species design. Architect-X’s final form may derive from Nordic template technology."
+      "content": "Tall, human-like figures with luminous skin and eyes described as “deep blue or gold.” Associated with telepathic contact and warnings about humanity's misuse of energy. Recovered Vault fragments refer to them as Preservers—possibly guardians of the underlying network that powers the Architect’s Vault. Tech with biometric locks and harmonic interfaces often carries Nordic glyph traces. Several drones react with unexplained behavior when exposed to Pleiadian matrix fields, suggesting cross-species design. Architect-X’s final form may derive from Nordic template technology."
     },
     {
       "id": "alien_race_mantis_observers",
@@ -159,7 +159,7 @@
       "title": "Echo in the Code (SB01)",
       "unlocked_by_dev_note": "Defeat Maze Guardian (first major boss)",
       "category": "Story Beats",
-      "content": "After defeating the Maze Guardian, you discovered a terminal that isn’t human-made. It played back a voice in unknown patterns. This recovery has been logged as *Vault Fragment 001*."
+      "content": "After defeating the Maze Guardian, you discovered a terminal that isn't human-made. It played back a voice in unknown patterns. This recovery has been logged as *Vault Fragment 001*."
     },
     {
       "id": "story_beat_sb04_sentinel_protocol",
