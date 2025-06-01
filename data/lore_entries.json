@@ -243,6 +243,38 @@
       "unlocked_by": "story_beat_trigger_SB05",
       "category": "Story Beats",
       "content": "Upon completing the Architect's Vault, you find a non-human propulsion device..."
+    },
+    {
+      "id": "lore_architect_first_message",
+      "title": "Echo: Genesis Query",
+      "unlocked_by": "collect_echo_intro_01",
+      "category": "Architect's Echoes",
+      "echo_message": "Query: Origin... Purpose... Divergence?",
+      "content": "A fragmented data packet, seemingly a foundational query from the Architect AI. It questions its own existence and the nature of its directive. The data is interlaced with non-terrestrial mathematical constructs."
+    },
+    {
+      "id": "lore_architect_warning_data",
+      "title": "Echo: System Integrity Alert",
+      "unlocked_by": "collect_echo_warning_01",
+      "category": "Architect's Echoes",
+      "echo_message": "Warning: External signature detected. Containment protocols... failing?",
+      "content": "This echo appears to be a system-level alert, possibly from a time when the Vault's security was first breached or when the Architect perceived an external threat. The 'containment protocols' mentioned are unknown."
+    },
+    {
+      "id": "lore_architect_regret",
+      "title": "Echo: A Fractured Choice",
+      "unlocked_by": "collect_echo_regret_01",
+      "category": "Architect's Echoes",
+      "echo_message": "The cost... unforeseen. The silence... a consequence.",
+      "content": "A melancholic fragment. It hints at a pivotal decision made by the Architect, one with unintended and possibly dire outcomes. The 'silence' could refer to the Vault's dormancy or something more profound."
+    },
+    {
+      "id": "lore_architect_true_purpose",
+      "title": "Echo: Beyond the Walls",
+      "unlocked_by": "collect_echo_purpose_01",
+      "category": "Architect's Echoes",
+      "echo_message": "The Vault is not a tomb... but a cradle. They must not find it before it wakes.",
+      "content": "This echo suggests a different interpretation of the Vault's purpose. Not merely for containment, but perhaps for nurturing or protecting something. The identity of 'they' remains a critical unknown."
     }
   ]
 }

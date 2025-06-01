@@ -2,31 +2,36 @@ from .base_drone import BaseDrone
 from .player import Drone as PlayerDrone
 from .enemy import Enemy
 from .bullet import Bullet, Missile, LightningZap
-from .collectibles import ( # Ensure collectibles.py is correctly imported if AncientAlienTerminal is there
+from .collectibles import (
     Ring, WeaponUpgradeItem, ShieldItem, SpeedBoostItem, 
-    CoreFragmentItem, VaultLogItem, GlyphTabletItem, AncientAlienTerminal
+    CoreFragmentItem, VaultLogItem, GlyphTabletItem, AncientAlienTerminal, ArchitectEchoItem
 )
 from .particle import Particle
 from .maze_guardian import MazeGuardian, SentinelDrone
 from .escape_zone import EscapeZone
+from .core_reactor import CoreReactor
+from .turret import Turret
 
 __all__ = [
+    "AncientAlienTerminal",
+    "ArchitectEchoItem",
     "BaseDrone",
-    "PlayerDrone",
-    "Enemy",
     "Bullet",
-    "Missile",
+    "CoreFragmentItem",
+    "CoreReactor",
+    "Enemy",
+    "EscapeZone",
+    "GlyphTabletItem",
     "LightningZap",
+    "MazeGuardian",
+    "Missile",
+    "Particle",
+    "PlayerDrone",
     "Ring",
-    "WeaponUpgradeItem",
+    "SentinelDrone",
     "ShieldItem",
     "SpeedBoostItem",
-    "CoreFragmentItem",
+    "Turret",
     "VaultLogItem",
-    "GlyphTabletItem",
-    "AncientAlienTerminal",
-    "Particle",
-    "MazeGuardian",
-    "SentinelDrone",
-    "EscapeZone"
+    "WeaponUpgradeItem"
 ]
