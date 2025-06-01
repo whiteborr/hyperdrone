@@ -147,7 +147,7 @@ WEAPON_MODE_ICONS = {
     WEAPON_MODE_TRI_SHOT: "🔱",
     WEAPON_MODE_RAPID_SINGLE: "💨",
     WEAPON_MODE_RAPID_TRI: "💨🔱",
-    WEAPON_MODE_BIG_SHOT: "�",
+    WEAPON_MODE_BIG_SHOT: "💣",
     WEAPON_MODE_BOUNCE: "🏀",
     WEAPON_MODE_PIERCE: "➤",
     WEAPON_MODE_HEATSEEKER: "🚀",
@@ -207,7 +207,7 @@ MAZE_GUARDIAN_BULLET_COLOR = RED
 MAZE_GUARDIAN_BULLET_DAMAGE = 15
 
 MAZE_GUARDIAN_LASER_DAMAGE = 20
-MAZE_GUARDIAN_LASER_COOLDOWN = 5000 # Corrected from MAZE_GUARDIAN_LASER_COoldown
+MAZE_GUARDIAN_LASER_COOLDOWN = 5000 
 MAZE_GUARDIAN_LASER_SWEEP_ARC = 90
 
 MAZE_GUARDIAN_SHIELD_DURATION_MS = 6000
@@ -255,32 +255,36 @@ SPEED_BOOST_POWERUP_DURATION = POWERUP_TYPES["speed_boost"]["duration"]
 # ==========================
 # Core Fragment & Architect's Vault Settings
 # ==========================
-TOTAL_CORE_FRAGMENTS_NEEDED = 3
+TOTAL_CORE_FRAGMENTS_NEEDED = 3 # This refers to alpha, beta, gamma for vault entry
 CORE_FRAGMENT_VISUAL_SIZE = TILE_SIZE // 2.5
 
 CORE_FRAGMENT_DETAILS = {
     "fragment_alpha": {
         "id": "cf_alpha", "name": "Alpha Core Fragment", "icon_filename": "core_fragment_alpha.png",
         "description": "A corrupted fragment, pulses with unstable energy.",
-        "spawn_info": {"level": 1},
+        # "spawn_info": {"level": 3}, # Removed: Will be spawned conditionally
+        "reward_level": 3, # Indicates this fragment is a reward for clearing level 3
         "buff": {"type": "speed", "value": 1.05}
     },
     "fragment_beta": {
         "id": "cf_beta", "name": "Beta Core Fragment", "icon_filename": "core_fragment_beta.png",
         "description": "This piece hums with a strange, alien resonance.",
-        "spawn_info": {"level": 2},
+        # "spawn_info": {"level": 2}, # Removed: Will be spawned conditionally
+        "reward_level": 6, # Indicates this fragment is a reward for clearing level 6
         "buff": {"type": "bullet_damage_multiplier", "value": 1.05}
     },
     "fragment_gamma": {
         "id": "cf_gamma", "name": "Gamma Core Fragment", "icon_filename": "core_fragment_gamma.png",
         "description": "Seems to be a critical processing unit, heavily damaged.",
-        "spawn_info": {"level": 3},
+        # "spawn_info": {"level": 3}, # Removed: Will be spawned conditionally
+        "reward_level": 9, # Indicates this fragment is a reward for clearing level 9
         "buff_alt": {"type": "damage_reduction", "value": 0.05}
     },
-    "fragment_vault_core": {
+    "fragment_vault_core": { # This one is likely obtained differently, e.g., after vault boss
         "id": "vault_core", "name": "Vault Core", "icon_filename": "vault_core_icon.png",
         "description": "The heart of the Architect's Vault defenses. A valuable prize.",
         "display_color": GOLD
+        # No spawn_info or reward_level, handled by specific vault logic
     }
 }
 
@@ -382,7 +386,7 @@ DEFAULT_SETTINGS = {
     "MAZE_GUARDIAN_COLOR": MAZE_GUARDIAN_COLOR, "MAZE_GUARDIAN_SPRITE_PATH": MAZE_GUARDIAN_SPRITE_PATH,
     "MAZE_GUARDIAN_BULLET_SPEED": MAZE_GUARDIAN_BULLET_SPEED, "MAZE_GUARDIAN_BULLET_LIFETIME": MAZE_GUARDIAN_BULLET_LIFETIME,
     "MAZE_GUARDIAN_BULLET_COLOR": MAZE_GUARDIAN_BULLET_COLOR, "MAZE_GUARDIAN_BULLET_DAMAGE": MAZE_GUARDIAN_BULLET_DAMAGE,
-    "MAZE_GUARDIAN_LASER_DAMAGE": MAZE_GUARDIAN_LASER_DAMAGE, "MAZE_GUARDIAN_LASER_COOLDOWN": MAZE_GUARDIAN_LASER_COOLDOWN, # Corrected typo here
+    "MAZE_GUARDIAN_LASER_DAMAGE": MAZE_GUARDIAN_LASER_DAMAGE, "MAZE_GUARDIAN_LASER_COOLDOWN": MAZE_GUARDIAN_LASER_COOLDOWN, 
     "MAZE_GUARDIAN_LASER_SWEEP_ARC": MAZE_GUARDIAN_LASER_SWEEP_ARC,
     "MAZE_GUARDIAN_SHIELD_DURATION_MS": MAZE_GUARDIAN_SHIELD_DURATION_MS, "MAZE_GUARDIAN_SHIELD_COOLDOWN_MS": MAZE_GUARDIAN_SHIELD_COOLDOWN_MS,
     "MAZE_GUARDIAN_ARENA_SHIFT_INTERVAL_MS": MAZE_GUARDIAN_ARENA_SHIFT_INTERVAL_MS,
@@ -413,66 +417,61 @@ def get_game_setting(key, default_override=None):
 
 def set_game_setting(key, value):
     global SETTINGS_MODIFIED, _CURRENT_GAME_SETTINGS
-    global GAME_PLAY_AREA_HEIGHT, MAZE_ROWS # Ensure these globals are updated
+    global GAME_PLAY_AREA_HEIGHT, MAZE_ROWS 
 
     _CURRENT_GAME_SETTINGS[key] = value
 
-    # Check if this modification makes it different from default
-    if key in DEFAULT_SETTINGS: # Only consider keys that have a default
+    if key in DEFAULT_SETTINGS: 
         if _CURRENT_GAME_SETTINGS.get(key) != DEFAULT_SETTINGS.get(key):
             SETTINGS_MODIFIED = True
-        else: # If this key was reset to default, check if any other key is still modified
+        else: 
             SETTINGS_MODIFIED = any(
                 _CURRENT_GAME_SETTINGS.get(k) != DEFAULT_SETTINGS.get(k)
-                for k in DEFAULT_SETTINGS if k in _CURRENT_GAME_SETTINGS # Check all keys that have defaults
+                for k in DEFAULT_SETTINGS if k in _CURRENT_GAME_SETTINGS 
             )
 
-    # Update global module-level constants if they match the key
-    if key in globals(): # Check if the key corresponds to a global variable in this module
+    if key in globals(): 
         globals()[key] = value
-        # Special handling for derived globals
         if key == "HEIGHT" or key == "BOTTOM_PANEL_HEIGHT":
             GAME_PLAY_AREA_HEIGHT = get_game_setting("HEIGHT") - get_game_setting("BOTTOM_PANEL_HEIGHT")
-            globals()["GAME_PLAY_AREA_HEIGHT"] = GAME_PLAY_AREA_HEIGHT # Also update the global directly
+            globals()["GAME_PLAY_AREA_HEIGHT"] = GAME_PLAY_AREA_HEIGHT 
             if get_game_setting("TILE_SIZE") > 0:
                 MAZE_ROWS = GAME_PLAY_AREA_HEIGHT // get_game_setting("TILE_SIZE")
                 globals()["MAZE_ROWS"] = MAZE_ROWS
         elif key == "TILE_SIZE":
-            if get_game_setting("TILE_SIZE") > 0: # Avoid division by zero
-                current_game_play_height = get_game_setting("GAME_PLAY_AREA_HEIGHT") # Use the current value
+            if get_game_setting("TILE_SIZE") > 0: 
+                current_game_play_height = get_game_setting("GAME_PLAY_AREA_HEIGHT") 
                 MAZE_ROWS = current_game_play_height // get_game_setting("TILE_SIZE")
                 globals()["MAZE_ROWS"] = MAZE_ROWS
 
 
 def reset_all_settings_to_default():
     global SETTINGS_MODIFIED, _CURRENT_GAME_SETTINGS
-    global GAME_PLAY_AREA_HEIGHT, MAZE_ROWS # Globals to re-calculate
+    global GAME_PLAY_AREA_HEIGHT, MAZE_ROWS 
 
     _CURRENT_GAME_SETTINGS = DEFAULT_SETTINGS.copy()
 
-    SETTINGS_MODIFIED = False # All settings are now default
+    SETTINGS_MODIFIED = False 
     print("Game settings have been reset to defaults.")
 
-    # Update all module-level globals that match keys in DEFAULT_SETTINGS
     for key, value in _CURRENT_GAME_SETTINGS.items():
-        if key in globals(): # If 'key' is a global variable in this module
+        if key in globals(): 
             globals()[key] = value
 
-    # Recalculate derived globals explicitly
     GAME_PLAY_AREA_HEIGHT = get_game_setting("HEIGHT") - get_game_setting("BOTTOM_PANEL_HEIGHT")
-    globals()["GAME_PLAY_AREA_HEIGHT"] = GAME_PLAY_AREA_HEIGHT # Also update the global directly
+    globals()["GAME_PLAY_AREA_HEIGHT"] = GAME_PLAY_AREA_HEIGHT 
     if get_game_setting("TILE_SIZE") > 0:
         MAZE_ROWS = GAME_PLAY_AREA_HEIGHT // get_game_setting("TILE_SIZE")
         globals()["MAZE_ROWS"] = MAZE_ROWS
-    else: # Handle case where TILE_SIZE might be invalid post-reset (though unlikely with constants)
+    else: 
         MAZE_ROWS = 0
         globals()["MAZE_ROWS"] = MAZE_ROWS
 
 
-# Initialize derived globals correctly after all definitions
 GAME_PLAY_AREA_HEIGHT = get_game_setting("HEIGHT") - get_game_setting("BOTTOM_PANEL_HEIGHT")
-if TILE_SIZE > 0 : # Initial check for TILE_SIZE
+if TILE_SIZE > 0 : 
     MAZE_ROWS = GAME_PLAY_AREA_HEIGHT // TILE_SIZE
 else:
-    MAZE_ROWS = 0 # Avoid division by zero if TILE_SIZE is invalid initially
+    MAZE_ROWS = 0 
     print("Warning (game_settings.py): TILE_SIZE is 0 or invalid, MAZE_ROWS set to 0.")
+

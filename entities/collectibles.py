@@ -38,7 +38,7 @@ class Collectible(pygame.sprite.Sprite):
         self.image = pygame.Surface((self.surface_size, self.surface_size), pygame.SRCALPHA)
         
         self.original_icon_surface = original_icon_surface
-        self.icon_surface = original_icon_surface
+        self.icon_surface = original_icon_surface # This will be the surface actually blitted
         
         self.collected = False
         self.expired = False  
@@ -56,7 +56,7 @@ class Collectible(pygame.sprite.Sprite):
         self.current_y_offset = 0
 
         self.icon_angle = 0
-        self.icon_rotation_speed = 0.3 if original_icon_surface else 0
+        self.icon_rotation_speed = 0.3 if original_icon_surface else 0 # Only rotate if there's an original image icon
 
         self._update_pulse_effect()
         self.rect = self.image.get_rect(center=(self.center_x, self.center_y))
@@ -130,24 +130,28 @@ class Collectible(pygame.sprite.Sprite):
                     pygame.draw.circle(self.image, secondary_color,
                                        (surface_center_x, surface_center_y),
                                        secondary_radius, max(1, self.thickness // 2))
-        else:
+        else: # Rectangular collectible (like VaultLogItem or GlyphTabletItem)
             rect_width, rect_height = self.item_size
             pulse_factor = (math.sin(pygame.time.get_ticks() * self.pulse_speed_factor + self.pulse_time_offset) + 1) / 2
-            current_width = rect_width + pulse_factor * (self.pulse_radius_amplitude * (rect_width / self.base_draw_radius)) if self.base_draw_radius > 0 else rect_width
-            current_height = rect_height + pulse_factor * (self.pulse_radius_amplitude * (rect_height / self.base_draw_radius)) if self.base_draw_radius > 0 else rect_height
+            # Rectangular items might not need to visually pulse in size, or only slightly
+            current_width = rect_width # + pulse_factor * (self.pulse_radius_amplitude * 0.2 * (rect_width / self.base_draw_radius)) if self.base_draw_radius > 0 else rect_width
+            current_height = rect_height # + pulse_factor * (self.pulse_radius_amplitude * 0.2 * (rect_height / self.base_draw_radius)) if self.base_draw_radius > 0 else rect_height
             
             temp_rect = pygame.Rect(0,0, int(current_width), int(current_height))
             temp_rect.center = (surface_center_x, surface_center_y)
             pygame.draw.rect(self.image, self.current_color, temp_rect, self.thickness, border_radius=3)
 
-        if self.original_icon_surface:
-            self.icon_angle = (self.icon_angle + self.icon_rotation_speed) % 360
-            rotated_icon_surface = pygame.transform.rotate(self.original_icon_surface, self.icon_angle)
-            icon_rect = rotated_icon_surface.get_rect(center=(surface_center_x, surface_center_y))
-            self.image.blit(rotated_icon_surface, icon_rect)
-        elif self.icon_surface:
-            icon_rect = self.icon_surface.get_rect(center=(surface_center_x, surface_center_y))
-            self.image.blit(self.icon_surface, icon_rect)
+        # Blit the icon_surface (which could be an image or a rendered emoji)
+        if self.icon_surface:
+            if self.original_icon_surface and self.icon_rotation_speed > 0: # Only rotate if it's an image-based icon meant to rotate
+                self.icon_angle = (self.icon_angle + self.icon_rotation_speed) % 360
+                rotated_icon_surface = pygame.transform.rotate(self.original_icon_surface, self.icon_angle)
+                icon_rect = rotated_icon_surface.get_rect(center=(surface_center_x, surface_center_y))
+                self.image.blit(rotated_icon_surface, icon_rect)
+            else: # For non-rotating icons (like rendered text/emoji)
+                icon_rect = self.icon_surface.get_rect(center=(surface_center_x, surface_center_y))
+                self.image.blit(self.icon_surface, icon_rect)
+
 
     def update_collectible_state(self, item_lifetime_ms=None):
         if self.collected or self.expired:
@@ -329,39 +333,50 @@ class CoreFragmentItem(Collectible):
 
 class VaultLogItem(Collectible):
     """Represents a collectible Vault Log that unlocks lore."""
-    def __init__(self, x, y, log_id, icon_filename=None):
+    def __init__(self, x, y, log_id, icon_filename=None): # Added icon_filename parameter
         self.log_id = log_id
         item_size_tuple = (TILE_SIZE * 0.4, TILE_SIZE * 0.5)
+        self.icon_font_key = "ui_emoji_general" # Font key for emoji
+        self.default_icon_char = "📝" # Memo emoji as default
 
-        loaded_icon = None
-        if icon_filename:
+        loaded_icon_surface = None
+        if icon_filename: # If an image filename is provided, try to load it
             try:
                 image_path = os.path.join("assets", "images", "collectibles", icon_filename)
                 if os.path.exists(image_path):
                     raw_icon = pygame.image.load(image_path).convert_alpha()
                     icon_render_w = int(item_size_tuple[0] * 0.8)
                     icon_render_h = int(item_size_tuple[1] * 0.8)
-                    loaded_icon = pygame.transform.smoothscale(raw_icon, (icon_render_w, icon_render_h))
+                    loaded_icon_surface = pygame.transform.smoothscale(raw_icon, (icon_render_w, icon_render_h))
                 else:
                     print(f"Warning: Icon not found for VaultLogItem: {image_path}")
             except pygame.error as e:
                 print(f"Error loading icon for VaultLogItem ('{icon_filename}'): {e}")
         
-        if loaded_icon is None:
-            font = pygame.font.Font(None, int(item_size_tuple[1] * 0.5))
-            text_surf = font.render("LOG", True, gs.WHITE)
-            temp_icon_surf = pygame.Surface(text_surf.get_size(), pygame.SRCALPHA)
-            temp_icon_surf.blit(text_surf, (0,0))
-            loaded_icon = temp_icon_surf
-
+        # Call super with the loaded image icon (if any)
         super().__init__(x, y, base_color=DARK_PURPLE, size=item_size_tuple, thickness=2,
-                         original_icon_surface=loaded_icon if icon_filename else None,
+                         original_icon_surface=loaded_icon_surface, # This is for image-based icons
                          is_rectangular=True)
-        if not icon_filename and loaded_icon :
-            self.icon_surface = loaded_icon
-            self.original_icon_surface = None
 
-        self.icon_rotation_speed = 0
+        # If no image icon was loaded, create a text/emoji based one
+        if loaded_icon_surface is None:
+            # Attempt to get the font from game_settings (passed via UIManager or GameController)
+            # This part requires access to the fonts dictionary, which is usually in UIManager.
+            # For simplicity here, we'll assume a fallback if fonts aren't directly accessible.
+            # In a real scenario, you'd pass the font object or a font rendering function.
+            try:
+                # This is a conceptual access. In practice, you'd need to pass the font object.
+                # For now, we'll create a temporary font if not available.
+                font_obj = pygame.font.Font(gs.UI_FONT_PATH_EMOJI, int(item_size_tuple[1] * 0.6)) # Example access
+            except: # Fallback if font path is not directly in gs or not loaded
+                font_obj = pygame.font.Font(None, int(item_size_tuple[1] * 0.6))
+
+            text_surf = font_obj.render(self.default_icon_char, True, gs.CYAN) # Use CYAN for visibility
+            self.icon_surface = pygame.Surface(text_surf.get_size(), pygame.SRCALPHA)
+            self.icon_surface.blit(text_surf, (0,0))
+            self.original_icon_surface = None # Ensure this is None if we are using rendered text/emoji
+        
+        self.icon_rotation_speed = 0 # Text/emoji icons usually don't rotate
 
     def update(self):
         if self.collected:
@@ -405,17 +420,17 @@ class GlyphTabletItem(Collectible):
             elif tablet_id == "gamma": glyph_char = "γ"
             
             font_path = None
-            if hasattr(gs, 'FONT_PATH_EMOJI_FOR_COLLECTIBLES'): # More specific if needed
+            if hasattr(gs, 'FONT_PATH_EMOJI_FOR_COLLECTIBLES'): 
                  font_path = gs.FONT_PATH_EMOJI_FOR_COLLECTIBLES
-            elif hasattr(gs, 'font_path_emoji'): # General emoji font path from game_settings
+            elif hasattr(gs, 'font_path_emoji'): 
                  font_path = gs.font_path_emoji
 
-            font_size = int(item_size_tuple[1] * 0.7) # Slightly larger
+            font_size = int(item_size_tuple[1] * 0.7) 
             
             try:
                 font = pygame.font.Font(font_path, font_size) if font_path else pygame.font.Font(None, font_size)
             except:
-                font = pygame.font.Font(None, font_size) # Fallback
+                font = pygame.font.Font(None, font_size) 
 
             text_surf = font.render(glyph_char, True, CYAN)
             temp_icon_surf = pygame.Surface(text_surf.get_size(), pygame.SRCALPHA)
@@ -452,12 +467,11 @@ class AncientAlienTerminal(pygame.sprite.Sprite):
         self.item_id = "ancient_alien_terminal_puzzle_trigger"
         self.interacted = False
 
-        image_filename = "ancient_terminal.png" # Ensure you create this image
+        image_filename = "ancient_terminal.png" 
         image_path = os.path.join(assets_path, image_filename)
         
         try:
             self.original_image = pygame.image.load(image_path).convert_alpha()
-            # Example scaling - adjust as needed
             self.original_image = pygame.transform.smoothscale(self.original_image, (int(TILE_SIZE * 0.8), int(TILE_SIZE * 1.0)))
         except pygame.error as e:
             print(f"Error loading ancient terminal image '{image_path}': {e}. Using fallback.")
@@ -465,7 +479,7 @@ class AncientAlienTerminal(pygame.sprite.Sprite):
             fallback_color = gs.get_game_setting("ARCHITECT_VAULT_WALL_COLOR", (150, 120, 200))
             self.original_image.fill(fallback_color)
             pygame.draw.rect(self.original_image, gs.CYAN, self.original_image.get_rect(), 3)
-            try: # Try to load a system font if game_settings fonts aren't initialized here
+            try: 
                 font = pygame.font.SysFont(None, 24)
                 text_surf = font.render("TERM", True, gs.WHITE)
                 text_rect = text_surf.get_rect(center=(self.original_image.get_width() // 2, self.original_image.get_height() // 2))
@@ -477,18 +491,15 @@ class AncientAlienTerminal(pygame.sprite.Sprite):
         self.image = self.original_image
         self.rect = self.image.get_rect(center=(x, y))
         
-        self.active_image = self.original_image.copy() # For now, no visual change on interaction
-        # To make it glow green on interaction:
-        # pygame.draw.circle(self.active_image, (0,255,0,100), (self.rect.width//2, self.rect.height//2), self.rect.width//3, 5)
+        self.active_image = self.original_image.copy() 
 
 
     def interact(self, game_controller_instance):
         if not self.interacted:
             self.interacted = True
-            self.image = self.active_image # Switch to active image if different
+            self.image = self.active_image 
             print(f"Ancient Alien Terminal interacted with ({self.rect.center}). Triggering ring puzzle.")
             
-            # Make sure GAME_STATE_RING_PUZZLE is defined in game_settings and imported in game_loop
             if hasattr(game_controller_instance, 'scene_manager') and \
                hasattr(gs, 'GAME_STATE_RING_PUZZLE'):
                 game_controller_instance.scene_manager.set_game_state(gs.GAME_STATE_RING_PUZZLE)
@@ -496,13 +507,12 @@ class AncientAlienTerminal(pygame.sprite.Sprite):
                 print("ERROR: Cannot set game state to ring puzzle. SceneManager or GAME_STATE_RING_PUZZLE missing.")
 
             if hasattr(game_controller_instance, 'play_sound'):
-                game_controller_instance.play_sound('ui_confirm') # Or a specific 'terminal_activated.wav'
+                game_controller_instance.play_sound('ui_confirm') 
             return True
         return False
 
     def update(self):
-        # Can add pulsing or animation here if desired
         pass
 
-    def draw(self, surface): # Though GameController will draw it via sprite group
+    def draw(self, surface): 
         surface.blit(self.image, self.rect)

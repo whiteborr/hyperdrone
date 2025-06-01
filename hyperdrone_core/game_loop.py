@@ -108,6 +108,8 @@ class GameController:
         self.hud_displayed_fragments = set()
         self.all_enemies_killed_this_level = False
         self.level_cleared_pending_animation = False
+        self.level_clear_fragment_spawned_this_level = False # New flag
+
         self.architect_vault_current_phase = None
         self.architect_vault_phase_timer_start = 0
         self.architect_vault_gauntlet_current_wave = 0
@@ -123,29 +125,29 @@ class GameController:
         # --- Cinematic Intro Attributes ---
         self.intro_screens_data = [
             {
-                "text": "\n\nThe Architect — creator of the Vault — \nhas vanished.\n\nNo signal. No trace.  \nJust... gone.",
+                "text": "The Architect — creator of the Vault\nand all drone intelligence — has vanished.\n\nNo warning. No trace. Only silence.",
                 "image_path": "assets/images/lore/scene1.png"
             },
             {
-                "text": "Without its creator, the Vault has become unstable.\n\nIts corridors twisted.\nIts defenses lethal.",
+                "text": "In their absence, the Vault has shifted.\n\nIts corridors twisted into cryptic mazes,\nteeming with automated defences.",
                 "image_path": "assets/images/lore/scene2.png"
             },
             {
-                "text": "You are a pilot\n— tasked with breaching the Vault.\n\nTo uncover what happened… ",
+                "text": "You are a pilot. An explorer.\n\nEntering the Vault to unravel the AI’s enigma —\n\nand stop a system-wide fail-safe\nbefore it activates.",
                 "image_path": "assets/images/lore/scene3.png"
             },
             {
-                "text": "The Architect's secrets lie ahead.\n\nSolve the puzzles. Survive the machines.\n\nOr be erased with everything else.",
+                "text": "The Architect’s secrets lie ahead.\n\nSolve the puzzles. Survive the machines.\n\nOr be erased with everything else.",
                 "image_path": "assets/images/lore/scene4.png"
             }
         ]
         self.current_intro_screen_index = 0
         self.intro_screen_start_time = 0
-        self.INTRO_SCREEN_DURATION_MS = 8000 # 6 seconds per screen
+        self.INTRO_SCREEN_DURATION_MS = 6000 # 6 seconds per screen
         self.intro_screen_text_surfaces_current = []
         self.current_intro_image_surface = None
         self.intro_font_key = "codex_category_font"
-        self.intro_text_color = gs.WHITE
+        self.intro_text_color = gs.GOLD
         self.intro_text_max_width_ratio = 0.8
         self.intro_sequence_finished = False
 
@@ -442,8 +444,6 @@ class GameController:
         """Loads image and renders text for the current intro screen."""
         if self.current_intro_screen_index >= len(self.intro_screens_data):
             self.intro_sequence_finished = True
-            # self.current_intro_image_surface is already set to the last image.
-            # Only clear the text surfaces.
             self.intro_screen_text_surfaces_current = []
             print("GameController: Intro sequence finished. Last image retained.")
             return
@@ -487,13 +487,12 @@ class GameController:
             self.current_intro_screen_index += 1
             if self.current_intro_screen_index >= len(self.intro_screens_data):
                 self.intro_sequence_finished = True
-                # Keep self.current_intro_image_surface as is (it holds the last screen's image)
-                self.intro_screen_text_surfaces_current = [] # Clear text
+                self.intro_screen_text_surfaces_current = [] 
                 print("GameController: Cinematic intro sequence skipped to end. Last image retained.")
             else:
                 self._prepare_current_intro_screen()
                 print(f"GameController: Skipped to intro screen {self.current_intro_screen_index + 1}")
-            self.intro_screen_start_time = pygame.time.get_ticks() # Reset timer for new screen/end phase
+            self.intro_screen_start_time = pygame.time.get_ticks() 
 
 
     def initialize_game_session(self):
@@ -521,6 +520,7 @@ class GameController:
 
         self.level_cleared_pending_animation = False
         self.all_enemies_killed_this_level = False
+        self.level_clear_fragment_spawned_this_level = False # Reset for new game
         self.explosion_particles.empty()
         self.triggered_story_beats.clear()
 
@@ -584,6 +584,7 @@ class GameController:
         if self.escape_zone: self.escape_zone.kill(); self.escape_zone = None
         self.alien_terminals_group.empty()
         self.last_interacted_terminal = None
+        self.level_clear_fragment_spawned_this_level = False # Reset for vault
 
         prev_weapon_mode_idx = WEAPON_MODES_SEQUENCE.index(gs.get_game_setting("INITIAL_WEAPON_MODE"))
         prev_current_weapon_mode = gs.get_game_setting("INITIAL_WEAPON_MODE")
@@ -734,12 +735,11 @@ class GameController:
                     self.current_intro_screen_index += 1
                     if self.current_intro_screen_index >= len(self.intro_screens_data):
                         self.intro_sequence_finished = True
-                        # Keep self.current_intro_image_surface from the last screen
-                        self.intro_screen_text_surfaces_current = [] # Clear text for "Press to Continue"
+                        self.intro_screen_text_surfaces_current = [] 
                         print("GameController: Cinematic intro sequence finished. Last image retained.")
                     else:
                         self._prepare_current_intro_screen()
-            # Drawing is handled by UIManager, input to proceed is in EventManager
+            
         elif current_game_state == GAME_STATE_RING_PUZZLE:
             if self.ring_puzzle_active_flag and self.current_ring_puzzle:
                 self.current_ring_puzzle.update()
@@ -789,6 +789,7 @@ class GameController:
         if not self.player or not self.maze:
             print("GameController: Error - Player or Maze not initialized for PLAYING state.")
             self.scene_manager.set_game_state(GAME_STATE_MAIN_MENU); return
+        
         if not self.level_cleared_pending_animation:
             elapsed_time_current_level_ms = current_time - self.level_timer_start_ticks
             self.level_time_remaining_ms = gs.get_game_setting("LEVEL_TIMER_DURATION") - elapsed_time_current_level_ms
@@ -818,6 +819,14 @@ class GameController:
             if random.random() < (gs.get_game_setting("POWERUP_SPAWN_CHANCE") / gs.get_game_setting("FPS")):
                  if len(self.power_ups) < gs.get_game_setting("MAX_POWERUPS_ON_SCREEN"):
                     self._try_spawn_powerup_item()
+            
+            # Check for conditional fragment spawn after all updates and collisions
+            if not self.level_clear_fragment_spawned_this_level and \
+               self.collected_rings >= self.total_rings_per_level and \
+               self.all_enemies_killed_this_level:
+                if self._attempt_level_clear_fragment_spawn():
+                    self.level_clear_fragment_spawned_this_level = True
+
 
         for ring_anim in list(self.animating_rings):
             dx = ring_anim['target_pos'][0] - ring_anim['pos'][0]
@@ -914,19 +923,19 @@ class GameController:
         elif current_phase == "architect_vault_boss_fight":
             if self.boss_active and self.maze_guardian and self.maze_guardian.alive:
                 self.maze_guardian.update(player_pixel_pos, self.maze, current_time, 0)
-                self.enemy_manager.update_all(player_pixel_pos, self.maze, current_time, 0)
+                self.enemy_manager.update_all(player_pixel_pos, self.maze, current_time, 0) # Update any remaining minions
                 self._check_collisions_architect_vault_combat()
-            elif self.boss_active and self.maze_guardian and not self.maze_guardian.alive:
-                if self.architect_vault_message == "MAZE GUARDIAN DEFEATED! ACCESS GRANTED!":
-                    if current_time > self.architect_vault_message_timer:
+            elif self.boss_active and self.maze_guardian and not self.maze_guardian.alive: # Boss defeated
+                if self.architect_vault_message == "MAZE GUARDIAN DEFEATED! ACCESS GRANTED!": # Check if message is set
+                    if current_time > self.architect_vault_message_timer: # Wait for message to display
                         self.scene_manager.set_game_state(GAME_STATE_ARCHITECT_VAULT_EXTRACTION)
                         self.boss_active = False
                         if self.maze_guardian: self.maze_guardian.kill(); self.maze_guardian = None
-            elif not self.boss_active and not self.maze_guardian:
-                 pass
+            elif not self.boss_active and not self.maze_guardian: # Should not happen if boss was spawned
+                 pass # Or handle error
 
-        elif current_phase == "gauntlet_cleared_transition":
-            if current_time - self.architect_vault_phase_timer_start > 2000:
+        elif current_phase == "gauntlet_cleared_transition": # This state might be redundant if boss fight follows directly
+            if current_time - self.architect_vault_phase_timer_start > 2000: # Short delay
                 self.scene_manager.set_game_state(GAME_STATE_ARCHITECT_VAULT_EXTRACTION)
         elif current_phase == "extraction":
             time_elapsed_extraction = current_time - self.architect_vault_phase_timer_start
@@ -943,8 +952,8 @@ class GameController:
                 self.scene_manager.set_game_state(GAME_STATE_ARCHITECT_VAULT_FAILURE)
                 return
 
-            if random.random() < 0.008 :
-                 if self.enemy_manager.get_active_enemies_count() < 3:
+            if random.random() < 0.008 : # Chance to spawn more enemies during extraction
+                 if self.enemy_manager.get_active_enemies_count() < 3: # Limit max enemies
                      self.enemy_manager.spawn_prototype_drones(1, far_from_player=True)
 
             self.enemy_manager.update_all(player_pixel_pos, self.maze, current_time, 0)
@@ -959,7 +968,7 @@ class GameController:
                 if not collided_terminal.interacted:
                     self.last_interacted_terminal = collided_terminal
                     if collided_terminal.interact(self):
-                        return
+                        return # Interaction might change game state, so return early
 
         if not self.level_cleared_pending_animation:
             collided_rings_sprites = pygame.sprite.spritecollide(self.player, self.rings, True, pygame.sprite.collide_rect_ratio(0.7))
@@ -979,8 +988,8 @@ class GameController:
                         'target_pos': self.ring_ui_target_pos,
                         'speed': 15, 'surface': anim_ring_surf
                     })
-                self._check_level_clear_condition()
-                if self.level_cleared_pending_animation: break
+                self._check_level_clear_condition() # Check if level should end or fragment spawn
+                if self.level_cleared_pending_animation: break # Stop processing if level is ending
 
         collided_powerups = pygame.sprite.spritecollide(self.player, self.power_ups, False, pygame.sprite.collide_rect_ratio(0.7))
         for item in collided_powerups:
@@ -1025,6 +1034,10 @@ class GameController:
                     print("DEBUG: All fragments collected, setting vault message.")
                     self.architect_vault_message = "All Core Fragments Acquired! Vault Access Imminent!"
                     self.architect_vault_message_timer = pygame.time.get_ticks() + 4000
+                
+                # After collecting a fragment, check if it was the last objective for level clear
+                self._check_level_clear_condition() 
+
 
         collided_vault_logs = pygame.sprite.spritecollide(self.player, self.vault_logs, True, pygame.sprite.collide_rect_ratio(0.7))
         for log_item in collided_vault_logs:
@@ -1103,7 +1116,7 @@ class GameController:
                                 self.drone_system.add_player_cores(25)
                                 self.all_enemies_killed_this_level = all(not e.alive for e in enemies_to_check)
                                 if self.all_enemies_killed_this_level:
-                                    self._check_level_clear_condition()
+                                    self._check_level_clear_condition() # Check if level should end or fragment spawn
                             if not projectile.alive: break
 
         for enemy_obj in self.enemy_manager.get_sprites():
@@ -1212,16 +1225,65 @@ class GameController:
             self._reset_level_timer_internal()
 
     def _check_level_clear_condition(self):
-        if self.player and self.collected_rings >= self.total_rings_per_level and \
+        # This method is called when a ring is collected OR when the last enemy is killed.
+        # It now also attempts to spawn a fragment if conditions are met.
+        if self.player and \
+           self.collected_rings >= self.total_rings_per_level and \
+           self.all_enemies_killed_this_level and \
            not self.level_cleared_pending_animation:
+            
+            # Attempt to spawn a fragment if this level is a reward level and fragment not yet spawned/collected
+            if not self.level_clear_fragment_spawned_this_level:
+                if self._attempt_level_clear_fragment_spawn():
+                    self.level_clear_fragment_spawned_this_level = True
+                    # Fragment spawned. Level should not end yet. Player needs to collect it.
+                    return 
+
+            # If no fragment was due or it was already spawned/collected, proceed with level clear animation.
             self.player.moving_forward = False
             self.level_cleared_pending_animation = True
-            print("Level clear condition met (rings). Pending animation.")
+            print("Level clear condition met (rings & enemies). Pending animation.")
+
+
+    def _attempt_level_clear_fragment_spawn(self):
+        """
+        Checks if the current level is a reward level for a core fragment
+        and spawns it if conditions are met (all rings collected, all enemies killed,
+        fragment not yet collected or already present).
+        Returns True if a fragment was spawned, False otherwise.
+        """
+        fragment_id_to_spawn = None
+        fragment_details_to_spawn = None
+
+        # Determine which fragment (if any) is associated with the current level
+        for key, details in CORE_FRAGMENT_DETAILS.items():
+            if details.get("reward_level") == self.level:
+                fragment_id_to_spawn = details.get("id")
+                fragment_details_to_spawn = details
+                break
+        
+        if fragment_id_to_spawn and fragment_details_to_spawn:
+            # Check if fragment already collected or already spawned on this level
+            if not self.drone_system.has_collected_fragment(fragment_id_to_spawn) and \
+               not any(getattr(frag, 'fragment_id', None) == fragment_id_to_spawn for frag in self.core_fragments):
+                
+                spawn_pos = self._get_random_valid_fragment_tile_internal(set())
+                if spawn_pos:
+                    tile_c_rel, tile_r_rel = spawn_pos
+                    abs_x = tile_c_rel * TILE_SIZE + TILE_SIZE // 2 + self.maze.game_area_x_offset
+                    abs_y = tile_r_rel * TILE_SIZE + TILE_SIZE // 2
+                    
+                    self.core_fragments.add(CoreFragmentItem(abs_x, abs_y, fragment_id_to_spawn, fragment_details_to_spawn))
+                    print(f"GameController: Spawned reward fragment '{fragment_id_to_spawn}' on level {self.level} clear.")
+                    self.play_sound('collect_fragment', 0.8) 
+                    return True 
+        return False 
 
     def _prepare_for_next_level(self, from_bonus_level_completion=False):
         print(f"DEBUG PREPARE_LEVEL: Called. from_bonus: {from_bonus_level_completion}, Current Lvl: {self.level}, Rings: {self.collected_rings}/{self.total_rings_per_level}, Vault Completed: {self.drone_system.has_completed_architect_vault()}, Fragments: {self.drone_system.get_collected_fragments_ids()} (Need {gs.TOTAL_CORE_FRAGMENTS_NEEDED})")
         self.explosion_particles.empty()
         if self.escape_zone: self.escape_zone.kill(); self.escape_zone = None
+        self.level_clear_fragment_spawned_this_level = False # Reset for next level
 
         if self.player and not self.player.alive and self.lives > 0:
             print("GameController: Player won the level but was destroyed. Reviving for next level transition.")
@@ -1280,11 +1342,11 @@ class GameController:
         self.all_enemies_killed_this_level = False
         self.maze = Maze(game_area_x_offset=0, maze_type="standard")
         self.enemy_manager.spawn_enemies_for_level(self.level)
-        self.core_fragments.empty()
+        self.core_fragments.empty() # Clear any previously spawned fragments
         self.vault_logs.empty()
         self.glyph_tablets.empty()
         self.alien_terminals_group.empty()
-        self._place_collectibles_for_level(initial_setup=True)
+        self._place_collectibles_for_level(initial_setup=True) # This will call _spawn_core_fragments_for_level_internal
         self._reset_level_timer_internal()
         self.play_sound('level_up')
         self.animating_rings.clear()
@@ -1298,6 +1360,7 @@ class GameController:
         if not self.player: return
         self.explosion_particles.empty()
         if self.escape_zone: self.escape_zone.kill(); self.escape_zone = None
+        self.level_clear_fragment_spawned_this_level = False # Reset on death too
 
         new_player_pos = self._get_safe_spawn_point(TILE_SIZE * 0.8, TILE_SIZE * 0.8)
         current_drone_id = self.player.drone_id
@@ -1337,6 +1400,7 @@ class GameController:
         print(f"GameController: Bonus Level Ended. Completed: {completed}")
         self.explosion_particles.empty()
         if self.escape_zone: self.escape_zone.kill(); self.escape_zone = None
+        self.level_clear_fragment_spawned_this_level = False # Reset after bonus
         if completed:
             self.score += 500
             self.drone_system.add_player_cores(250)
@@ -1367,6 +1431,11 @@ class GameController:
 
             if any(math.hypot(abs_x - term.rect.centerx, abs_y - term.rect.centery) < TILE_SIZE * 1.5 for term in self.alien_terminals_group):
                 continue
+            
+            # Check against already spawned core fragments as well
+            if any(math.hypot(abs_x - frag.rect.centerx, abs_y - frag.rect.centery) < TILE_SIZE * 1.5 for frag in self.core_fragments):
+                continue
+
 
             if not self.maze.is_wall(abs_x, abs_y, entity_width, entity_height):
                 return (abs_x, abs_y)
@@ -1434,34 +1503,49 @@ class GameController:
             print("GameController: Warning - Not enough path cells to spawn all vault terminals.")
             return
 
-        spawnable_fragment_keys = [k for k in CORE_FRAGMENT_DETAILS.keys() if k != "fragment_vault_core" and CORE_FRAGMENT_DETAILS[k].get("spawn_info")]
-        spawnable_fragment_keys.sort() # Ensure consistent ordering for terminal indexing
-
-        num_terminals_to_spawn = min(TOTAL_CORE_FRAGMENTS_NEEDED, len(spawnable_fragment_keys))
-
+        # Filter for fragments that are part of the entry puzzle (alpha, beta, gamma)
+        # This relies on them NOT having a "reward_level" or having a specific flag if needed.
+        # For now, assuming alpha, beta, gamma are the ones for the puzzle.
+        puzzle_fragment_keys = [
+            k for k, v in CORE_FRAGMENT_DETAILS.items() 
+            if v.get("id") in ["cf_alpha", "cf_beta", "cf_gamma"]
+        ]
+        # Ensure a consistent order for terminal_id mapping if needed, though direct ID matching is better.
+        # Here, we'll just use the order they appear in CORE_FRAGMENT_DETAILS if filtered.
+        
+        num_terminals_to_spawn = TOTAL_CORE_FRAGMENTS_NEEDED # Should be 3
 
         if len(path_cells_relative) < num_terminals_to_spawn:
             print(f"GameController: Warning - Not enough path cells ({len(path_cells_relative)}) to spawn {num_terminals_to_spawn} vault terminals.")
-            num_terminals_to_spawn = len(path_cells_relative) # Adjust to available cells
+            num_terminals_to_spawn = len(path_cells_relative) 
             if num_terminals_to_spawn == 0: return
 
-
         available_spawn_points_rel = random.sample(path_cells_relative, k=num_terminals_to_spawn)
+        
+        # We need to map terminal_id (0, 1, 2) to specific fragment_ids (cf_alpha, cf_beta, cf_gamma)
+        # Let's assume a fixed mapping for now or use the order from CORE_FRAGMENT_DETAILS
+        fragment_ids_for_puzzle_terminals = ["cf_alpha", "cf_beta", "cf_gamma"]
+
+
         for i in range(num_terminals_to_spawn):
             pos_rel = available_spawn_points_rel[i]
             abs_x = pos_rel[0] + self.maze.game_area_x_offset
             abs_y = pos_rel[1]
             terminal = pygame.sprite.Sprite()
             terminal.image = pygame.Surface([TILE_SIZE * 0.6, TILE_SIZE * 0.6], pygame.SRCALPHA)
-            terminal.image.fill(RED) # Default color, will change in UI if active
+            terminal.image.fill(RED) 
             pygame.draw.rect(terminal.image, GOLD, terminal.image.get_rect(), 2)
             num_font = self.fonts.get("ui_text", pygame.font.Font(None, 24))
-            num_surf = num_font.render(str(i+1), True, WHITE)
+            # Displaying 1, 2, 3 on terminals for player clarity
+            num_surf = num_font.render(str(i+1), True, WHITE) 
             terminal.image.blit(num_surf, num_surf.get_rect(center=(terminal.image.get_width()//2, terminal.image.get_height()//2)))
             terminal.rect = terminal.image.get_rect(center=(abs_x, abs_y))
-            terminal.terminal_id = i # This ID corresponds to the index in fragment_keys_for_puzzle
-            terminal.is_active = False # This will be set to True upon successful activation
+            # Store which fragment this terminal corresponds to
+            terminal.required_fragment_id = fragment_ids_for_puzzle_terminals[i] 
+            terminal.terminal_id_display = i + 1 # For messages
+            terminal.is_active = False 
             self.architect_vault_terminals.add(terminal)
+
 
     def _try_spawn_powerup_item(self):
         if not self.maze: return
@@ -1508,7 +1592,7 @@ class GameController:
                     abs_y = rel_y
                     self.rings.add(Ring(abs_x, abs_y))
 
-        self._spawn_core_fragments_for_level_internal()
+        self._spawn_core_fragments_for_level_internal() 
         self._spawn_lore_collectibles_for_level()
 
         target_level_for_terminal = 5
@@ -1570,6 +1654,9 @@ class GameController:
 
         log_id_to_spawn = "GRX-23"
         lore_entry_id_for_log = "race_greys"
+        # Define the filename for the GRX-23 log icon
+        grx23_icon_filename = "vault_log_grx23_icon.png" # Ensure this file exists in assets/images/collectibles/
+
         if self.level == 2 and not self.drone_system.has_unlocked_lore(lore_entry_id_for_log):
             already_spawned = any(getattr(log, 'log_id', None) == log_id_to_spawn for log in self.vault_logs)
             if not already_spawned:
@@ -1578,8 +1665,9 @@ class GameController:
                     col, row = spawn_pos
                     abs_x = col * TILE_SIZE + TILE_SIZE // 2 + self.maze.game_area_x_offset
                     abs_y = row * TILE_SIZE + TILE_SIZE // 2
-                    self.vault_logs.add(VaultLogItem(abs_x, abs_y, log_id_to_spawn))
-                    print(f"GameController: Spawned Vault Log '{log_id_to_spawn}' at ({abs_x}, {abs_y}) on level {self.level}")
+                    # Pass the icon_filename to VaultLogItem constructor
+                    self.vault_logs.add(VaultLogItem(abs_x, abs_y, log_id_to_spawn, icon_filename=grx23_icon_filename))
+                    print(f"GameController: Spawned Vault Log '{log_id_to_spawn}' with icon '{grx23_icon_filename}' at ({abs_x}, {abs_y}) on level {self.level}")
 
         tablet_alpha_id = "alpha"
         lore_for_tablet_alpha = "tech_glyph_tablet_alpha"
@@ -1631,16 +1719,22 @@ class GameController:
         occupied_fragment_tiles_this_level = set()
         for frag_key, details in CORE_FRAGMENT_DETAILS.items():
             if not details or not isinstance(details, dict): continue
-            if frag_key != "fragment_vault_core" and \
-               details.get("spawn_info", {}).get("level") == self.level and \
-               not self.drone_system.has_collected_fragment(details["id"]):
-                random_tile_coords_rel = self._get_random_valid_fragment_tile_internal(occupied_fragment_tiles_this_level)
-                if random_tile_coords_rel:
-                    tile_c_rel, tile_r_rel = random_tile_coords_rel
-                    abs_x = tile_c_rel * TILE_SIZE + TILE_SIZE // 2 + self.maze.game_area_x_offset
-                    abs_y = tile_r_rel * TILE_SIZE + TILE_SIZE // 2
-                    self.core_fragments.add(CoreFragmentItem(abs_x, abs_y, details["id"], details))
-                    occupied_fragment_tiles_this_level.add(random_tile_coords_rel)
+            
+            spawn_info = details.get("spawn_info")
+            fragment_id = details.get("id")
+
+            if spawn_info and spawn_info.get("level") == self.level and \
+               fragment_id and not self.drone_system.has_collected_fragment(fragment_id):
+                if details.get("reward_level") is None: 
+                    random_tile_coords_rel = self._get_random_valid_fragment_tile_internal(occupied_fragment_tiles_this_level)
+                    if random_tile_coords_rel:
+                        tile_c_rel, tile_r_rel = random_tile_coords_rel
+                        abs_x = tile_c_rel * TILE_SIZE + TILE_SIZE // 2 + self.maze.game_area_x_offset
+                        abs_y = tile_r_rel * TILE_SIZE + TILE_SIZE // 2
+                        self.core_fragments.add(CoreFragmentItem(abs_x, abs_y, fragment_id, details))
+                        occupied_fragment_tiles_this_level.add(random_tile_coords_rel)
+                        print(f"GameController: Spawned standard fragment '{fragment_id}' at start of level {self.level}")
+
 
     def _get_random_valid_fragment_tile_internal(self, existing_fragment_tiles_rel):
         if not self.maze or not self.maze.grid: return None
@@ -1826,7 +1920,6 @@ class GameController:
                 return # Consume the event
 
         if key_event == pygame.K_r:
-            # When restarting from game over, go to intro scroll first
             self.scene_manager.set_game_state(GAME_STATE_GAME_INTRO_SCROLL)
         elif key_event == pygame.K_l and not is_actually_a_new_high_score_and_submittable :
             self.scene_manager.set_game_state(GAME_STATE_LEADERBOARD)
@@ -1860,7 +1953,7 @@ class GameController:
             return
 
         fragment_keys_for_puzzle = [k for k, v in CORE_FRAGMENT_DETAILS.items() if v.get("spawn_info")]
-        fragment_keys_for_puzzle.sort() # Ensure consistent indexing
+        fragment_keys_for_puzzle.sort() 
 
         required_fragment_id = None
         required_fragment_name = "a specific Core Fragment"
@@ -1874,7 +1967,7 @@ class GameController:
         if required_fragment_id and self.drone_system.has_collected_fragment(required_fragment_id):
             self.architect_vault_puzzle_terminals_activated[terminal_idx_pressed] = True
             if hasattr(target_terminal_sprite, 'is_active'): target_terminal_sprite.is_active = True
-            if hasattr(target_terminal_sprite, 'image'): target_terminal_sprite.image.fill(GREEN) # Visual feedback
+            if hasattr(target_terminal_sprite, 'image'): target_terminal_sprite.image.fill(GREEN) 
             self.play_sound('vault_barrier_disable')
             self.architect_vault_message = f"Terminal {terminal_idx_pressed+1} ({required_fragment_name}) activated!"
             self.architect_vault_message_timer = pygame.time.get_ticks() + 3000
@@ -1948,7 +2041,7 @@ class GameController:
     def run(self):
         current_fullscreen_setting = gs.get_game_setting("FULLSCREEN_MODE")
         required_flags = pygame.FULLSCREEN if current_fullscreen_setting else 0
-        if self.screen_flags != required_flags: # Apply fullscreen changes if settings were modified
+        if self.screen_flags != required_flags: 
             self.screen_flags = required_flags
             self.screen = pygame.display.set_mode((gs.get_game_setting("WIDTH"), gs.get_game_setting("HEIGHT")), self.screen_flags)
 
@@ -1968,7 +2061,7 @@ class GameController:
                  current_game_state.startswith("architect_vault"):
                 self._draw_game_world()
                 self.ui_manager.draw_current_scene_ui()
-            else: # Menu states, etc.
+            else: 
                 self.ui_manager.draw_current_scene_ui()
 
             pygame.display.flip()
