@@ -22,6 +22,7 @@ class CoreReactor(pygame.sprite.Sprite):
             health (int): The maximum and initial health of the reactor.
             size_in_tiles (int): The size of the reactor in terms of game tiles.
                                  For example, 2 means 2x2 tiles.
+                                 For MazeChapter2, if 'C' is a single tile, this would be 1.
         """
         super().__init__() # Initialize the parent Sprite class
 
@@ -93,7 +94,6 @@ class CoreReactor(pygame.sprite.Sprite):
                  layer_color_tuple = (min(255,r+30), min(255,g+30), min(255,b+30))
 
             # Draw the layer with its calculated color and alpha
-            # Pygame's draw.rect on an SRCALPHA surface handles the alpha component of the color correctly.
             pygame.draw.rect(self.image, (*layer_color_tuple, layer_alpha), layer_rect, border_radius=int(self.size * 0.05)) # Small border radius
 
         # Draw a border around the reactor

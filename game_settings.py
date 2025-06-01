@@ -7,6 +7,8 @@ WIDTH = 1920
 HEIGHT = 1080
 FPS = 60
 FULLSCREEN_MODE = True 
+MUSIC_VOLUME_MULTIPLIER = 0.5 # Example: Global music volume control (0.0 to 1.0)
+SFX_VOLUME_MULTIPLIER = 0.7   # Example: Global sound effects volume control
 
 # ==========================
 # UI & Layout Settings
@@ -18,7 +20,7 @@ GAME_PLAY_AREA_HEIGHT = HEIGHT - BOTTOM_PANEL_HEIGHT
 # Tile & Maze Settings
 # ==========================
 TILE_SIZE = 80            
-MAZE_ROWS = GAME_PLAY_AREA_HEIGHT // TILE_SIZE 
+MAZE_ROWS = GAME_PLAY_AREA_HEIGHT // TILE_SIZE # Calculated based on screen and tile size
 
 # ==========================
 # Color Definitions
@@ -56,33 +58,33 @@ PLAYER_MAX_HEALTH = 100
 PLAYER_SPEED = 3
 PLAYER_LIVES = 3
 ROTATION_SPEED = 5
-PLAYER_INVINCIBILITY = False
+PLAYER_INVINCIBILITY = False # For debugging or special modes
 
 PLAYER_DEFAULT_BULLET_SIZE = 4
 PLAYER_BIG_BULLET_SIZE = PLAYER_DEFAULT_BULLET_SIZE * 3
 PLAYER_BULLET_COLOR = GOLD
 PLAYER_BULLET_SPEED = 7
-PLAYER_BULLET_LIFETIME = 100
+PLAYER_BULLET_LIFETIME = 100 # In frames
 
-PLAYER_BASE_SHOOT_COOLDOWN = 500
-PLAYER_RAPID_FIRE_COOLDOWN = 150
+PLAYER_BASE_SHOOT_COOLDOWN = 500 # Milliseconds
+PLAYER_RAPID_FIRE_COOLDOWN = 150 # Milliseconds
 
 BOUNCING_BULLET_MAX_BOUNCES = 2
 PIERCING_BULLET_MAX_PIERCES = 1
 
 MISSILE_COLOR = MAGENTA
 MISSILE_SPEED = PLAYER_BULLET_SPEED * 0.8
-MISSILE_LIFETIME = PLAYER_BULLET_LIFETIME * 3
-MISSILE_SIZE = 8
-MISSILE_TURN_RATE = 4
-MISSILE_COOLDOWN = 3000
+MISSILE_LIFETIME = PLAYER_BULLET_LIFETIME * 3 # In frames
+MISSILE_SIZE = 8 # Visual size
+MISSILE_TURN_RATE = 4 # Degrees per frame
+MISSILE_COOLDOWN = 3000 # Milliseconds
 MISSILE_DAMAGE = 50
 
 LIGHTNING_COLOR = ELECTRIC_BLUE
 LIGHTNING_DAMAGE = 15
-LIGHTNING_LIFETIME = 20
-LIGHTNING_COOLDOWN = 750
-LIGHTNING_ZAP_RANGE = 250
+LIGHTNING_LIFETIME = 20 # In frames
+LIGHTNING_COOLDOWN = 750 # Milliseconds
+LIGHTNING_ZAP_RANGE = 250 # Max distance for initial zap
 
 LIGHTNING_BASE_THICKNESS = 5
 LIGHTNING_CORE_THICKNESS_RATIO = 0.4
@@ -126,9 +128,9 @@ WEAPON_MODE_NAMES = {
     WEAPON_MODE_HEATSEEKER_PLUS_BULLETS: "Seeker + Rapid", WEAPON_MODE_LIGHTNING: "Chain Lightning"
 }
 
-WEAPON_MODE_ICONS = {
+WEAPON_MODE_ICONS = { # Emoji or simple characters for HUD
     WEAPON_MODE_DEFAULT: "🔫", WEAPON_MODE_TRI_SHOT: "🔱",
-    WEAPON_MODE_RAPID_SINGLE: "💨", WEAPON_MODE_RAPID_TRI: "�🔱",
+    WEAPON_MODE_RAPID_SINGLE: "💨", WEAPON_MODE_RAPID_TRI: "�", # Changed Rapid Tri icon
     WEAPON_MODE_BIG_SHOT: "💣", WEAPON_MODE_BOUNCE: "🏀",
     WEAPON_MODE_PIERCE: "➤", WEAPON_MODE_HEATSEEKER: "🚀",
     WEAPON_MODE_HEATSEEKER_PLUS_BULLETS: "🚀💨", WEAPON_MODE_LIGHTNING: "⚡",
@@ -139,35 +141,35 @@ WEAPON_MODE_ICONS = {
 # ==========================
 PHANTOM_CLOAK_DURATION_MS = 5000
 PHANTOM_CLOAK_COOLDOWN_MS = 15000
-PHANTOM_CLOAK_ALPHA_SETTING = 70
+PHANTOM_CLOAK_ALPHA_SETTING = 70 # Alpha value when cloaked (0-255)
 
 # ==========================
 # Player Thrust Particle Settings
 # ==========================
-THRUST_PARTICLE_SPREAD_ANGLE = 45
-THRUST_PARTICLE_LIFETIME_BLAST = 25
+THRUST_PARTICLE_SPREAD_ANGLE = 45 # Degrees
+THRUST_PARTICLE_LIFETIME_BLAST = 25 # Frames
 THRUST_PARTICLE_START_SIZE_BLAST_MIN = 5
 THRUST_PARTICLE_START_SIZE_BLAST_MAX = 10
 THRUST_PARTICLE_SPEED_MIN_BLAST = 1.5
 THRUST_PARTICLE_SPEED_MAX_BLAST = 3.0
-THRUST_PARTICLE_SHRINK_RATE_BLAST = 0.15
+THRUST_PARTICLE_SHRINK_RATE_BLAST = 0.15 # Size reduction per frame
 
 # ==========================
 # Enemy Base Settings
 # ==========================
 ENEMY_SPEED = 1.5
 ENEMY_HEALTH = 100
-ENEMY_COLOR = RED
+ENEMY_COLOR = RED # Default fallback color
 REGULAR_ENEMY_SPRITE_PATH = "assets/images/enemies/TR-3B_enemy.png"
 ENEMY_BULLET_SPEED = 5
-ENEMY_BULLET_COOLDOWN = 1500
-ENEMY_BULLET_LIFETIME = 75
+ENEMY_BULLET_COOLDOWN = 1500 # Milliseconds
+ENEMY_BULLET_LIFETIME = 75 # Frames
 ENEMY_BULLET_COLOR = ORANGE
 ENEMY_BULLET_DAMAGE = 10
 
 PROTOTYPE_DRONE_HEALTH = 150
 PROTOTYPE_DRONE_SPEED = 2.0
-PROTOTYPE_DRONE_COLOR = MAGENTA
+PROTOTYPE_DRONE_COLOR = MAGENTA # Fallback color
 PROTOTYPE_DRONE_SHOOT_COOLDOWN = 1200
 PROTOTYPE_DRONE_BULLET_SPEED = 6
 PROTOTYPE_DRONE_SPRITE_PATH = "assets/images/enemies/prototype_enemy.png"
@@ -177,7 +179,7 @@ PROTOTYPE_DRONE_SPRITE_PATH = "assets/images/enemies/prototype_enemy.png"
 # ==========================
 MAZE_GUARDIAN_HEALTH = 5000
 MAZE_GUARDIAN_SPEED = 1.0
-MAZE_GUARDIAN_COLOR = (80, 0, 120)
+MAZE_GUARDIAN_COLOR = (80, 0, 120) # Fallback color
 MAZE_GUARDIAN_SPRITE_PATH = "assets/images/enemies/maze_guardian.png"
 MAZE_GUARDIAN_BULLET_SPEED = 6
 MAZE_GUARDIAN_BULLET_LIFETIME = 80
@@ -185,7 +187,7 @@ MAZE_GUARDIAN_BULLET_COLOR = RED
 MAZE_GUARDIAN_BULLET_DAMAGE = 15
 MAZE_GUARDIAN_LASER_DAMAGE = 20
 MAZE_GUARDIAN_LASER_COOLDOWN = 5000 
-MAZE_GUARDIAN_LASER_SWEEP_ARC = 90
+MAZE_GUARDIAN_LASER_SWEEP_ARC = 90 # Degrees
 MAZE_GUARDIAN_SHIELD_DURATION_MS = 6000
 MAZE_GUARDIAN_SHIELD_COOLDOWN_MS = 10000
 MAZE_GUARDIAN_ARENA_SHIFT_INTERVAL_MS = 3000
@@ -219,11 +221,11 @@ SPEED_BOOST_POWERUP_DURATION = POWERUP_TYPES["speed_boost"]["duration"]
 TOTAL_CORE_FRAGMENTS_NEEDED = 3 
 CORE_FRAGMENT_VISUAL_SIZE = TILE_SIZE // 2.5
 
-CORE_FRAGMENT_DETAILS = {
-    "fragment_alpha": {"id": "cf_alpha", "name": "Alpha Core Fragment", "icon_filename": "core_fragment_alpha.png", "description": "Pulses with unstable energy.", "reward_level": 3, "buff": {"type": "speed", "value": 1.05}},
-    "fragment_beta": {"id": "cf_beta", "name": "Beta Core Fragment", "icon_filename": "core_fragment_beta.png", "description": "Hums with alien resonance.", "reward_level": 6, "buff": {"type": "bullet_damage_multiplier", "value": 1.05}},
-    "fragment_gamma": {"id": "cf_gamma", "name": "Gamma Core Fragment", "icon_filename": "core_fragment_gamma.png", "description": "A critical processing unit.", "reward_level": 9, "buff_alt": {"type": "damage_reduction", "value": 0.05}},
-    "fragment_vault_core": {"id": "vault_core", "name": "Vault Core", "icon_filename": "vault_core_icon.png", "description": "Heart of the Vault defenses.", "display_color": GOLD}
+CORE_FRAGMENT_DETAILS = { # Details for fragments, including spawn conditions and buffs
+    "fragment_alpha": {"id": "cf_alpha", "name": "Alpha Core Fragment", "icon_filename": "core_fragment_alpha.png", "description": "Pulses with unstable energy.", "spawn_info": {"level": 3}, "buff": {"type": "speed", "value": 1.05}},
+    "fragment_beta": {"id": "cf_beta", "name": "Beta Core Fragment", "icon_filename": "core_fragment_beta.png", "description": "Hums with alien resonance.", "spawn_info": {"level": 6}, "buff": {"type": "bullet_damage_multiplier", "value": 1.05}},
+    "fragment_gamma": {"id": "cf_gamma", "name": "Gamma Core Fragment", "icon_filename": "core_fragment_gamma.png", "description": "A critical processing unit.", "spawn_info": {"level": 9}, "buff_alt": {"type": "damage_reduction", "value": 0.05}},
+    "fragment_vault_core": {"id": "vault_core", "name": "Vault Core", "icon_filename": "vault_core_icon.png", "description": "Heart of the Vault defenses.", "display_color": GOLD, "reward_level": "architect_vault_boss"} # Not spawned by level
 }
 
 ARCHITECT_VAULT_EXTRACTION_TIMER_MS = 90000
@@ -234,16 +236,16 @@ ARCHITECT_REWARD_BLUEPRINT_ID = "DRONE_ARCHITECT_X"
 ARCHITECT_REWARD_LORE_ID = "lore_architect_origin"
 
 # ==========================
-# Maze Defense Mode Settings (NEW)
+# Maze Defense Mode Settings
 # ==========================
 DEFENSE_REACTOR_HEALTH = 1000
 DEFENSE_BUILD_PHASE_DURATION_MS = 30000 # 30 seconds
 DEFENSE_WAVE_CLEAR_CORE_REWARD_BASE = 100 # Cores awarded for clearing a wave
 DEFENSE_WAVE_CLEAR_CORE_INCREMENT = 50  # Additional cores per wave number
 
-TURRET_BASE_COST = 50
-TURRET_UPGRADE_COST = 100 # Can be a list or dict for tiered upgrades later
-TURRET_MAX_UPGRADE_LEVEL = 3 # Example, can be tied to WEAPON_MODES_SEQUENCE length
+TURRET_BASE_COST = 50 # This can be referenced by Turret class or BuildMenu
+TURRET_UPGRADE_COST = 100 
+TURRET_MAX_UPGRADE_LEVEL = 3 
 
 # ==========================
 # Game Progression & Miscellaneous
@@ -260,15 +262,14 @@ UI_FONT_PATH_EMOJI = "assets/fonts/seguiemj.ttf" # Path for emoji font if needed
 # Game State Definitions
 # ==========================
 GAME_STATE_MAIN_MENU = "main_menu"
-GAME_STATE_PLAYING = "playing"
+GAME_STATE_PLAYING = "playing" # Standard procedural maze gameplay
 GAME_STATE_GAME_OVER = "game_over"
 GAME_STATE_LEADERBOARD = "leaderboard_display"
 GAME_STATE_ENTER_NAME = "enter_name"
 GAME_STATE_SETTINGS = "settings_menu"
 GAME_STATE_DRONE_SELECT = "drone_select_menu"
 GAME_STATE_CODEX = "codex_screen"
-GAME_STATE_BONUS_LEVEL_TRANSITION = "bonus_level_transition" # Not currently used, but defined
-GAME_STATE_BONUS_LEVEL_START = "bonus_level_start" # Not currently used, but defined
+GAME_STATE_BONUS_LEVEL_START = "bonus_level_start" 
 GAME_STATE_BONUS_LEVEL_PLAYING = "bonus_level_playing"
 GAME_STATE_ARCHITECT_VAULT_INTRO = "architect_vault_intro"
 GAME_STATE_ARCHITECT_VAULT_ENTRY_PUZZLE = "architect_vault_entry_puzzle"
@@ -278,7 +279,7 @@ GAME_STATE_ARCHITECT_VAULT_SUCCESS = "architect_vault_success"
 GAME_STATE_ARCHITECT_VAULT_FAILURE = "architect_vault_failure"
 GAME_STATE_RING_PUZZLE = "ring_puzzle_active"
 GAME_STATE_GAME_INTRO_SCROLL = "game_intro_scroll"
-GAME_STATE_MAZE_DEFENSE = "maze_defense_mode" # New Game State
+GAME_STATE_MAZE_DEFENSE = "maze_defense_mode" # For Chapter 2 tilemap maze
 
 
 # ==============================================================================
@@ -287,6 +288,7 @@ GAME_STATE_MAZE_DEFENSE = "maze_defense_mode" # New Game State
 
 DEFAULT_SETTINGS = {
     "WIDTH": WIDTH, "HEIGHT": HEIGHT, "FPS": FPS, "FULLSCREEN_MODE": FULLSCREEN_MODE,
+    "MUSIC_VOLUME_MULTIPLIER": MUSIC_VOLUME_MULTIPLIER, "SFX_VOLUME_MULTIPLIER": SFX_VOLUME_MULTIPLIER,
     "BOTTOM_PANEL_HEIGHT": BOTTOM_PANEL_HEIGHT, "TILE_SIZE": TILE_SIZE,
     "PLAYER_MAX_HEALTH": PLAYER_MAX_HEALTH, "PLAYER_LIVES": PLAYER_LIVES,
     "PLAYER_SPEED": PLAYER_SPEED, "ROTATION_SPEED": ROTATION_SPEED,
@@ -338,7 +340,7 @@ DEFAULT_SETTINGS = {
     "ARCHITECT_VAULT_EXTRACTION_TIMER_MS": ARCHITECT_VAULT_EXTRACTION_TIMER_MS,
     "LEADERBOARD_MAX_ENTRIES": LEADERBOARD_MAX_ENTRIES, "LEADERBOARD_FILE_NAME": LEADERBOARD_FILE_NAME,
     "ESCAPE_ZONE_COLOR": ESCAPE_ZONE_COLOR,
-    # New Defense Mode Settings added to DEFAULT_SETTINGS
+    # Defense Mode Settings included in DEFAULT_SETTINGS
     "DEFENSE_REACTOR_HEALTH": DEFENSE_REACTOR_HEALTH,
     "DEFENSE_BUILD_PHASE_DURATION_MS": DEFENSE_BUILD_PHASE_DURATION_MS,
     "DEFENSE_WAVE_CLEAR_CORE_REWARD_BASE": DEFENSE_WAVE_CLEAR_CORE_REWARD_BASE,
@@ -356,7 +358,7 @@ def get_game_setting(key, default_override=None):
     # Prioritize _CURRENT_GAME_SETTINGS, then DEFAULT_SETTINGS, then default_override
     if key in _CURRENT_GAME_SETTINGS:
         return _CURRENT_GAME_SETTINGS[key]
-    if key in DEFAULT_SETTINGS:
+    if key in DEFAULT_SETTINGS: # Fallback to hardcoded default if not in current (e.g., after a reset)
         return DEFAULT_SETTINGS[key]
     return default_override
 
@@ -383,7 +385,7 @@ def set_game_setting(key, value):
 
 
     # Update dependent global constants if specific settings change
-    if key in globals(): 
+    if key in globals(): # Check if the key corresponds to a global variable in this module
         globals()[key] = value # Directly update the global constant if it exists
         # Recalculate derived constants
         if key == "HEIGHT" or key == "BOTTOM_PANEL_HEIGHT":
@@ -408,7 +410,7 @@ def reset_all_settings_to_default():
     SETTINGS_MODIFIED = False 
     print("Game settings have been reset to defaults.")
 
-    # Update all global constants that might have been changed
+    # Update all global constants that might have been changed by set_game_setting
     for key, value in _CURRENT_GAME_SETTINGS.items():
         if key in globals(): # If a global constant with this name exists
             globals()[key] = value
@@ -426,9 +428,9 @@ def reset_all_settings_to_default():
 
 # Initialize derived constants based on initial settings
 GAME_PLAY_AREA_HEIGHT = get_game_setting("HEIGHT") - get_game_setting("BOTTOM_PANEL_HEIGHT")
-if TILE_SIZE > 0 : 
+if TILE_SIZE > 0 : # Ensure TILE_SIZE is positive before division
     MAZE_ROWS = GAME_PLAY_AREA_HEIGHT // TILE_SIZE
 else:
-    MAZE_ROWS = 0 
+    MAZE_ROWS = 0 # Default or error state for MAZE_ROWS
     print("Warning (game_settings.py): TILE_SIZE is 0 or invalid, MAZE_ROWS set to 0.")
 

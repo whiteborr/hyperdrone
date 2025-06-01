@@ -127,7 +127,8 @@ class EventManager:
                         self.game_controller.ring_puzzle_active_flag = False
                         self.scene_manager.set_game_state(GAME_STATE_PLAYING) 
                         if self.game_controller.ui_manager.build_menu: # Deactivate build menu if returning to defense mode
-                            if self.game_controller.is_build_phase: self.game_controller.ui_manager.build_menu.activate()
+                            if hasattr(self.game_controller, 'is_build_phase') and self.game_controller.is_build_phase: 
+                                self.game_controller.ui_manager.build_menu.activate()
                             else: self.game_controller.ui_manager.build_menu.deactivate()
                         continue
 
@@ -143,8 +144,9 @@ class EventManager:
                             
                             self.game_controller.ring_puzzle_active_flag = False
                             self.scene_manager.set_game_state(GAME_STATE_PLAYING) # Or previous state
-                            if self.game_controller.ui_manager.build_menu: # Deactivate build menu if returning to defense mode
-                                if self.game_controller.is_build_phase: self.game_controller.ui_manager.build_menu.activate()
+                            if self.game_controller.ui_manager.build_menu: 
+                                if hasattr(self.game_controller, 'is_build_phase') and self.game_controller.is_build_phase: 
+                                    self.game_controller.ui_manager.build_menu.activate()
                                 else: self.game_controller.ui_manager.build_menu.deactivate()
                             continue
                     if puzzle_handled_event: continue 

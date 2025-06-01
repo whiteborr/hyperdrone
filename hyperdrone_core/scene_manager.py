@@ -11,9 +11,19 @@ from game_settings import (
     GAME_STATE_ARCHITECT_VAULT_INTRO, GAME_STATE_ARCHITECT_VAULT_ENTRY_PUZZLE,
     GAME_STATE_ARCHITECT_VAULT_GAUNTLET, GAME_STATE_ARCHITECT_VAULT_EXTRACTION,
     GAME_STATE_ARCHITECT_VAULT_SUCCESS, GAME_STATE_ARCHITECT_VAULT_FAILURE,
-    GAME_STATE_RING_PUZZLE, GAME_STATE_GAME_INTRO_SCROLL # Added GAME_STATE_GAME_INTRO_SCROLL
+    GAME_STATE_RING_PUZZLE, GAME_STATE_GAME_INTRO_SCROLL 
     # Other settings will be accessed via gs.get_game_setting() or gs.CONSTANT_NAME
 )
+
+# Ensure GAME_STATE_MAZE_DEFENSE is available
+if not hasattr(gs, 'GAME_STATE_MAZE_DEFENSE'):
+    GAME_STATE_MAZE_DEFENSE = "maze_defense_mode" 
+    # If game_settings.py doesn't have it, we define it locally for SceneManager.
+    # GameController will also have this fallback.
+    print("SceneManager: GAME_STATE_MAZE_DEFENSE not found in game_settings, using local fallback.")
+else:
+    GAME_STATE_MAZE_DEFENSE = gs.GAME_STATE_MAZE_DEFENSE
+
 
 class SceneManager:
     def __init__(self, game_controller_ref):
@@ -31,8 +41,8 @@ class SceneManager:
         self.menu_music_path = os.path.join("assets", "sounds", "menu_music.wav")
         self.gameplay_music_path = os.path.join("assets", "sounds", "gameplay_music.wav")
         self.architect_vault_music_path = os.path.join("assets", "sounds", "architect_vault_theme.wav")
-        # You might want to add a specific puzzle_music_path later
-        # self.puzzle_music_path = os.path.join("assets", "sounds", "puzzle_music.wav")
+        # You might want to add a specific puzzle_music_path or defense_music_path later
+        # self.defense_music_path = os.path.join("assets", "sounds", "defense_mode_music.wav") 
         self.current_music_context = None # Tracks which music (menu, gameplay, etc.) is playing or should be
 
         # Initial music play based on the starting state
@@ -55,7 +65,7 @@ class SceneManager:
 
         try:
             pygame.mixer.music.load(music_path)
-            pygame.mixer.music.set_volume(volume)
+            pygame.mixer.music.set_volume(volume * gs.get_game_setting("MUSIC_VOLUME_MULTIPLIER", 1.0)) # Apply global volume
             pygame.mixer.music.play(loops=loops)
             self.current_music_context = context_label
             print(f"SceneManager: Playing music '{music_path}' for context '{context_label}'.")
@@ -76,11 +86,14 @@ class SceneManager:
             GAME_STATE_ENTER_NAME: (self.menu_music_path, "menu_theme"),
             GAME_STATE_GAME_OVER: (self.menu_music_path, "menu_theme"),
             GAME_STATE_CODEX: (self.menu_music_path, "menu_theme"),
-            GAME_STATE_RING_PUZZLE: (self.menu_music_path, "menu_theme"),
-            GAME_STATE_GAME_INTRO_SCROLL: (self.menu_music_path, "menu_theme"), # Added intro scroll music
+            GAME_STATE_RING_PUZZLE: (self.menu_music_path, "menu_theme"), # Or a specific puzzle theme
+            GAME_STATE_GAME_INTRO_SCROLL: (self.menu_music_path, "menu_theme"),
 
             GAME_STATE_PLAYING: (self.gameplay_music_path, "gameplay_theme"),
             GAME_STATE_BONUS_LEVEL_PLAYING: (self.gameplay_music_path, "gameplay_theme"),
+            
+            # NEW: Added entry for Maze Defense, using gameplay music for now
+            GAME_STATE_MAZE_DEFENSE: (self.gameplay_music_path, "defense_theme"), # Could use self.defense_music_path
 
             GAME_STATE_ARCHITECT_VAULT_INTRO: (self.architect_vault_music_path, "architect_vault_ambient"),
             GAME_STATE_ARCHITECT_VAULT_ENTRY_PUZZLE: (self.architect_vault_music_path, "architect_vault_ambient"),
@@ -98,7 +111,7 @@ class SceneManager:
             if self.current_music_context != context or not pygame.mixer.music.get_busy():
                 self._play_music(path, context)
         else:
-            # If current state has no defined music, stop if it wasn't menu music (which might persist if no other music is defined)
+            # If current state has no defined music, stop if it wasn't menu music
             if self.current_music_context not in [None, "menu_theme"]:
                  pass # Allow menu music to persist if no other specific music for a minor state
 
@@ -108,19 +121,15 @@ class SceneManager:
                 if pygame.mixer.music.get_busy():
                     pygame.mixer.music.pause()
             else: # Game is not paused
-                # Check if music was paused (not busy but had a position)
                 is_music_paused = not pygame.mixer.music.get_busy() and pygame.mixer.music.get_pos() > 0
-
-                # Ensure the context for unpausing matches the current state's expected music context
                 current_expected_context = music_map.get(self.current_state, (None, None))[1]
 
                 if is_music_paused and self.current_music_context == current_expected_context:
                     pygame.mixer.music.unpause()
-                elif not pygame.mixer.music.get_busy() and self.current_music_context: # Music stopped, but should be playing
+                elif not pygame.mixer.music.get_busy() and self.current_music_context: 
                     current_path_for_context = music_map.get(self.current_state, (None, None))[0]
                     if current_path_for_context and self.current_music_context == current_expected_context:
-                        self._play_music(current_path_for_context, self.current_music_context) # Replay if stopped and context is correct
-                # If music is busy and volume is up, it's likely already playing/unpaused correctly.
+                        self._play_music(current_path_for_context, self.current_music_context)
 
     def set_game_state(self, new_state):
         """
@@ -128,10 +137,11 @@ class SceneManager:
         on the game_controller. Also updates background music.
         """
         if self.current_state == new_state:
-            is_playing_state = new_state in [GAME_STATE_PLAYING, GAME_STATE_BONUS_LEVEL_PLAYING] or \
-                               new_state.startswith("architect_vault")
+            is_playing_state = new_state in [
+                GAME_STATE_PLAYING, GAME_STATE_BONUS_LEVEL_PLAYING, GAME_STATE_MAZE_DEFENSE
+            ] or new_state.startswith("architect_vault")
             if not (is_playing_state and hasattr(self.game_controller, 'paused') and self.game_controller.paused):
-                return
+                return # Avoid re-initializing if already in this state and not just unpausing
 
         old_state = self.current_state
         self.current_state = new_state
@@ -143,11 +153,17 @@ class SceneManager:
         if self.current_state == GAME_STATE_MAIN_MENU:
             if hasattr(self.game_controller, 'initialize_main_menu_scene'):
                 self.game_controller.initialize_main_menu_scene()
-        elif self.current_state == GAME_STATE_GAME_INTRO_SCROLL: # ADDED
+        elif self.current_state == GAME_STATE_GAME_INTRO_SCROLL: 
             if hasattr(self.game_controller, 'initialize_game_intro_scene'):
                 self.game_controller.initialize_game_intro_scene()
         elif self.current_state == GAME_STATE_PLAYING:
-            pass # Gameplay initialization is usually part of initialize_game_session
+            # Gameplay initialization is usually part of initialize_game_session
+            # If coming from intro, initialize_game_session would have been called.
+            # If coming from pause, no re-init needed.
+            pass 
+        elif self.current_state == GAME_STATE_MAZE_DEFENSE: # NEW
+            if hasattr(self.game_controller, 'initialize_maze_defense_session'):
+                self.game_controller.initialize_maze_defense_session()
         elif self.current_state == GAME_STATE_DRONE_SELECT:
             if hasattr(self.game_controller, 'initialize_drone_select_scene'):
                 self.game_controller.initialize_drone_select_scene()
@@ -168,7 +184,7 @@ class SceneManager:
                 self.game_controller.initialize_enter_name_scene()
         elif self.current_state == GAME_STATE_ARCHITECT_VAULT_INTRO:
             if hasattr(self.game_controller, 'initialize_architect_vault_session'):
-                 if not old_state.startswith("architect_vault"): # Only initialize if not coming from another vault state
+                 if not old_state.startswith("architect_vault"): 
                     self.game_controller.initialize_architect_vault_session()
             if hasattr(self.game_controller, 'start_architect_vault_intro'):
                 self.game_controller.start_architect_vault_intro()
@@ -206,7 +222,7 @@ class SceneManager:
                 if current_time > self.game_controller.architect_vault_message_timer:
                     self.set_game_state(GAME_STATE_ARCHITECT_VAULT_ENTRY_PUZZLE)
 
-        elif self.current_state == GAME_STATE_BONUS_LEVEL_START:
+        elif self.current_state == GAME_STATE_BONUS_LEVEL_START: # This state might be very brief
             if hasattr(self.game_controller, 'bonus_level_start_display_end_time'):
                  if current_time > self.game_controller.bonus_level_start_display_end_time:
                     self.set_game_state(GAME_STATE_BONUS_LEVEL_PLAYING)

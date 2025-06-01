@@ -36,9 +36,12 @@ from entities import (
     Particle, 
     MazeGuardian, 
     SentinelDrone, 
-    EscapeZone 
+    EscapeZone,
+    Maze, # Chapter 1 Procedural Maze
+    MazeChapter2 # NEW: Chapter 2 Tile-based Maze
 )
-from entities.maze import Maze 
+# from entities.maze import Maze # Original import, MazeChapter2 now also from entities
+# from entities.maze_chapter2 import MazeChapter2 # No longer needed if imported from entities package
 
 # Drone system and configurations
 from drone_management import DroneSystem, DRONE_DATA, DRONE_DISPLAY_ORDER
@@ -92,10 +95,10 @@ class GameController:
         self.event_manager = EventManager(self, self.scene_manager) 
         self.ui_manager = UIManager(self.screen, self.fonts, self, self.scene_manager, self.drone_system) 
         self.enemy_manager = EnemyManager(self) 
-        self.wave_manager = None 
+        self.wave_manager = None # Initialized when Maze Defense mode starts
 
         self.player = None 
-        self.maze = None 
+        self.maze = None # This will hold the current maze instance (Maze or MazeChapter2)
         self.rings = pygame.sprite.Group() 
         self.power_ups = pygame.sprite.Group() 
         self.core_fragments = pygame.sprite.Group() 
@@ -110,9 +113,9 @@ class GameController:
         self.escape_zone = None 
         self.escape_zone_group = pygame.sprite.GroupSingle() 
 
-        self.core_reactor = None
+        self.core_reactor = None # For Maze Defense
         self.reactor_group = pygame.sprite.GroupSingle() 
-        self.turrets = pygame.sprite.Group() 
+        self.turrets = pygame.sprite.Group() # For Maze Defense
 
         self.score = 0
         self.level = 1 
@@ -545,7 +548,8 @@ class GameController:
 
 
     def initialize_game_session(self):
-        print("DEBUG: Initializing new game session...")
+        """Initializes a standard game session (Chapter 1 style with procedural maze)."""
+        print("DEBUG: Initializing new game session (Standard Procedural Maze)...")
         pygame.mouse.set_visible(False) 
         if self.drone_system:
             self.drone_system.reset_collected_fragments_in_storage()
@@ -577,9 +581,10 @@ class GameController:
         if self.escape_zone: self.escape_zone.kill(); self.escape_zone = None
         self.alien_terminals_group.empty() 
         self.last_interacted_terminal = None
-        if self.core_reactor: self.core_reactor.kill(); self.core_reactor = None 
-        self.turrets.empty() 
+        if self.core_reactor: self.core_reactor.kill(); self.core_reactor = None # Clear reactor if any
+        self.turrets.empty() # Clear turrets
 
+        # Use the procedural Maze for standard game
         self.maze = Maze(game_area_x_offset=0, maze_type="standard") 
         player_start_pos = self._get_safe_spawn_point(TILE_SIZE * 0.8, TILE_SIZE * 0.8) 
 
@@ -600,7 +605,7 @@ class GameController:
 
         self.ui_manager.update_player_life_icon_surface() 
 
-        self.enemy_manager.spawn_enemies_for_level(self.level)
+        self.enemy_manager.spawn_enemies_for_level(self.level) # Standard enemy spawning
         if self.player: 
             self.player.bullets_group.empty()
             self.player.missiles_group.empty()
@@ -626,8 +631,9 @@ class GameController:
         self._reset_level_timer_internal() 
 
     def initialize_maze_defense_session(self):
-        print("DEBUG: Initializing Maze Defense Protocol session...")
-        pygame.mouse.set_visible(True) 
+        """Initializes a Maze Defense game session (Chapter 2 style with tilemap maze)."""
+        print("DEBUG: Initializing Maze Defense Protocol session (Chapter 2 Maze)...")
+        pygame.mouse.set_visible(True) # Mouse visible for turret placement
 
         self.current_wave_number = 0 
         self.is_build_phase = True # Start in build phase
@@ -643,38 +649,21 @@ class GameController:
         self.alien_terminals_group.empty(); self.last_interacted_terminal = None
         self.turrets.empty() 
 
-        self.maze = Maze(game_area_x_offset=0, maze_type="standard") 
+        # Use MazeChapter2 for defense mode
+        self.maze = MazeChapter2(game_area_x_offset=0, maze_type="chapter2_tilemap")
+        print(f"DEBUG: MazeChapter2 instance created for defense mode. Grid: {self.maze.actual_maze_rows}x{self.maze.actual_maze_cols}")
 
-        reactor_spawn_x = WIDTH // 2
-        reactor_spawn_y = GAME_PLAY_AREA_HEIGHT // 2 
-        
-        path_cells = self.maze.get_path_cells()
-        if path_cells: 
-            best_cell = None
-            min_dist_to_center = float('inf')
-            game_center_x = WIDTH // 2
-            game_center_y = GAME_PLAY_AREA_HEIGHT // 2
-            for rel_x, rel_y in path_cells:
-                abs_x = rel_x + self.maze.game_area_x_offset
-                abs_y = rel_y
-                dist = math.hypot(abs_x - game_center_x, abs_y - game_center_y)
-                if dist < min_dist_to_center and \
-                   TILE_SIZE < abs_x < WIDTH - TILE_SIZE and \
-                   TILE_SIZE < abs_y < GAME_PLAY_AREA_HEIGHT - TILE_SIZE: 
-                    min_dist_to_center = dist
-                    best_cell = (abs_x, abs_y)
-            if best_cell:
-                reactor_spawn_x, reactor_spawn_y = best_cell
-            elif path_cells: 
-                 reactor_spawn_x_rel, reactor_spawn_y_rel = random.choice(path_cells)
-                 reactor_spawn_x = reactor_spawn_x_rel + self.maze.game_area_x_offset
-                 reactor_spawn_y = reactor_spawn_y_rel
-
-
-        reactor_health = gs.get_game_setting("DEFENSE_REACTOR_HEALTH", 1000) 
-        self.core_reactor = CoreReactor(reactor_spawn_x, reactor_spawn_y, health=reactor_health, size_in_tiles=2)
-        self.reactor_group.add(self.core_reactor)
-        print(f"DEBUG: Core Reactor spawned at ({reactor_spawn_x}, {reactor_spawn_y}) with {reactor_health} HP.")
+        # Spawn Core Reactor based on MazeChapter2's defined position
+        reactor_spawn_pos_abs = self.maze.get_core_reactor_spawn_position_abs()
+        if reactor_spawn_pos_abs:
+            reactor_health = gs.get_game_setting("DEFENSE_REACTOR_HEALTH", 1000) 
+            self.core_reactor = CoreReactor(reactor_spawn_pos_abs[0], reactor_spawn_pos_abs[1], health=reactor_health, size_in_tiles=1) # Assuming CoreReactor is 1x1 tile visually
+            self.reactor_group.add(self.core_reactor)
+            print(f"DEBUG: Core Reactor spawned at ({reactor_spawn_pos_abs[0]}, {reactor_spawn_pos_abs[1]}) with {reactor_health} HP.")
+        else:
+            print("CRITICAL ERROR: Could not get Core Reactor spawn position from MazeChapter2. Aborting defense mode setup.")
+            self.scene_manager.set_game_state(GAME_STATE_MAIN_MENU) # Fallback
+            return
 
         player_start_pos = self._get_safe_spawn_point(TILE_SIZE * 0.8, TILE_SIZE * 0.8) 
         selected_drone_id = self.drone_system.get_selected_drone_id()
@@ -690,7 +679,7 @@ class GameController:
         else:
             self.player.reset(player_start_pos[0], player_start_pos[1],
                               drone_id=selected_drone_id, drone_stats=effective_drone_stats,
-                              drone_sprite_path=player_ingame_sprite_path, preserve_weapon=True) 
+                              drone_sprite_path=player_ingame_sprite_path, preserve_weapon=True) # Preserve weapon for defense mode
 
         self.ui_manager.update_player_life_icon_surface()
 
@@ -705,14 +694,13 @@ class GameController:
         if self.ui_manager.build_menu: # Activate build menu UI
             self.ui_manager.build_menu.activate()
 
-
         self.scene_manager.set_game_state(GAME_STATE_MAZE_DEFENSE) 
 
 
     def initialize_architect_vault_session(self):
         print("GameController: Initializing Architect's Vault session...")
         pygame.mouse.set_visible(False) 
-        self.maze = Maze(game_area_x_offset=0, maze_type="architect_vault") 
+        self.maze = Maze(game_area_x_offset=0, maze_type="architect_vault") # Procedural maze for vault
         self.explosion_particles.empty()
         self.maze_guardian = None; self.boss_active = False
         if self.escape_zone: self.escape_zone.kill(); self.escape_zone = None
@@ -800,12 +788,10 @@ class GameController:
             min_dist_from_player = TILE_SIZE * 5 
 
             zone_x, zone_y = None, None
-            path_cells = self.maze.get_path_cells()
+            path_cells = self.maze.get_path_cells_abs() if hasattr(self.maze, 'get_path_cells_abs') else self.maze.get_path_cells()
             if path_cells:
                 random.shuffle(path_cells) 
-                for rel_x, rel_y in path_cells:
-                    abs_x = rel_x + self.maze.game_area_x_offset
-                    abs_y = rel_y
+                for abs_x, abs_y in path_cells: # Path cells are already absolute if from get_path_cells_abs
                     if math.hypot(abs_x - self.player.x, abs_y - self.player.y) > min_dist_from_player:
                         zone_x, zone_y = abs_x, abs_y
                         break 
@@ -814,9 +800,9 @@ class GameController:
 
             if zone_x is None or zone_y is None: 
                 if path_cells: 
-                    rel_x, rel_y = random.choice(path_cells)
-                    zone_x = rel_x + self.maze.game_area_x_offset
-                    zone_y = rel_y
+                    abs_x, abs_y = random.choice(path_cells)
+                    zone_x = abs_x
+                    zone_y = abs_y
                 else: 
                     zone_x, zone_y = WIDTH / 2, GAME_PLAY_AREA_HEIGHT / 2
                     print("WARNING: No path cells found for escape zone, placing at center.")
@@ -1020,22 +1006,24 @@ class GameController:
             self._prepare_for_next_level()
             self.level_cleared_pending_animation = False 
 
-    def _update_maze_defense_state(self, current_time, delta_time_ms): 
+    def _update_maze_defense_state(self, current_time_ms, delta_time_ms): 
         if not self.player or not self.maze or not self.core_reactor:
             print("GameController: Error - Player, Maze, or Reactor not initialized for MAZE_DEFENSE state.")
             self.scene_manager.set_game_state(GAME_STATE_MAIN_MENU) 
             return
 
         if self.player.alive:
-            self.player.update(current_time, self.maze, self.enemy_manager.get_sprites(), 0)
+            # For defense mode, player might not target enemies directly, but reactor's position for pathfinding of enemies
+            # Player's own update handles its movement and shooting based on input.
+            self.player.update(current_time_ms, self.maze, self.enemy_manager.get_sprites(), 0)
         else: 
             self._handle_player_death_or_life_loss("Drone Destroyed in Defense Mode!")
-            if self.lives <= 0:
+            if self.lives <= 0: # Check if game over after losing a life
                  self.scene_manager.set_game_state(GAME_STATE_GAME_OVER)
-            return 
+            return # Stop further updates this frame if player died
 
         if self.core_reactor.alive:
-            self.reactor_group.update() 
+            self.reactor_group.update() # Reactor might have animations or logic
         else: 
             print("GAME OVER - REACTOR DESTROYED")
             self.scene_manager.set_game_state(GAME_STATE_GAME_OVER) 
@@ -1043,12 +1031,13 @@ class GameController:
 
         self.turrets.update(self.enemy_manager.get_sprites(), self.maze, 0) 
 
+        # Enemies in defense mode should target the Core Reactor
         reactor_pos_pixels = self.core_reactor.rect.center if self.core_reactor else None
-        self.enemy_manager.update_enemies(reactor_pos_pixels, self.maze, current_time, 0, is_defense_mode=True)
+        self.enemy_manager.update_enemies(reactor_pos_pixels, self.maze, current_time_ms, 0, is_defense_mode=True)
 
 
         if self.wave_manager: 
-            self.wave_manager.update(current_time, delta_time_ms) 
+            self.wave_manager.update(current_time_ms, delta_time_ms) 
 
         # --- Collisions for Defense Mode ---
         # Turret bullets vs Enemies
@@ -1056,50 +1045,50 @@ class GameController:
             hit_enemies_by_turret = pygame.sprite.groupcollide(
                 turret_obj.bullets, 
                 self.enemy_manager.get_sprites(), 
-                True, 
-                False, 
-                pygame.sprite.collide_rect_ratio(0.7) 
+                True, # Kill bullet on hit
+                False, # Don't kill enemy yet, let enemy handle its own health
+                pygame.sprite.collide_rect_ratio(0.7) # Collision check
             )
             for bullet, enemies_hit_list in hit_enemies_by_turret.items():
                 for enemy_hit in enemies_hit_list:
                     if enemy_hit.alive:
                         enemy_hit.take_damage(bullet.damage) 
                         if not enemy_hit.alive:
-                            self.score += 30 
-                            self.drone_system.add_player_cores(15) 
+                            self.score += 30 # Score for turret kill
+                            self.drone_system.add_player_cores(15) # Cores for turret kill
                             self._create_explosion(enemy_hit.rect.centerx, enemy_hit.rect.centery, specific_sound='enemy_shoot') 
 
-        # Enemies vs Core Reactor
+        # Enemies vs Core Reactor (Physical contact)
         if self.core_reactor.alive:
             enemies_attacking_reactor = pygame.sprite.spritecollide(
                 self.core_reactor, 
                 self.enemy_manager.get_sprites(), 
-                True, 
+                True, # Kill enemy on contact with reactor (they "explode" or are consumed)
                 pygame.sprite.collide_rect_ratio(0.7) 
             )
             for enemy_attacker in enemies_attacking_reactor:
-                self.core_reactor.take_damage(enemy_attacker.contact_damage, self) 
+                self.core_reactor.take_damage(enemy_attacker.contact_damage, self) # Pass game_controller for sound
                 self._create_explosion(enemy_attacker.rect.centerx, enemy_attacker.rect.centery, num_particles=10, specific_sound='crash') 
                 print(f"Enemy dealt {enemy_attacker.contact_damage} to reactor. Reactor HP: {self.core_reactor.current_health}")
-                if not self.core_reactor.alive: break 
+                if not self.core_reactor.alive: break # Stop checking if reactor is destroyed
         
         # Player projectiles vs Enemies
         if self.player.alive:
             player_projectiles = pygame.sprite.Group(self.player.bullets_group, self.player.missiles_group, self.player.lightning_zaps_group)
-            hit_enemies_by_player = pygame.sprite.groupcollide(player_projectiles, self.enemy_manager.get_sprites(), False, False) 
+            hit_enemies_by_player = pygame.sprite.groupcollide(player_projectiles, self.enemy_manager.get_sprites(), False, False) # Don't kill projectile/enemy yet
             for projectile, enemies_hit_list in hit_enemies_by_player.items():
                 if not projectile.alive: continue
                 for enemy_hit in enemies_hit_list:
-                    if enemy_hit.alive and projectile.rect.colliderect(enemy_hit.collision_rect): 
+                    if enemy_hit.alive and projectile.rect.colliderect(enemy_hit.collision_rect): # Check collision again for precision
                         enemy_hit.take_damage(projectile.damage)
                         if hasattr(projectile, 'max_pierces') and projectile.pierces_done < projectile.max_pierces:
                             projectile.pierces_done +=1
                         else:
-                            projectile.alive = False; projectile.kill() 
+                            projectile.alive = False; projectile.kill() # Kill projectile after hit (unless piercing)
                         if not enemy_hit.alive:
                             self.score += 50
                             self.drone_system.add_player_cores(25)
-                        if not projectile.alive: break 
+                        if not projectile.alive: break # Projectile was consumed
         
         self.explosion_particles.update()
 
@@ -1578,6 +1567,7 @@ class GameController:
                               preserve_weapon=True) 
 
         self.all_enemies_killed_this_level = False
+        # Standard game mode uses procedural Maze
         self.maze = Maze(game_area_x_offset=0, maze_type="standard") 
         self.enemy_manager.spawn_enemies_for_level(self.level) 
         self.core_fragments.empty() 
@@ -1648,68 +1638,88 @@ class GameController:
             print("GameController: Warning - Attempted to get spawn point without a maze.")
             return (WIDTH // 4, GAME_PLAY_AREA_HEIGHT // 2) 
         
-        path_cells_relative = self.maze.get_path_cells()
-        if not path_cells_relative:
+        # Use get_path_cells_abs if available (for MazeChapter2), else get_path_cells (for procedural Maze)
+        path_cells_abs = []
+        if hasattr(self.maze, 'get_path_cells_abs'):
+            path_cells_abs = self.maze.get_path_cells_abs()
+        elif hasattr(self.maze, 'get_path_cells'): # Procedural maze returns relative, need to adjust
+            path_cells_relative = self.maze.get_path_cells()
+            path_cells_abs = [(rel_x + self.maze.game_area_x_offset, rel_y) for rel_x, rel_y in path_cells_relative]
+        
+        if not path_cells_abs:
             print("GameController: Warning - No path cells found in maze for spawning.")
-            return (self.maze.game_area_x_offset + TILE_SIZE//2, TILE_SIZE//2)
+            # Fallback spawn if no path cells (should ideally not happen)
+            return (getattr(self.maze, 'game_area_x_offset', 0) + TILE_SIZE//2, TILE_SIZE//2)
 
-        random.shuffle(path_cells_relative) 
+        random.shuffle(path_cells_abs) 
 
-        for spawn_x_rel, spawn_y_rel in path_cells_relative:
-            abs_x = spawn_x_rel + self.maze.game_area_x_offset
-            abs_y = spawn_y_rel
-
+        for abs_x, abs_y in path_cells_abs:
+            # Check distance from player
             if self.player and math.hypot(abs_x - self.player.x, abs_y - self.player.y) < TILE_SIZE * 4:
                 continue 
-
+            # Check distance from existing enemies
             if any(math.hypot(abs_x - e.x, abs_y - e.y) < TILE_SIZE * 2 for e in self.enemy_manager.get_sprites()):
                 continue 
-
+            # Check distance from escape zone
             if self.escape_zone and math.hypot(abs_x - self.escape_zone.rect.centerx, abs_y - self.escape_zone.rect.centery) < TILE_SIZE * 3 :
                 continue
-
+            # Check distance from alien terminals
             if any(math.hypot(abs_x - term.rect.centerx, abs_y - term.rect.centery) < TILE_SIZE * 1.5 for term in self.alien_terminals_group):
                 continue
-            
+            # Check distance from core fragments
             if any(math.hypot(abs_x - frag.rect.centerx, abs_y - frag.rect.centery) < TILE_SIZE * 1.5 for frag in self.core_fragments):
                 continue
-            
+            # Check distance from architect echoes
             if any(math.hypot(abs_x - echo.rect.centerx, abs_y - echo.rect.centery) < TILE_SIZE * 1.5 for echo in self.architect_echoes):
                 continue
 
-
+            # Final check with is_wall (should be redundant if get_path_cells is correct, but good for safety)
             if not self.maze.is_wall(abs_x, abs_y, entity_width, entity_height):
                 return (abs_x, abs_y) 
 
         print("GameController: Warning - Could not find a 'perfectly safe' spawn point. Using first available path cell.")
-        if not path_cells_relative: 
-             return (self.maze.game_area_x_offset + TILE_SIZE // 2, TILE_SIZE // 2)
-        first_rel_x, first_rel_y = random.choice(path_cells_relative) 
-        return (first_rel_x + self.maze.game_area_x_offset, first_rel_y)
+        if not path_cells_abs: 
+             return (getattr(self.maze, 'game_area_x_offset', 0) + TILE_SIZE // 2, TILE_SIZE // 2)
+        first_abs_x, first_abs_y = random.choice(path_cells_abs) 
+        return (first_abs_x, first_abs_y)
 
     def get_enemy_spawn_points_for_defense(self):
+        """Gets enemy spawn points, specifically using MazeChapter2's predefined points if available."""
+        if isinstance(self.maze, MazeChapter2):
+            # MazeChapter2 already provides absolute spawn points
+            spawn_points_abs = self.maze.get_enemy_spawn_points_abs()
+            if spawn_points_abs:
+                return spawn_points_abs
+            else:
+                print("WaveManager: MazeChapter2 has no enemy spawn points defined. Using fallback edge spawns.")
+        
+        # Fallback to edge spawning if not MazeChapter2 or if it has no defined spawns
         if not self.maze: return [(50, 50), (WIDTH - 50, HEIGHT // 2)] 
 
         spawn_points = []
         edge_margin = 1 
-        num_points_per_edge_segment = 3 
+        num_points_per_edge_segment = 3 # How many points to try to get from each edge segment
 
+        # Top edge
         for c in range(edge_margin, self.maze.actual_maze_cols - edge_margin, max(1, (self.maze.actual_maze_cols - 2*edge_margin) // num_points_per_edge_segment)):
-            for r_offset in range(edge_margin + 1): 
+            for r_offset in range(edge_margin + 1): # Check a few rows in from the edge
                 if 0 <= r_offset < self.maze.actual_maze_rows and 0 <= c < self.maze.actual_maze_cols and self.maze.grid[r_offset][c] == 0:
                     spawn_points.append(self.maze._grid_to_pixel_center(r_offset,c, self.maze.game_area_x_offset))
-                    break 
+                    break # Found a path tile on this column segment
+        # Bottom edge
         for c in range(edge_margin, self.maze.actual_maze_cols - edge_margin, max(1, (self.maze.actual_maze_cols - 2*edge_margin) // num_points_per_edge_segment)):
             for r_offset_from_bottom in range(edge_margin + 1):
                 r = self.maze.actual_maze_rows - 1 - r_offset_from_bottom
                 if 0 <= r < self.maze.actual_maze_rows and 0 <= c < self.maze.actual_maze_cols and self.maze.grid[r][c] == 0:
                     spawn_points.append(self.maze._grid_to_pixel_center(r,c, self.maze.game_area_x_offset))
                     break
+        # Left edge
         for r in range(edge_margin, self.maze.actual_maze_rows - edge_margin, max(1, (self.maze.actual_maze_rows - 2*edge_margin) // num_points_per_edge_segment)):
             for c_offset in range(edge_margin + 1):
                 if 0 <= r < self.maze.actual_maze_rows and 0 <= c_offset < self.maze.actual_maze_cols and self.maze.grid[r][c_offset] == 0:
                     spawn_points.append(self.maze._grid_to_pixel_center(r,c_offset, self.maze.game_area_x_offset))
                     break
+        # Right edge
         for r in range(edge_margin, self.maze.actual_maze_rows - edge_margin, max(1, (self.maze.actual_maze_rows - 2*edge_margin) // num_points_per_edge_segment)):
             for c_offset_from_right in range(edge_margin + 1):
                 c = self.maze.actual_maze_cols - 1 - c_offset_from_right
@@ -1717,18 +1727,24 @@ class GameController:
                     spawn_points.append(self.maze._grid_to_pixel_center(r,c, self.maze.game_area_x_offset))
                     break
         
-        if not spawn_points: 
-            path_cells = self.maze.get_path_cells()
-            if path_cells:
-                if self.core_reactor:
+        if not spawn_points: # If no edge points found (e.g., fully enclosed maze with no edge paths)
+            path_cells_abs = []
+            if hasattr(self.maze, 'get_path_cells_abs'): path_cells_abs = self.maze.get_path_cells_abs()
+            elif hasattr(self.maze, 'get_path_cells'): 
+                path_cells_rel = self.maze.get_path_cells()
+                path_cells_abs = [(rel_x + self.maze.game_area_x_offset, rel_y) for rel_x, rel_y in path_cells_rel]
+
+            if path_cells_abs:
+                if self.core_reactor: # Try to get points far from reactor
                     reactor_center = self.core_reactor.rect.center
-                    far_points = [p for p in path_cells if math.hypot(p[0]+self.maze.game_area_x_offset - reactor_center[0], p[1] - reactor_center[1]) > TILE_SIZE * 7]
+                    far_points = [p for p in path_cells_abs if math.hypot(p[0] - reactor_center[0], p[1] - reactor_center[1]) > TILE_SIZE * 7]
                     if far_points:
-                        return [(p[0]+self.maze.game_area_x_offset, p[1]) for p in random.sample(far_points, min(len(far_points), 4))] 
-                return [(p[0]+self.maze.game_area_x_offset, p[1]) for p in random.sample(path_cells, min(len(path_cells), 4))] 
+                        return random.sample(far_points, min(len(far_points), 4)) 
+                return random.sample(path_cells_abs, min(len(path_cells_abs), 4)) 
+            # Absolute fallback if no path cells at all
             return [(TILE_SIZE,TILE_SIZE), (WIDTH - TILE_SIZE, GAME_PLAY_AREA_HEIGHT - TILE_SIZE), (TILE_SIZE, GAME_PLAY_AREA_HEIGHT - TILE_SIZE), (WIDTH - TILE_SIZE, TILE_SIZE) ] 
         
-        return list(set(spawn_points)) 
+        return list(set(spawn_points)) # Remove duplicates
 
 
     def _spawn_maze_guardian(self):
@@ -1780,25 +1796,28 @@ class GameController:
         self.architect_vault_terminals.empty() 
         if not self.maze or not CORE_FRAGMENT_DETAILS: return
 
-        path_cells_relative = self.maze.get_path_cells()
-        if len(path_cells_relative) < TOTAL_CORE_FRAGMENTS_NEEDED:
+        path_cells_abs = []
+        if hasattr(self.maze, 'get_path_cells_abs'): path_cells_abs = self.maze.get_path_cells_abs()
+        elif hasattr(self.maze, 'get_path_cells'): 
+            path_cells_rel = self.maze.get_path_cells()
+            path_cells_abs = [(rel_x + self.maze.game_area_x_offset, rel_y) for rel_x, rel_y in path_cells_rel]
+
+        if len(path_cells_abs) < TOTAL_CORE_FRAGMENTS_NEEDED:
             print("GameController: Warning - Not enough path cells to spawn all vault terminals.")
             return
 
         fragment_ids_for_puzzle_terminals = ["cf_alpha", "cf_beta", "cf_gamma"] 
         num_terminals_to_spawn = len(fragment_ids_for_puzzle_terminals)
 
-        if len(path_cells_relative) < num_terminals_to_spawn:
-            print(f"GameController: Warning - Not enough path cells ({len(path_cells_relative)}) to spawn {num_terminals_to_spawn} vault terminals.")
-            num_terminals_to_spawn = len(path_cells_relative) 
+        if len(path_cells_abs) < num_terminals_to_spawn:
+            print(f"GameController: Warning - Not enough path cells ({len(path_cells_abs)}) to spawn {num_terminals_to_spawn} vault terminals.")
+            num_terminals_to_spawn = len(path_cells_abs) 
             if num_terminals_to_spawn == 0: return
 
-        available_spawn_points_rel = random.sample(path_cells_relative, k=num_terminals_to_spawn)
+        available_spawn_points_abs = random.sample(path_cells_abs, k=num_terminals_to_spawn)
         
         for i in range(num_terminals_to_spawn):
-            pos_rel = available_spawn_points_rel[i]
-            abs_x = pos_rel[0] + self.maze.game_area_x_offset
-            abs_y = pos_rel[1]
+            abs_x, abs_y = available_spawn_points_abs[i]
             
             terminal = pygame.sprite.Sprite() 
             terminal.image = pygame.Surface([TILE_SIZE * 0.6, TILE_SIZE * 0.6], pygame.SRCALPHA)
@@ -1820,8 +1839,13 @@ class GameController:
         if not self.maze: return
         if not POWERUP_TYPES: return 
 
-        path_cells_relative = self.maze.get_path_cells()
-        if not path_cells_relative: return 
+        path_cells_abs = []
+        if hasattr(self.maze, 'get_path_cells_abs'): path_cells_abs = self.maze.get_path_cells_abs()
+        elif hasattr(self.maze, 'get_path_cells'): 
+            path_cells_rel = self.maze.get_path_cells()
+            path_cells_abs = [(rel_x + self.maze.game_area_x_offset, rel_y) for rel_x, rel_y in path_cells_rel]
+        
+        if not path_cells_abs: return 
 
         existing_coords_abs = set(r.rect.center for r in self.rings)
         for p_up in self.power_ups: existing_coords_abs.add(p_up.rect.center)
@@ -1832,9 +1856,7 @@ class GameController:
         for echo in self.architect_echoes: existing_coords_abs.add(echo.rect.center) 
 
         available_spawn_cells_abs = []
-        for rcx_rel, rcy_rel in path_cells_relative:
-            abs_center_x = rcx_rel + self.maze.game_area_x_offset
-            abs_center_y = rcy_rel
+        for abs_center_x, abs_center_y in path_cells_abs:
             if (abs_center_x, abs_center_y) not in existing_coords_abs: 
                 if self.player and math.hypot(abs_center_x - self.player.x, abs_center_y - self.player.y) < TILE_SIZE * 2:
                     continue 
@@ -1858,17 +1880,20 @@ class GameController:
 
     def _place_collectibles_for_level(self, initial_setup=False):
         if not self.maze: return
-        path_cells_relative = self.maze.get_path_cells()
-        if not path_cells_relative: return
+        path_cells_abs = []
+        if hasattr(self.maze, 'get_path_cells_abs'): path_cells_abs = self.maze.get_path_cells_abs()
+        elif hasattr(self.maze, 'get_path_cells'): 
+            path_cells_rel = self.maze.get_path_cells()
+            path_cells_abs = [(rel_x + self.maze.game_area_x_offset, rel_y) for rel_x, rel_y in path_cells_rel]
+        
+        if not path_cells_abs: return
 
         if initial_setup: 
             self.rings.empty() 
-            num_rings_to_place = min(self.total_rings_per_level, len(path_cells_relative))
+            num_rings_to_place = min(self.total_rings_per_level, len(path_cells_abs))
             if num_rings_to_place > 0:
-                ring_spawn_points_rel = random.sample(path_cells_relative, k=num_rings_to_place)
-                for rel_x, rel_y in ring_spawn_points_rel:
-                    abs_x = rel_x + self.maze.game_area_x_offset
-                    abs_y = rel_y
+                ring_spawn_points_abs = random.sample(path_cells_abs, k=num_rings_to_place)
+                for abs_x, abs_y in ring_spawn_points_abs:
                     self.rings.add(Ring(abs_x, abs_y))
 
         self._spawn_core_fragments_for_level_internal() 
@@ -1883,18 +1908,16 @@ class GameController:
                 already_spawned = any(getattr(t, 'item_id', '') == terminal_unique_id for t in self.alien_terminals_group)
                 if not already_spawned:
                     print(f"GameController: Attempting to spawn Ancient Alien Terminal '{terminal_unique_id}' on level {self.level}")
-                    available_path_tiles_for_terminal = [
-                        (c_idx, r_idx) for r_idx in range(self.maze.actual_maze_rows)
-                        for c_idx in range(self.maze.actual_maze_cols)
-                        if self.maze.grid[r_idx][c_idx] == 0 
-                    ]
-                    if available_path_tiles_for_terminal:
-                        random.shuffle(available_path_tiles_for_terminal)
+                    
+                    available_path_tiles_for_terminal_abs = [
+                        (abs_x, abs_y) for abs_x, abs_y in path_cells_abs
+                    ] # path_cells_abs already contains absolute coords
+                    
+                    if available_path_tiles_for_terminal_abs:
+                        random.shuffle(available_path_tiles_for_terminal_abs)
                         spawned_terminal = False
-                        for _ in range(min(10, len(available_path_tiles_for_terminal))): 
-                            col, row = available_path_tiles_for_terminal.pop()
-                            abs_x = col * TILE_SIZE + TILE_SIZE // 2 + self.maze.game_area_x_offset
-                            abs_y = row * TILE_SIZE + TILE_SIZE // 2
+                        for _ in range(min(10, len(available_path_tiles_for_terminal_abs))): 
+                            abs_x, abs_y = available_path_tiles_for_terminal_abs.pop()
 
                             too_close_to_player = self.player and math.hypot(abs_x - self.player.x, abs_y - self.player.y) < TILE_SIZE * 3
                             too_close_to_other_item = False
@@ -1932,11 +1955,9 @@ class GameController:
         if self.level == 2 and not self.drone_system.has_unlocked_lore(lore_entry_id_for_log):
             already_spawned = any(getattr(log, 'log_id', None) == log_id_to_spawn for log in self.vault_logs)
             if not already_spawned:
-                spawn_pos = self._get_random_valid_fragment_tile_internal(set()) 
-                if spawn_pos:
-                    col, row = spawn_pos
-                    abs_x = col * TILE_SIZE + TILE_SIZE // 2 + self.maze.game_area_x_offset
-                    abs_y = row * TILE_SIZE + TILE_SIZE // 2
+                spawn_pos_abs = self._get_random_valid_fragment_tile_internal_abs(set()) 
+                if spawn_pos_abs:
+                    abs_x, abs_y = spawn_pos_abs
                     self.vault_logs.add(VaultLogItem(abs_x, abs_y, log_id_to_spawn, icon_filename=grx23_icon_filename))
                     print(f"GameController: Spawned Vault Log '{log_id_to_spawn}' with icon '{grx23_icon_filename}' at ({abs_x}, {abs_y}) on level {self.level}")
 
@@ -1947,11 +1968,9 @@ class GameController:
            tablet_alpha_id not in self.drone_system.get_collected_glyph_tablet_ids(): 
             already_spawned_alpha = any(getattr(t, 'tablet_id', None) == tablet_alpha_id for t in self.glyph_tablets)
             if not already_spawned_alpha:
-                spawn_pos_tablet = self._get_random_valid_fragment_tile_internal(set())
-                if spawn_pos_tablet:
-                    col, row = spawn_pos_tablet
-                    abs_x = col * TILE_SIZE + TILE_SIZE // 2 + self.maze.game_area_x_offset
-                    abs_y = row * TILE_SIZE + TILE_SIZE // 2
+                spawn_pos_tablet_abs = self._get_random_valid_fragment_tile_internal_abs(set())
+                if spawn_pos_tablet_abs:
+                    abs_x, abs_y = spawn_pos_tablet_abs
                     self.glyph_tablets.add(GlyphTabletItem(abs_x, abs_y, tablet_alpha_id)) 
                     print(f"GameController: Spawned Glyph Tablet '{tablet_alpha_id}' at ({abs_x}, {abs_y}) on level {self.level}")
         
@@ -1962,11 +1981,9 @@ class GameController:
            tablet_beta_id not in self.drone_system.get_collected_glyph_tablet_ids():
             already_spawned_beta = any(getattr(t, 'tablet_id', None) == tablet_beta_id for t in self.glyph_tablets)
             if not already_spawned_beta:
-                spawn_pos_tablet = self._get_random_valid_fragment_tile_internal(set())
-                if spawn_pos_tablet:
-                    col, row = spawn_pos_tablet
-                    abs_x = col * TILE_SIZE + TILE_SIZE // 2 + self.maze.game_area_x_offset
-                    abs_y = row * TILE_SIZE + TILE_SIZE // 2
+                spawn_pos_tablet_abs = self._get_random_valid_fragment_tile_internal_abs(set())
+                if spawn_pos_tablet_abs:
+                    abs_x, abs_y = spawn_pos_tablet_abs
                     self.glyph_tablets.add(GlyphTabletItem(abs_x, abs_y, tablet_beta_id))
                     print(f"GameController: Spawned Glyph Tablet '{tablet_beta_id}' at ({abs_x}, {abs_y}) on level {self.level}")
 
@@ -1977,11 +1994,9 @@ class GameController:
            tablet_gamma_id not in self.drone_system.get_collected_glyph_tablet_ids():
             already_spawned_gamma = any(getattr(t, 'tablet_id', None) == tablet_gamma_id for t in self.glyph_tablets)
             if not already_spawned_gamma:
-                spawn_pos_tablet = self._get_random_valid_fragment_tile_internal(set())
-                if spawn_pos_tablet:
-                    col, row = spawn_pos_tablet
-                    abs_x = col * TILE_SIZE + TILE_SIZE // 2 + self.maze.game_area_x_offset
-                    abs_y = row * TILE_SIZE + TILE_SIZE // 2
+                spawn_pos_tablet_abs = self._get_random_valid_fragment_tile_internal_abs(set())
+                if spawn_pos_tablet_abs:
+                    abs_x, abs_y = spawn_pos_tablet_abs
                     self.glyph_tablets.add(GlyphTabletItem(abs_x, abs_y, tablet_gamma_id))
                     print(f"GameController: Spawned Glyph Tablet '{tablet_gamma_id}' at ({abs_x}, {abs_y}) on level {self.level}")
 
@@ -1999,18 +2014,16 @@ class GameController:
             if self.level == level_spawn and not self.drone_system.has_unlocked_lore(lore_id):
                 already_spawned = any(getattr(echo, 'echo_id', None) == echo_id for echo in self.architect_echoes)
                 if not already_spawned:
-                    spawn_pos = self._get_random_valid_fragment_tile_internal(set()) 
-                    if spawn_pos:
-                        col, row = spawn_pos
-                        abs_x = col * TILE_SIZE + TILE_SIZE // 2 + self.maze.game_area_x_offset
-                        abs_y = row * TILE_SIZE + TILE_SIZE // 2
+                    spawn_pos_abs = self._get_random_valid_fragment_tile_internal_abs(set()) 
+                    if spawn_pos_abs:
+                        abs_x, abs_y = spawn_pos_abs
                         self.architect_echoes.add(ArchitectEchoItem(abs_x, abs_y, echo_id, lore_id))
                         print(f"GameController: Spawned Architect Echo '{echo_id}' at ({abs_x}, {abs_y}) on level {self.level}")
 
     def _spawn_core_fragments_for_level_internal(self):
         if not self.maze or not CORE_FRAGMENT_DETAILS: return
         
-        occupied_fragment_tiles_this_level = set() 
+        occupied_fragment_tiles_abs_this_level = set() 
 
         for frag_key, details in CORE_FRAGMENT_DETAILS.items():
             if not details or not isinstance(details, dict): continue 
@@ -2021,32 +2034,35 @@ class GameController:
             if spawn_info and spawn_info.get("level") == self.level and \
                fragment_id and not self.drone_system.has_collected_fragment(fragment_id):
                 
-                if details.get("reward_level") is None: 
-                    random_tile_coords_rel = self._get_random_valid_fragment_tile_internal(occupied_fragment_tiles_this_level)
+                if details.get("reward_level") is None: # Only spawn if not a reward_level fragment
+                    random_tile_coords_abs = self._get_random_valid_fragment_tile_internal_abs(occupied_fragment_tiles_abs_this_level)
                     
-                    if random_tile_coords_rel:
-                        tile_c_rel, tile_r_rel = random_tile_coords_rel
-                        abs_x = tile_c_rel * TILE_SIZE + TILE_SIZE // 2 + self.maze.game_area_x_offset
-                        abs_y = tile_r_rel * TILE_SIZE + TILE_SIZE // 2
+                    if random_tile_coords_abs:
+                        abs_x, abs_y = random_tile_coords_abs
                         
                         self.core_fragments.add(CoreFragmentItem(abs_x, abs_y, fragment_id, details))
-                        occupied_fragment_tiles_this_level.add(random_tile_coords_rel) 
+                        occupied_fragment_tiles_abs_this_level.add(random_tile_coords_abs) 
                         print(f"GameController: Spawned standard fragment '{fragment_id}' at start of level {self.level}")
 
-
-    def _get_random_valid_fragment_tile_internal(self, existing_fragment_tiles_rel):
-        if not self.maze or not self.maze.grid: return None
-
-        available_path_tiles_rel = []
-        for r_idx in range(self.maze.actual_maze_rows):
-            for c_idx in range(self.maze.actual_maze_cols):
-                if self.maze.grid[r_idx][c_idx] == 0 and (c_idx, r_idx) not in existing_fragment_tiles_rel:
-                    available_path_tiles_rel.append((c_idx, r_idx))
+    def _get_random_valid_fragment_tile_internal_abs(self, existing_fragment_tiles_abs):
+        """Helper to get a random valid absolute spawn point for fragments, avoiding existing ones."""
+        if not self.maze: return None
         
-        if not available_path_tiles_rel:
+        path_cells_abs = []
+        if hasattr(self.maze, 'get_path_cells_abs'): path_cells_abs = self.maze.get_path_cells_abs()
+        elif hasattr(self.maze, 'get_path_cells'): 
+            path_cells_rel = self.maze.get_path_cells()
+            path_cells_abs = [(rel_x + self.maze.game_area_x_offset, rel_y) for rel_x, rel_y in path_cells_rel]
+
+        available_path_tiles_abs = [
+            (abs_x, abs_y) for abs_x, abs_y in path_cells_abs 
+            if (abs_x, abs_y) not in existing_fragment_tiles_abs
+        ]
+        
+        if not available_path_tiles_abs:
             return None
         
-        return random.choice(available_path_tiles_rel) 
+        return random.choice(available_path_tiles_abs) 
 
     def handle_main_menu_input(self, key_event):
         if key_event == pygame.K_UP:
@@ -2305,8 +2321,8 @@ class GameController:
                 self.level_timer_start_ticks = current_time - (gs.get_game_setting("LEVEL_TIMER_DURATION") - self.level_time_remaining_ms)
             elif current_game_state == GAME_STATE_MAZE_DEFENSE: 
                 if self.is_build_phase and self.wave_manager:
-                    # No specific start_ticks for build phase, it's a countdown managed by WaveManager
-                    # WaveManager's update will handle delta_time_ms correctly when unpaused.
+                    # Build phase timer is a countdown, so when unpausing, its remaining time is already correct.
+                    # No need to adjust start_ticks for it.
                     pass 
             elif current_game_state.startswith("architect_vault") and self.architect_vault_current_phase == "extraction":
                  self.architect_vault_phase_timer_start = current_time - (gs.get_game_setting("ARCHITECT_VAULT_EXTRACTION_TIMER_MS") - self.level_time_remaining_ms)
@@ -2327,7 +2343,7 @@ class GameController:
         current_game_state = self.scene_manager.get_current_state()
         if current_game_state.startswith("architect_vault"):
             self.screen.fill(ARCHITECT_VAULT_BG_COLOR)
-            if self.maze: self.maze.draw_architect_vault(self.screen) 
+            if self.maze: self.maze.draw(self.screen) # Changed from draw_architect_vault for consistency
         elif current_game_state == GAME_STATE_MAZE_DEFENSE: 
             self.screen.fill(gs.DARK_GREY) 
             if self.maze: self.maze.draw(self.screen)
@@ -2385,13 +2401,20 @@ class GameController:
             self.play_sound('ui_denied', 0.6)
             return False
 
-        if self.maze.grid[grid_row][grid_col] != 0:
+        # Use the maze's is_wall method, which should correctly interpret its own grid
+        # For MazeChapter2, it checks self.grid[grid_row][grid_col] == 1
+        # For procedural Maze, it uses its line segment collision.
+        # However, for tile-based placement, checking the grid directly is more appropriate.
+        tile_center_x_abs = grid_col * TILE_SIZE + TILE_SIZE // 2 + self.maze.game_area_x_offset
+        tile_center_y_abs = grid_row * TILE_SIZE + TILE_SIZE // 2
+        
+        if self.maze.is_wall(tile_center_x_abs, tile_center_y_abs): # Check if the center of the tile is a wall
             print("Turret placement: Cannot place on a wall.")
             self.play_sound('ui_denied', 0.6)
             return False
 
-        turret_center_x = grid_col * TILE_SIZE + TILE_SIZE // 2 + self.maze.game_area_x_offset
-        turret_center_y = grid_row * TILE_SIZE + TILE_SIZE // 2
+        turret_center_x = tile_center_x_abs
+        turret_center_y = tile_center_y_abs
         
         for existing_turret in self.turrets:
             if math.hypot(existing_turret.x - turret_center_x, existing_turret.y - turret_center_y) < TILE_SIZE * 0.5:
@@ -2449,28 +2472,43 @@ class GameController:
 
 
     def get_enemy_spawn_points_for_defense(self):
+        """Gets enemy spawn points, specifically using MazeChapter2's predefined points if available."""
+        if isinstance(self.maze, MazeChapter2):
+            # MazeChapter2 already provides absolute spawn points
+            spawn_points_abs = self.maze.get_enemy_spawn_points_abs()
+            if spawn_points_abs:
+                return spawn_points_abs
+            else:
+                print("WaveManager: MazeChapter2 has no enemy spawn points defined. Using fallback edge spawns.")
+        
+        # Fallback to edge spawning if not MazeChapter2 or if it has no defined spawns
         if not self.maze: return [(50, 50), (WIDTH - 50, HEIGHT // 2)] 
 
         spawn_points = []
         edge_margin = 1 
-        num_points_per_edge_segment = 3 
+        num_points_per_edge_segment = 3 # How many points to try to get from each edge segment
 
+        # Top edge
         for c in range(edge_margin, self.maze.actual_maze_cols - edge_margin, max(1, (self.maze.actual_maze_cols - 2*edge_margin) // num_points_per_edge_segment)):
-            for r_offset in range(edge_margin + 1): 
+            for r_offset in range(edge_margin + 1): # Check a few rows in from the edge
                 if 0 <= r_offset < self.maze.actual_maze_rows and 0 <= c < self.maze.actual_maze_cols and self.maze.grid[r_offset][c] == 0:
+                    # Procedural maze's _grid_to_pixel_center is needed here
                     spawn_points.append(self.maze._grid_to_pixel_center(r_offset,c, self.maze.game_area_x_offset))
-                    break 
+                    break # Found a path tile on this column segment
+        # Bottom edge
         for c in range(edge_margin, self.maze.actual_maze_cols - edge_margin, max(1, (self.maze.actual_maze_cols - 2*edge_margin) // num_points_per_edge_segment)):
             for r_offset_from_bottom in range(edge_margin + 1):
                 r = self.maze.actual_maze_rows - 1 - r_offset_from_bottom
                 if 0 <= r < self.maze.actual_maze_rows and 0 <= c < self.maze.actual_maze_cols and self.maze.grid[r][c] == 0:
                     spawn_points.append(self.maze._grid_to_pixel_center(r,c, self.maze.game_area_x_offset))
                     break
+        # Left edge
         for r in range(edge_margin, self.maze.actual_maze_rows - edge_margin, max(1, (self.maze.actual_maze_rows - 2*edge_margin) // num_points_per_edge_segment)):
             for c_offset in range(edge_margin + 1):
                 if 0 <= r < self.maze.actual_maze_rows and 0 <= c_offset < self.maze.actual_maze_cols and self.maze.grid[r][c_offset] == 0:
                     spawn_points.append(self.maze._grid_to_pixel_center(r,c_offset, self.maze.game_area_x_offset))
                     break
+        # Right edge
         for r in range(edge_margin, self.maze.actual_maze_rows - edge_margin, max(1, (self.maze.actual_maze_rows - 2*edge_margin) // num_points_per_edge_segment)):
             for c_offset_from_right in range(edge_margin + 1):
                 c = self.maze.actual_maze_cols - 1 - c_offset_from_right
@@ -2478,18 +2516,24 @@ class GameController:
                     spawn_points.append(self.maze._grid_to_pixel_center(r,c, self.maze.game_area_x_offset))
                     break
         
-        if not spawn_points: 
-            path_cells = self.maze.get_path_cells()
-            if path_cells:
-                if self.core_reactor:
+        if not spawn_points: # If no edge points found (e.g., fully enclosed maze with no edge paths)
+            path_cells_abs = []
+            if hasattr(self.maze, 'get_path_cells_abs'): path_cells_abs = self.maze.get_path_cells_abs()
+            elif hasattr(self.maze, 'get_path_cells'): 
+                path_cells_rel = self.maze.get_path_cells()
+                path_cells_abs = [(rel_x + self.maze.game_area_x_offset, rel_y) for rel_x, rel_y in path_cells_rel]
+
+            if path_cells_abs:
+                if self.core_reactor: # Try to get points far from reactor
                     reactor_center = self.core_reactor.rect.center
-                    far_points = [p for p in path_cells if math.hypot(p[0]+self.maze.game_area_x_offset - reactor_center[0], p[1] - reactor_center[1]) > TILE_SIZE * 7]
+                    far_points = [p for p in path_cells_abs if math.hypot(p[0] - reactor_center[0], p[1] - reactor_center[1]) > TILE_SIZE * 7]
                     if far_points:
-                        return [(p[0]+self.maze.game_area_x_offset, p[1]) for p in random.sample(far_points, min(len(far_points), 4))] 
-                return [(p[0]+self.maze.game_area_x_offset, p[1]) for p in random.sample(path_cells, min(len(path_cells), 4))] 
+                        return random.sample(far_points, min(len(far_points), 4)) 
+                return random.sample(path_cells_abs, min(len(path_cells_abs), 4)) 
+            # Absolute fallback if no path cells at all
             return [(TILE_SIZE,TILE_SIZE), (WIDTH - TILE_SIZE, GAME_PLAY_AREA_HEIGHT - TILE_SIZE), (TILE_SIZE, GAME_PLAY_AREA_HEIGHT - TILE_SIZE), (WIDTH - TILE_SIZE, TILE_SIZE) ] 
         
-        return list(set(spawn_points)) 
+        return list(set(spawn_points)) # Remove duplicates
 
 
     def _spawn_maze_guardian(self):
@@ -2541,25 +2585,28 @@ class GameController:
         self.architect_vault_terminals.empty() 
         if not self.maze or not CORE_FRAGMENT_DETAILS: return
 
-        path_cells_relative = self.maze.get_path_cells()
-        if len(path_cells_relative) < TOTAL_CORE_FRAGMENTS_NEEDED:
+        path_cells_abs = []
+        if hasattr(self.maze, 'get_path_cells_abs'): path_cells_abs = self.maze.get_path_cells_abs()
+        elif hasattr(self.maze, 'get_path_cells'): 
+            path_cells_rel = self.maze.get_path_cells()
+            path_cells_abs = [(rel_x + self.maze.game_area_x_offset, rel_y) for rel_x, rel_y in path_cells_rel]
+
+        if len(path_cells_abs) < TOTAL_CORE_FRAGMENTS_NEEDED:
             print("GameController: Warning - Not enough path cells to spawn all vault terminals.")
             return
 
         fragment_ids_for_puzzle_terminals = ["cf_alpha", "cf_beta", "cf_gamma"] 
         num_terminals_to_spawn = len(fragment_ids_for_puzzle_terminals)
 
-        if len(path_cells_relative) < num_terminals_to_spawn:
-            print(f"GameController: Warning - Not enough path cells ({len(path_cells_relative)}) to spawn {num_terminals_to_spawn} vault terminals.")
-            num_terminals_to_spawn = len(path_cells_relative) 
+        if len(path_cells_abs) < num_terminals_to_spawn:
+            print(f"GameController: Warning - Not enough path cells ({len(path_cells_abs)}) to spawn {num_terminals_to_spawn} vault terminals.")
+            num_terminals_to_spawn = len(path_cells_abs) 
             if num_terminals_to_spawn == 0: return
 
-        available_spawn_points_rel = random.sample(path_cells_relative, k=num_terminals_to_spawn)
+        available_spawn_points_abs = random.sample(path_cells_abs, k=num_terminals_to_spawn)
         
         for i in range(num_terminals_to_spawn):
-            pos_rel = available_spawn_points_rel[i]
-            abs_x = pos_rel[0] + self.maze.game_area_x_offset
-            abs_y = pos_rel[1]
+            abs_x, abs_y = available_spawn_points_abs[i]
             
             terminal = pygame.sprite.Sprite() 
             terminal.image = pygame.Surface([TILE_SIZE * 0.6, TILE_SIZE * 0.6], pygame.SRCALPHA)
@@ -2581,8 +2628,13 @@ class GameController:
         if not self.maze: return
         if not POWERUP_TYPES: return 
 
-        path_cells_relative = self.maze.get_path_cells()
-        if not path_cells_relative: return 
+        path_cells_abs = []
+        if hasattr(self.maze, 'get_path_cells_abs'): path_cells_abs = self.maze.get_path_cells_abs()
+        elif hasattr(self.maze, 'get_path_cells'): 
+            path_cells_rel = self.maze.get_path_cells()
+            path_cells_abs = [(rel_x + self.maze.game_area_x_offset, rel_y) for rel_x, rel_y in path_cells_rel]
+        
+        if not path_cells_abs: return 
 
         existing_coords_abs = set(r.rect.center for r in self.rings)
         for p_up in self.power_ups: existing_coords_abs.add(p_up.rect.center)
@@ -2593,9 +2645,7 @@ class GameController:
         for echo in self.architect_echoes: existing_coords_abs.add(echo.rect.center) 
 
         available_spawn_cells_abs = []
-        for rcx_rel, rcy_rel in path_cells_relative:
-            abs_center_x = rcx_rel + self.maze.game_area_x_offset
-            abs_center_y = rcy_rel
+        for abs_center_x, abs_center_y in path_cells_abs:
             if (abs_center_x, abs_center_y) not in existing_coords_abs: 
                 if self.player and math.hypot(abs_center_x - self.player.x, abs_center_y - self.player.y) < TILE_SIZE * 2:
                     continue 
@@ -2619,17 +2669,20 @@ class GameController:
 
     def _place_collectibles_for_level(self, initial_setup=False):
         if not self.maze: return
-        path_cells_relative = self.maze.get_path_cells()
-        if not path_cells_relative: return
+        path_cells_abs = []
+        if hasattr(self.maze, 'get_path_cells_abs'): path_cells_abs = self.maze.get_path_cells_abs()
+        elif hasattr(self.maze, 'get_path_cells'): 
+            path_cells_rel = self.maze.get_path_cells()
+            path_cells_abs = [(rel_x + self.maze.game_area_x_offset, rel_y) for rel_x, rel_y in path_cells_rel]
+        
+        if not path_cells_abs: return
 
         if initial_setup: 
             self.rings.empty() 
-            num_rings_to_place = min(self.total_rings_per_level, len(path_cells_relative))
+            num_rings_to_place = min(self.total_rings_per_level, len(path_cells_abs))
             if num_rings_to_place > 0:
-                ring_spawn_points_rel = random.sample(path_cells_relative, k=num_rings_to_place)
-                for rel_x, rel_y in ring_spawn_points_rel:
-                    abs_x = rel_x + self.maze.game_area_x_offset
-                    abs_y = rel_y
+                ring_spawn_points_abs = random.sample(path_cells_abs, k=num_rings_to_place)
+                for abs_x, abs_y in ring_spawn_points_abs:
                     self.rings.add(Ring(abs_x, abs_y))
 
         self._spawn_core_fragments_for_level_internal() 
@@ -2644,18 +2697,16 @@ class GameController:
                 already_spawned = any(getattr(t, 'item_id', '') == terminal_unique_id for t in self.alien_terminals_group)
                 if not already_spawned:
                     print(f"GameController: Attempting to spawn Ancient Alien Terminal '{terminal_unique_id}' on level {self.level}")
-                    available_path_tiles_for_terminal = [
-                        (c_idx, r_idx) for r_idx in range(self.maze.actual_maze_rows)
-                        for c_idx in range(self.maze.actual_maze_cols)
-                        if self.maze.grid[r_idx][c_idx] == 0 
-                    ]
-                    if available_path_tiles_for_terminal:
-                        random.shuffle(available_path_tiles_for_terminal)
+                    
+                    available_path_tiles_for_terminal_abs = [
+                        (abs_x, abs_y) for abs_x, abs_y in path_cells_abs
+                    ] # path_cells_abs already contains absolute coords
+                    
+                    if available_path_tiles_for_terminal_abs:
+                        random.shuffle(available_path_tiles_for_terminal_abs)
                         spawned_terminal = False
-                        for _ in range(min(10, len(available_path_tiles_for_terminal))): 
-                            col, row = available_path_tiles_for_terminal.pop()
-                            abs_x = col * TILE_SIZE + TILE_SIZE // 2 + self.maze.game_area_x_offset
-                            abs_y = row * TILE_SIZE + TILE_SIZE // 2
+                        for _ in range(min(10, len(available_path_tiles_for_terminal_abs))): 
+                            abs_x, abs_y = available_path_tiles_for_terminal_abs.pop()
 
                             too_close_to_player = self.player and math.hypot(abs_x - self.player.x, abs_y - self.player.y) < TILE_SIZE * 3
                             too_close_to_other_item = False
@@ -2693,11 +2744,9 @@ class GameController:
         if self.level == 2 and not self.drone_system.has_unlocked_lore(lore_entry_id_for_log):
             already_spawned = any(getattr(log, 'log_id', None) == log_id_to_spawn for log in self.vault_logs)
             if not already_spawned:
-                spawn_pos = self._get_random_valid_fragment_tile_internal(set()) 
-                if spawn_pos:
-                    col, row = spawn_pos
-                    abs_x = col * TILE_SIZE + TILE_SIZE // 2 + self.maze.game_area_x_offset
-                    abs_y = row * TILE_SIZE + TILE_SIZE // 2
+                spawn_pos_abs = self._get_random_valid_fragment_tile_internal_abs(set()) 
+                if spawn_pos_abs:
+                    abs_x, abs_y = spawn_pos_abs
                     self.vault_logs.add(VaultLogItem(abs_x, abs_y, log_id_to_spawn, icon_filename=grx23_icon_filename))
                     print(f"GameController: Spawned Vault Log '{log_id_to_spawn}' with icon '{grx23_icon_filename}' at ({abs_x}, {abs_y}) on level {self.level}")
 
@@ -2708,11 +2757,9 @@ class GameController:
            tablet_alpha_id not in self.drone_system.get_collected_glyph_tablet_ids(): 
             already_spawned_alpha = any(getattr(t, 'tablet_id', None) == tablet_alpha_id for t in self.glyph_tablets)
             if not already_spawned_alpha:
-                spawn_pos_tablet = self._get_random_valid_fragment_tile_internal(set())
-                if spawn_pos_tablet:
-                    col, row = spawn_pos_tablet
-                    abs_x = col * TILE_SIZE + TILE_SIZE // 2 + self.maze.game_area_x_offset
-                    abs_y = row * TILE_SIZE + TILE_SIZE // 2
+                spawn_pos_tablet_abs = self._get_random_valid_fragment_tile_internal_abs(set())
+                if spawn_pos_tablet_abs:
+                    abs_x, abs_y = spawn_pos_tablet_abs
                     self.glyph_tablets.add(GlyphTabletItem(abs_x, abs_y, tablet_alpha_id)) 
                     print(f"GameController: Spawned Glyph Tablet '{tablet_alpha_id}' at ({abs_x}, {abs_y}) on level {self.level}")
         
@@ -2723,11 +2770,9 @@ class GameController:
            tablet_beta_id not in self.drone_system.get_collected_glyph_tablet_ids():
             already_spawned_beta = any(getattr(t, 'tablet_id', None) == tablet_beta_id for t in self.glyph_tablets)
             if not already_spawned_beta:
-                spawn_pos_tablet = self._get_random_valid_fragment_tile_internal(set())
-                if spawn_pos_tablet:
-                    col, row = spawn_pos_tablet
-                    abs_x = col * TILE_SIZE + TILE_SIZE // 2 + self.maze.game_area_x_offset
-                    abs_y = row * TILE_SIZE + TILE_SIZE // 2
+                spawn_pos_tablet_abs = self._get_random_valid_fragment_tile_internal_abs(set())
+                if spawn_pos_tablet_abs:
+                    abs_x, abs_y = spawn_pos_tablet_abs
                     self.glyph_tablets.add(GlyphTabletItem(abs_x, abs_y, tablet_beta_id))
                     print(f"GameController: Spawned Glyph Tablet '{tablet_beta_id}' at ({abs_x}, {abs_y}) on level {self.level}")
 
@@ -2738,11 +2783,9 @@ class GameController:
            tablet_gamma_id not in self.drone_system.get_collected_glyph_tablet_ids():
             already_spawned_gamma = any(getattr(t, 'tablet_id', None) == tablet_gamma_id for t in self.glyph_tablets)
             if not already_spawned_gamma:
-                spawn_pos_tablet = self._get_random_valid_fragment_tile_internal(set())
-                if spawn_pos_tablet:
-                    col, row = spawn_pos_tablet
-                    abs_x = col * TILE_SIZE + TILE_SIZE // 2 + self.maze.game_area_x_offset
-                    abs_y = row * TILE_SIZE + TILE_SIZE // 2
+                spawn_pos_tablet_abs = self._get_random_valid_fragment_tile_internal_abs(set())
+                if spawn_pos_tablet_abs:
+                    abs_x, abs_y = spawn_pos_tablet_abs
                     self.glyph_tablets.add(GlyphTabletItem(abs_x, abs_y, tablet_gamma_id))
                     print(f"GameController: Spawned Glyph Tablet '{tablet_gamma_id}' at ({abs_x}, {abs_y}) on level {self.level}")
 
@@ -2760,18 +2803,16 @@ class GameController:
             if self.level == level_spawn and not self.drone_system.has_unlocked_lore(lore_id):
                 already_spawned = any(getattr(echo, 'echo_id', None) == echo_id for echo in self.architect_echoes)
                 if not already_spawned:
-                    spawn_pos = self._get_random_valid_fragment_tile_internal(set()) 
-                    if spawn_pos:
-                        col, row = spawn_pos
-                        abs_x = col * TILE_SIZE + TILE_SIZE // 2 + self.maze.game_area_x_offset
-                        abs_y = row * TILE_SIZE + TILE_SIZE // 2
+                    spawn_pos_abs = self._get_random_valid_fragment_tile_internal_abs(set()) 
+                    if spawn_pos_abs:
+                        abs_x, abs_y = spawn_pos_abs
                         self.architect_echoes.add(ArchitectEchoItem(abs_x, abs_y, echo_id, lore_id))
                         print(f"GameController: Spawned Architect Echo '{echo_id}' at ({abs_x}, {abs_y}) on level {self.level}")
 
     def _spawn_core_fragments_for_level_internal(self):
         if not self.maze or not CORE_FRAGMENT_DETAILS: return
         
-        occupied_fragment_tiles_this_level = set() 
+        occupied_fragment_tiles_abs_this_level = set() 
 
         for frag_key, details in CORE_FRAGMENT_DETAILS.items():
             if not details or not isinstance(details, dict): continue 
@@ -2782,472 +2823,35 @@ class GameController:
             if spawn_info and spawn_info.get("level") == self.level and \
                fragment_id and not self.drone_system.has_collected_fragment(fragment_id):
                 
-                if details.get("reward_level") is None: 
-                    random_tile_coords_rel = self._get_random_valid_fragment_tile_internal(occupied_fragment_tiles_this_level)
+                if details.get("reward_level") is None: # Only spawn if not a reward_level fragment
+                    random_tile_coords_abs = self._get_random_valid_fragment_tile_internal_abs(occupied_fragment_tiles_abs_this_level)
                     
-                    if random_tile_coords_rel:
-                        tile_c_rel, tile_r_rel = random_tile_coords_rel
-                        abs_x = tile_c_rel * TILE_SIZE + TILE_SIZE // 2 + self.maze.game_area_x_offset
-                        abs_y = tile_r_rel * TILE_SIZE + TILE_SIZE // 2
+                    if random_tile_coords_abs:
+                        abs_x, abs_y = random_tile_coords_abs
                         
                         self.core_fragments.add(CoreFragmentItem(abs_x, abs_y, fragment_id, details))
-                        occupied_fragment_tiles_this_level.add(random_tile_coords_rel) 
+                        occupied_fragment_tiles_abs_this_level.add(random_tile_coords_abs) 
                         print(f"GameController: Spawned standard fragment '{fragment_id}' at start of level {self.level}")
 
-
-    def _get_random_valid_fragment_tile_internal(self, existing_fragment_tiles_rel):
-        if not self.maze or not self.maze.grid: return None
-
-        available_path_tiles_rel = []
-        for r_idx in range(self.maze.actual_maze_rows):
-            for c_idx in range(self.maze.actual_maze_cols):
-                if self.maze.grid[r_idx][c_idx] == 0 and (c_idx, r_idx) not in existing_fragment_tiles_rel:
-                    available_path_tiles_rel.append((c_idx, r_idx))
+    def _get_random_valid_fragment_tile_internal_abs(self, existing_fragment_tiles_abs):
+        """Helper to get a random valid absolute spawn point for fragments, avoiding existing ones."""
+        if not self.maze: return None
         
-        if not available_path_tiles_rel:
+        path_cells_abs = []
+        if hasattr(self.maze, 'get_path_cells_abs'): path_cells_abs = self.maze.get_path_cells_abs()
+        elif hasattr(self.maze, 'get_path_cells'): 
+            path_cells_rel = self.maze.get_path_cells()
+            path_cells_abs = [(rel_x + self.maze.game_area_x_offset, rel_y) for rel_x, rel_y in path_cells_rel]
+
+        available_path_tiles_abs = [
+            (abs_x, abs_y) for abs_x, abs_y in path_cells_abs 
+            if (abs_x, abs_y) not in existing_fragment_tiles_abs
+        ]
+        
+        if not available_path_tiles_abs:
             return None
         
-        return random.choice(available_path_tiles_rel) 
-
-    def handle_main_menu_input(self, key_event):
-        if key_event == pygame.K_UP:
-            self.selected_menu_option = (self.selected_menu_option - 1 + len(self.menu_options)) % len(self.menu_options)
-            self.play_sound('ui_select')
-        elif key_event == pygame.K_DOWN:
-            self.selected_menu_option = (self.selected_menu_option + 1) % len(self.menu_options)
-            self.play_sound('ui_select')
-        elif key_event == pygame.K_RETURN:
-            self.play_sound('ui_confirm')
-            action = self.menu_options[self.selected_menu_option]
-            if action == "Start Game":
-                self.scene_manager.set_game_state(GAME_STATE_GAME_INTRO_SCROLL) 
-            elif action == "Maze Defense": 
-                self.initialize_maze_defense_session() 
-            elif action == "Select Drone":
-                self.scene_manager.set_game_state(GAME_STATE_DRONE_SELECT)
-            elif action == "Codex":
-                self.scene_manager.set_game_state(GAME_STATE_CODEX)
-            elif action == "Settings":
-                self.scene_manager.set_game_state(GAME_STATE_SETTINGS)
-            elif action == "Leaderboard":
-                self.scene_manager.set_game_state(GAME_STATE_LEADERBOARD)
-            elif action == "Quit":
-                self.quit_game()
-
-    def handle_codex_input(self, key_event):
-        self.play_sound('ui_select', 0.6) 
-
-        if self.codex_current_view == "categories":
-            if key_event == pygame.K_UP:
-                self.codex_selected_category_index = (self.codex_selected_category_index - 1 + len(self.codex_categories_list)) % len(self.codex_categories_list) if self.codex_categories_list else 0
-            elif key_event == pygame.K_DOWN:
-                self.codex_selected_category_index = (self.codex_selected_category_index + 1) % len(self.codex_categories_list) if self.codex_categories_list else 0
-            elif key_event == pygame.K_RETURN: 
-                if self.codex_categories_list:
-                    self.codex_current_category_name = self.codex_categories_list[self.codex_selected_category_index]
-                    self.codex_current_view = "entries"
-                    self.codex_selected_entry_index_in_category = 0 
-                    self.codex_entries_in_category_list = []
-                    unlocked_ids = self.drone_system.get_unlocked_lore_ids()
-                    all_lore = self.drone_system.get_all_loaded_lore_entries()
-                    for entry_id in unlocked_ids:
-                        entry_data = all_lore.get(entry_id)
-                        if entry_data and entry_data.get("category", "Misc") == self.codex_current_category_name:
-                            self.codex_entries_in_category_list.append(entry_data)
-                    self.codex_entries_in_category_list.sort(key=lambda e: e.get("title", "Untitled")) 
-            elif key_event == pygame.K_ESCAPE: 
-                self.scene_manager.set_game_state(GAME_STATE_MAIN_MENU)
-
-        elif self.codex_current_view == "entries":
-            if key_event == pygame.K_UP:
-                self.codex_selected_entry_index_in_category = (self.codex_selected_entry_index_in_category - 1 + len(self.codex_entries_in_category_list)) % len(self.codex_entries_in_category_list) if self.codex_entries_in_category_list else 0
-            elif key_event == pygame.K_DOWN:
-                self.codex_selected_entry_index_in_category = (self.codex_selected_entry_index_in_category + 1) % len(self.codex_entries_in_category_list) if self.codex_entries_in_category_list else 0
-            elif key_event == pygame.K_RETURN: 
-                if self.codex_entries_in_category_list and 0 <= self.codex_selected_entry_index_in_category < len(self.codex_entries_in_category_list):
-                    selected_entry_data = self.codex_entries_in_category_list[self.codex_selected_entry_index_in_category]
-                    self.codex_selected_entry_id = selected_entry_data.get("id")
-                    self.codex_current_view = "content"
-                    self.codex_content_scroll_offset = 0 
-            elif key_event == pygame.K_ESCAPE: 
-                self.codex_current_view = "categories"
-                self.codex_current_category_name = None
-                self.codex_selected_entry_id = None
-                self.codex_content_scroll_offset = 0
-
-        elif self.codex_current_view == "content":
-            if key_event == pygame.K_UP: 
-                self.codex_content_scroll_offset = max(0, self.codex_content_scroll_offset - 1)
-            elif key_event == pygame.K_DOWN: 
-                if self.codex_current_entry_total_lines > 0: 
-                    max_visible = self.ui_manager.codex_max_visible_lines_content if self.ui_manager.codex_max_visible_lines_content > 0 else 1
-                    max_scroll = self.codex_current_entry_total_lines - max_visible
-                    max_scroll = max(0, max_scroll) 
-                    if self.codex_content_scroll_offset < max_scroll:
-                        self.codex_content_scroll_offset += 1
-                else: 
-                    self.codex_content_scroll_offset += 1
-            elif key_event == pygame.K_ESCAPE: 
-                self.codex_current_view = "entries"
-                self.codex_selected_entry_id = None
-                self.codex_content_scroll_offset = 0
-
-    def handle_drone_select_input(self, key_event):
-        num_options = len(self.drone_select_options)
-        if num_options == 0: return 
-
-        if key_event == pygame.K_LEFT:
-            self.selected_drone_preview_index = (self.selected_drone_preview_index - 1 + num_options) % num_options
-            self.play_sound('ui_select')
-        elif key_event == pygame.K_RIGHT:
-            self.selected_drone_preview_index = (self.selected_drone_preview_index + 1) % num_options
-            self.play_sound('ui_select')
-        elif key_event == pygame.K_RETURN: 
-            selected_id = self.drone_select_options[self.selected_drone_preview_index]
-            if self.drone_system.is_drone_unlocked(selected_id): 
-                if self.drone_system.set_selected_drone_id(selected_id): 
-                    self.play_sound('ui_confirm')
-                    self.ui_manager.update_player_life_icon_surface() 
-                    self.drone_system.check_and_unlock_lore_entries(event_trigger=f"drone_selected_{selected_id}")
-            else: 
-                unlocked_status, reason = self.drone_system.attempt_unlock_drone_with_cores(selected_id)
-                if unlocked_status == True and reason == "unlocked":
-                    self.play_sound('ui_confirm')
-                    if selected_id == "PHANTOM": 
-                        self.drone_system.check_and_unlock_lore_entries(event_trigger="story_beat_trigger_SB02")
-                        self.trigger_story_beat("story_beat_SB02")
-                else: 
-                    self.play_sound('ui_denied')
-        elif key_event == pygame.K_ESCAPE: 
-            self.play_sound('ui_select')
-            self.scene_manager.set_game_state(GAME_STATE_MAIN_MENU)
-
-    def handle_settings_input(self, key_event):
-        if not self.settings_items_data: return 
-        current_setting_item = self.settings_items_data[self.selected_setting_index]
-        setting_key = current_setting_item["key"]
-
-        if key_event == pygame.K_UP:
-            self.selected_setting_index = (self.selected_setting_index - 1 + len(self.settings_items_data)) % len(self.settings_items_data)
-            self.play_sound('ui_select')
-        elif key_event == pygame.K_DOWN:
-            self.selected_setting_index = (self.selected_setting_index + 1) % len(self.settings_items_data)
-            self.play_sound('ui_select')
-        elif key_event == pygame.K_RETURN: 
-            if current_setting_item["type"] == "action" and setting_key == "RESET_SETTINGS_ACTION":
-                gs.reset_all_settings_to_default()
-                if self.screen_flags != (pygame.FULLSCREEN if gs.get_game_setting("FULLSCREEN_MODE") else 0):
-                    self.screen_flags = pygame.FULLSCREEN if gs.get_game_setting("FULLSCREEN_MODE") else 0
-                self.play_sound('ui_confirm')
-        elif key_event == pygame.K_LEFT or key_event == pygame.K_RIGHT: 
-            if current_setting_item["type"] != "action": 
-                self.play_sound('ui_select', 0.7) 
-                current_val = gs.get_game_setting(setting_key)
-                direction = 1 if key_event == pygame.K_RIGHT else -1
-
-                if current_setting_item["type"] == "numeric":
-                    step = current_setting_item["step"]
-                    new_val = current_val + step * direction
-                    new_val = max(current_setting_item["min"], min(current_setting_item["max"], new_val)) 
-                    if isinstance(step, float) or isinstance(current_val, float): new_val = float(new_val)
-                    else: new_val = int(new_val)
-                    gs.set_game_setting(setting_key, new_val)
-                elif current_setting_item["type"] == "choice":
-                    choices = current_setting_item.get("choices", [])
-                    if choices:
-                        try:
-                            current_choice_idx = choices.index(current_val)
-                            new_choice_idx = (current_choice_idx + direction + len(choices)) % len(choices) 
-                            gs.set_game_setting(setting_key, choices[new_choice_idx])
-                        except ValueError: 
-                            gs.set_game_setting(setting_key, choices[0])
-        elif key_event == pygame.K_ESCAPE: 
-            self.play_sound('ui_select')
-            self.scene_manager.set_game_state(GAME_STATE_MAIN_MENU)
-
-    def handle_pause_menu_input(self, key_event, game_state_when_paused):
-        if key_event == pygame.K_l and game_state_when_paused == GAME_STATE_PLAYING: 
-            self.unpause_and_set_state(GAME_STATE_LEADERBOARD)
-        elif key_event == pygame.K_m: 
-            self.unpause_and_set_state(GAME_STATE_MAIN_MENU) 
-        elif key_event == pygame.K_q: 
-            self.quit_game()
-        elif key_event == pygame.K_ESCAPE and game_state_when_paused.startswith("architect_vault"): 
-            self.unpause_and_set_state(GAME_STATE_MAIN_MENU)
-        elif key_event == pygame.K_p: 
-            self.toggle_pause()
-
-    def handle_game_over_input(self, key_event):
-        settings_were_modified = gs.SETTINGS_MODIFIED 
-        can_submit_score = not settings_were_modified 
-        is_actually_a_new_high_score_and_submittable = can_submit_score and leaderboard.is_high_score(self.score, self.level)
-
-        if is_actually_a_new_high_score_and_submittable:
-            if key_event in [pygame.K_r, pygame.K_l, pygame.K_m, pygame.K_q, pygame.K_RETURN, pygame.K_SPACE, pygame.K_ESCAPE] or \
-               (pygame.K_a <= key_event <= pygame.K_z): 
-                self.scene_manager.set_game_state(GAME_STATE_ENTER_NAME)
-                return 
-
-        if key_event == pygame.K_r: 
-            self.scene_manager.set_game_state(GAME_STATE_GAME_INTRO_SCROLL) 
-        elif key_event == pygame.K_l and not is_actually_a_new_high_score_and_submittable : 
-            self.scene_manager.set_game_state(GAME_STATE_LEADERBOARD)
-        elif key_event == pygame.K_m: 
-            self.scene_manager.set_game_state(GAME_STATE_MAIN_MENU)
-        elif key_event == pygame.K_q: 
-            self.quit_game()
-
-    def submit_leaderboard_name(self, name_cache_from_event_manager):
-        if leaderboard.add_score(name_cache_from_event_manager, self.score, self.level):
-            self.play_sound('ui_confirm')
-        else: 
-            self.play_sound('ui_denied')
-        self.leaderboard_scores = leaderboard.load_scores() 
-        self.scene_manager.set_game_state(GAME_STATE_LEADERBOARD) 
-
-    def update_player_name_input_display(self, name_cache_from_event_manager):
-        self.player_name_input_display_cache = name_cache_from_event_manager
-
-    def try_activate_vault_terminal(self, terminal_idx_pressed):
-        if not (0 <= terminal_idx_pressed < len(self.architect_vault_puzzle_terminals_activated)):
-            print(f"GameController: Invalid terminal index {terminal_idx_pressed} attempted.")
-            return
-
-        target_terminal_sprite = None
-        for t_sprite in self.architect_vault_terminals:
-            if hasattr(t_sprite, 'terminal_id') and t_sprite.terminal_id == terminal_idx_pressed:
-                target_terminal_sprite = t_sprite
-                break
-        
-        if not target_terminal_sprite or (hasattr(target_terminal_sprite, 'is_active') and target_terminal_sprite.is_active):
-            self.play_sound('ui_denied') 
-            return
-
-        fragment_ids_for_puzzle_terminals = ["cf_alpha", "cf_beta", "cf_gamma"] 
-        required_fragment_id = None
-        required_fragment_name = "a specific Core Fragment"
-
-        if terminal_idx_pressed < len(fragment_ids_for_puzzle_terminals):
-            required_fragment_id = fragment_ids_for_puzzle_terminals[terminal_idx_pressed]
-            frag_conf = next((details for _, details in CORE_FRAGMENT_DETAILS.items() if details and details.get("id") == required_fragment_id), None)
-            if frag_conf: required_fragment_name = frag_conf.get("name", required_fragment_name)
-        
-        if required_fragment_id and self.drone_system.has_collected_fragment(required_fragment_id):
-            self.architect_vault_puzzle_terminals_activated[terminal_idx_pressed] = True
-            if hasattr(target_terminal_sprite, 'is_active'): target_terminal_sprite.is_active = True
-            if hasattr(target_terminal_sprite, 'image'): target_terminal_sprite.image.fill(GREEN) 
-            self.play_sound('vault_barrier_disable')
-            self.architect_vault_message = f"Terminal {terminal_idx_pressed+1} ({required_fragment_name}) activated!"
-            self.architect_vault_message_timer = pygame.time.get_ticks() + 3000
-
-            if all(self.architect_vault_puzzle_terminals_activated):
-                self.architect_vault_message = "All terminals active. Lockdown disengaged. Prepare for Gauntlet!"
-                self.architect_vault_message_timer = pygame.time.get_ticks() + 4000
-                self.scene_manager.set_game_state(GAME_STATE_ARCHITECT_VAULT_GAUNTLET) 
-        else: 
-            self.architect_vault_message = f"Terminal {terminal_idx_pressed+1} requires {required_fragment_name}."
-            self.architect_vault_message_timer = pygame.time.get_ticks() + 3000
-            self.play_sound('ui_denied')
-
-    def toggle_pause(self):
-        self.paused = not self.paused
-        if self.paused:
-            print("GameController: Game Paused.")
-            pygame.mixer.music.pause() 
-        else:
-            print("GameController: Game Resumed.")
-            pygame.mixer.music.unpause() 
-            current_time = pygame.time.get_ticks()
-            current_game_state = self.scene_manager.get_current_state()
-            if current_game_state == GAME_STATE_PLAYING:
-                self.level_timer_start_ticks = current_time - (gs.get_game_setting("LEVEL_TIMER_DURATION") - self.level_time_remaining_ms)
-            elif current_game_state == GAME_STATE_MAZE_DEFENSE: 
-                if self.is_build_phase and self.wave_manager:
-                    # Build phase timer is a countdown, so when unpausing, its remaining time is already correct.
-                    # No need to adjust start_ticks for it.
-                    pass 
-            elif current_game_state.startswith("architect_vault") and self.architect_vault_current_phase == "extraction":
-                 self.architect_vault_phase_timer_start = current_time - (gs.get_game_setting("ARCHITECT_VAULT_EXTRACTION_TIMER_MS") - self.level_time_remaining_ms)
-            elif current_game_state == GAME_STATE_BONUS_LEVEL_PLAYING:
-                self.bonus_level_timer_start = current_time - (self.bonus_level_duration_ms - self.level_time_remaining_ms)
-
-    def unpause_and_set_state(self, new_state):
-        if self.paused: self.toggle_pause() 
-        self.scene_manager.set_game_state(new_state)
-
-    def quit_game(self):
-        print("GameController: Quitting game.")
-        if self.drone_system: self.drone_system._save_unlocks() 
-        pygame.quit()
-        sys.exit()
-
-    def _draw_game_world(self):
-        current_game_state = self.scene_manager.get_current_state()
-        if current_game_state.startswith("architect_vault"):
-            self.screen.fill(ARCHITECT_VAULT_BG_COLOR)
-            if self.maze: self.maze.draw_architect_vault(self.screen) 
-        elif current_game_state == GAME_STATE_MAZE_DEFENSE: 
-            self.screen.fill(gs.DARK_GREY) 
-            if self.maze: self.maze.draw(self.screen)
-        else: 
-            self.screen.fill(BLACK)
-            if self.maze: self.maze.draw(self.screen)
-
-        if current_game_state != GAME_STATE_MAZE_DEFENSE : 
-            self.rings.draw(self.screen)
-        
-        self.power_ups.draw(self.screen) 
-        
-        if current_game_state != GAME_STATE_MAZE_DEFENSE:
-            self.core_fragments.draw(self.screen)
-            self.vault_logs.draw(self.screen)
-            self.glyph_tablets.draw(self.screen)
-            self.architect_echoes.draw(self.screen) 
-            self.alien_terminals_group.draw(self.screen) 
-        
-        self.escape_zone_group.draw(self.screen) 
-
-        if current_game_state == GAME_STATE_ARCHITECT_VAULT_ENTRY_PUZZLE:
-            self.architect_vault_terminals.draw(self.screen)
-        
-        if current_game_state == GAME_STATE_MAZE_DEFENSE and self.reactor_group:
-            self.reactor_group.draw(self.screen) 
-
-        if hasattr(self, 'enemy_manager'): 
-            self.enemy_manager.draw_all(self.screen)
-        if self.boss_active and self.maze_guardian:
-            self.maze_guardian.draw(self.screen)
-
-        if self.player:
-            self.player.draw(self.screen)
-
-        if current_game_state == GAME_STATE_MAZE_DEFENSE:
-            self.turrets.draw(self.screen) 
-
-        self.explosion_particles.draw(self.screen)
-
-    def try_place_turret(self, screen_pos):
-        if not self.maze or not self.player: return False
-        
-        if screen_pos[1] > GAME_PLAY_AREA_HEIGHT - TILE_SIZE // 2 : 
-            print("Turret placement: Cannot place in HUD area.")
-            self.play_sound('ui_denied', 0.6)
-            return False
-
-        grid_col = (screen_pos[0] - self.maze.game_area_x_offset) // TILE_SIZE
-        grid_row = screen_pos[1] // TILE_SIZE
-
-        if not (0 <= grid_row < self.maze.actual_maze_rows and \
-                0 <= grid_col < self.maze.actual_maze_cols):
-            print("Turret placement: Position outside maze grid.")
-            self.play_sound('ui_denied', 0.6)
-            return False
-
-        if self.maze.grid[grid_row][grid_col] != 0:
-            print("Turret placement: Cannot place on a wall.")
-            self.play_sound('ui_denied', 0.6)
-            return False
-
-        turret_center_x = grid_col * TILE_SIZE + TILE_SIZE // 2 + self.maze.game_area_x_offset
-        turret_center_y = grid_row * TILE_SIZE + TILE_SIZE // 2
-        
-        for existing_turret in self.turrets:
-            if math.hypot(existing_turret.x - turret_center_x, existing_turret.y - turret_center_y) < TILE_SIZE * 0.5:
-                print("Turret placement: Another turret too close.")
-                self.play_sound('ui_denied', 0.6)
-                return False
-        
-        if self.core_reactor and self.core_reactor.rect.collidepoint(turret_center_x, turret_center_y):
-            print("Turret placement: Cannot place on the Core Reactor.")
-            self.play_sound('ui_denied', 0.6)
-            return False
-
-        if self.player.rect.collidepoint(turret_center_x, turret_center_y): 
-            print("Turret placement: Cannot place on player.")
-            self.play_sound('ui_denied', 0.6)
-            return False
-
-
-        if self.drone_system.get_player_cores() >= Turret.TURRET_COST:
-            if self.drone_system.spend_player_cores(Turret.TURRET_COST):
-                new_turret = Turret(turret_center_x, turret_center_y, self)
-                self.turrets.add(new_turret)
-                print(f"Turret placed at grid ({grid_row},{grid_col}), screen ({turret_center_x},{turret_center_y})")
-                self.play_sound('turret_place_placeholder', 0.7) 
-                return True
-            else: 
-                print("Turret placement: Core spending failed unexpectedly.")
-                self.play_sound('ui_denied', 0.6)
-                return False
-        else:
-            print("Turret placement: Insufficient cores.")
-            self.play_sound('ui_denied', 0.6)
-            return False
-    
-    def try_upgrade_turret(self, turret_to_upgrade):
-        if turret_to_upgrade and turret_to_upgrade in self.turrets:
-            current_upgrade_cost = Turret.UPGRADE_COST 
-            if self.drone_system.get_player_cores() >= current_upgrade_cost:
-                if turret_to_upgrade.upgrade(): 
-                    self.drone_system.spend_player_cores(current_upgrade_cost)
-                    self.play_sound('weapon_upgrade_collect', 0.8) 
-                    print(f"GameController: Upgraded turret at {turret_to_upgrade.rect.center} to level {turret_to_upgrade.upgrade_level}")
-                    if self.ui_manager.build_menu: 
-                        self.ui_manager.build_menu.set_selected_turret(turret_to_upgrade) 
-                else:
-                    self.play_sound('ui_denied', 0.6)
-                    print(f"GameController: Turret at {turret_to_upgrade.rect.center} could not be upgraded (e.g. max level).")
-            else:
-                print("GameController: Insufficient cores to upgrade turret.")
-                self.play_sound('ui_denied', 0.6)
-        else:
-            print("GameController: No valid turret selected for upgrade.")
-            self.play_sound('ui_denied', 0.6)
-
-
-    def get_enemy_spawn_points_for_defense(self):
-        if not self.maze: return [(50, 50), (WIDTH - 50, HEIGHT // 2)] 
-
-        spawn_points = []
-        edge_margin = 1 
-        num_points_per_edge_segment = 3 
-
-        for c in range(edge_margin, self.maze.actual_maze_cols - edge_margin, max(1, (self.maze.actual_maze_cols - 2*edge_margin) // num_points_per_edge_segment)):
-            for r_offset in range(edge_margin + 1): 
-                if 0 <= r_offset < self.maze.actual_maze_rows and 0 <= c < self.maze.actual_maze_cols and self.maze.grid[r_offset][c] == 0:
-                    spawn_points.append(self.maze._grid_to_pixel_center(r_offset,c, self.maze.game_area_x_offset))
-                    break 
-        for c in range(edge_margin, self.maze.actual_maze_cols - edge_margin, max(1, (self.maze.actual_maze_cols - 2*edge_margin) // num_points_per_edge_segment)):
-            for r_offset_from_bottom in range(edge_margin + 1):
-                r = self.maze.actual_maze_rows - 1 - r_offset_from_bottom
-                if 0 <= r < self.maze.actual_maze_rows and 0 <= c < self.maze.actual_maze_cols and self.maze.grid[r][c] == 0:
-                    spawn_points.append(self.maze._grid_to_pixel_center(r,c, self.maze.game_area_x_offset))
-                    break
-        for r in range(edge_margin, self.maze.actual_maze_rows - edge_margin, max(1, (self.maze.actual_maze_rows - 2*edge_margin) // num_points_per_edge_segment)):
-            for c_offset in range(edge_margin + 1):
-                if 0 <= r < self.maze.actual_maze_rows and 0 <= c_offset < self.maze.actual_maze_cols and self.maze.grid[r][c_offset] == 0:
-                    spawn_points.append(self.maze._grid_to_pixel_center(r,c_offset, self.maze.game_area_x_offset))
-                    break
-        for r in range(edge_margin, self.maze.actual_maze_rows - edge_margin, max(1, (self.maze.actual_maze_rows - 2*edge_margin) // num_points_per_edge_segment)):
-            for c_offset_from_right in range(edge_margin + 1):
-                c = self.maze.actual_maze_cols - 1 - c_offset_from_right
-                if 0 <= r < self.maze.actual_maze_rows and 0 <= c < self.maze.actual_maze_cols and self.maze.grid[r][c] == 0:
-                    spawn_points.append(self.maze._grid_to_pixel_center(r,c, self.maze.game_area_x_offset))
-                    break
-        
-        if not spawn_points: 
-            path_cells = self.maze.get_path_cells()
-            if path_cells:
-                if self.core_reactor:
-                    reactor_center = self.core_reactor.rect.center
-                    far_points = [p for p in path_cells if math.hypot(p[0]+self.maze.game_area_x_offset - reactor_center[0], p[1] - reactor_center[1]) > TILE_SIZE * 7]
-                    if far_points:
-                        return [(p[0]+self.maze.game_area_x_offset, p[1]) for p in random.sample(far_points, min(len(far_points), 4))] 
-                return [(p[0]+self.maze.game_area_x_offset, p[1]) for p in random.sample(path_cells, min(len(path_cells), 4))] 
-            return [(TILE_SIZE,TILE_SIZE), (WIDTH - TILE_SIZE, GAME_PLAY_AREA_HEIGHT - TILE_SIZE), (TILE_SIZE, GAME_PLAY_AREA_HEIGHT - TILE_SIZE), (WIDTH - TILE_SIZE, TILE_SIZE) ] 
-        
-        return list(set(spawn_points)) 
-
+        return random.choice(available_path_tiles_abs) 
 
     def run(self):
         current_fullscreen_setting = gs.get_game_setting("FULLSCREEN_MODE")
@@ -3277,5 +2881,4 @@ class GameController:
             else: 
                 self.ui_manager.draw_current_scene_ui() 
 
-            pygame.display.flip() 
-            
+            pygame.display.flip()

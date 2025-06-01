@@ -249,7 +249,7 @@ class UIManager:
             pos_x = 0
             if scaled_h > HEIGHT: 
                 scaled_h = HEIGHT
-                scaled_w = int(scaled_h / aspect_ratio) if aspect_ratio > 0 else WIDTH
+                scaled_w = int(scaled_h / aspect_ratio if aspect_ratio > 0 else WIDTH)
                 pos_x = (WIDTH - scaled_w) // 2
                 pos_y = 0
             
@@ -951,7 +951,7 @@ class UIManager:
 
         # --- Defense Mode Specific Info (Bottom-Center) ---
         center_hud_x = WIDTH // 2
-        center_hud_y = panel_y_start + panel_height // 2
+        center_hud_y = panel_y_start + panel_height // 2 # Vertical center of the HUD panel
         
         if hasattr(self.game_controller, 'wave_manager') and self.game_controller.wave_manager:
             wave_manager = self.game_controller.wave_manager
@@ -971,15 +971,34 @@ class UIManager:
                 self.screen.blit(build_time_surf, build_time_rect)
                 prompt_y_start = build_time_rect.bottom + 3
 
+                # Prompts for build phase actions
                 turret_prompt_surf = self._render_text_safe("T: Place Turret", "small_text", GREEN)
+                # Position prompts side-by-side or stacked
                 turret_prompt_rect = turret_prompt_surf.get_rect(centerx=center_hud_x - turret_prompt_surf.get_width()//2 - 10, top=prompt_y_start)
-                self.screen.blit(turret_prompt_surf, turret_prompt_rect)
-
+                
                 start_wave_prompt_surf = self._render_text_safe("SPACE: Start Wave", "small_text", GREEN)
-                start_wave_prompt_rect = start_wave_prompt_surf.get_rect(centerx=center_hud_x + start_wave_prompt_surf.get_width()//2 + 10, top=prompt_y_start)
-                # To position next to each other:
-                start_wave_prompt_rect.left = turret_prompt_rect.right + 20
-                self.screen.blit(start_wave_prompt_surf, start_wave_prompt_rect)
+                start_wave_prompt_rect = start_wave_prompt_surf.get_rect(left=turret_prompt_rect.right + 20, centery=turret_prompt_rect.centery)
+                
+                # Check if combined width exceeds panel width and stack if necessary
+                combined_prompt_width = turret_prompt_rect.width + 20 + start_wave_prompt_rect.width
+                prompt_area_width = WIDTH * 0.4 # Example width for prompt area
+                
+                if combined_prompt_width > prompt_area_width :
+                    # Stack them
+                    turret_prompt_rect.centerx = center_hud_x
+                    self.screen.blit(turret_prompt_surf, turret_prompt_rect)
+                    start_wave_prompt_rect.centerx = center_hud_x
+                    start_wave_prompt_rect.top = turret_prompt_rect.bottom + 2
+                    self.screen.blit(start_wave_prompt_surf, start_wave_prompt_rect)
+                else:
+                    # Place side by side
+                    total_width_prompts = turret_prompt_surf.get_width() + start_wave_prompt_surf.get_width() + 20
+                    start_x_prompts = center_hud_x - total_width_prompts // 2
+                    turret_prompt_rect.topleft = (start_x_prompts, prompt_y_start)
+                    self.screen.blit(turret_prompt_surf, turret_prompt_rect)
+                    start_wave_prompt_rect.topleft = (turret_prompt_rect.right + 20, prompt_y_start)
+                    self.screen.blit(start_wave_prompt_surf, start_wave_prompt_rect)
+
 
             else: # Combat phase
                 combat_phase_surf = self._render_text_safe("Wave In Progress!", "ui_text", ORANGE)
@@ -990,45 +1009,56 @@ class UIManager:
             self.screen.blit(loading_surf, loading_surf.get_rect(centerx=center_hud_x, centery=center_hud_y))
 
 
-        # --- Reactor Health Bar (Top Center of Screen) ---
+        # --- Reactor Health Bar (Top Center of Screen - outside HUD panel) ---
         if hasattr(self.game_controller, 'core_reactor') and self.game_controller.core_reactor:
             reactor = self.game_controller.core_reactor
+            # Only draw if reactor is "alive" or has some health (e.g. during destruction animation)
             if reactor.alive or reactor.current_health > 0: 
-                bar_width = WIDTH * 0.35  
-                bar_height = 22
-                bar_x = (WIDTH - bar_width) / 2
-                bar_y = 15 
+                bar_width = WIDTH * 0.35  # Example width, adjust as needed
+                bar_height = 22           # Example height
+                bar_x = (WIDTH - bar_width) / 2 # Centered horizontally
+                bar_y = 15                # Positioned near the top of the screen
 
                 health_percentage = reactor.current_health / reactor.max_health if reactor.max_health > 0 else 0
                 filled_width = bar_width * health_percentage
                 
+                # Draw background
                 pygame.draw.rect(self.screen, DARK_GREY, (bar_x, bar_y, bar_width, bar_height), border_radius=3)
-                fill_color = RED
+                
+                # Determine fill color based on health
+                fill_color = RED # Low health
                 if health_percentage > 0.66: fill_color = GREEN
                 elif health_percentage > 0.33: fill_color = YELLOW
+                
                 if filled_width > 0:
                     pygame.draw.rect(self.screen, fill_color, (bar_x, bar_y, int(filled_width), bar_height), border_radius=3)
+                
+                # Draw border
                 pygame.draw.rect(self.screen, WHITE, (bar_x, bar_y, bar_width, bar_height), 2, border_radius=3)
 
+                # Optional: Draw Reactor Icon next to health bar
                 reactor_label_icon = self.ui_assets.get("reactor_icon_placeholder")
                 if reactor_label_icon:
-                    self.screen.blit(reactor_label_icon, (bar_x - reactor_label_icon.get_width() - 10, bar_y + (bar_height - reactor_label_icon.get_height())//2))
+                    icon_rect = reactor_label_icon.get_rect(midright=(bar_x - 10, bar_y + bar_height // 2))
+                    self.screen.blit(reactor_label_icon, icon_rect)
                 
+                # Optional: Draw health text (e.g., "HP: 500/1000")
                 health_text = f"{int(reactor.current_health)}/{int(reactor.max_health)}"
                 health_text_surf = self._render_text_safe(health_text, "small_text", WHITE)
-                self.screen.blit(health_text_surf, health_text_surf.get_rect(midleft=(bar_x + bar_width + 10, bar_y + bar_height // 2)))
+                text_rect = health_text_surf.get_rect(midleft=(bar_x + bar_width + 10, bar_y + bar_height // 2))
+                self.screen.blit(health_text_surf, text_rect)
 
-        # Player Score (Bottom-Right)
-        score_x_anchor = WIDTH - h_padding
+        # Player Score (Bottom-Right of HUD panel)
+        score_x_anchor = WIDTH - h_padding # Anchor to the right edge of the screen
         score_emoji_char = "🏆 "; score_text_str = f"Score: {self.game_controller.score}"
         score_emoji_surf = self._render_text_safe(score_emoji_char, "ui_emoji_general", GOLD)
         score_text_surf = self._render_text_safe(score_text_str, "ui_text", GOLD)
         
         # Position score at the bottom right of the HUD panel
         score_total_width = score_emoji_surf.get_width() + text_icon_spacing + score_text_surf.get_width()
-        score_start_x = score_x_anchor - score_total_width
+        score_start_x = score_x_anchor - score_total_width # Calculate starting X to align right
         score_max_height = max(score_emoji_surf.get_height(), score_text_surf.get_height())
-        score_y_pos = panel_y_start + panel_height - v_padding - score_max_height
+        score_y_pos = panel_y_start + panel_height - v_padding - score_max_height # Align with bottom of panel
 
         self.screen.blit(score_emoji_surf, (score_start_x, score_y_pos + (score_max_height - score_emoji_surf.get_height()) // 2))
         self.screen.blit(score_text_surf, (score_start_x + score_emoji_surf.get_width() + text_icon_spacing, score_y_pos + (score_max_height - score_text_surf.get_height()) // 2))
