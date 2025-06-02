@@ -1,3 +1,4 @@
+# hyperdrone_core/player_actions.py
 import pygame
 
 # game_settings might be needed if any player actions directly reference specific settings keys
@@ -73,21 +74,27 @@ class PlayerActions:
         player = self._get_player() #
         if player: #
             if hasattr(player, 'shoot'): #
-                maze_ref = getattr(self.game_controller, 'maze', None) # Already gets maze
-                enemies_group_ref = getattr(self.game_controller, 'enemies', None) # Already gets enemies
-                                
-                primary_shoot_sound = None #
-                missile_launch_sound = None #
+                maze_ref = getattr(self.game_controller, 'maze', None) 
                 
-                if hasattr(self.game_controller, 'sounds') and isinstance(self.game_controller.sounds, dict): #
-                    primary_shoot_sound = self.game_controller.sounds.get('shoot') #
-                    missile_launch_sound = self.game_controller.sounds.get('missile_launch') #
+                # MODIFIED: Correctly get enemies_group from enemy_manager
+                enemies_group_ref = None
+                if hasattr(self.game_controller, 'enemy_manager') and self.game_controller.enemy_manager:
+                    if hasattr(self.game_controller.enemy_manager, 'get_sprites'):
+                        enemies_group_ref = self.game_controller.enemy_manager.get_sprites()
+                # END MODIFICATION
+                                
+                primary_shoot_sound = None 
+                missile_launch_sound = None 
+                
+                if hasattr(self.game_controller, 'sounds') and isinstance(self.game_controller.sounds, dict): 
+                    primary_shoot_sound = self.game_controller.sounds.get('shoot') 
+                    missile_launch_sound = self.game_controller.sounds.get('missile_launch') 
 
                 player.shoot(
                     sound=primary_shoot_sound, 
                     missile_sound=missile_launch_sound, 
-                    maze=maze_ref, # Pass the maze reference
-                    enemies_group=enemies_group_ref 
+                    maze=maze_ref, 
+                    enemies_group=enemies_group_ref # Pass the correctly fetched group
                 )
 
     def try_activate_cloak(self, current_time_ms): #
