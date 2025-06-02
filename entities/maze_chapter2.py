@@ -5,12 +5,11 @@ import random
 try:
     import game_settings as gs
     TILE_SIZE = gs.TILE_SIZE
-    BLUE = gs.BLUE 
-    BLACK = gs.BLACK 
-    RED = gs.RED 
-    WHITE = gs.WHITE 
+    BLUE = gs.BLUE
+    BLACK = gs.BLACK
+    RED = gs.RED
+    WHITE = gs.WHITE
 except (ImportError, AttributeError):
-    # print("Warning (maze_chapter2.py): game_settings not fully available. Using fallback values.")
     TILE_SIZE = 32
     BLUE = (0, 0, 255)
     BLACK = (0, 0, 0)
@@ -19,29 +18,28 @@ except (ImportError, AttributeError):
 
 
 class MazeChapter2:
-    # MAZE_TILEMAP with improved connectivity for A* pathfinding
-    # '0' is path, '1' is wall, 'C' is Core Reactor (also a path for AI)
+    # MAZE_TILEMAP adjusted to be 12 rows high (indices 0-11)
+    # Reactor 'C' moved to a visible location e.g., (10,9)
     MAZE_TILEMAP = [
         [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1], # Row 0
-        [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1], # Row 1 (Spawn (1,1), (1,18)) - Opened up
+        [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1], # Row 1 (Spawn Point)
         [1,0,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1], # Row 2
-        [1,0,1,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,1], # Row 3 - Opened path to right
-        [1,0,1,1,0,1,1,1,1,0,1,1,0,1,1,1,0,1,0,1], # Row 4 - Path from (4,4)
-        [1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,1,0,1,0,1], # Row 5 - Path from (5,10)
-        [1,0,1,1,1,1,1,0,1,0,1,1,1,1,0,1,0,1,0,1], # Row 6 - Path from (6,14), (6,16)
-        [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1], # Row 7 (Spawn (7,1), (7,18)) - Opened up significantly
-        [1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,0,1,1,1], # Row 8 - Path at (8,16)
-        [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1], # Row 9 - Opened up
-        [1,0,1,1,1,1,0,1,1,1,1,1,0,1,0,1,1,1,0,1], # Row 10
-        [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1], # Row 11 - Opened up
-        [1,0,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1], # Row 12
-        [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1], # Row 13 (Spawn (13,1), (13,18)) - Already open
-        [1,1,1,1,1,1,'C',1,1,1,1,1,1,1,1,1,1,1,1,1], # Row 14 (Reactor 'C' at (14,6))
+        [1,0,1,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,1], # Row 3
+        [1,0,1,1,0,1,1,1,1,0,1,1,0,1,1,1,0,1,0,1], # Row 4
+        [1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,1,0,1,0,1], # Row 5
+        [1,0,1,1,1,1,1,0,1,0,1,1,1,1,0,1,0,1,0,1], # Row 6
+        [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1], # Row 7 (Spawn Point)
+        [1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,0,1,1,1], # Row 8
+        [1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,1], # Row 9 (Spawn Point)
+        [1,0,1,1,1,1,0,1,1,'C',1,1,0,1,0,1,1,1,0,1], # Row 10 (Reactor 'C' at (10,9) )
+        [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1], # Row 11 (Bottom Wall)
     ]
 
-
+    # Adjusted ENEMY_SPAWN_GRID_POSITIONS to fit new map height (max row index 11)
     ENEMY_SPAWN_GRID_POSITIONS = [
-        (1, 1), (1, 18), (7, 1), (7, 18), (13, 1), (13, 18)
+        (1, 1), (1, 18),  # Top spawns
+        (7, 1), (7, 18),  # Mid spawns
+        (9, 3), (9, 16)   # Adjusted bottom spawns
     ]
 
     def __init__(self, game_area_x_offset=0, maze_type="chapter2_tilemap"):
@@ -52,17 +50,15 @@ class MazeChapter2:
         self.actual_maze_cols = len(self.grid[0]) if self.actual_maze_rows > 0 else 0
 
         self.wall_color = BLUE
-        self.path_color = BLACK 
+        self.path_color = BLACK
         self.core_reactor_grid_pos = None
         self.core_reactor_abs_spawn_pos = None
         self._find_core_reactor_spawn()
 
         self.enemy_spawn_points_abs = []
         self._calculate_enemy_spawn_points_abs()
-        
-        self.wall_line_thickness = 2 
 
-        # print(f"MazeChapter2 initialized: {self.actual_maze_rows}x{self.actual_maze_cols} grid. X-Offset: {self.game_area_x_offset}")
+        self.wall_line_thickness = 2
 
     def _find_core_reactor_spawn(self):
         for r_idx, row in enumerate(self.grid):
@@ -72,27 +68,26 @@ class MazeChapter2:
                     center_x_abs = c_idx * TILE_SIZE + TILE_SIZE // 2 + self.game_area_x_offset
                     center_y_abs = r_idx * TILE_SIZE + TILE_SIZE // 2
                     self.core_reactor_abs_spawn_pos = (center_x_abs, center_y_abs)
-                    # print(f"MazeChapter2: Core Reactor ('C') found at grid {self.core_reactor_grid_pos}, abs pixel {self.core_reactor_abs_spawn_pos}")
                     return
-        print("Warning (maze_chapter2.py): Core Reactor ('C') tile not found in MAZE_TILEMAP.")
+        # This part should ideally not be reached if 'C' is in MAZE_TILEMAP
+        self.core_reactor_grid_pos = None
+        self.core_reactor_abs_spawn_pos = None
+
 
     def _calculate_enemy_spawn_points_abs(self):
         self.enemy_spawn_points_abs = []
         for r_idx, c_idx in self.ENEMY_SPAWN_GRID_POSITIONS:
             if 0 <= r_idx < self.actual_maze_rows and 0 <= c_idx < self.actual_maze_cols:
-                # Enemies should spawn on a walkable tile (0 or 'C')
-                if self.grid[r_idx][c_idx] == 0 or self.grid[r_idx][c_idx] == 'C':
+                if self.grid[r_idx][c_idx] == 0 or self.grid[r_idx][c_idx] == 'C': # Check if spawn is on a path
                     center_x_abs = c_idx * TILE_SIZE + TILE_SIZE // 2 + self.game_area_x_offset
                     center_y_abs = r_idx * TILE_SIZE + TILE_SIZE // 2
                     self.enemy_spawn_points_abs.append((center_x_abs, center_y_abs))
                 else:
-                    print(f"Warning (maze_chapter2.py): Defined enemy spawn ({r_idx},{c_idx}) is on a wall. Value: {self.grid[r_idx][c_idx]}. Skipping.")
+                    pass # Defined enemy spawn is on a wall
             else:
-                print(f"Warning (maze_chapter2.py): Defined enemy spawn ({r_idx},{c_idx}) is out of grid bounds. Skipping.")
+                pass # Defined enemy spawn is out of bounds
         if not self.enemy_spawn_points_abs:
-            print("CRITICAL WARNING (maze_chapter2.py): No valid enemy spawn points calculated from ENEMY_SPAWN_GRID_POSITIONS!")
-        # else:
-            # print(f"MazeChapter2: Calculated {len(self.enemy_spawn_points_abs)} absolute enemy spawn points.")
+            pass # No valid enemy spawn points
 
     def draw(self, surface):
         for r_idx, row_data in enumerate(self.grid):
@@ -100,32 +95,27 @@ class MazeChapter2:
                 x = c_idx * TILE_SIZE + self.game_area_x_offset
                 y = r_idx * TILE_SIZE
 
-                if tile_type == 1: 
-                    # Top line
+                if tile_type == 1:
                     if r_idx == 0 or (r_idx > 0 and self.grid[r_idx - 1][c_idx] != 1):
                         pygame.draw.line(surface, self.wall_color, (x, y), (x + TILE_SIZE, y), self.wall_line_thickness)
-                    # Bottom line
                     if r_idx == self.actual_maze_rows - 1 or \
                        (r_idx + 1 < self.actual_maze_rows and self.grid[r_idx + 1][c_idx] != 1):
                         pygame.draw.line(surface, self.wall_color, (x, y + TILE_SIZE), (x + TILE_SIZE, y + TILE_SIZE), self.wall_line_thickness)
-                    # Left line
                     if c_idx == 0 or (c_idx > 0 and self.grid[r_idx][c_idx - 1] != 1):
                         pygame.draw.line(surface, self.wall_color, (x, y), (x, y + TILE_SIZE), self.wall_line_thickness)
-                    # Right line
                     if c_idx == self.actual_maze_cols - 1 or \
                        (c_idx + 1 < self.actual_maze_cols and self.grid[r_idx][c_idx + 1] != 1):
                         pygame.draw.line(surface, self.wall_color, (x + TILE_SIZE, y), (x + TILE_SIZE, y + TILE_SIZE), self.wall_line_thickness)
-                
-                elif tile_type == 0 or tile_type == 'C': 
-                    pass # Path or Reactor tile, draw nothing (background shows through)
+                elif tile_type == 0 or tile_type == 'C':
+                    pass
 
     def is_wall(self, obj_center_x_abs, obj_center_y_abs, obj_width=None, obj_height=None):
         grid_c = int((obj_center_x_abs - self.game_area_x_offset) / TILE_SIZE)
         grid_r = int(obj_center_y_abs / TILE_SIZE)
 
         if 0 <= grid_r < self.actual_maze_rows and 0 <= grid_c < self.actual_maze_cols:
-            return self.grid[grid_r][grid_c] == 1 
-        return True 
+            return self.grid[grid_r][grid_c] == 1
+        return True
 
     def get_core_reactor_spawn_position_abs(self):
         return self.core_reactor_abs_spawn_pos
@@ -137,7 +127,7 @@ class MazeChapter2:
         path_cells_abs_centers = []
         for r_idx, row in enumerate(self.grid):
             for c_idx, tile_type in enumerate(row):
-                if tile_type == 0 or tile_type == 'C': 
+                if tile_type == 0 or tile_type == 'C':
                     center_x_abs = c_idx * TILE_SIZE + TILE_SIZE // 2 + self.game_area_x_offset
                     center_y_abs = r_idx * TILE_SIZE + TILE_SIZE // 2
                     path_cells_abs_centers.append((center_x_abs, center_y_abs))
