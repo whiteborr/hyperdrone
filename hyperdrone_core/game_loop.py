@@ -1020,21 +1020,26 @@ class GameController:
             self.wave_manager.update(current_time_ms, delta_time_ms) 
 
         for turret_obj in self.turrets:
-            hit_enemies_by_turret = pygame.sprite.groupcollide(
-                turret_obj.bullets, 
-                self.enemy_manager.get_sprites(), 
-                True, 
-                False, 
-                pygame.sprite.collide_rect_ratio(0.7) 
-            )
-            for bullet, enemies_hit_list in hit_enemies_by_turret.items():
-                for enemy_hit in enemies_hit_list:
-                    if enemy_hit.alive:
-                        enemy_hit.take_damage(bullet.damage) 
-                        if not enemy_hit.alive:
-                            self.score += 30 
-                            self.drone_system.add_player_cores(15) 
-                            self._create_explosion(enemy_hit.rect.centerx, enemy_hit.rect.centery, specific_sound='enemy_shoot') 
+                hit_enemies_by_turret = pygame.sprite.groupcollide(
+                    turret_obj.bullets,
+                    self.enemy_manager.get_sprites(),
+                    False, # <--- Change this to False: bullets are not removed by groupcollide
+                    False,
+                    pygame.sprite.collide_rect_ratio(0.7)
+                )
+                for bullet, enemies_hit_list in hit_enemies_by_turret.items():
+                    if not bullet.alive: # Skip if bullet already processed this frame
+                        continue
+                    for enemy_hit in enemies_hit_list:
+                        if enemy_hit.alive and bullet.rect.colliderect(enemy_hit.collision_rect): # Ensure collision again if needed, or rely on groupcollide
+                            enemy_hit.take_damage(bullet.damage)
+                            bullet.alive = False # Mark the bullet as not alive
+                            # self._create_explosion(bullet.rect.centerx, bullet.rect.centery, num_particles=5, specific_sound=None) # Optional: small impact visual
+                            if not enemy_hit.alive:
+                                self.score += 30
+                                self.drone_system.add_player_cores(15)
+                                self._create_explosion(enemy_hit.rect.centerx, enemy_hit.rect.centery, specific_sound='enemy_shoot')
+                            break # Bullet has hit an enemy, process no more for this bullet in this frame
 
         if self.core_reactor.alive:
             enemies_attacking_reactor = pygame.sprite.spritecollide(
@@ -2330,7 +2335,8 @@ class GameController:
             # DEBUG: Confirm this block is reached and self.turrets is valid
             if self.turrets is not None:
                 # print(f"DEBUG GameController: Drawing {len(self.turrets)} turrets.")
-                self.turrets.draw(self.screen) # This calls Turret.draw() for each turret
+                for t_sprite in self.turrets:
+                    t_sprite.draw(self.screen)
             else:
                 print("CRITICAL DEBUG GameController: self.turrets group is None!")
 

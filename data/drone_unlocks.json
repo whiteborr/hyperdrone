@@ -2,14 +2,16 @@
   "unlocked_drones": [
     "DRONE"
   ],
-  "selected_drone": "VANTIS",
+  "selected_drone": "DRONE",
   "player_level": 1,
   "bosses_defeated": [],
-  "player_cores": 0,
+  "player_cores": 3950,
   "collected_core_fragments": [],
   "architect_vault_completed": false,
   "unlocked_blueprints": [],
-  "unlocked_lore_codex_entries": [],
+  "unlocked_lore_codex_entries": [
+    "architect_legacy_intro"
+  ],
   "collected_glyph_tablet_ids": [],
   "solved_puzzle_terminals": []
 }
