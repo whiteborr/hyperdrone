@@ -112,6 +112,7 @@ Now, something has reawakened in the mazes. A new signal is broadcasting from de
 * Alien Blueprints: New drone parts with unknown stats—risky to use. (✅ **Blueprint System Implemented**)  
 * TR-3B Drone: Unlockable stealth drone. Passive: Always cloaked if not firing. Active: Anti-grav push that knocks enemies into walls.  
 * Orb Boss: "The Veil" – A silent, massive orb that distorts vision and weapon tracking.  
+
 1. Codex Entries  
    These are in-game lore documents the player can read—usually unlocked as you progress, discover artifacts, defeat enemies, or complete missions. They add backstory without forcing cutscenes or dialogue. (✅ Implemented)  
    Example Codex Entry:  

@@ -1,0 +1,18 @@
+[
+    {
+        "text": "The Architect — creator of the Vault\nand all drone intelligence — has vanished.\n\nNo warning. No trace. Only silence.",
+        "image_path": "assets/images/lore/scene1.png"
+    },
+    {
+        "text": "In their absence, the Vault has shifted.\n\nIts corridors twisted into cryptic mazes,\nteeming with automated defences.",
+        "image_path": "assets/images/lore/scene2.png"
+    },
+    {
+        "text": "You are a pilot. An explorer.\n\nEntering the Vault to unravel the AI's enigma —\n\nand stop a system-wide fail-safe\nbefore it activates.",
+        "image_path": "assets/images/lore/scene3.png"
+    },
+    {
+        "text": "The Architect's secrets lie ahead.\n\nSolve the puzzles. Survive the machines.\n\nOr be erased with everything else.",
+        "image_path": "assets/images/lore/scene4.png"
+    }
+]
