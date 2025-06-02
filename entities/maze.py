@@ -26,7 +26,7 @@ class Maze:
                 for c in range(1, self.actual_maze_cols - 1, 2): 
                     if random.random() < 0.1: 
                         self.dynamic_wall_cells.append((r, c))
-            print(f"Maze: Initializing {len(self.dynamic_wall_cells)} dynamic wall cells.")
+            # print(f"Maze: Initializing {len(self.dynamic_wall_cells)} dynamic wall cells.")
 
 
         self.walls = self._create_original_wall_lines() 
@@ -77,7 +77,7 @@ class Maze:
                 else: 
                     self.grid[r][c] = 0
         self.walls = self._create_original_wall_lines() 
-        print(f"Maze: Dynamic walls {'activated' if activate else 'deactivated'}.")
+        # print(f"Maze: Dynamic walls {'activated' if activate else 'deactivated'}.")
 
 
     def draw(self, surface): 
@@ -174,4 +174,3 @@ class Maze:
         pixel_x = (grid_col * TILE_SIZE) + (TILE_SIZE // 2) + offset
         pixel_y = (grid_row * TILE_SIZE) + (TILE_SIZE // 2)
         return pixel_x, pixel_y
-

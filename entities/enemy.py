@@ -10,7 +10,6 @@ import pygame
 try:
     from .bullet import Bullet 
 except ImportError:
-    print("Warning (enemy.py): Could not import Bullet from .bullet. Using placeholder.")
     # Minimal placeholder if Bullet class is not found (should not happen in full project)
     class Bullet(pygame.sprite.Sprite): 
         def __init__(self, x, y, angle, speed, lifetime, size, color, damage, bounces=0, pierces=0, can_pierce_walls=False):
@@ -71,7 +70,7 @@ def a_star_search(maze_grid, start_pos_grid, end_pos_grid, maze_rows, maze_cols)
     if not maze_grid or \
        not (0 <= start_pos_grid[0] < maze_rows and 0 <= start_pos_grid[1] < maze_cols) or \
        not (0 <= end_pos_grid[0] < maze_rows and 0 <= end_pos_grid[1] < maze_cols):
-        print(f"A* Search: Invalid input. Start: {start_pos_grid}, End: {end_pos_grid}, Maze: {maze_rows}x{maze_cols}")
+        # print(f"A* Search: Invalid input. Start: {start_pos_grid}, End: {end_pos_grid}, Maze: {maze_rows}x{maze_cols}")
         return None
 
     start_node = AStarNode(start_pos_grid)
@@ -127,7 +126,7 @@ def a_star_search(maze_grid, start_pos_grid, end_pos_grid, maze_rows, maze_cols)
             if not in_open_list_better_g_cost:
                 heapq.heappush(open_list, neighbor_node) # Add neighbor to open list
                 
-    print(f"A* Search: No path found from {start_pos_grid} to {end_pos_grid}")
+    # print(f"A* Search: No path found from {start_pos_grid} to {end_pos_grid}")
     return None # No path found
 
 
@@ -271,13 +270,11 @@ class Enemy(pygame.sprite.Sprite):
                     0 <= target_grid_pos[0] < maze.actual_maze_rows and \
                     0 <= target_grid_pos[1] < maze.actual_maze_cols):
                 self.path = []
-                # print(f"A* Path Recalc: Invalid grid positions. Enemy: {enemy_grid_pos}, Target: {target_grid_pos}")
                 return
 
             # Ensure target grid cell is not a wall (1)
             if maze.grid[target_grid_pos[0]][target_grid_pos[1]] == 1:
                 self.path = [] # Cannot pathfind to a wall
-                # print(f"A* Path Recalc: Target grid cell {target_grid_pos} is a wall.")
                 return
 
             # Perform A* search
@@ -288,10 +285,8 @@ class Enemy(pygame.sprite.Sprite):
                 # Convert grid path to pixel waypoints (centers of tiles)
                 self.path = [self._grid_to_pixel_center(r, c, game_area_x_offset) for r, c in grid_path] 
                 self.current_path_index = 1 # Start moving towards the second node in the path
-                # print(f"A* Path Recalc: New path found. Length: {len(self.path)}")
             else:
                 self.path = [] # No path found or path is too short
-                # print(f"A* Path Recalc: No valid path found or path too short.")
         
         # If no path, face the primary target directly (for shooting or last resort movement)
         if not self.path and target_pos_for_pathfinding_pixels:
@@ -481,4 +476,3 @@ class SentinelDrone(Enemy):
         # SentinelDrone uses the same update logic as the base Enemy for now.
         # Specific behaviors could be added here if needed.
         super().update(primary_target_pos_pixels, maze, current_time_ms, game_area_x_offset, is_defense_mode)
-

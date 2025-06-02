@@ -119,7 +119,7 @@ class CoreReactor(pygame.sprite.Sprite):
         if self.current_health <= 0:
             self.current_health = 0
             self.alive = False
-            print("Core Reactor Destroyed! Game Over.") # Log destruction
+            # print("Core Reactor Destroyed! Game Over.") # Log destruction
             
             # Placeholder for playing a reactor destruction sound
             if game_controller_ref and hasattr(game_controller_ref, 'play_sound'):
@@ -178,4 +178,3 @@ class CoreReactor(pygame.sprite.Sprite):
         # Draw health bar if reactor is alive or still has some health (e.g., during destruction animation)
         if self.alive or self.current_health > 0: 
             self.draw_health_bar(surface)
-

@@ -10,7 +10,7 @@ try:
     RED = gs.RED 
     WHITE = gs.WHITE 
 except (ImportError, AttributeError):
-    print("Warning (maze_chapter2.py): game_settings not fully available. Using fallback values.")
+    # print("Warning (maze_chapter2.py): game_settings not fully available. Using fallback values.")
     TILE_SIZE = 32
     BLUE = (0, 0, 255)
     BLACK = (0, 0, 0)
@@ -62,7 +62,7 @@ class MazeChapter2:
         
         self.wall_line_thickness = 2 
 
-        print(f"MazeChapter2 initialized: {self.actual_maze_rows}x{self.actual_maze_cols} grid. X-Offset: {self.game_area_x_offset}")
+        # print(f"MazeChapter2 initialized: {self.actual_maze_rows}x{self.actual_maze_cols} grid. X-Offset: {self.game_area_x_offset}")
 
     def _find_core_reactor_spawn(self):
         for r_idx, row in enumerate(self.grid):
@@ -72,7 +72,7 @@ class MazeChapter2:
                     center_x_abs = c_idx * TILE_SIZE + TILE_SIZE // 2 + self.game_area_x_offset
                     center_y_abs = r_idx * TILE_SIZE + TILE_SIZE // 2
                     self.core_reactor_abs_spawn_pos = (center_x_abs, center_y_abs)
-                    print(f"MazeChapter2: Core Reactor ('C') found at grid {self.core_reactor_grid_pos}, abs pixel {self.core_reactor_abs_spawn_pos}")
+                    # print(f"MazeChapter2: Core Reactor ('C') found at grid {self.core_reactor_grid_pos}, abs pixel {self.core_reactor_abs_spawn_pos}")
                     return
         print("Warning (maze_chapter2.py): Core Reactor ('C') tile not found in MAZE_TILEMAP.")
 
@@ -91,8 +91,8 @@ class MazeChapter2:
                 print(f"Warning (maze_chapter2.py): Defined enemy spawn ({r_idx},{c_idx}) is out of grid bounds. Skipping.")
         if not self.enemy_spawn_points_abs:
             print("CRITICAL WARNING (maze_chapter2.py): No valid enemy spawn points calculated from ENEMY_SPAWN_GRID_POSITIONS!")
-        else:
-            print(f"MazeChapter2: Calculated {len(self.enemy_spawn_points_abs)} absolute enemy spawn points.")
+        # else:
+            # print(f"MazeChapter2: Calculated {len(self.enemy_spawn_points_abs)} absolute enemy spawn points.")
 
     def draw(self, surface):
         for r_idx, row_data in enumerate(self.grid):

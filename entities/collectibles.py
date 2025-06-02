@@ -222,7 +222,7 @@ class WeaponUpgradeItem(Collectible):
     def apply_effect(self, player_drone):
         if hasattr(player_drone, 'cycle_weapon_state'):
             player_drone.cycle_weapon_state(force_cycle=True)
-            print("Weapon Upgrade collected!")
+            # print("Weapon Upgrade collected!")
 
 
 class ShieldItem(Collectible):
@@ -248,7 +248,7 @@ class ShieldItem(Collectible):
     def apply_effect(self, player_drone):
         if hasattr(player_drone, 'activate_shield'):
             player_drone.activate_shield(self.effect_duration_ms)
-            print("Shield collected!")
+            # print("Shield collected!")
 
 
 class SpeedBoostItem(Collectible):
@@ -275,7 +275,7 @@ class SpeedBoostItem(Collectible):
     def apply_effect(self, player_drone):
         if hasattr(player_drone, 'arm_speed_boost'): # Player "arms" it, activates on thrust
             player_drone.arm_speed_boost(self.effect_duration_ms, self.speed_multiplier)
-            print("Speed Boost collected!")
+            # print("Speed Boost collected!")
 
 
 class CoreFragmentItem(Collectible):
@@ -327,7 +327,7 @@ class CoreFragmentItem(Collectible):
                 # Notify DroneSystem that this fragment was collected
                 if game_controller_instance.drone_system.collect_core_fragment(self.fragment_id):
                     self.collected = True # Mark as collected internally
-                    print(f"Core Fragment '{self.fragment_name}' collected by player!")
+                    # print(f"Core Fragment '{self.fragment_name}' collected by player!")
                     # DroneSystem handles saving and lore unlocks related to fragment collection
                     return True # Successfully applied
             else:
@@ -384,7 +384,7 @@ class VaultLogItem(Collectible):
     def apply_effect(self, player_drone, game_controller_instance):
         if not self.collected:
             self.collected = True
-            print(f"Vault Log '{self.log_id}' collected by player!")
+            # print(f"Vault Log '{self.log_id}' collected by player!")
             # DroneSystem handles lore unlock via event_trigger="collect_log_{log_id}"
             return True
         return False
@@ -448,7 +448,7 @@ class GlyphTabletItem(Collectible):
     def apply_effect(self, player_drone, game_controller_instance):
         if not self.collected:
             self.collected = True
-            print(f"{self.item_name} collected by player!")
+            # print(f"{self.item_name} collected by player!")
             # DroneSystem handles lore unlock via event_trigger="collect_glyph_tablet_{tablet_id}"
             # and adds to persistent list via game_controller_instance.drone_system.add_collected_glyph_tablet(self.tablet_id)
             return True
@@ -497,7 +497,7 @@ class AncientAlienTerminal(pygame.sprite.Sprite):
         if not self.interacted:
             self.interacted = True # Mark as interacted to prevent re-triggering
             self.image = self.active_image # Change appearance if needed
-            print(f"Ancient Alien Terminal interacted with ({self.rect.center}). Triggering ring puzzle.")
+            # print(f"Ancient Alien Terminal interacted with ({self.rect.center}). Triggering ring puzzle.")
             
             # Trigger the ring puzzle game state
             if hasattr(game_controller_instance, 'scene_manager') and \
@@ -567,7 +567,7 @@ class ArchitectEchoItem(Collectible):
         """Called when the player collides with the echo fragment."""
         if not self.collected:
             self.collected = True
-            print(f"Architect Echo '{self.echo_id}' collected by player! Unlocks lore: '{self.associated_lore_id}'")
+            # print(f"Architect Echo '{self.echo_id}' collected by player! Unlocks lore: '{self.associated_lore_id}'")
             
             # Unlock the associated lore entry
             if self.associated_lore_id and hasattr(game_controller_instance, 'drone_system'):

@@ -82,7 +82,6 @@ class MazeGuardian(Enemy):
             self.collision_rect = pygame.Rect(0, 0, self.collision_rect_width, self.collision_rect_height)
             self.collision_rect.center = self.rect.center
         else: 
-            print("Warning (MazeGuardian): self.rect not set after super().__init__.") 
             self.collision_rect_width = self.image_size[0] * 0.7
             self.collision_rect_height = self.image_size[1] * 0.7
             self.collision_rect = pygame.Rect(0, 0, self.collision_rect_width, self.collision_rect_height)
@@ -171,14 +170,12 @@ class MazeGuardian(Enemy):
         health_ratio = self.health / self.max_health
         if health_ratio <= 0.3 and self.current_phase != 3:
             self.current_phase = 3
-            print("MAZE_GUARDIAN: Phase 3: Critical Lockdown!")
             self.game_controller_ref.play_sound('vault_alarm', 0.7)
             self.game_controller_ref.architect_vault_message = "MAZE GUARDIAN: CRITICAL LOCKDOWN! ARENA COLLAPSE!"
             self.game_controller_ref.architect_vault_message_timer = current_time + 4000
             self.last_arena_shift_time = current_time + 1000 
         elif health_ratio <= 0.65 and self.current_phase == 1: 
             self.current_phase = 2
-            print("MAZE_GUARDIAN: Phase 2: Defensive Protocols Activated!")
             self.game_controller_ref.play_sound('ui_confirm')
             self.game_controller_ref.architect_vault_message = "MAZE GUARDIAN: DEFENSIVE SYSTEMS ONLINE!"
             self.game_controller_ref.architect_vault_message_timer = current_time + 3000
@@ -254,7 +251,6 @@ class MazeGuardian(Enemy):
                      self.game_controller_ref.enemy_manager.spawn_sentinel_drone_at_location(spawn_x, spawn_y)
                      self.game_controller_ref.play_sound('minion_spawn') 
                      self.last_minion_spawn_time = current_time
-                     print(f"MAZE_GUARDIAN: Summoned Sentinel Drone via EnemyManager at ({spawn_x}, {spawn_y})")
                 else:
                     print("Error (MazeGuardian): EnemyManager has no spawn_sentinel_drone_at_location method.")
 
@@ -265,12 +261,10 @@ class MazeGuardian(Enemy):
             self.shield_end_time = current_time + self.shield_duration
             self.last_shield_activate_time = current_time
             self.game_controller_ref.play_sound('shield_activate') 
-            print("MAZE_GUARDIAN: Shield Activated!")
 
     def _update_shield_state(self, current_time):
         if self.shield_active and current_time > self.shield_end_time:
             self.shield_active = False
-            print("MAZE_GUARDIAN: Shield Deactivated.")
 
     def _try_arena_shift_initiate(self, current_time):
         if not self.arena_shifting_active and current_time - self.last_arena_shift_time > self.arena_shift_interval:
@@ -280,14 +274,12 @@ class MazeGuardian(Enemy):
             self.game_controller_ref.play_sound('wall_shift') 
             if hasattr(self.maze_ref, 'toggle_dynamic_walls'):
                 self.maze_ref.toggle_dynamic_walls(activate=True) 
-            print("MAZE_GUARDIAN: Initiating Arena Shift!")
 
     def _update_arena_shift_state(self, current_time, maze): 
         if self.arena_shifting_active and current_time > self.arena_shift_end_time:
             self.arena_shifting_active = False
             if hasattr(maze, 'toggle_dynamic_walls'): 
                 maze.toggle_dynamic_walls(activate=False) 
-            print("MAZE_GUARDIAN: Arena Shift Ended.")
 
     def take_damage(self, amount):
         if not self.alive:
@@ -303,7 +295,6 @@ class MazeGuardian(Enemy):
             self.health = 0
             self.alive = False
             self.game_controller_ref.play_sound('boss_death') 
-            print("MAZE_GUARDIAN: Defeated!")
             if hasattr(self.game_controller_ref, '_maze_guardian_defeated'):
                  self.game_controller_ref._maze_guardian_defeated()
 

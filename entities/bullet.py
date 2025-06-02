@@ -39,9 +39,6 @@ class Bullet(pygame.sprite.Sprite):
         self.dx = math.cos(rad_angle) * self.speed
         self.dy = math.sin(rad_angle) * self.speed
 
-        # print(f"DEBUG Bullet __init__: Created at ({self.x:.0f},{self.y:.0f}), Angle: {self.angle:.1f}, Lifetime: {self.lifetime}, Size: {self.size}, Color: {self.color}, Alive: {self.alive}")
-
-
     def update(self, maze=None, game_area_x_offset=0):
         if not self.alive:
             self.kill() # Ensure bullet removes itself from all groups if not alive
@@ -55,7 +52,6 @@ class Bullet(pygame.sprite.Sprite):
 
         self.lifetime -= 1
         if self.lifetime <= 0:
-            # print(f"DEBUG Bullet update: Lifetime expired for bullet at {self.rect.center if self.rect else (self.x, self.y)}. Initial Lifetime: {self.initial_lifetime}. Setting alive=False.")
             self.alive = False
             self.kill() # Remove from groups
             return
@@ -86,7 +82,6 @@ class Bullet(pygame.sprite.Sprite):
                     self.x += self.dx * 0.1; self.y += self.dy * 0.1 # Move slightly away from wall
                     self.rect.center = (int(self.x), int(self.y))
                 else:
-                    # print(f"DEBUG Bullet update: Died due to wall collision (no bounces left). Pos: {self.rect.center if self.rect else (self.x, self.y)}. Setting alive=False.")
                     self.alive = False
                     self.kill() # Remove from groups
                 return
@@ -113,25 +108,13 @@ class Bullet(pygame.sprite.Sprite):
                     self.alive = False
                     self.kill()
             else:
-                # print(f"DEBUG Bullet update: Died due to off-screen (no bounces left). Pos: {self.rect.center if self.rect else (self.x, self.y)}. Setting alive=False.")
                 self.alive = False
                 self.kill() # Remove from groups
             return
 
     def draw(self, surface):
-        # print(f"DEBUG Bullet draw ENTERED: Pos {self.rect.center if self.rect else (self.x,self.y)}, Alive: {self.alive}, Lifetime: {self.lifetime}, Image: {self.image is not None}, Rect: {self.rect is not None}")
-
         if self.alive and self.image and self.rect:
-            # print(f"DEBUG Bullet draw: >>> DRAWING bullet at {self.rect.center}, Size: {self.size}, Color: {self.color}")
             surface.blit(self.image, self.rect)
-        # else: # Optional: logging for why it's not drawing
-            # if not self.alive:
-            #     print(f"DEBUG Bullet draw: NOT DRAWING (Reason: Not alive). Pos: {self.rect.center if self.rect else (self.x, self.y)}, Lifetime: {self.lifetime}")
-            # elif not self.image:
-            #     print(f"DEBUG Bullet draw: NOT DRAWING (Reason: No image). Pos: {self.rect.center if self.rect else (self.x, self.y)}, Alive: {self.alive}")
-            # elif not self.rect:
-            #     print(f"DEBUG Bullet draw: NOT DRAWING (Reason: No rect). Pos: ({self.x},{self.y}), Alive: {self.alive}")
-
 
 class Missile(pygame.sprite.Sprite):
     def __init__(self, x, y, initial_angle, damage, enemies_group):
