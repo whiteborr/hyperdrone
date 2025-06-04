@@ -135,7 +135,7 @@ WEAPON_MODE_NAMES = {
 
 WEAPON_MODE_ICONS = { # Emoji or simple characters for HUD
     WEAPON_MODE_DEFAULT: "🔫", WEAPON_MODE_TRI_SHOT: "🔱",
-    WEAPON_MODE_RAPID_SINGLE: "💨", WEAPON_MODE_RAPID_TRI: "�", # Changed Rapid Tri icon
+    WEAPON_MODE_RAPID_SINGLE: "💨", WEAPON_MODE_RAPID_TRI: "⁂", 
     WEAPON_MODE_BIG_SHOT: "💣", WEAPON_MODE_BOUNCE: "🏀",
     WEAPON_MODE_PIERCE: "➤", WEAPON_MODE_HEATSEEKER: "🚀",
     WEAPON_MODE_HEATSEEKER_PLUS_BULLETS: "🚀💨", WEAPON_MODE_LIGHTNING: "⚡",
@@ -248,7 +248,7 @@ DEFENSE_BUILD_PHASE_DURATION_MS = 30000 # 30 seconds
 DEFENSE_WAVE_CLEAR_CORE_REWARD_BASE = 100 # Cores awarded for clearing a wave
 DEFENSE_WAVE_CLEAR_CORE_INCREMENT = 50  # Additional cores per wave number
 
-TURRET_BASE_COST = 50 # This can be referenced by Turret class or BuildMenu
+TURRET_BASE_COST = 50 
 TURRET_UPGRADE_COST = 100 
 TURRET_MAX_UPGRADE_LEVEL = 3 
 
@@ -257,17 +257,18 @@ TURRET_MAX_UPGRADE_LEVEL = 3
 # ==========================
 LEVEL_TIMER_DURATION = 150000 # Milliseconds (2.5 minutes)
 BONUS_LEVEL_DURATION_MS = 60000 # 1 minute
+RING_PUZZLE_CORE_REWARD = 750 # Reward for solving the ring puzzle
 
 LEADERBOARD_FILE_NAME = "leaderboard.json"
 LEADERBOARD_MAX_ENTRIES = 10
 
-UI_FONT_PATH_EMOJI = "assets/fonts/seguiemj.ttf" # Path for emoji font if needed by UI elements
+UI_FONT_PATH_EMOJI = "assets/fonts/seguiemj.ttf" 
 
 # ==========================
 # Game State Definitions
 # ==========================
 GAME_STATE_MAIN_MENU = "main_menu"
-GAME_STATE_PLAYING = "playing" # Standard procedural maze gameplay
+GAME_STATE_PLAYING = "playing" 
 GAME_STATE_GAME_OVER = "game_over"
 GAME_STATE_LEADERBOARD = "leaderboard_display"
 GAME_STATE_ENTER_NAME = "enter_name"
@@ -279,12 +280,13 @@ GAME_STATE_BONUS_LEVEL_PLAYING = "bonus_level_playing"
 GAME_STATE_ARCHITECT_VAULT_INTRO = "architect_vault_intro"
 GAME_STATE_ARCHITECT_VAULT_ENTRY_PUZZLE = "architect_vault_entry_puzzle"
 GAME_STATE_ARCHITECT_VAULT_GAUNTLET = "architect_vault_gauntlet"
+GAME_STATE_ARCHITECT_VAULT_BOSS_FIGHT = "architect_vault_boss_fight" # ADDED
 GAME_STATE_ARCHITECT_VAULT_EXTRACTION = "architect_vault_extraction"
 GAME_STATE_ARCHITECT_VAULT_SUCCESS = "architect_vault_success"
 GAME_STATE_ARCHITECT_VAULT_FAILURE = "architect_vault_failure"
 GAME_STATE_RING_PUZZLE = "ring_puzzle_active"
 GAME_STATE_GAME_INTRO_SCROLL = "game_intro_scroll"
-GAME_STATE_MAZE_DEFENSE = "maze_defense_mode" # For Chapter 2 tilemap maze
+GAME_STATE_MAZE_DEFENSE = "maze_defense_mode" 
 
 
 # ==============================================================================
@@ -342,10 +344,10 @@ DEFAULT_SETTINGS = {
     "WEAPON_UPGRADE_ITEM_LIFETIME": WEAPON_UPGRADE_ITEM_LIFETIME, "POWERUP_ITEM_LIFETIME": POWERUP_ITEM_LIFETIME,
     "SHIELD_POWERUP_DURATION": SHIELD_POWERUP_DURATION, "SPEED_BOOST_POWERUP_DURATION": SPEED_BOOST_POWERUP_DURATION,
     "LEVEL_TIMER_DURATION": LEVEL_TIMER_DURATION, "BONUS_LEVEL_DURATION_MS": BONUS_LEVEL_DURATION_MS,
+    "RING_PUZZLE_CORE_REWARD": RING_PUZZLE_CORE_REWARD, # Added
     "ARCHITECT_VAULT_EXTRACTION_TIMER_MS": ARCHITECT_VAULT_EXTRACTION_TIMER_MS,
     "LEADERBOARD_MAX_ENTRIES": LEADERBOARD_MAX_ENTRIES, "LEADERBOARD_FILE_NAME": LEADERBOARD_FILE_NAME,
     "ESCAPE_ZONE_COLOR": ESCAPE_ZONE_COLOR,
-    # Defense Mode Settings included in DEFAULT_SETTINGS
     "DEFENSE_REACTOR_HEALTH": DEFENSE_REACTOR_HEALTH,
     "DEFENSE_BUILD_PHASE_DURATION_MS": DEFENSE_BUILD_PHASE_DURATION_MS,
     "DEFENSE_WAVE_CLEAR_CORE_REWARD_BASE": DEFENSE_WAVE_CLEAR_CORE_REWARD_BASE,
@@ -355,44 +357,34 @@ DEFAULT_SETTINGS = {
     "TURRET_MAX_UPGRADE_LEVEL": TURRET_MAX_UPGRADE_LEVEL
 }
 
-SETTINGS_MODIFIED = False # Flag to track if settings differ from default
-_CURRENT_GAME_SETTINGS = DEFAULT_SETTINGS.copy() # Working copy of settings
+SETTINGS_MODIFIED = False 
+_CURRENT_GAME_SETTINGS = DEFAULT_SETTINGS.copy() 
 
 def get_game_setting(key, default_override=None):
-    """Gets a game setting value. If key not found, returns default_override or original default."""
-    # Prioritize _CURRENT_GAME_SETTINGS, then DEFAULT_SETTINGS, then default_override
     if key in _CURRENT_GAME_SETTINGS:
         return _CURRENT_GAME_SETTINGS[key]
-    if key in DEFAULT_SETTINGS: # Fallback to hardcoded default if not in current (e.g., after a reset)
+    if key in DEFAULT_SETTINGS: 
         return DEFAULT_SETTINGS[key]
     return default_override
 
-
 def set_game_setting(key, value):
-    """Sets a game setting value and updates the SETTINGS_MODIFIED flag."""
     global SETTINGS_MODIFIED, _CURRENT_GAME_SETTINGS
-    global GAME_PLAY_AREA_HEIGHT, MAZE_ROWS # These depend on other settings
+    global GAME_PLAY_AREA_HEIGHT, MAZE_ROWS 
 
     _CURRENT_GAME_SETTINGS[key] = value
-
-    # Check if this modification makes settings different from default
     if key in DEFAULT_SETTINGS: 
         if _CURRENT_GAME_SETTINGS.get(key) != DEFAULT_SETTINGS.get(key):
             SETTINGS_MODIFIED = True
         else: 
-            # Re-check if all settings are back to default
             SETTINGS_MODIFIED = any(
                 _CURRENT_GAME_SETTINGS.get(k) != DEFAULT_SETTINGS.get(k)
                 for k in DEFAULT_SETTINGS if k in _CURRENT_GAME_SETTINGS 
             )
-    else: # If setting a key not in defaults, it's considered modified
+    else: 
         SETTINGS_MODIFIED = True
 
-
-    # Update dependent global constants if specific settings change
-    if key in globals(): # Check if the key corresponds to a global variable in this module
-        globals()[key] = value # Directly update the global constant if it exists
-        # Recalculate derived constants
+    if key in globals(): 
+        globals()[key] = value 
         if key == "HEIGHT" or key == "BOTTOM_PANEL_HEIGHT":
             GAME_PLAY_AREA_HEIGHT = get_game_setting("HEIGHT") - get_game_setting("BOTTOM_PANEL_HEIGHT")
             globals()["GAME_PLAY_AREA_HEIGHT"] = GAME_PLAY_AREA_HEIGHT 
@@ -401,41 +393,35 @@ def set_game_setting(key, value):
                 globals()["MAZE_ROWS"] = MAZE_ROWS
         elif key == "TILE_SIZE":
             if get_game_setting("TILE_SIZE") > 0: 
-                current_game_play_height = get_game_setting("GAME_PLAY_AREA_HEIGHT") # Use the potentially updated value
+                current_game_play_height = get_game_setting("GAME_PLAY_AREA_HEIGHT") 
                 MAZE_ROWS = current_game_play_height // get_game_setting("TILE_SIZE")
                 globals()["MAZE_ROWS"] = MAZE_ROWS
 
-
 def reset_all_settings_to_default():
-    """Resets all game settings to their original default values."""
     global SETTINGS_MODIFIED, _CURRENT_GAME_SETTINGS
-    global GAME_PLAY_AREA_HEIGHT, MAZE_ROWS # And other derived globals
+    global GAME_PLAY_AREA_HEIGHT, MAZE_ROWS 
 
     _CURRENT_GAME_SETTINGS = DEFAULT_SETTINGS.copy()
     SETTINGS_MODIFIED = False 
     print("Game settings have been reset to defaults.")
 
-    # Update all global constants that might have been changed by set_game_setting
     for key, value in _CURRENT_GAME_SETTINGS.items():
-        if key in globals(): # If a global constant with this name exists
+        if key in globals(): 
             globals()[key] = value
 
-    # Recalculate derived constants explicitly after reset
     GAME_PLAY_AREA_HEIGHT = get_game_setting("HEIGHT") - get_game_setting("BOTTOM_PANEL_HEIGHT")
     globals()["GAME_PLAY_AREA_HEIGHT"] = GAME_PLAY_AREA_HEIGHT 
     if get_game_setting("TILE_SIZE") > 0:
         MAZE_ROWS = GAME_PLAY_AREA_HEIGHT // get_game_setting("TILE_SIZE")
         globals()["MAZE_ROWS"] = MAZE_ROWS
     else: 
-        MAZE_ROWS = 0 # Should not happen if TILE_SIZE default is valid
+        MAZE_ROWS = 0 
         globals()["MAZE_ROWS"] = MAZE_ROWS
 
-
-# Initialize derived constants based on initial settings
 GAME_PLAY_AREA_HEIGHT = get_game_setting("HEIGHT") - get_game_setting("BOTTOM_PANEL_HEIGHT")
-if TILE_SIZE > 0 : # Ensure TILE_SIZE is positive before division
+if TILE_SIZE > 0 : 
     MAZE_ROWS = GAME_PLAY_AREA_HEIGHT // TILE_SIZE
 else:
-    MAZE_ROWS = 0 # Default or error state for MAZE_ROWS
+    MAZE_ROWS = 0 
     print("Warning (game_settings.py): TILE_SIZE is 0 or invalid, MAZE_ROWS set to 0.")
 

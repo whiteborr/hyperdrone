@@ -9,7 +9,12 @@ from .event_manager import EventManager
 from .player_actions import PlayerActions
 from .enemy_manager import EnemyManager
 from .ring_puzzle_module import RingPuzzle
-from .wave_manager import WaveManager # Added WaveManager
+from .wave_manager import WaveManager
+
+# Import NEW sub-controller classes
+from .combat_controller import CombatController
+from .puzzle_controller import PuzzleController
+from .ui_flow_controller import UIFlowController
 
 # Import the leaderboard module directly if it contains functions to be used
 from . import leaderboard
@@ -23,10 +28,13 @@ __all__ = [
     "PlayerActions",
     "EnemyManager",
     "RingPuzzle",
-    "WaveManager", # Added WaveManager
+    "WaveManager",
+    "CombatController",     # Added
+    "PuzzleController",     # Added
+    "UIFlowController",     # Added
     "leaderboard"
 ]
 
 # You can also add any package-level initialization code here if needed,
 # though for this structure, it's often not necessary.
-print("Hyperdrone Core Systems Initialized.")
+print("Hyperdrone Core Systems (including sub-controllers) Initialized.")
