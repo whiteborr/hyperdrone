@@ -1,15 +1,41 @@
 {
   "unlocked_drones": [
-    "DRONE"
+    "DRONE",
+    "RHINOX",
+    "PHANTOM",
+    "VANTIS",
+    "STRIX",
+    "DRONE_ARCHITECT_X"
   ],
-  "selected_drone": "DRONE",
-  "player_level": 0,
-  "bosses_defeated": [],
-  "player_cores": 0,
+  "selected_drone": "PHANTOM",
+  "player_level": 9,
+  "bosses_defeated": [
+    "MAZE_GUARDIAN"
+  ],
+  "player_cores": 91855,
   "collected_core_fragments": [],
   "architect_vault_completed": false,
-  "unlocked_blueprints": [],
-  "unlocked_lore_codex_entries": [],
+  "unlocked_blueprints": [
+    "DRONE_ARCHITECT_X"
+  ],
+  "unlocked_lore_codex_entries": [
+    "architect_legacy_intro",
+    "drone_DRONE",
+    "drone_RHINOX",
+    "drone_PHANTOM",
+    "race_greys",
+    "drone_VANTIS",
+    "lore_element115_casing_opened",
+    "story_beat_SB03",
+    "drone_STRIX",
+    "tech_vault_core_fragment",
+    "story_beat_SB01",
+    "drone_DRONE_ARCHITECT_X",
+    "lore_architect_origin",
+    "story_beat_SB05"
+  ],
   "collected_glyph_tablet_ids": [],
-  "solved_puzzle_terminals": []
+  "solved_puzzle_terminals": [
+    "level_5_element115_terminal"
+  ]
 }
