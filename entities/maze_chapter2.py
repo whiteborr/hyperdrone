@@ -307,7 +307,6 @@ class MazeChapter2:
                 tile_value = self.grid[grid_r][grid_c]
                 is_tile_a_wall = (tile_value == 1) 
                 if is_tile_a_wall:
-                    logger.debug(f"Maze.is_wall (id:{id(self)}): COLLISION at point ({px:.1f},{py:.1f}) -> Grid ({grid_r},{grid_c}), self.grid value '{tile_value}'. Is wall? True")
                     return True 
             else: 
                 logger.debug(f"Maze.is_wall (id:{id(self)}): Point ({px:.1f},{py:.1f}) -> Grid ({grid_r},{grid_c}) is OUT OF BOUNDS. Returning True.")

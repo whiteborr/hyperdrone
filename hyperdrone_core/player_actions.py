@@ -45,8 +45,6 @@ class PlayerActions:
         Stops forward movement if the K_UP key is released.
         Provides a more responsive stop.
         """
-        # This method might be deprecated if K_DOWN is the sole way to stop.
-        # However, if K_UP release should also stop, it remains relevant.
         player = self._get_player() #
         if player: #
             player.moving_forward = False #
@@ -76,11 +74,14 @@ class PlayerActions:
             if hasattr(player, 'shoot'): #
                 maze_ref = getattr(self.game_controller, 'maze', None) 
                 
-                # MODIFIED: Correctly get enemies_group from enemy_manager
                 enemies_group_ref = None
-                if hasattr(self.game_controller, 'enemy_manager') and self.game_controller.enemy_manager:
-                    if hasattr(self.game_controller.enemy_manager, 'get_sprites'):
-                        enemies_group_ref = self.game_controller.enemy_manager.get_sprites()
+                # MODIFIED: Correct path to enemy_manager
+                if hasattr(self.game_controller, 'combat_controller') and \
+                   self.game_controller.combat_controller and \
+                   hasattr(self.game_controller.combat_controller, 'enemy_manager') and \
+                   self.game_controller.combat_controller.enemy_manager:
+                    if hasattr(self.game_controller.combat_controller.enemy_manager, 'get_sprites'):
+                        enemies_group_ref = self.game_controller.combat_controller.enemy_manager.get_sprites()
                 # END MODIFICATION
                                 
                 primary_shoot_sound = None 
@@ -94,7 +95,7 @@ class PlayerActions:
                     sound=primary_shoot_sound, 
                     missile_sound=missile_launch_sound, 
                     maze=maze_ref, 
-                    enemies_group=enemies_group_ref # Pass the correctly fetched group
+                    enemies_group=enemies_group_ref 
                 )
 
     def try_activate_cloak(self, current_time_ms): #

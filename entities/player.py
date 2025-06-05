@@ -3,6 +3,7 @@ import pygame
 import math
 import os
 import random
+import logging 
 
 import game_settings as gs
 from game_settings import (
@@ -32,7 +33,7 @@ from game_settings import (
     THRUST_PARTICLE_SPEED_MIN_BLAST,
     THRUST_PARTICLE_SPEED_MAX_BLAST,
     THRUST_PARTICLE_SHRINK_RATE_BLAST,
-    get_game_setting
+    get_game_setting 
 )
 try:
     from .bullet import Bullet, Missile, LightningZap
@@ -41,7 +42,7 @@ except ImportError:
     # Minimal placeholder if these classes are not found (should not happen in full project)
     class Bullet(pygame.sprite.Sprite): pass
     class Missile(pygame.sprite.Sprite): pass
-    class LightningZap(pygame.sprite.Sprite): pass
+    class LightningZap(pygame.sprite.Sprite): pass 
     class Particle(pygame.sprite.Sprite): pass
 
 
@@ -52,46 +53,14 @@ except ImportError:
     class BaseDrone(pygame.sprite.Sprite):
         def __init__(self, x,y,speed, size=None):
             super().__init__()
-            self.x = x
-            self.y = y
-            self.speed = speed
-            self.angle = 0.0
-            self.moving_forward = False
-            self.alive = True
+            self.x = x; self.y = y; self.speed = speed; self.angle = 0.0
+            self.moving_forward = False; self.alive = True
             self.size = size if size is not None else TILE_SIZE * 0.8
             self.rect = pygame.Rect(x - self.size / 2, y - self.size / 2, self.size, self.size)
             self.collision_rect = self.rect.copy()
+        def update_movement(self, maze=None, game_area_x_offset=0): pass # Simplified
 
-        def update_movement(self, maze=None, game_area_x_offset=0):
-            if self.moving_forward and self.alive:
-                angle_rad = math.radians(self.angle)
-                dx = math.cos(angle_rad) * self.speed
-                dy = math.sin(angle_rad) * self.speed
-                next_x = self.x + dx
-                next_y = self.y + dy
-                collided = False
-                if maze and self.collision_rect: 
-                    temp_collision_rect = self.collision_rect.copy()
-                    temp_collision_rect.center = (next_x, next_y)
-                    if maze.is_wall(temp_collision_rect.centerx, temp_collision_rect.centery,
-                                    self.collision_rect.width, self.collision_rect.height):
-                        collided = True
-                if not collided:
-                    self.x = next_x
-                    self.y = next_y
-                else:
-                    self.moving_forward = False
-            if self.collision_rect and self.rect: 
-                half_col_width = self.collision_rect.width / 2
-                half_col_height = self.collision_rect.height / 2
-                min_x_bound = game_area_x_offset + half_col_width
-                max_x_bound = WIDTH - half_col_width
-                min_y_bound = half_col_height
-                max_y_bound = GAME_PLAY_AREA_HEIGHT - half_col_height
-                self.x = max(min_x_bound, min(self.x, max_x_bound))
-                self.y = max(min_y_bound, min(self.y, max_y_bound))
-                self.rect.center = (int(self.x), int(self.y))
-                self.collision_rect.center = self.rect.center
+logger = logging.getLogger(__name__)
 
 
 class PlayerDrone(BaseDrone): 
@@ -168,8 +137,7 @@ class PlayerDrone(BaseDrone):
             col_size = self.size * 0.7
             self.collision_rect_width = col_size
             self.collision_rect_height = col_size
-            self.collision_rect = pygame.Rect(self.x - col_size/2, self.y - col_size/2,
-                                               col_size, col_size)
+            self.collision_rect = pygame.Rect(self.x - col_size/2, self.y - col_size/2, col_size, col_size)
 
     def _load_sprite(self, sprite_path):
         default_size = self.drone_visual_size
@@ -180,7 +148,7 @@ class PlayerDrone(BaseDrone):
                 self.original_image = pygame.transform.smoothscale(loaded_image, default_size)
                 loaded_successfully = True
             except pygame.error as e:
-                print(f"Error loading player sprite '{sprite_path}': {e}") 
+                logger.error(f"Error loading player sprite '{sprite_path}': {e}") 
         if not loaded_successfully:
             self.original_image = pygame.Surface(default_size, pygame.SRCALPHA)
             self.original_image.fill((0, 200, 0, 150)) 
@@ -199,6 +167,7 @@ class PlayerDrone(BaseDrone):
             self.collision_rect_width = col_size
             self.collision_rect_height = col_size
             self.collision_rect = pygame.Rect(self.x - col_size/2, self.y - col_size/2, col_size, col_size)
+
 
     def _update_weapon_attributes(self):
         if self.current_weapon_mode == WEAPON_MODE_BIG_SHOT:
@@ -316,6 +285,7 @@ class PlayerDrone(BaseDrone):
              self.rect.center = (int(self.x), int(self.y))
              if self.collision_rect: self.collision_rect.center = self.rect.center
 
+
     def _handle_wall_collision(self, wall_hit_boolean, dx, dy):
         is_invincible_setting = get_game_setting("PLAYER_INVINCIBILITY", False)
         if wall_hit_boolean and not self.shield_active and not is_invincible_setting:
@@ -383,7 +353,7 @@ class PlayerDrone(BaseDrone):
                     can_pierce_walls_flag = (self.current_weapon_mode == WEAPON_MODE_PIERCE) 
                     new_bullet = Bullet(bullet_start_x, bullet_start_y, effective_bullet_angle,
                                         bullet_speed, bullet_lifetime, self.bullet_size, bullet_color,
-                                        current_bullet_damage, bounces, pierces,
+                                        int(current_bullet_damage), bounces, pierces, 
                                         can_pierce_walls=can_pierce_walls_flag)
                     self.bullets_group.add(new_bullet)
         if self.current_weapon_mode == WEAPON_MODE_HEATSEEKER or self.current_weapon_mode == WEAPON_MODE_HEATSEEKER_PLUS_BULLETS:
@@ -391,53 +361,50 @@ class PlayerDrone(BaseDrone):
                 if missile_sound: missile_sound.play()
                 self.last_missile_shot_time = current_time_ms
                 missile_dmg = get_game_setting("MISSILE_DAMAGE") * self.bullet_damage_multiplier
-                new_missile = Missile(bullet_start_x, bullet_start_y, self.angle, missile_dmg, enemies_group)
+                new_missile = Missile(bullet_start_x, bullet_start_y, self.angle, int(missile_dmg), enemies_group) 
                 self.missiles_group.add(new_missile)
+            
+            if self.current_weapon_mode == WEAPON_MODE_HEATSEEKER_PLUS_BULLETS and can_shoot_primary:
+                if sound: sound.play() 
+                self.last_shot_time = current_time_ms 
+                std_bullet_size = get_game_setting("PLAYER_DEFAULT_BULLET_SIZE")
+                std_bullet_speed = get_game_setting("PLAYER_BULLET_SPEED")
+                std_bullet_lifetime = get_game_setting("PLAYER_BULLET_LIFETIME")
+                std_bullet_color = get_game_setting("PLAYER_BULLET_COLOR")
+                std_bullet_damage = 10 * self.bullet_damage_multiplier 
+                new_bullet = Bullet(bullet_start_x, bullet_start_y, self.angle, 
+                                    std_bullet_speed, std_bullet_lifetime, std_bullet_size, std_bullet_color,
+                                    int(std_bullet_damage)) 
+                self.bullets_group.add(new_bullet)
         
-        # MODIFIED: Always create LightningZap, pass None if no target
         if self.current_weapon_mode == WEAPON_MODE_LIGHTNING:
             if can_shoot_lightning:
                 if sound: sound.play()
                 self.last_lightning_time = current_time_ms
-
                 closest_enemy_for_zap = None
-                if enemies_group is None:
-                    print("PlayerShoot DEBUG: enemies_group is None!")
-                elif not enemies_group: 
-                    print(f"PlayerShoot DEBUG: enemies_group is EMPTY. Player pos: ({self.x:.1f}, {self.y:.1f})")
-                else:
+                if enemies_group:
                     min_dist = float('inf')
-                    # print(f"PlayerShoot DEBUG: Checking {len(enemies_group)} enemies for lightning. Player pos: ({self.x:.1f}, {self.y:.1f}), Angle: {self.angle:.1f}, Zap Range: {get_game_setting('LIGHTNING_ZAP_RANGE')}")
-                    enemy_count_in_range = 0
-                    for i, enemy_sprite in enumerate(enemies_group):
-                        if not hasattr(enemy_sprite, 'alive') or not enemy_sprite.alive: 
-                            continue
-                        if not hasattr(enemy_sprite, 'rect'):
-                            continue
+                    for enemy_sprite in enemies_group:
+                        if not hasattr(enemy_sprite, 'alive') or not enemy_sprite.alive or not hasattr(enemy_sprite, 'rect'): continue
                         dist = math.hypot(enemy_sprite.rect.centerx - self.x, enemy_sprite.rect.centery - self.y)
-                        # print(f"  Enemy {i} at ({enemy_sprite.rect.centerx:.1f}, {enemy_sprite.rect.centery:.1f}), dist: {dist:.1f}, Alive: {enemy_sprite.alive}")
-                        if dist < get_game_setting("LIGHTNING_ZAP_RANGE"):
-                            enemy_count_in_range +=1
-                            if dist < min_dist:
-                                min_dist = dist
-                                closest_enemy_for_zap = enemy_sprite
-                                # print(f"    New closest target for zap: Enemy {i} at dist {min_dist:.1f}")
-                    # print(f"PlayerShoot DEBUG: Found {enemy_count_in_range} enemies within zap range.")
+                        if dist < get_game_setting("LIGHTNING_ZAP_RANGE") and dist < min_dist:
+                            min_dist = dist
+                            closest_enemy_for_zap = enemy_sprite
                 
-                if closest_enemy_for_zap:
-                    print(f"PlayerShoot DEBUG: Lightning target FINALIZED: Enemy at ({closest_enemy_for_zap.rect.centerx:.1f}, {closest_enemy_for_zap.rect.centery:.1f})")
-                else:
-                    print("PlayerShoot DEBUG: Lightning target NOT FOUND. Firing straight.")
+                lightning_dmg_val = get_game_setting("LIGHTNING_DAMAGE") * self.bullet_damage_multiplier
+                if maze is None: logger.critical("PlayerDrone.shoot() called for LightningZap with maze=None")
+                
+                # --- MODIFIED: Using get_game_setting with a default of 30 ---
+                zap_lifetime = get_game_setting("LIGHTNING_LIFETIME", 30) 
+                # logger.debug(f"PlayerShoot: Creating LightningZap with lifetime: {zap_lifetime}")
+                # --- END MODIFICATION ---
 
-                lightning_dmg = get_game_setting("LIGHTNING_DAMAGE") * self.bullet_damage_multiplier
-                if maze is None:
-                    print("CRITICAL WARNING: PlayerDrone.shoot() called for LightningZap with maze=None")
-
-                new_zap = LightningZap(self, closest_enemy_for_zap, lightning_dmg,
-                                       get_game_setting("LIGHTNING_LIFETIME"),
+                new_zap = LightningZap(self, closest_enemy_for_zap, int(lightning_dmg_val), 
+                                       zap_lifetime, 
                                        maze) 
                 self.lightning_zaps_group.add(new_zap)
-    # END MODIFICATION
+                # logger.debug(f"PlayerShoot: Added LightningZap (ID:{new_zap.id if hasattr(new_zap,'id') else 'N/A'}) to group. Group size: {len(self.lightning_zaps_group)}")
+
 
     def take_damage(self, amount, sound=None):
         is_invincible_setting = get_game_setting("PLAYER_INVINCIBILITY", False)
@@ -456,7 +423,7 @@ class PlayerDrone(BaseDrone):
         if sound: sound.play() 
         if self.health <= 0:
             self.health = 0
-            self.alive = False 
+            self.alive = False
 
     def activate_shield(self, duration, is_from_speed_boost=False):
         self.shield_active = True
@@ -520,76 +487,42 @@ class PlayerDrone(BaseDrone):
 
     def reset(self, x, y, drone_id, drone_stats, drone_sprite_path, health_override=None, preserve_weapon=False):
         previous_drone_id = self.drone_id 
-        self.x = float(x)
-        self.y = float(y)
-        self.angle = 0.0
-        self.alive = True
-        self.moving_forward = False
+        self.x = float(x); self.y = float(y); self.angle = 0.0; self.alive = True; self.moving_forward = False
         self.drone_id = drone_id
-        self.base_hp = drone_stats.get("hp", get_game_setting("PLAYER_MAX_HEALTH"))
-        self.base_speed = drone_stats.get("speed", get_game_setting("PLAYER_SPEED"))
-        self.base_turn_speed = drone_stats.get("turn_speed", get_game_setting("ROTATION_SPEED"))
-        self.base_fire_rate_multiplier = drone_stats.get("fire_rate_multiplier", 1.0)
-        self.special_ability = drone_stats.get("special_ability")
-        self.bullet_damage_multiplier = drone_stats.get("bullet_damage_multiplier", 1.0)
-        self.max_health = self.base_hp
-        self.health = health_override if health_override is not None else self.max_health 
-        self.speed = self.base_speed 
-        self.current_speed = self.speed
-        self.rotation_speed = self.base_turn_speed
+        self.base_hp = drone_stats.get("hp", get_game_setting("PLAYER_MAX_HEALTH")); self.base_speed = drone_stats.get("speed", get_game_setting("PLAYER_SPEED"))
+        self.base_turn_speed = drone_stats.get("turn_speed", get_game_setting("ROTATION_SPEED")); self.base_fire_rate_multiplier = drone_stats.get("fire_rate_multiplier", 1.0)
+        self.special_ability = drone_stats.get("special_ability"); self.bullet_damage_multiplier = drone_stats.get("bullet_damage_multiplier", 1.0)
+        self.max_health = self.base_hp; self.health = health_override if health_override is not None else self.max_health 
+        self.speed = self.base_speed; self.current_speed = self.speed; self.rotation_speed = self.base_turn_speed
         self.original_speed_before_boost = self.speed 
-        if previous_drone_id != self.drone_id or \
-           not self.original_image or \
-           (self.original_image and self.original_image.get_width() == 0):
+        if previous_drone_id != self.drone_id or not self.original_image or (self.original_image and self.original_image.get_width() == 0):
             self._load_sprite(drone_sprite_path)
         else: 
-            if self.original_image:
-                self.image = pygame.transform.rotate(self.original_image, -self.angle)
-                self.rect = self.image.get_rect(center=(int(self.x), int(self.y)))
-                if self.collision_rect:
-                    self.collision_rect.center = self.rect.center
-        if self.original_image and not self.image:
-             self.image = pygame.transform.rotate(self.original_image, -self.angle)
-        if self.image and not self.rect:
-            self.rect = self.image.get_rect(center=(int(self.x), int(self.y)))
-        elif self.rect: 
-            self.rect.center = (int(self.x), int(self.y))
+            if self.original_image: self.image = pygame.transform.rotate(self.original_image, -self.angle); self.rect = self.image.get_rect(center=(int(self.x), int(self.y)))
+            if self.rect and self.collision_rect: self.collision_rect.center = self.rect.center
+        if self.original_image and not self.image: self.image = pygame.transform.rotate(self.original_image, -self.angle)
+        if self.image and not self.rect: self.rect = self.image.get_rect(center=(int(self.x), int(self.y)))
+        elif self.rect: self.rect.center = (int(self.x), int(self.y))
         if self.rect: 
-            self.drone_visual_size = self.rect.size
-            self.flame_port_offset_distance = self.drone_visual_size[1] * 0.4
-            self.collision_rect_width = self.rect.width * 0.7
-            self.collision_rect_height = self.rect.height * 0.7
-            self.collision_rect = pygame.Rect(0,0, self.collision_rect_width, self.collision_rect_height)
-            self.collision_rect.center = self.rect.center
+            self.drone_visual_size = self.rect.size; self.flame_port_offset_distance = self.drone_visual_size[1] * 0.4
+            self.collision_rect_width = self.rect.width * 0.7; self.collision_rect_height = self.rect.height * 0.7
+            self.collision_rect = pygame.Rect(0,0, self.collision_rect_width, self.collision_rect_height); self.collision_rect.center = self.rect.center
         if not preserve_weapon: 
             initial_weapon_mode_gs = get_game_setting("INITIAL_WEAPON_MODE")
-            try:
-                self.weapon_mode_index = WEAPON_MODES_SEQUENCE.index(initial_weapon_mode_gs)
-            except ValueError:
-                self.weapon_mode_index = 0
+            try: self.weapon_mode_index = WEAPON_MODES_SEQUENCE.index(initial_weapon_mode_gs)
+            except ValueError: self.weapon_mode_index = 0
             self.current_weapon_mode = WEAPON_MODES_SEQUENCE[self.weapon_mode_index]
         self._update_weapon_attributes() 
-        self.bullets_group.empty()
-        self.missiles_group.empty()
-        self.lightning_zaps_group.empty()
-        self.last_shot_time = 0
-        self.last_missile_shot_time = 0
-        self.last_lightning_time = 0
+        self.bullets_group.empty(); self.missiles_group.empty(); self.lightning_zaps_group.empty()
+        self.last_shot_time = 0; self.last_missile_shot_time = 0; self.last_lightning_time = 0
         self.reset_active_powerups() 
 
     def reset_active_powerups(self):
-        self.shield_active = False
-        self.shield_end_time = 0
-        self.speed_boost_active = False
-        self.speed_boost_end_time = 0
-        self.current_speed = self.base_speed  
-        self.original_speed_before_boost = self.base_speed
-        self.cloak_active = False
-        self.is_cloaked_visual = False
-        self.cloak_end_time = 0
-        self.active_powerup_type = None
-        self.thrust_particles.empty()
-        self.shield_tied_to_speed_boost = False
+        self.shield_active = False; self.shield_end_time = 0; self.speed_boost_active = False; self.speed_boost_end_time = 0
+        self.current_speed = self.base_speed; self.original_speed_before_boost = self.base_speed
+        self.cloak_active = False; self.is_cloaked_visual = False; self.cloak_end_time = 0
+        self.active_powerup_type = None; self.thrust_particles.empty(); self.shield_tied_to_speed_boost = False
+
 
     def get_position(self):
         return (self.x, self.y)
@@ -597,7 +530,9 @@ class PlayerDrone(BaseDrone):
     def draw(self, surface):
         if not self.alive and not self.bullets_group and not self.missiles_group and not self.lightning_zaps_group and not self.thrust_particles:
             return
+        
         self.thrust_particles.draw(surface) 
+        
         if self.alive and self.image and self.original_image:  
             surface.blit(self.image, self.rect) 
             if self.shield_active:
@@ -614,23 +549,24 @@ class PlayerDrone(BaseDrone):
                             screen_outline_points = [(p[0] + self.rect.left, p[1] + self.rect.top) for p in outline_points]
                             line_thickness = int(2 + pulse_factor * 2) 
                             pygame.draw.polygon(surface, final_shield_color, screen_outline_points, line_thickness)
-                    else:
-                        pass 
-                except pygame.error as e: 
-                    pass 
+                except pygame.error: pass 
+        
         self.bullets_group.draw(surface)
         self.missiles_group.draw(surface)
-        for zap in self.lightning_zaps_group: 
-            zap.draw(surface)
+        
+        if self.lightning_zaps_group:
+            for zap_idx, zap in enumerate(list(self.lightning_zaps_group)): 
+                if hasattr(zap, 'draw') and callable(getattr(zap, 'draw')):
+                    if hasattr(zap, 'alive') and zap.alive: 
+                        zap.draw(surface) 
+            
         if self.alive:
             self.draw_health_bar(surface)
 
     def draw_health_bar(self, surface):
         if not self.alive or not self.rect: return 
-        bar_width = self.rect.width * 0.8
-        bar_height = 5
-        bar_x = self.rect.centerx - bar_width / 2
-        bar_y = self.rect.top - bar_height - 3 
+        bar_width = self.rect.width * 0.8; bar_height = 5
+        bar_x = self.rect.centerx - bar_width / 2; bar_y = self.rect.top - bar_height - 3 
         health_percentage = max(0, self.health / self.max_health) if self.max_health > 0 else 0
         filled_width = bar_width * health_percentage
         pygame.draw.rect(surface, (80,0,0) if health_percentage < 0.3 else (50,50,50), (bar_x, bar_y, bar_width, bar_height))

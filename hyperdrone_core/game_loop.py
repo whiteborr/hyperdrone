@@ -211,11 +211,28 @@ class GameController:
                 self.fonts[name] = pygame.font.Font(None, size)
 
     def _get_settings_menu_items_data_structure(self):
-        # This method returns the settings menu structure (omitted for brevity but unchanged from your original)
+        """
+        Defines the structure and content of the settings menu items.
+        This is where all configurable game settings are listed for the UI.
+        """
         return [
             {"label":"Base Max Health","key":"PLAYER_MAX_HEALTH","type":"numeric","min":50,"max":200,"step":10,"note":"Original Drone base, others vary"},
             {"label":"Starting Lives","key":"PLAYER_LIVES","type":"numeric","min":1,"max":9,"step":1},
-            # ... more settings ...
+            {"label":"Base Speed","key":"PLAYER_SPEED","type":"numeric","min":1,"max":10,"step":1,"note":"Original Drone base, others vary"},
+            {"label":"Initial Weapon","key":"INITIAL_WEAPON_MODE","type":"choice",
+             "choices":WEAPON_MODES_SEQUENCE, "get_display":lambda val:WEAPON_MODE_NAMES.get(val,"Unknown")},
+            {"label":"Missile Damage","key":"MISSILE_DAMAGE","type":"numeric","min":10,"max":100,"step":5},
+            {"label":"Enemy Speed","key":"ENEMY_SPEED","type":"numeric","min":0.5,"max":5,"step":0.5},
+            {"label":"Enemy Health","key":"ENEMY_HEALTH","type":"numeric","min":25,"max":300,"step":25},
+            {"label":"Level Timer (sec)","key":"LEVEL_TIMER_DURATION","type":"numeric","min":60000,"max":300000,"step":15000,
+             "is_ms_to_sec":True, "display_format": "{:.0f}s"},
+            {"label":"Shield Duration (sec)","key":"SHIELD_POWERUP_DURATION","type":"numeric","min":5000,"max":60000,"step":5000,
+             "is_ms_to_sec":True, "display_format": "{:.0f}s"},
+            {"label":"Speed Boost Duration (sec)","key":"SPEED_BOOST_POWERUP_DURATION","type":"numeric","min":3000,"max":30000,"step":2000,
+             "is_ms_to_sec":True, "display_format": "{:.0f}s"},
+            {"label": "Invincibility", "key": "PLAYER_INVINCIBILITY", "type": "choice",
+             "choices": [False, True], "get_display": lambda val: "ON" if val else "OFF",
+             "note": "Player does not take damage."},
             {"label":"Reset to Defaults","key":"RESET_SETTINGS_ACTION","type":"action"},
         ]
 
@@ -296,10 +313,10 @@ class GameController:
             'lore_unlock': "lore_unlock.wav", 'vault_alarm': "vault_alarm.wav",
             'prototype_drone_explode': "prototype_drone_explode.wav",
             'vault_barrier_disable': "vault_barrier_disable.wav",
-            'turret_place_placeholder': "turret_place.wav", # Placeholder sound
-            'reactor_hit_placeholder': "reactor_hit.wav",   # Placeholder sound
-            'reactor_destroyed_placeholder': "reactor_destroyed.wav", # Placeholder sound
-            'turret_shoot_placeholder': "turret_shoot.wav" # Placeholder sound
+            'turret_place_placeholder': "turret_place.wav", 
+            'reactor_hit_placeholder': "reactor_hit.wav",   
+            'reactor_destroyed_placeholder': "reactor_destroyed.wav", 
+            'turret_shoot_placeholder': "turret_shoot.wav" 
         }
         for name, filename in sound_files.items():
             path = os.path.join("assets", "sounds", filename)
@@ -314,7 +331,6 @@ class GameController:
                 self.sounds[name] = None
        
     def play_sound(self, name, volume_multiplier=0.7):
-        # This method plays sounds (omitted for brevity but unchanged from your original)
         if name in self.sounds and self.sounds[name]:
             try:
                 base_sfx_volume = gs.get_game_setting("SFX_VOLUME_MULTIPLIER", 0.7)
@@ -326,7 +342,7 @@ class GameController:
         else:
             logger.debug(f"GameController: Sound '{name}' not found or not loaded, play attempt skipped.")
 
-    def set_story_message(self, message, duration=None): # duration is legacy, now handled by EventManager/UI
+    def set_story_message(self, message, duration=None): 
         self.story_message = message
         self.story_message_active = True
         logger.info(f"Story message set: {message}")
@@ -353,13 +369,13 @@ class GameController:
         if specific_sound: 
             self.play_sound(specific_sound) 
 
-    def handle_scene_transition(self, new_state, old_state, **kwargs): # Added old_state here
+    def handle_scene_transition(self, new_state, old_state, **kwargs): 
         logger.info(f"GameController: Handling scene transition from '{old_state}' to '{new_state}' with kwargs: {kwargs}")
-        pygame.mouse.set_visible(False) # Default to invisible mouse for most states
+        pygame.mouse.set_visible(False) 
 
         if new_state == GAME_STATE_MAIN_MENU:
             self.ui_flow_controller.initialize_main_menu()
-            pygame.mouse.set_visible(True) # Mouse visible for menus
+            pygame.mouse.set_visible(True) 
         elif new_state == GAME_STATE_DRONE_SELECT:
             self.ui_flow_controller.initialize_drone_select()
             pygame.mouse.set_visible(True)
@@ -380,16 +396,16 @@ class GameController:
             pygame.mouse.set_visible(True)
         elif new_state == GAME_STATE_GAME_INTRO_SCROLL:
             self.ui_flow_controller.initialize_game_intro(self._load_intro_data_from_json_internal())
-            self._prepare_current_intro_screen_surfaces() # Prepare first screen
+            self._prepare_current_intro_screen_surfaces() 
         elif new_state == GAME_STATE_PLAYING:
             logger.debug(f"GameController: Transitioning to PLAYING from {old_state}.")
-            self.initialize_specific_game_mode("standard_play", old_state=old_state, **kwargs) # Pass old_state and kwargs
+            self.initialize_specific_game_mode("standard_play", old_state=old_state, **kwargs) 
             pygame.mouse.set_visible(False)
         elif new_state == GAME_STATE_BONUS_LEVEL_START:
-            self.initialize_specific_game_mode("bonus_level_start", old_state=old_state) # Pass old_state
+            self.initialize_specific_game_mode("bonus_level_start", old_state=old_state) 
             pygame.mouse.set_visible(False)
         elif new_state == GAME_STATE_ARCHITECT_VAULT_INTRO:
-            self.initialize_specific_game_mode("architect_vault_entry", old_state=old_state, phase_to_start="intro") # Pass old_state
+            self.initialize_specific_game_mode("architect_vault_entry", old_state=old_state, phase_to_start="intro") 
             pygame.mouse.set_visible(False)
         elif new_state == GAME_STATE_ARCHITECT_VAULT_ENTRY_PUZZLE: 
             self.initialize_architect_vault_session_phases("entry_puzzle")
@@ -417,7 +433,7 @@ class GameController:
                 logger.warning("Transition to RING_PUZZLE state without active puzzle from terminal.")
         elif new_state == GAME_STATE_MAZE_DEFENSE:
             logger.debug(f"GameController: Transitioning to MAZE_DEFENSE from {old_state}.")
-            self.initialize_specific_game_mode("maze_defense", old_state=old_state) # Pass old_state
+            self.initialize_specific_game_mode("maze_defense", old_state=old_state) 
             pygame.mouse.set_visible(True) 
 
     def _prepare_current_intro_screen_surfaces(self):
@@ -459,9 +475,8 @@ class GameController:
             else: 
                 self.intro_screen_text_surfaces_current.append(font.render(raw_line, True, GOLD))
 
-    def initialize_specific_game_mode(self, mode_type="standard_play", old_state=None, **kwargs): # Added old_state and **kwargs
+    def initialize_specific_game_mode(self, mode_type="standard_play", old_state=None, **kwargs): 
         logger.info(f"GameController: Initializing game mode: {mode_type} from old_state: {old_state} with kwargs: {kwargs}. Current state before this call: {self.scene_manager.get_current_state()}")
-        # Full reset of game elements
         self.paused = False
         self.collectible_rings_group.empty()
         self.power_ups_group.empty()
@@ -481,23 +496,18 @@ class GameController:
 
         self.player = None 
         self.maze = None   
-        logger.debug(f"GameController.initialize_specific_game_mode: self.player and self.maze set to None initially for mode {mode_type}.")
 
 
         if mode_type == "architect_vault_entry":
             self.is_build_phase = False
             if self.ui_manager.build_menu: self.ui_manager.build_menu.deactivate()
             self.level = 1 
-            # Score and lives are preserved
-
+            
             self.maze = Maze(game_area_x_offset=0, maze_type="architect_vault")
-            logger.debug(f"GameController.initialize_specific_game_mode (architect_vault_entry): Maze created: {self.maze}")
             player_spawn_pos = self._get_safe_spawn_point(TILE_SIZE * 0.8, TILE_SIZE * 0.8)
             if player_spawn_pos:
                 self._create_or_reset_player(player_spawn_pos, is_vault=True, preserve_weapon_on_reset=True)
-                logger.debug(f"GameController.initialize_specific_game_mode (architect_vault_entry): Player created/reset: {self.player}")
             else:
-                logger.critical("GameController CRITICAL: Could not find safe spawn for player in architect_vault_entry. Aborting to main menu.")
                 self.scene_manager.set_game_state(GAME_STATE_MAIN_MENU)
                 return
             
@@ -517,7 +527,6 @@ class GameController:
                 self.drone_system.reset_architect_vault_status()
 
             self.maze = MazeChapter2(game_area_x_offset=0, maze_type="chapter2_tilemap") 
-            logger.debug(f"GameController.initialize_specific_game_mode (maze_defense): Maze created: {self.maze}")
             self.player = None 
             
             reactor_spawn_pos = self.maze.get_core_reactor_spawn_position_abs()
@@ -547,14 +556,11 @@ class GameController:
             self.is_build_phase = False
             if self.ui_manager.build_menu: self.ui_manager.build_menu.deactivate()
             self.maze = Maze(game_area_x_offset=0, maze_type="bonus") 
-            logger.debug(f"GameController.initialize_specific_game_mode (bonus_level_start): Maze created: {self.maze}")
             player_spawn_pos = self._get_safe_spawn_point(TILE_SIZE * 0.8, TILE_SIZE * 0.8)
             if player_spawn_pos:
                 self._create_or_reset_player(player_spawn_pos, is_vault=False, preserve_weapon_on_reset=True)
-                logger.debug(f"GameController.initialize_specific_game_mode (bonus_level_start): Player created/reset: {self.player}")
 
             else:
-                logger.critical("GameController CRITICAL: Could not find safe spawn for player in bonus_level_start. Aborting to main menu.")
                 self.scene_manager.set_game_state(GAME_STATE_MAIN_MENU)
                 return
             
@@ -569,7 +575,6 @@ class GameController:
             self.is_build_phase = False
             if self.ui_manager.build_menu: self.ui_manager.build_menu.deactivate()
             
-            # Use old_state to determine if it's a fresh game start from intro
             self.level = kwargs.get('start_level', 1 if old_state == GAME_STATE_GAME_INTRO_SCROLL else self.level)
             if old_state == GAME_STATE_GAME_INTRO_SCROLL: 
                  self.score = 0
@@ -588,15 +593,12 @@ class GameController:
             self.hud_displayed_fragments.clear()
 
             self.maze = Maze(game_area_x_offset=0, maze_type="standard")
-            logger.debug(f"GameController.initialize_specific_game_mode (standard_play from {old_state}): Maze created: {self.maze}")
 
             player_spawn_pos = self._get_safe_spawn_point(TILE_SIZE * 0.8, TILE_SIZE * 0.8)
             if player_spawn_pos:
                 self._create_or_reset_player(player_spawn_pos, is_vault=False, preserve_weapon_on_reset=(old_state == GAME_STATE_PLAYING)) 
-                logger.debug(f"GameController.initialize_specific_game_mode (standard_play): Player created/reset: {self.player}")
 
             else: 
-                logger.critical("GameController CRITICAL: Could not find safe spawn for player in standard_play. Aborting to main menu.")
                 self.scene_manager.set_game_state(GAME_STATE_MAIN_MENU)
                 return
 
@@ -612,34 +614,27 @@ class GameController:
 
 
     def _create_or_reset_player(self, position, is_vault=False, preserve_weapon_on_reset=False):
-        logger.debug(f"GameController._create_or_reset_player: Called with position {position}. Current self.player: {type(self.player)}")
         selected_drone_id = self.drone_system.get_selected_drone_id()
         effective_stats = self.drone_system.get_drone_stats(selected_drone_id, is_in_architect_vault=is_vault)
         drone_config = self.drone_system.get_drone_config(selected_drone_id)
         player_sprite_path = drone_config.get("ingame_sprite_path") 
-        logger.debug(f"GameController._create_or_reset_player: Drone ID: {selected_drone_id}, Sprite: {player_sprite_path}")
 
 
         if self.player is None: 
-            logger.debug(f"GameController._create_or_reset_player: Creating new PlayerDrone instance.")
             self.player = PlayerDrone(position[0], position[1], drone_id=selected_drone_id, 
                                       drone_stats=effective_stats, drone_sprite_path=player_sprite_path, 
                                       crash_sound=self.sounds.get('crash'), drone_system=self.drone_system)
         else: 
-            logger.debug(f"GameController._create_or_reset_player: Resetting existing PlayerDrone instance.")
             self.player.reset(position[0], position[1], drone_id=selected_drone_id, 
                               drone_stats=effective_stats, drone_sprite_path=player_sprite_path, 
                               preserve_weapon=preserve_weapon_on_reset)
         
-        logger.debug(f"GameController._create_or_reset_player: self.player is now: {type(self.player)}, Alive: {self.player.alive if self.player else 'N/A'}")
 
         if self.ui_manager: 
             self.ui_manager.update_player_life_icon_surface() 
         if self.combat_controller: 
-            logger.debug(f"GameController._create_or_reset_player: Setting combat_controller.player to {type(self.player)}")
             self.combat_controller.player = self.player 
         if self.puzzle_controller: 
-            logger.debug(f"GameController._create_or_reset_player: Setting puzzle_controller.player to {type(self.player)}")
             self.puzzle_controller.player = self.player 
 
     def initialize_architect_vault_session_phases(self, phase):
@@ -759,13 +754,6 @@ class GameController:
             self.scene_manager.update()
 
     def _update_standard_playing_state(self, current_time_ms, delta_time_ms):
-        logger.debug(f"Entering _update_standard_playing_state. self.player is {type(self.player)}, self.maze is {type(self.maze)}")
-        if self.player: logger.debug(f"Player status: Alive={self.player.alive}")
-        
-        if not self.player or not self.maze: 
-            logger.warning(f"_update_standard_playing_state: Player or Maze not set. Player: {self.player}, Maze: {self.maze}. Returning to main menu.")
-            self.scene_manager.set_game_state(GAME_STATE_MAIN_MENU) 
-            return
 
         if not self.level_cleared_pending_animation: 
             elapsed_time_current_level_ms = current_time_ms - self.level_timer_start_ticks
@@ -1170,7 +1158,6 @@ class GameController:
         
         for abs_x, abs_y in path_cells_abs:
             if not self.maze.is_wall(abs_x, abs_y, entity_width, entity_height):
-                logger.debug(f"GameController: Found safe spawn point at {abs_x}, {abs_y} from path cells.")
                 return (abs_x, abs_y) 
         
         logger.warning(f"GameController: No non-wall spawn point found in {len(path_cells_abs)} path cells. Returning first path cell ({path_cells_abs[0] if path_cells_abs else 'N/A'}) as risky fallback.")
@@ -1210,18 +1197,31 @@ class GameController:
                 logger.info(f"Escape zone spawned at {spawn_pos}")
 
     def _place_collectibles_for_level(self, initial_setup=False):
-        if not self.maze or not self.player: return
+        if not self.maze or not self.player: 
+            logger.warning("GameController._place_collectibles_for_level: Maze or Player not initialized. Skipping collectible placement.")
+            return
 
-        path_cells_abs = self.maze.get_path_cells_abs() if hasattr(self.maze, 'get_path_cells_abs') else []
-        if not path_cells_abs: return
+        path_cells_abs = []
+        if hasattr(self.maze, 'get_path_cells_abs'): 
+            path_cells_abs = self.maze.get_path_cells_abs()
+        elif hasattr(self.maze, 'get_path_cells'): 
+            path_cells_rel = self.maze.get_path_cells()
+            path_cells_abs = [(x + self.maze.game_area_x_offset, y) for x,y in path_cells_rel]
+
+        if not path_cells_abs: 
+            logger.warning("GameController._place_collectibles_for_level: No path cells found to place collectibles.")
+            return
 
         if initial_setup:
-            self.collectible_rings_group.empty() 
-            num_rings = min(self.total_rings_per_level, len(path_cells_abs)) 
+            self.collectible_rings_group.empty()
+            num_rings = min(self.total_rings_per_level, len(path_cells_abs))
+            logger.info(f"Placing rings: total_rings_per_level={self.total_rings_per_level}, num_path_cells={len(path_cells_abs)}, num_rings_to_spawn={num_rings}")
             if num_rings > 0:
-                ring_spawns = random.sample(path_cells_abs, k=num_rings) 
-                for x,y in ring_spawns: 
-                    self.collectible_rings_group.add(CollectibleRing(x,y))
+                ring_spawns = random.sample(path_cells_abs, k=num_rings)
+                for x,y in ring_spawns:
+                    new_ring = CollectibleRing(x,y)
+                    self.collectible_rings_group.add(new_ring)
+            logger.info(f"Total rings in group after placement: {len(self.collectible_rings_group)}")
         
         occupied_tiles = set() 
 
@@ -1333,19 +1333,16 @@ class GameController:
     def _draw_game_world(self):
         current_game_state = self.scene_manager.get_current_state()
 
-        # Fill background based on state
         if current_game_state.startswith("architect_vault"):
             self.screen.fill(ARCHITECT_VAULT_BG_COLOR)
         elif current_game_state == GAME_STATE_MAZE_DEFENSE:
-            self.screen.fill(gs.DARK_GREY) # Example color for defense mode
+            self.screen.fill(gs.DARK_GREY) 
         else:
             self.screen.fill(BLACK)
 
-        # Draw maze
         if self.maze:
             self.maze.draw(self.screen)
 
-        # Draw collectibles (not typically in maze defense)
         if current_game_state != GAME_STATE_MAZE_DEFENSE:
             self.collectible_rings_group.draw(self.screen)
             self.core_fragments_group.draw(self.screen)
@@ -1355,16 +1352,14 @@ class GameController:
             self.alien_terminals_group.draw(self.screen)
 
 
-        self.power_ups_group.draw(self.screen) # General power-ups
-        self.escape_zone_group.draw(self.screen) # For vault extraction
+        self.power_ups_group.draw(self.screen) 
+        self.escape_zone_group.draw(self.screen) 
 
-        # Architect Vault specific terminal drawing
         if current_game_state == GAME_STATE_ARCHITECT_VAULT_ENTRY_PUZZLE:
             self.architect_vault_puzzle_terminals_group.draw(self.screen)
 
-        # Maze Defense specific drawing
         if current_game_state == GAME_STATE_MAZE_DEFENSE:
-            self.reactor_group.draw(self.screen) # Draw the core reactor
+            self.reactor_group.draw(self.screen) 
 
             if self.turrets_group:
                 for turret_sprite in self.turrets_group: 
@@ -1375,24 +1370,22 @@ class GameController:
                             logger.error(f"Error drawing turret {turret_sprite}: {e}")
                             logger.exception("Turret draw exception details:")
 
-            if self.player and self.player.alive: # If there's a controllable entity in defense mode (e.g. for testing)
+            if self.player and self.player.alive: 
                 self.player.draw(self.screen)
 
 
-        # Draw enemies and boss
         if self.combat_controller and self.combat_controller.enemy_manager:
             self.combat_controller.enemy_manager.draw_all(self.screen)
         if self.combat_controller and self.combat_controller.boss_active and self.combat_controller.maze_guardian:
             self.combat_controller.maze_guardian.draw(self.screen)
 
-        # Draw player and its projectiles (if not in maze defense or if player exists in defense)
-        if self.player and current_game_state != GAME_STATE_MAZE_DEFENSE : # Standard player drawing
+        if self.player and current_game_state != GAME_STATE_MAZE_DEFENSE : 
              if self.player.alive or self.player.bullets_group or self.player.missiles_group or self.player.lightning_zaps_group:
-                 self.player.draw(self.screen) # PlayerDrone's draw should handle its own projectiles
-        elif self.player and current_game_state == GAME_STATE_MAZE_DEFENSE and hasattr(self.player, 'draw_health_bar'): # e.g. if player is just a stationary turret controller
+                 self.player.draw(self.screen) 
+        elif self.player and current_game_state == GAME_STATE_MAZE_DEFENSE and hasattr(self.player, 'draw_health_bar'): 
             pass 
 
-        self.explosion_particles_group.draw(self.screen) # Draw all explosion particles
+        self.explosion_particles_group.draw(self.screen) 
 
     def is_current_score_a_high_score(self): 
         return leaderboard.is_high_score(self.score, self.level)
@@ -1440,7 +1433,6 @@ class GameController:
 
             current_game_state = self.scene_manager.get_current_state()
 
-            # Drawing sequence based on game state
             if current_game_state == GAME_STATE_GAME_INTRO_SCROLL:
                 self.ui_manager.draw_current_scene_ui()
             elif current_game_state == GAME_STATE_RING_PUZZLE:
