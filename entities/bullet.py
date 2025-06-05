@@ -59,7 +59,6 @@ class Bullet(pygame.sprite.Sprite):
         rad_angle = math.radians(self.angle)
         self.dx = math.cos(rad_angle) * self.speed
         self.dy = math.sin(rad_angle) * self.speed
-        logger.debug(f"BULLET CREATED: ID={id(self)}, Pos=({self.x:.1f},{self.y:.1f}), Lifetime={self.lifetime}")
 
     def _ensure_drawable_state(self):
         """Ensures self.image and self.rect are valid for drawing."""
@@ -128,9 +127,6 @@ class Bullet(pygame.sprite.Sprite):
             # Actual Bullet Image Drawing
             if self.image and self.rect:
                surface.blit(self.image, self.rect)
-            # Fallback Debug Draw (Magenta Circle) - Uncomment if needed for debugging
-            # elif self.rect:
-            #    pygame.draw.circle(surface, gs.MAGENTA, self.rect.center, 6)
 
 
 class Missile(pygame.sprite.Sprite): # Inherits from Sprite, not Bullet, to manage its own image/rect more clearly
@@ -152,7 +148,6 @@ class Missile(pygame.sprite.Sprite): # Inherits from Sprite, not Bullet, to mana
         pygame.draw.polygon(self.original_image_surface, gs.MISSILE_COLOR, points)
         self.original_image = pygame.transform.rotate(self.original_image_surface, -90)
         self._update_image_and_rect() # Initial image rotation and rect creation
-        logger.debug(f"MISSILE CREATED: ID={id(self)}, Pos=({self.x:.1f},{self.y:.1f}), Lifetime={self.lifetime}")
 
     def _update_image_and_rect(self):
         """Rotates original_image to self.image and updates self.rect."""
@@ -223,7 +218,6 @@ class Missile(pygame.sprite.Sprite): # Inherits from Sprite, not Bullet, to mana
 
     def draw(self, surface):
         if self.alive:
-            # logger.debug(f"MISSILE DRAWING: ID={id(self)}, Center={self.rect.center if self.rect else 'NoRect'}, LifetimeLeft={self.lifetime}")
             if self.image and self.rect:
                 surface.blit(self.image, self.rect)
             # Fallback for visibility - Uncomment if needed
@@ -254,8 +248,6 @@ class LightningZap(pygame.sprite.Sprite): # Inherits from Sprite
         # For sprite group management, it needs an image and rect, even if not directly blitted.
         # The rect should encompass the line to allow for broad phase collision if needed by other systems.
         self._update_rect_for_collision()
-        logger.debug(f"LIGHTNING ZAP CREATED: ID={id(self)}, LifetimeFrames={self.lifetime_frames}")
-
 
     def _get_wall_collision_point(self, start_point, end_point, steps_override=None): # Same as before
         if not self.maze_ref or not hasattr(self.maze_ref, 'grid') or not self.maze_ref.grid: return end_point
@@ -375,7 +367,6 @@ class LightningZap(pygame.sprite.Sprite): # Inherits from Sprite
 
     def draw(self, surface):
         if self.alive:
-            # logger.debug(f"LIGHTNING ZAP DRAWING: ID={id(self)}, Frames={self.frames_existed}/{self.lifetime_frames}, Alpha={current_alpha}, Start={self.current_start_pos}, End={self.current_target_pos}") # Example log
             current_alpha_perc = 1.0 - (self.frames_existed / self.lifetime_frames)
             current_alpha = int(255 * (current_alpha_perc ** 1.5))
             current_alpha = int(max(0, min(255, current_alpha)))

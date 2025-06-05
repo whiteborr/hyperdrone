@@ -85,7 +85,6 @@ class MazeChapter2:
 
         if not (0 <= r1 < self.ROWS and 0 <= c1 < self.COLS and \
                 0 <= r2 < self.ROWS and 0 <= c2 < self.COLS):
-            logger.error(f"Path carving coordinates out of bounds: {start_pos} to {end_pos}")
             return
 
         if r1 == r2:  # Horizontal path
@@ -107,7 +106,6 @@ class MazeChapter2:
         """
         # Start with a grid of all paths ('0')
         grid = [[0 for _ in range(self.COLS)] for _ in range(self.ROWS)]
-        logger.info("MazeChapter2 _build_tilemap: Initialized grid with all '0's for bullet visibility test.")
 
         # Define border walls (optional, but helps define play area)
         for r in range(self.ROWS):
@@ -116,13 +114,11 @@ class MazeChapter2:
         for c in range(self.COLS):
             grid[0][c] = 1  # Top border
             grid[self.ROWS - 1][c] = 1 # Bottom border
-        logger.info("MazeChapter2 _build_tilemap: Added border walls ('1').")
         
         # Place Core Reactor ('C')
         core_r, core_c = self.CORE_POS
         if 0 <= core_r < self.ROWS and 0 <= core_c < self.COLS:
             grid[core_r][core_c] = 'C'
-            logger.info(f"MazeChapter2 _build_tilemap: Placed Core 'C' at ({core_r},{core_c}).")
         else: 
             logger.error(f"MazeChapter2 _build_tilemap: CORE_POS {self.CORE_POS} is out of bounds when placing 'C'.")
 
@@ -132,7 +128,6 @@ class MazeChapter2:
                 if grid[r_turret][c_turret] == 1: # Should ideally be 0 from initial fill
                      logger.warning(f"MazeChapter2 _build_tilemap: Turret position ({r_turret},{c_turret}) was unexpectedly a wall before becoming 'T'. This might indicate border placement conflict.")
                 grid[r_turret][c_turret] = 'T' 
-                logger.info(f"MazeChapter2 _build_tilemap: Placed Turret Spot 'T' at ({r_turret},{c_turret}).")
             else:
                 logger.warning(f"MazeChapter2 _build_tilemap: Turret position ({r_turret},{c_turret}) is on a border wall. Skipping placement.")
         
@@ -143,7 +138,6 @@ class MazeChapter2:
         self.maze_type = maze_type
         
         self.grid = self._build_tilemap() 
-        logger.info(f"MazeChapter2 initialized (id: {id(self)}). self.grid constructed by _build_tilemap.")
         
         self.ENEMY_SPAWN_GRID_POSITIONS = [] # Will be recalculated based on open map
         
@@ -353,7 +347,6 @@ class MazeChapter2:
             # The A* check above is more of a sanity check now.
             # return False # Uncomment if strict path checking is needed even for 'U' spots
             
-        logger.info(f"MazeChapter2 (id:{id(self)}): can_place_turret: Allowing placement at ({grid_r},{grid_c}).")
         return True
 
     def mark_turret_spot_as_occupied(self, grid_r, grid_c):

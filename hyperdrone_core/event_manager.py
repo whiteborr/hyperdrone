@@ -60,7 +60,6 @@ class EventManager:
                current_game_state != GAME_STATE_GAME_INTRO_SCROLL: # Don't dismiss during intro
                 self.game_controller.story_message_active = False # Clear message
                 self.game_controller.play_sound('ui_select', 0.5)
-                logger.debug("Story message dismissed by spacebar.")
                 continue # Event consumed
                 
             event_consumed = False # Flag to track if event was handled
@@ -89,10 +88,8 @@ class EventManager:
                 GAME_STATE_MAZE_DEFENSE 
             ]:
                 if event.type == pygame.KEYDOWN:
-                    logger.debug(f"EventManager: Keydown event {event.key} in state {current_game_state}. Paused: {self.game_controller.paused}")
                     if event.key == pygame.K_p: # Pause/Unpause
                         self.game_controller.toggle_pause()
-                        logger.debug(f"Pause toggled. Paused: {self.game_controller.paused}")
                         event_consumed = True
                     
                     if self.game_controller.paused: # If game is paused, handle pause menu input
@@ -124,12 +121,9 @@ class EventManager:
                         
                         # Maze Defense build phase inputs
                         is_build_phase_gc = hasattr(self.game_controller, 'is_build_phase') and self.game_controller.is_build_phase
-                        logger.debug(f"EventManager: Checking MAZE_DEFENSE inputs. Current State: {current_game_state}, Is Build Phase (GC): {is_build_phase_gc}")
 
                         if current_game_state == GAME_STATE_MAZE_DEFENSE and is_build_phase_gc:
-                            logger.debug(f"EventManager: In MAZE_DEFENSE build phase. Event Key: {event.key}")
                             if event.key == pygame.K_t:
-                                logger.info(f"EventManager: 'T' key pressed for turret placement at mouse_pos: {mouse_pos}")
                                 if self.combat_controller:
                                     self.combat_controller.try_place_turret(mouse_pos)
                                 else:
@@ -141,17 +135,14 @@ class EventManager:
                                     selected_turret = getattr(self.game_controller.ui_manager.build_menu, 'selected_turret_on_map', None)
                                 
                                 if selected_turret:
-                                    logger.info(f"EventManager: 'U' key pressed to upgrade turret: {selected_turret}")
                                     if self.combat_controller:
                                         self.combat_controller.try_upgrade_turret(selected_turret)
                                     else:
                                         logger.error("EventManager: CombatController not available for turret upgrade.")
                                 else: 
-                                    logger.debug("EventManager: 'U' key pressed, but no turret selected for upgrade.")
                                     self.game_controller.play_sound('ui_denied')
                                 event_consumed = True
                             elif event.key == pygame.K_SPACE: # Start next wave
-                                logger.info("EventManager: SPACE key pressed to manually start next wave.")
                                 if self.combat_controller and self.combat_controller.wave_manager:
                                     self.combat_controller.wave_manager.manual_start_next_wave()
                                 else:
@@ -177,10 +168,8 @@ class EventManager:
                             if clicked_turret:
                                 self.game_controller.ui_manager.build_menu.set_selected_turret(clicked_turret)
                                 self.game_controller.play_sound('ui_select', 0.6)
-                                logger.debug(f"EventManager: Selected turret {clicked_turret} via right-click.")
                             else:
                                 self.game_controller.ui_manager.build_menu.clear_selected_turret()
-                                logger.debug("EventManager: Deselected turret via right-click on empty map space.")
                             event_consumed = True 
 
             if event_consumed:

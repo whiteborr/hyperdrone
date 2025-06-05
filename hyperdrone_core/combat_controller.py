@@ -176,13 +176,72 @@ class CombatController:
         # 2. Enemy/Boss Projectiles vs. Player / Turrets / Reactor
         self._handle_enemy_projectile_collisions(current_game_state)
 
-        # 3. Physical Collisions (Player vs. Enemy/Boss, Enemy vs. Reactor)
+        # 3. Turret Projectiles vs. Enemies (NEW)
+        if current_game_state == GAME_STATE_MAZE_DEFENSE:
+            self._handle_turret_projectile_collisions()
+
+        # 4. Physical Collisions (Player vs. Enemy/Boss, Enemy vs. Reactor)
         self._handle_physical_collisions(current_game_state)
         
-        # 4. Player vs. Power-ups
+        # 5. Player vs. Power-ups
         if self.player and self.player.alive: # Only if player is alive and can collect
             self._handle_player_power_up_collisions()
 
+    def _handle_turret_projectile_collisions(self):
+        """Handles collisions of turret projectiles with enemies."""
+        if not self.turrets_group or not self.enemy_manager:
+            return
+
+        enemies_to_check = self.enemy_manager.get_sprites()
+        if not enemies_to_check: # No enemies to hit
+            return
+
+        for turret in self.turrets_group:
+            turret_projectiles = pygame.sprite.Group()
+            if hasattr(turret, 'bullets'): turret_projectiles.add(turret.bullets)
+            if hasattr(turret, 'missiles'): turret_projectiles.add(turret.missiles)
+            if hasattr(turret, 'lightning_zaps'): turret_projectiles.add(turret.lightning_zaps)
+
+            for projectile in list(turret_projectiles): # Iterate over a copy
+                if not projectile.alive:
+                    continue
+                
+                # Turret projectile vs. Regular Enemies
+                hit_enemies = pygame.sprite.spritecollide(
+                    projectile, enemies_to_check, False, # False: don't kill enemy on collision yet
+                    lambda proj, enemy: proj.rect.colliderect(getattr(enemy, 'collision_rect', enemy.rect))
+                )
+                for enemy in hit_enemies:
+                    if enemy.alive:
+                        damage_to_enemy = projectile.damage
+                        if isinstance(projectile, LightningZap): # Specific handling for lightning
+                            # Lightning from turrets might have different properties or just use its base damage
+                            damage_to_enemy = projectile.damage # Use the zap's defined damage
+
+                        enemy.take_damage(damage_to_enemy)
+                        if not enemy.alive:
+                            # Score/Cores for turret kills might be different or not awarded
+                            # self.game_controller.score += 20 # Example: Turret kill score
+                            # self.game_controller.drone_system.add_player_cores(5) # Example: Turret kill cores
+                            self.game_controller._create_explosion(enemy.rect.centerx, enemy.rect.centery, specific_sound='enemy_shoot')
+                            
+                            # In defense mode, check if wave clear conditions are met
+                            if self.game_controller.scene_manager.get_current_state() == GAME_STATE_MAZE_DEFENSE:
+                                if self.wave_manager and not self.wave_manager.is_build_phase_active and \
+                                   self.enemy_manager.get_active_enemies_count() == 0 and \
+                                   self.wave_manager.current_group_index >= len(self.wave_manager.current_wave_enemy_groups):
+                                    # This check might be better placed in WaveManager's update or CombatController's main update
+                                    pass # Wave clear is handled in WaveManager update
+
+                        # Handle piercing for turret bullets
+                        if not (hasattr(projectile, 'max_pierces') and projectile.pierces_done < projectile.max_pierces):
+                            projectile.kill()
+                        elif hasattr(projectile, 'pierces_done'):
+                            projectile.pierces_done +=1
+                        
+                        if not projectile.alive:
+                            break # Projectile destroyed
+    
     def _handle_player_projectile_collisions(self):
         """Handles collisions of player's projectiles with enemies and boss."""
         if not self.player or not self.player.alive:
@@ -488,17 +547,11 @@ class CombatController:
             return False
         
         # Check if the player has enough turrets left to place
-        # Turret.MAX_TURRETS is defined in entities.turret
-        if len(self.turrets_group) >= Turret.MAX_UPGRADE_LEVEL + 2 : # Example: MAX_TURRETS = 5 (MAX_UPGRADE_LEVEL is 3, so 3+2=5)
-                                                                    # This should be Turret.MAX_TURRETS if that's a class var in your Turret
-            max_turrets_allowed = Turret.MAX_UPGRADE_LEVEL + 2 # Assuming this is the logic for max turrets
-            if hasattr(Turret, 'MAX_TURRETS'): # Prefer a direct class variable if it exists
-                max_turrets_allowed = Turret.MAX_TURRETS
-
-            if len(self.turrets_group) >= max_turrets_allowed:
-                self.game_controller.play_sound('ui_denied', 0.6)
-                print(f"CombatController: Max turrets ({max_turrets_allowed}) already placed.")
-                return False
+        max_turrets_allowed = Turret.MAX_TURRETS # Use constant from Turret class
+        if len(self.turrets_group) >= max_turrets_allowed:
+            self.game_controller.play_sound('ui_denied', 0.6)
+            print(f"CombatController: Max turrets ({max_turrets_allowed}) already placed.")
+            return False
 
         # Use MazeChapter2's specific validation method
         if not self.maze.can_place_turret(grid_r, grid_c): # This now checks 'T' and path blocking
