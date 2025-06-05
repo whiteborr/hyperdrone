@@ -4,51 +4,25 @@ import os
 import random
 import math
 import json
-import logging # Import logging
+import logging
 
 import pygame
 
-# Core game modules
 from .scene_manager import SceneManager
 from .event_manager import EventManager
 from .player_actions import PlayerActions
 from . import leaderboard
-
-# Import NEW Controllers
 from .combat_controller import CombatController
 from .puzzle_controller import PuzzleController
 from .ui_flow_controller import UIFlowController
-
-# UI and Entity imports
 from ui import UIManager
 from entities import (
-    PlayerDrone,
-    Ring as CollectibleRing,
-    WeaponUpgradeItem,
-    ShieldItem,
-    SpeedBoostItem,
-    CoreFragmentItem,
-    VaultLogItem,
-    GlyphTabletItem,
-    AncientAlienTerminal,
-    ArchitectEchoItem,
-    CoreReactor,
-    Turret,
-    LightningZap,
-    Missile,
-    Particle,
-    MazeGuardian,
-    SentinelDrone,
-    EscapeZone,
-    Maze,
-    MazeChapter2,
-    Bullet
+    PlayerDrone, CollectibleRing, WeaponUpgradeItem, ShieldItem, SpeedBoostItem,
+    CoreFragmentItem, VaultLogItem, GlyphTabletItem, AncientAlienTerminal,
+    ArchitectEchoItem, CoreReactor, Turret, LightningZap, Missile, Particle,
+    MazeGuardian, SentinelDrone, EscapeZone, Maze, MazeChapter2, Bullet
 )
-
-# Drone system and configurations
 from drone_management import DroneSystem, DRONE_DATA
-
-# Game settings and constants
 import game_settings as gs
 from game_settings import (
     BLACK, WHITE, GOLD, CYAN, RED, YELLOW, GREEN, ORANGE, DARK_RED, GREY, PURPLE,
@@ -72,7 +46,6 @@ logger = logging.getLogger(__name__)
 if not logging.getLogger().hasHandlers():
     logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(name)s - %(message)s')
 
-
 if not hasattr(gs, 'GAME_STATE_MAZE_DEFENSE'):
     GAME_STATE_MAZE_DEFENSE = "maze_defense_mode"
     gs.GAME_STATE_MAZE_DEFENSE = GAME_STATE_MAZE_DEFENSE
@@ -83,37 +56,25 @@ class GameController:
     def __init__(self):
         pygame.init()
         pygame.mixer.init()
-
         self.screen_flags = pygame.FULLSCREEN if gs.get_game_setting("FULLSCREEN_MODE") else 0
-        self.screen = pygame.display.set_mode(
-            (gs.get_game_setting("WIDTH"), gs.get_game_setting("HEIGHT")),
-            self.screen_flags
-        )
+        self.screen = pygame.display.set_mode((gs.get_game_setting("WIDTH"), gs.get_game_setting("HEIGHT")), self.screen_flags)
         pygame.display.set_caption("HYPERDRONE")
         self.clock = pygame.time.Clock()
-
         self.drone_system = DroneSystem()
-
         self.font_path_emoji = os.path.join("assets", "fonts", "seguiemj.ttf")
         self.font_path_neuropol = os.path.join("assets", "fonts", "neuropol.otf")
         self.fonts = {}
         self._initialize_fonts()
-
         self.scene_manager = SceneManager(self)
         self.player_actions = PlayerActions(self)
-
         self.combat_controller = CombatController(self)
         self.puzzle_controller = PuzzleController(self)
         self.ui_flow_controller = UIFlowController(self)
-
         self.ui_manager = UIManager(self.screen, self.fonts, self, self.scene_manager, self.drone_system)
         self.event_manager = EventManager(self, self.scene_manager, self.combat_controller, self.puzzle_controller, self.ui_flow_controller)
-
         self.ui_flow_controller.set_dependencies(self.scene_manager, self.ui_manager, self.drone_system)
-
         self.player = None
         self.maze = None
-
         self.collectible_rings_group = pygame.sprite.Group()
         self.power_ups_group = pygame.sprite.Group()
         self.core_fragments_group = pygame.sprite.Group()
@@ -126,63 +87,49 @@ class GameController:
         self.escape_zone_group = pygame.sprite.GroupSingle()
         self.reactor_group = pygame.sprite.GroupSingle()
         self.turrets_group = pygame.sprite.Group()
-
         self.score = 0
         self.level = 1
         self.lives = gs.get_game_setting("PLAYER_LIVES")
         self.paused = False
         self.is_build_phase = False
-
         self.level_timer_start_ticks = 0
         self.level_time_remaining_ms = gs.get_game_setting("LEVEL_TIMER_DURATION")
-
         self.bonus_level_timer_start = 0
         self.bonus_level_duration_ms = gs.get_game_setting("BONUS_LEVEL_DURATION_MS")
         self.bonus_level_start_display_end_time = 0
-
         self.architect_vault_current_phase = None
         self.architect_vault_phase_timer_start = 0
         self.architect_vault_message = ""
         self.architect_vault_message_timer = 0
         self.architect_vault_failure_reason = ""
-
         self.collected_rings_count = 0
         self.displayed_collected_rings_count = 0
         self.total_rings_per_level = 5
         self.animating_rings_to_hud = []
         self.ring_ui_target_pos = (WIDTH - 50, HEIGHT - BOTTOM_PANEL_HEIGHT + 50)
-
         self.hud_displayed_fragments = set()
         self.animating_fragments_to_hud = []
         self.fragment_ui_target_positions = {}
-
         self.all_enemies_killed_this_level = False
         self.level_cleared_pending_animation = False
         self.level_clear_fragment_spawned_this_level = False
-
         self.story_message = ""
         self.story_message_active = False
         self.STORY_MESSAGE_DURATION = 5000
         self.triggered_story_beats = set()
-
         self.current_intro_image_surface = None
         self.intro_screen_text_surfaces_current = []
         self.intro_font_key = "codex_category_font"
-
         self.drone_main_display_cache = {}
         self._load_drone_main_display_images()
-
         self.sounds = {}
         self.load_sfx()
-
         if self.drone_system:
             self.drone_system.unlock_lore_entry_by_id("architect_legacy_intro")
             self.drone_system.check_and_unlock_lore_entries(event_trigger="game_start")
-
         if self.ui_flow_controller:
             self.ui_flow_controller.settings_items_data = self._get_settings_menu_items_data_structure()
             self.ui_flow_controller.intro_screens_data = self._load_intro_data_from_json_internal()
-
         self.scene_manager.set_game_state(GAME_STATE_MAIN_MENU)
         logger.info("GameController initialized successfully.")
 
