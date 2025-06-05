@@ -6,7 +6,7 @@ import pygame
 WIDTH = 1920
 HEIGHT = 1080
 FPS = 60
-FULLSCREEN_MODE = True 
+FULLSCREEN_MODE = False 
 MUSIC_VOLUME_MULTIPLIER = 0.5 # Example: Global music volume control (0.0 to 1.0)
 SFX_VOLUME_MULTIPLIER = 0.7   # Example: Global sound effects volume control
 

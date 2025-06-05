@@ -4,57 +4,69 @@ import math
 import random
 import pygame
 import os 
+import logging 
 
 import game_settings as gs
 from game_settings import (
     PLAYER_BULLET_COLOR, PLAYER_BULLET_SPEED, PLAYER_BULLET_LIFETIME, PLAYER_DEFAULT_BULLET_SIZE,
     MISSILE_COLOR, MISSILE_SPEED, MISSILE_LIFETIME, MISSILE_SIZE, MISSILE_TURN_RATE,
     LIGHTNING_COLOR, LIGHTNING_LIFETIME, LIGHTNING_ZAP_RANGE,
-    WIDTH, GAME_PLAY_AREA_HEIGHT, TILE_SIZE, WHITE, RED, YELLOW # Added YELLOW for sparks
+    WIDTH, GAME_PLAY_AREA_HEIGHT, TILE_SIZE, WHITE, RED, YELLOW 
 )
-# Ensure Particle is imported for the wall spark effect
 try:
     from .particle import Particle
 except ImportError:
-    # Minimal placeholder if Particle class is not found
+    logging.error("Bullet: Could not import Particle from .particle. Using placeholder.")
     class Particle(pygame.sprite.Sprite):
         def __init__(self, x, y, color_list, min_speed, max_speed, min_size, max_size, gravity=0.1, shrink_rate=0.1, lifetime_frames=30, base_angle_deg=None, spread_angle_deg=360, x_offset=0, y_offset=0, blast_mode=False):
-            super().__init__(); self.image = pygame.Surface([max_size*2,max_size*2]); self.image.fill(random.choice(color_list) if color_list else (255,0,0)); self.rect = self.image.get_rect(center=(x,y)); self.lifetime = lifetime_frames
+            super().__init__()
+            surface_dimension = max(1, int(max_size * 2)) 
+            self.image = pygame.Surface([surface_dimension, surface_dimension], pygame.SRCALPHA)
+            fill_color = random.choice(color_list) if color_list else (255,0,0)
+            pygame.draw.circle(self.image, fill_color, (surface_dimension // 2, surface_dimension // 2), max(1, int(max_size)))
+            self.rect = self.image.get_rect(center=(x,y))
+            self.lifetime = lifetime_frames
+            self.x = float(x)
+            self.y = float(y)
+            angle = math.radians(random.uniform(0, 360) if base_angle_deg is None else random.uniform(base_angle_deg - spread_angle_deg/2, base_angle_deg + spread_angle_deg/2))
+            speed = random.uniform(min_speed, max_speed)
+            self.dx = math.cos(angle) * speed
+            self.dy = math.sin(angle) * speed
+            self.gravity = gravity
+            self.shrink_rate = shrink_rate
+            self.current_size = float(max_size)
         def update(self): 
             self.lifetime -= 1
             if self.lifetime <=0: 
                 self.kill()
+                return
+            self.dy += self.gravity
+            self.x += self.dx
+            self.y += self.dy
+            self.rect.center = (int(self.x), int(self.y))
+            self.current_size -= self.shrink_rate
+            if self.current_size <= 0:
+                self.kill()
+                return
+
+logger = logging.getLogger(__name__)
+if not logger.hasHandlers(): 
+    logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(name)s - %(message)s')
 
 
 class Bullet(pygame.sprite.Sprite):
-    """
-    Represents a standard projectile fired by drones.
-    Handles movement, lifetime, wall collisions (optional bouncing/piercing).
-    """
     def __init__(self, x, y, angle, speed, lifetime, size, color, damage, max_bounces=0, max_pierces=0, can_pierce_walls=False):
-        """
-        Initializes a Bullet instance.
-        Args:
-            x (float): Initial x-coordinate.
-            y (float): Initial y-coordinate.
-            angle (float): Angle of motion in degrees.
-            speed (float): Speed of the bullet.
-            lifetime (int): Duration the bullet exists in frames.
-            size (int): Radius of the bullet.
-            color (tuple): RGB color tuple for the bullet.
-            damage (int): Damage the bullet inflicts.
-            max_bounces (int): Number of times the bullet can bounce off walls.
-            max_pierces (int): Number of enemies the bullet can pierce.
-            can_pierce_walls (bool): Whether the bullet can pass through walls.
-        """
         super().__init__()
         self.x = float(x)
         self.y = float(y)
-        self.angle = float(angle) # Degrees
+        self.angle = float(angle) 
         self.speed = float(speed)
         self.lifetime = int(lifetime)
         self.initial_lifetime = int(lifetime) 
         self.size = int(size)
+        if self.size <= 0: 
+            logger.warning(f"Bullet initialized with non-positive size {self.size}. Setting to 1.")
+            self.size = 1
         self.color = color
         self.damage = int(damage)
         self.max_bounces = int(max_bounces)
@@ -63,115 +75,129 @@ class Bullet(pygame.sprite.Sprite):
         self.pierces_done = 0
         self.can_pierce_walls = can_pierce_walls 
         self.alive = True
+        self.frames_existed = 0 
 
-        # Create the visual representation of the bullet
-        self.image = pygame.Surface([self.size * 2, self.size * 2], pygame.SRCALPHA)
-        pygame.draw.circle(self.image, self.color, (self.size, self.size), self.size)
+        surface_dim = max(1, self.size * 2)
+        self.image = pygame.Surface([surface_dim, surface_dim], pygame.SRCALPHA)
+        draw_radius = max(1, self.size)
+        pygame.draw.circle(self.image, self.color, (surface_dim // 2, surface_dim // 2), draw_radius)
         self.rect = self.image.get_rect(center=(int(self.x), int(self.y)))
 
-        # Pre-calculate movement components
         rad_angle = math.radians(self.angle)
         self.dx = math.cos(rad_angle) * self.speed
         self.dy = math.sin(rad_angle) * self.speed
+        logger.debug(f"Bullet CREATED at ({self.x:.1f},{self.y:.1f}), angle {self.angle:.1f}, speed {self.speed}, lifetime {self.lifetime}, damage {self.damage}, size {self.size}, rect: {self.rect}")
+
 
     def update(self, maze=None, game_area_x_offset=0):
-        """
-        Updates the bullet's position, lifetime, and handles collisions.
-        Args:
-            maze (Maze, optional): The current maze object for wall collision detection.
-            game_area_x_offset (int): The x-offset of the game area on the screen.
-        """
         if not self.alive:
             self.kill() 
             return
 
-        prev_x_pixel, prev_y_pixel = self.x, self.y # Store previous position for bounce logic
+        self.frames_existed += 1
+        
+        current_x, current_y = self.x, self.y
+        potential_next_x = current_x + self.dx
+        potential_next_y = current_y + self.dy
 
-        # Move the bullet
-        self.x += self.dx
-        self.y += self.dy
+        collided_this_step = False
+        
+        if maze and not self.can_pierce_walls and self.frames_existed > 1:
+            bullet_diameter = self.size * 2 
+            
+            # Log current position before checking potential next
+            bullet_grid_c_current = int((current_x - game_area_x_offset) / TILE_SIZE)
+            bullet_grid_r_current = int(current_y / TILE_SIZE)
+            logger.debug(f"Bullet (id:{id(self)}) at frame {self.frames_existed}: Current pos ({current_x:.1f},{current_y:.1f}) [Grid:({bullet_grid_r_current},{bullet_grid_c_current})], velocity ({self.dx:.2f},{self.dy:.2f})")
+
+            if maze.is_wall(potential_next_x, potential_next_y, bullet_diameter, bullet_diameter):
+                collided_this_step = True
+                logger.debug(f"Bullet (id:{id(self)}) PROJECTED COLLISION at ({potential_next_x:.1f},{potential_next_y:.1f}). Bounces left: {self.max_bounces - self.bounces_done}.")
+                
+                if self.bounces_done < self.max_bounces:
+                    self.bounces_done += 1
+                    
+                    # Determine bounce direction
+                    # To simplify, we'll check if moving just along X or just along Y from current_x, current_y would hit a wall.
+                    # This helps determine the primary collision surface.
+                    hit_x_wall = maze.is_wall(current_x + self.dx, current_y, bullet_diameter, bullet_diameter)
+                    hit_y_wall = maze.is_wall(current_x, current_y + self.dy, bullet_diameter, bullet_diameter)
+
+                    if hit_x_wall and hit_y_wall: # Corner hit
+                        self.dx *= -1
+                        self.dy *= -1
+                        logger.debug(f"Bullet (id:{id(self)}) bounced CORNER. New dx:{self.dx:.2f}, dy:{self.dy:.2f}")
+                    elif hit_x_wall: # Horizontal collision
+                        self.dx *= -1
+                        logger.debug(f"Bullet (id:{id(self)}) bounced HORIZONTALLY. New dx:{self.dx:.2f}")
+                    elif hit_y_wall: # Vertical collision
+                        self.dy *= -1
+                        logger.debug(f"Bullet (id:{id(self)}) bounced VERTICALLY. New dy:{self.dy:.2f}")
+                    else: # Glancing, or error in logic - reflect both as a fallback
+                        self.dx *= -1
+                        self.dy *= -1
+                        logger.debug(f"Bullet (id:{id(self)}) bounced (fallback/glancing). New dx:{self.dx:.2f}, dy:{self.dy:.2f}")
+
+                    self.angle = math.degrees(math.atan2(self.dy, self.dx))
+                    # DO NOT update self.x, self.y to potential_next_x, potential_next_y.
+                    # The bullet stays at current_x, current_y for this frame, but with new velocity for next frame.
+                    # This prevents it from moving into the wall it just bounced off.
+                else:
+                    logger.debug(f"Bullet (id:{id(self)}) hit wall, max bounces ({self.max_bounces}) reached. Killing bullet.")
+                    self.alive = False
+        
+        if self.alive:
+            if not collided_this_step or self.frames_existed <= 1: 
+                # Only move if no collision occurred this step OR it's the first frame (wall check skipped)
+                self.x = potential_next_x
+                self.y = potential_next_y
+            # If collided_this_step was True and a bounce occurred, self.x and self.y were NOT updated to potential_next_x/y.
+            # They remain current_x, current_y, and the new dx/dy will apply from that spot next frame.
+            
         self.rect.center = (int(self.x), int(self.y))
-
-        # Decrease lifetime
         self.lifetime -= 1
         if self.lifetime <= 0:
             self.alive = False
+            if self.lifetime > -5 : logger.debug(f"Bullet (id:{id(self)}) lifetime expired. Pos:({self.x:.1f},{self.y:.1f}) Rect: {self.rect}")
             self.kill()
             return
-        
-        # Wall collision logic (if maze is provided and bullet cannot pierce walls)
-        if maze and not self.can_pierce_walls:
-            bullet_diameter = self.size * 2 # Use diameter for collision check
+
+        if self.alive: 
+            min_x_bound = game_area_x_offset
+            max_x_bound = WIDTH 
+            min_y_bound = 0
+            max_y_bound = GAME_PLAY_AREA_HEIGHT 
+
+            hit_boundary = False
+            if self.rect.left < min_x_bound:
+                self.x = min_x_bound + self.size 
+                if self.max_bounces > 0 and self.bounces_done < self.max_bounces: self.dx *= -1; self.bounces_done+=1; 
+                else: self.alive = False
+                hit_boundary = True
+            elif self.rect.right > max_x_bound:
+                self.x = max_x_bound - self.size 
+                if self.max_bounces > 0 and self.bounces_done < self.max_bounces: self.dx *= -1; self.bounces_done+=1;
+                else: self.alive = False
+                hit_boundary = True
             
-            # Check collision with maze walls
-            if maze.is_wall(self.x, self.y, bullet_diameter, bullet_diameter):
-                if self.bounces_done < self.max_bounces:
-                    self.bounces_done += 1
-                    # Revert to previous position before bounce calculation
-                    self.x, self.y = prev_x_pixel, prev_y_pixel
-                    self.rect.center = (int(self.x), int(self.y))
+            if self.rect.top < min_y_bound:
+                self.y = min_y_bound + self.size 
+                if self.max_bounces > 0 and self.bounces_done < self.max_bounces: self.dy *= -1; self.bounces_done+=1;
+                else: self.alive = False
+                hit_boundary = True
+            elif self.rect.bottom > max_y_bound:
+                self.y = max_y_bound - self.size 
+                if self.max_bounces > 0 and self.bounces_done < self.max_bounces: self.dy *= -1; self.bounces_done+=1;
+                else: self.alive = False
+                hit_boundary = True
 
-                    # Determine bounce direction (simplified: reflect based on axis hit)
-                    collided_x_only = maze.is_wall(self.x + self.dx, self.y, bullet_diameter, bullet_diameter)
-                    collided_y_only = maze.is_wall(self.x, self.y + self.dy, bullet_diameter, bullet_diameter)
-
-                    bounced = False
-                    if collided_x_only and not collided_y_only: 
-                        self.dx *= -1
-                        bounced = True
-                    elif collided_y_only and not collided_x_only: 
-                        self.dy *= -1
-                        bounced = True
-                    elif collided_x_only and collided_y_only: 
-                        self.dx *= -1
-                        self.dy *= -1
-                        bounced = True
-                    
-                    if bounced:
-                        self.angle = math.degrees(math.atan2(self.dy, self.dx)) # Update angle
-                        self.x += self.dx * 0.1 
-                        self.y += self.dy * 0.1
-                        self.rect.center = (int(self.x), int(self.y))
-                    else:
-                        self.alive = False 
-                else: 
+            if hit_boundary:
+                if self.bounces_done <= self.max_bounces and self.alive: 
+                    self.angle = math.degrees(math.atan2(self.dy, self.dx)) 
+                    logger.debug(f"Bullet (id:{id(self)}) bounced off boundary. Bounces: {self.bounces_done}")
+                elif self.alive: 
+                    logger.debug(f"Bullet (id:{id(self)}) hit boundary and died (no bounces left or not a bouncing bullet).")
                     self.alive = False
-        
-        if not self.alive: 
-            self.kill()
-            return
-
-        # Screen boundary collision
-        min_x_bound = game_area_x_offset
-        max_x_bound = WIDTH 
-        min_y_bound = 0
-        max_y_bound = GAME_PLAY_AREA_HEIGHT 
-
-        hit_boundary = False
-        if self.rect.left < min_x_bound:
-            self.x = min_x_bound + self.size 
-            self.dx *= -1
-            hit_boundary = True
-        elif self.rect.right > max_x_bound:
-            self.x = max_x_bound - self.size 
-            self.dx *= -1
-            hit_boundary = True
-        
-        if self.rect.top < min_y_bound:
-            self.y = min_y_bound + self.size 
-            self.dy *= -1
-            hit_boundary = True
-        elif self.rect.bottom > max_y_bound:
-            self.y = max_y_bound - self.size 
-            self.dy *= -1
-            hit_boundary = True
-
-        if hit_boundary:
-            if self.bounces_done < self.max_bounces:
-                self.bounces_done += 1
-                self.angle = math.degrees(math.atan2(self.dy, self.dx)) 
-            else: 
-                self.alive = False
         
         if not self.alive:
             self.kill()
@@ -181,25 +207,17 @@ class Bullet(pygame.sprite.Sprite):
 
 
     def draw(self, surface):
-        """Draws the bullet on the given surface if it's alive."""
         if self.alive and self.image and self.rect:
+            logger.debug(f"Bullet (id:{id(self)}) DRAWING at {self.rect.topleft}, Size: {self.size}, Color: {self.color}, Alive: {self.alive}, Frames existed: {self.frames_existed}") 
             surface.blit(self.image, self.rect)
+        elif not self.alive:
+            pass # Already killed, no need to log spam
+        elif not self.image or not self.rect:
+            logger.warning(f"Bullet (id:{id(self)}) NOT DRAWN (no image/rect) at ({self.x:.1f},{self.y:.1f})")
 
-class Missile(pygame.sprite.Sprite):
-    """
-    Represents a heat-seeking missile.
-    Tracks the closest enemy and adjusts its trajectory.
-    """
+
+class Missile(pygame.sprite.Sprite): 
     def __init__(self, x, y, initial_angle, damage, enemies_group):
-        """
-        Initializes a Missile instance.
-        Args:
-            x (float): Initial x-coordinate.
-            y (float): Initial y-coordinate.
-            initial_angle (float): Initial angle of motion in degrees.
-            damage (int): Damage the missile inflicts.
-            enemies_group (pygame.sprite.Group): Group of enemies to target.
-        """
         super().__init__()
         self.x = float(x)
         self.y = float(y)
@@ -212,6 +230,7 @@ class Missile(pygame.sprite.Sprite):
         self.target = None 
         self.turn_rate = MISSILE_TURN_RATE 
         self.alive = True
+        self.frames_existed = 0 
 
         self.original_image_surface = pygame.Surface([MISSILE_SIZE * 1.5, MISSILE_SIZE * 2.5], pygame.SRCALPHA)
         points = [
@@ -227,9 +246,10 @@ class Missile(pygame.sprite.Sprite):
         self.is_sliding = False
         self.slide_direction_attempts = 0
         self.MAX_SLIDE_ATTEMPTS = 3 
+        logger.debug(f"Missile CREATED at ({self.x:.1f},{self.y:.1f}), angle {self.angle:.1f}")
+
 
     def _find_target(self):
-        """Finds the closest living enemy to target."""
         if not self.enemies_group:
             return None
         closest_enemy = None
@@ -244,10 +264,6 @@ class Missile(pygame.sprite.Sprite):
         return closest_enemy
 
     def _attempt_slide(self, maze, next_x_direct, next_y_direct, direct_rad_angle):
-        """
-        Attempts to find a clear path by "sliding" along a wall.
-        Tries a few deflection angles.
-        """
         collision_width = self.rect.width * 0.6 
         collision_height = self.rect.height * 0.6
 
@@ -274,17 +290,12 @@ class Missile(pygame.sprite.Sprite):
 
         return None 
 
-    def update(self, enemies_group_updated=None, maze=None, game_area_x_offset=0):
-        """
-        Updates the missile's position, targeting, and lifetime.
-        Args:
-            enemies_group_updated (pygame.sprite.Group, optional): Updated group of enemies.
-            maze (Maze, optional): The current maze object for wall collision detection.
-            game_area_x_offset (int): The x-offset of the game area on the screen.
-        """
+    def update(self, enemies_group_updated=None, maze=None, game_area_x_offset=0): 
         if not self.alive:
             self.kill()
             return
+        
+        self.frames_existed +=1
 
         if enemies_group_updated is not None:
             self.enemies_group = enemies_group_updated
@@ -319,19 +330,23 @@ class Missile(pygame.sprite.Sprite):
         next_x = self.x + potential_dx
         next_y = self.y + potential_dy
 
-        final_dx, final_dy = potential_dx, potential_dy 
+        collided_with_wall_this_frame = False
 
-        if maze:
+        if maze and self.frames_existed > 1: 
             collision_width = self.rect.width * 0.7 
             collision_height = self.rect.height * 0.7
 
             if maze.is_wall(next_x, next_y, collision_width, collision_height):
+                collided_with_wall_this_frame = True
                 if self.slide_direction_attempts < self.MAX_SLIDE_ATTEMPTS:
                     slide_movement = self._attempt_slide(maze, next_x, next_y, effective_angle_rad)
                     if slide_movement:
-                        final_dx, final_dy = slide_movement
+                        self.dx, self.dy = slide_movement[0], slide_movement[1] 
+                        next_x = self.x + self.dx 
+                        next_y = self.y + self.dy
                         self.is_sliding = True
                         self.slide_direction_attempts += 1
+                        collided_with_wall_this_frame = False 
                     else: 
                         self.alive = False
                 else: 
@@ -341,12 +356,10 @@ class Missile(pygame.sprite.Sprite):
                 self.slide_direction_attempts = 0 
 
         if self.alive:
-            self.x += final_dx
-            self.y += final_dy
-        else:
-            self.kill()
-            return
-
+            if not collided_with_wall_this_frame:
+                self.x = next_x
+                self.y = next_y
+            
         self.image = pygame.transform.rotate(self.original_image, -self.angle)
         self.rect = self.image.get_rect(center=(int(self.x), int(self.y)))
 
@@ -361,28 +374,13 @@ class Missile(pygame.sprite.Sprite):
             self.alive = False
             self.kill()
 
+
     def draw(self, surface):
-        """Draws the missile on the given surface if it's alive."""
         if self.alive and self.image and self.rect:
             surface.blit(self.image, self.rect)
 
-class LightningZap(pygame.sprite.Sprite):
-    """
-    Represents a lightning bolt effect that zaps towards a target or in a direction.
-    The visual is a jagged line. Collision is based on a bounding box.
-    """
+class LightningZap(pygame.sprite.Sprite): 
     def __init__(self, player_ref, initial_target_enemy_ref, damage, lifetime_frames, maze_ref, game_area_x_offset=0, color_override=None):
-        """
-        Initializes a LightningZap instance.
-        Args:
-            player_ref (PlayerDrone or Turret): The entity firing the lightning.
-            initial_target_enemy_ref (Enemy, optional): The initial enemy to target. Can be None.
-            damage (int): Damage the lightning inflicts.
-            lifetime_frames (int): Duration the lightning visual persists.
-            maze_ref (Maze): The current maze object for wall collision.
-            game_area_x_offset (int): X-offset of the game area.
-            color_override (tuple, optional): RGB color for the lightning. Defaults to LIGHTNING_COLOR.
-        """
         super().__init__()
         self.player_ref = player_ref 
         self.initial_target_ref = initial_target_enemy_ref 
@@ -398,8 +396,8 @@ class LightningZap(pygame.sprite.Sprite):
 
 
         self.damage = damage
-        self.lifetime_frames = int(lifetime_frames)
-        self.frames_elapsed = 0
+        self.lifetime_frames = int(lifetime_frames) 
+        self.frames_existed = 0 
         self.alive = True
         self.color = color_override if color_override is not None else gs.LIGHTNING_COLOR
         self.damage_applied = False 
@@ -410,10 +408,10 @@ class LightningZap(pygame.sprite.Sprite):
         self.hit_wall_at_end = (self.current_target_pos != self.potential_end_pos_no_wall)
 
         self._update_rect_for_collision()
+        logger.debug(f"LightningZap CREATED. Start: {self.current_start_pos}, End: {self.current_target_pos}, TargetRef: {self.initial_target_ref}")
 
 
     def _pixel_to_grid_coords(self, pixel_x, pixel_y):
-        """Converts absolute pixel coordinates to maze grid (row, col)."""
         if not self.maze_ref: return None, None 
         current_maze_x_offset = getattr(self.maze_ref, 'game_area_x_offset', self.game_area_x_offset)
         col = int((pixel_x - current_maze_x_offset) / TILE_SIZE)
@@ -421,10 +419,6 @@ class LightningZap(pygame.sprite.Sprite):
         return row, col
 
     def _get_wall_collision_point(self, start_point, end_point, steps_override=None):
-        """
-        Finds the point where the lightning hits a wall, if any, between start and end.
-        Returns end_point if no wall is hit.
-        """
         if not self.maze_ref or not hasattr(self.maze_ref, 'grid') or not self.maze_ref.grid:
             return end_point 
 
@@ -438,7 +432,6 @@ class LightningZap(pygame.sprite.Sprite):
         dir_y = dy_total / distance
 
         step_size = TILE_SIZE / 4 
-        # MODIFIED: Increased ray check "thickness"
         ray_check_size = TILE_SIZE * 0.4 
         num_steps = steps_override if steps_override is not None else int(distance / step_size) + 1
         if num_steps <= 0 : num_steps = 1
@@ -463,12 +456,6 @@ class LightningZap(pygame.sprite.Sprite):
         return end_point 
 
     def _calculate_potential_target_pos(self):
-        """
-        Calculates the ideal end point of the lightning.
-        If an initial target was set, it uses that target's current position (if alive)
-        or its last known position (snapshot).
-        If no initial target, fires straight.
-        """
         if self.initial_target_ref and hasattr(self.initial_target_ref, 'alive') and self.initial_target_ref.alive and hasattr(self.initial_target_ref, 'rect'):
             self.initial_target_pos_snapshot = self.initial_target_ref.rect.center 
             return self.initial_target_pos_snapshot
@@ -483,7 +470,6 @@ class LightningZap(pygame.sprite.Sprite):
 
 
     def _update_rect_for_collision(self):
-        """Updates self.rect to encompass the lightning bolt for broad-phase collision."""
         all_x = [self.current_start_pos[0], self.current_target_pos[0]]
         all_y = [self.current_start_pos[1], self.current_target_pos[1]]
         min_x, max_x = min(all_x), max(all_x)
@@ -505,43 +491,39 @@ class LightningZap(pygame.sprite.Sprite):
         self.rect = self.image.get_rect(topleft=(int(min_x), int(min_y)))
 
 
-    def update(self, current_time_ms):
-        """Updates the lightning's state, mainly its lifetime and target points."""
+    def update(self, current_time_ms): 
         if not self.alive or not self.player_ref.alive: 
             self.alive = False
             self.kill()
             return
 
-        self.frames_elapsed += 1
-        if self.frames_elapsed >= self.lifetime_frames:
-            self.alive = False
-            self.kill()
-            return
+        self.frames_existed += 1 
+        
+        if self.frames_existed >= self.lifetime_frames: 
+             self.alive = False
+             self.kill()
+             return
 
         self.current_start_pos = self.player_ref.rect.center
         self.potential_end_pos_no_wall = self._calculate_potential_target_pos()
         self.current_target_pos = self._get_wall_collision_point(self.current_start_pos, self.potential_end_pos_no_wall)
         self.hit_wall_at_end = (self.current_target_pos != self.potential_end_pos_no_wall)
         
-        # Ensure straight shots don't visually extend beyond LIGHTNING_ZAP_RANGE after wall collision check
-        if not self.initial_target_ref: # If it was a straight shot initially
+        if not self.initial_target_ref: 
             dist_to_current_target_sq = (self.current_target_pos[0] - self.current_start_pos[0])**2 + \
                                         (self.current_target_pos[1] - self.current_start_pos[1])**2
             zap_range_sq = gs.LIGHTNING_ZAP_RANGE**2
             if dist_to_current_target_sq > zap_range_sq:
-                angle_rad = math.radians(self.player_ref.angle) # Original firing angle
+                angle_rad = math.radians(self.player_ref.angle) 
                 self.current_target_pos = (
                     self.current_start_pos[0] + math.cos(angle_rad) * gs.LIGHTNING_ZAP_RANGE,
                     self.current_start_pos[1] + math.sin(angle_rad) * gs.LIGHTNING_ZAP_RANGE
                 )
-                # No need to re-check wall collision here, as LIGHTNING_ZAP_RANGE is the max visual extent
-                # self.hit_wall_at_end might become false if the range cap is shorter than a wall hit
-                # This is primarily a visual cap for untargeted shots.
 
         self._update_rect_for_collision() 
 
+
     def _draw_wall_crawl_effect(self, surface, impact_point, incident_vector_normalized, alpha):
-        """Draws short tendrils that crawl along the wall from the impact point."""
         num_tendrils = random.randint(gs.get_game_setting("LIGHTNING_WALL_CRAWL_MIN_TENDRILS", 2), 
                                     gs.get_game_setting("LIGHTNING_WALL_CRAWL_MAX_TENDRILS", 4))
         tendril_max_len_base = gs.get_game_setting("LIGHTNING_WALL_CRAWL_MAX_LENGTH", TILE_SIZE * 1.0)
@@ -549,21 +531,17 @@ class LightningZap(pygame.sprite.Sprite):
         tendril_segments = gs.get_game_setting("LIGHTNING_WALL_CRAWL_SEGMENTS", 4)
         tendril_max_offset = gs.get_game_setting("LIGHTNING_MAX_OFFSET", 18) * \
                              gs.get_game_setting("LIGHTNING_WALL_CRAWL_OFFSET_RATIO", 0.4)
-        tendril_color = self.color # Use main bolt color or a variation
+        tendril_color = self.color 
 
-        # Wall surface direction (perpendicular to incident vector)
-        # Incident vector points from impact point towards where the bolt *would have gone*
-        wall_dir_x1 = -incident_vector_normalized[1] # Perpendicular 1
+        wall_dir_x1 = -incident_vector_normalized[1] 
         wall_dir_y1 = incident_vector_normalized[0]
         
         for i in range(num_tendrils):
-            # Alternate directions along the wall, with some randomness
             if i % 2 == 0:
                 base_dir_x, base_dir_y = wall_dir_x1, wall_dir_y1
             else:
-                base_dir_x, base_dir_y = -wall_dir_x1, -wall_dir_y1 # Opposite direction along wall
+                base_dir_x, base_dir_y = -wall_dir_x1, -wall_dir_y1 
             
-            # Add random angular spread to the tendril direction (e.g., +/- 45 degrees from wall surface)
             angle_spread_rad = math.radians(random.uniform(-45, 45)) 
             c_spread, s_spread = math.cos(angle_spread_rad), math.sin(angle_spread_rad)
             tendril_dir_x = base_dir_x * c_spread - base_dir_y * s_spread
@@ -573,17 +551,13 @@ class LightningZap(pygame.sprite.Sprite):
             
             tendril_points = [impact_point]
             
-            # Generate points for the tendril
             for j in range(1, tendril_segments + 1):
                 t_seg = j / tendril_segments
-                # Point along the tendril's main direction
                 seg_x = impact_point[0] + tendril_dir_x * current_tendril_len * t_seg
                 seg_y = impact_point[1] + tendril_dir_y * current_tendril_len * t_seg
                 
-                # Add random perpendicular offset for jaggedness
-                # Perpendicular to the tendril's own direction
                 len_tendril_dir = math.hypot(tendril_dir_x, tendril_dir_y)
-                if len_tendril_dir == 0: continue # Should not happen if current_tendril_len > 0
+                if len_tendril_dir == 0: continue 
                 
                 perp_tendril_dx = -tendril_dir_y / len_tendril_dir
                 perp_tendril_dy = tendril_dir_x / len_tendril_dir
@@ -596,9 +570,9 @@ class LightningZap(pygame.sprite.Sprite):
                 tendril_points.append((seg_x + offset_x, seg_y + offset_y))
             
             if len(tendril_points) > 1:
-                tendril_alpha = int(alpha * random.uniform(0.4, 0.7)) # Fainter tendrils
-                tendril_color_with_alpha = (*tendril_color[:3], tendril_alpha) 
-                pygame.draw.lines(surface, tendril_color_with_alpha, False, tendril_points, tendril_thickness)
+                tendril_alpha = int(alpha * random.uniform(0.4, 0.7)) 
+                branch_color_with_alpha = (*tendril_color[:3], tendril_alpha) 
+                pygame.draw.lines(surface, branch_color_with_alpha, False, tendril_points, tendril_thickness)
 
 
     def _draw_lightning_bolt_effect(self, surface, p1, p2, base_bolt_color, alpha):
@@ -723,19 +697,18 @@ class LightningZap(pygame.sprite.Sprite):
                 if len(branch_points) > 1 and branch_thickness > 0:
                     branch_alpha = int(alpha * 0.8) 
                     branch_color_with_alpha = (*core_color[:3], branch_alpha) 
-                    pygame.draw.lines(surface, branch_color_with_alpha, False, branch_points, branch_thickness)
-        
-        # Draw wall crawl effect if applicable
+                    pygame.draw.lines(surface, branch_color_with_alpha, False, branch_points, branch_thickness) 
+
+
         if self.hit_wall_at_end:
-            incident_vec_x = self.potential_end_pos_no_wall[0] - p2[0] # p2 is impact_point
+            incident_vec_x = self.potential_end_pos_no_wall[0] - p2[0] 
             incident_vec_y = self.potential_end_pos_no_wall[1] - p2[1]
             len_incident = math.hypot(incident_vec_x, incident_vec_y)
             if len_incident > 0:
                 norm_incident_x = incident_vec_x / len_incident
                 norm_incident_y = incident_vec_y / len_incident
                 self._draw_wall_crawl_effect(surface, p2, (norm_incident_x, norm_incident_y), alpha)
-        # Original spark effect (can be kept or removed if wall crawl is preferred)
-        elif self.hit_wall_at_end and self.game_controller_ref and hasattr(self.game_controller_ref, 'explosion_particles'): # 'elif' to avoid double effects
+        elif self.hit_wall_at_end and self.game_controller_ref and hasattr(self.game_controller_ref, 'explosion_particles'): 
             num_sparks = random.randint(4, 7) 
             impact_point = self.current_target_pos
             normal_approx_x = self.potential_end_pos_no_wall[0] - impact_point[0]
@@ -756,14 +729,13 @@ class LightningZap(pygame.sprite.Sprite):
                         gravity=0.03, shrink_rate=0.25, lifetime_frames=random.randint(8, 15), 
                         base_angle_deg=spark_angle_deg, spread_angle_deg=15 
                     )
-                    if self.game_controller_ref and hasattr(self.game_controller_ref, 'explosion_particles'): 
-                        self.game_controller_ref.explosion_particles.add(spark)
+                    if self.game_controller_ref and hasattr(self.game_controller_ref, 'explosion_particles_group'): 
+                        self.game_controller_ref.explosion_particles_group.add(spark)
 
 
     def draw(self, surface):
-        """Draws the lightning bolt effect on the given surface."""
         if self.alive:
-            current_alpha_perc = 1.0 - (self.frames_elapsed / self.lifetime_frames)
+            current_alpha_perc = 1.0 - (self.frames_existed / self.lifetime_frames) 
             current_alpha = int(255 * (current_alpha_perc ** 1.5)) 
             current_alpha = int(max(0, min(255, current_alpha)))
             if current_alpha > 5:

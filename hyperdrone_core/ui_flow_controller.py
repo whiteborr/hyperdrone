@@ -2,30 +2,29 @@
 import pygame
 import os
 import random # For starfield
+import logging # Import logging
 
 import game_settings as gs
 from game_settings import (
     GAME_STATE_MAIN_MENU, GAME_STATE_DRONE_SELECT, GAME_STATE_SETTINGS,
     GAME_STATE_LEADERBOARD, GAME_STATE_GAME_OVER, GAME_STATE_ENTER_NAME,
-    GAME_STATE_CODEX, GAME_STATE_GAME_INTRO_SCROLL,
-    GAME_STATE_ARCHITECT_VAULT_SUCCESS, GAME_STATE_ARCHITECT_VAULT_FAILURE, # Added vault result states
-    WIDTH, HEIGHT, FPS # For starfield or other UI effects
+    GAME_STATE_CODEX, GAME_STATE_GAME_INTRO_SCROLL, GAME_STATE_MAZE_DEFENSE, # Added MAZE_DEFENSE
+    GAME_STATE_ARCHITECT_VAULT_SUCCESS, GAME_STATE_ARCHITECT_VAULT_FAILURE, GAME_STATE_PLAYING,
+    WIDTH, HEIGHT, FPS 
 )
-# Import other necessary modules or classes
-from drone_management import DRONE_DISPLAY_ORDER # For drone selection screen
-from . import leaderboard # For leaderboard data
+from drone_management import DRONE_DISPLAY_ORDER 
+from . import leaderboard 
+
+logger = logging.getLogger(__name__)
 
 class UIFlowController:
     """
     Manages the flow of UI-heavy game states like menus, leaderboards,
     settings, drone selection, codex, game intro, and game over screens.
-    It handles the logic and data for these states, and interacts with
-    the UIManager for drawing and the SceneManager for state transitions.
     """
     def __init__(self, game_controller_ref):
         """
         Initializes the UIFlowController.
-
         Args:
             game_controller_ref: A reference to the main GameController instance.
         """
@@ -34,27 +33,19 @@ class UIFlowController:
         self.ui_manager = None    
         self.drone_system = None  
         
-        # --- Main Menu State ---
         self.menu_options = ["Start Game", "Maze Defense", "Select Drone", "Codex", "Settings", "Leaderboard", "Quit"]
         self.selected_menu_option = 0
         self.menu_stars = [] 
 
-        # --- Drone Select State ---
         self.drone_select_options = DRONE_DISPLAY_ORDER[:] 
         self.selected_drone_preview_index = 0
-        # self.drone_main_display_cache is managed by GameController and accessed via game_controller_ref if needed by UIManager
-
-        # --- Settings Menu State ---
+        
         self.settings_items_data = [] 
         self.selected_setting_index = 0
 
-        # --- Leaderboard State ---
         self.leaderboard_scores = []
-
-        # --- Enter Name State (Game Over) ---
         self.player_name_input_cache = "" 
 
-        # --- Codex State ---
         self.codex_current_view = "categories" 
         self.codex_categories_list = []
         self.codex_selected_category_index = 0
@@ -65,18 +56,15 @@ class UIFlowController:
         self.codex_content_scroll_offset = 0
         self.codex_current_entry_total_lines = 0 
 
-        # --- Game Intro Scroll State ---
         self.intro_screens_data = [] 
         self.current_intro_screen_index = 0
         self.intro_screen_start_time = 0
         self.intro_sequence_finished = False
         
-        # --- Architect Vault Result Message Handling ---
-        # These might be simple messages displayed by UIManager based on data from here
-        self.architect_vault_result_message = "" # e.g., "Vault Conquered!"
+        self.architect_vault_result_message = "" 
         self.architect_vault_result_message_color = gs.GOLD
 
-        print("UIFlowController initialized.")
+        logger.info("UIFlowController initialized.")
 
     def set_dependencies(self, scene_manager, ui_manager, drone_system):
         """
@@ -87,24 +75,20 @@ class UIFlowController:
         self.drone_system = drone_system
         
         self._initialize_menu_stars()
-        # Settings items data and intro data will be fetched from GameController
-        # when their respective scenes are initialized by GameController.
-        # This avoids UIFlowController needing to know about GameController's internal methods
-        # for fetching these structures during its own __init__ or set_dependencies.
+        logger.debug("UIFlowController dependencies set.")
 
     def _initialize_menu_stars(self, num_stars=150):
         self.menu_stars = []
         for _ in range(num_stars):
             x = random.randint(0, gs.get_game_setting("WIDTH"))
             y = random.randint(0, gs.get_game_setting("HEIGHT"))
-            speed = random.uniform(0.1, 0.7) # Pixels per frame (approx, adjusted by delta_time)
+            speed = random.uniform(0.1, 0.7) 
             size = random.randint(1, 2)
             self.menu_stars.append([x, y, speed, size])
 
     def update(self, current_time_ms, delta_time_ms, current_game_state):
         """
         Main update loop for the UIFlowController.
-        Handles logic for UI states like menu star movement, intro screen timing.
         """
         if current_game_state in [GAME_STATE_MAIN_MENU, GAME_STATE_DRONE_SELECT,
                                   GAME_STATE_SETTINGS, GAME_STATE_LEADERBOARD, 
@@ -112,9 +96,6 @@ class UIFlowController:
                                   GAME_STATE_ENTER_NAME, GAME_STATE_ARCHITECT_VAULT_SUCCESS,
                                   GAME_STATE_ARCHITECT_VAULT_FAILURE]:
             if self.menu_stars:
-                # Normalize speed based on FPS to make movement consistent
-                # Assuming delta_time_ms is time since last frame
-                # Target frame time for 60 FPS is approx 16.66 ms
                 frame_time_ratio = delta_time_ms / (1000.0 / FPS if FPS > 0 else 16.66)
                 for star in self.menu_stars:
                     star_speed_adjusted = star[2] * frame_time_ratio 
@@ -125,18 +106,13 @@ class UIFlowController:
         
         elif current_game_state == GAME_STATE_GAME_INTRO_SCROLL:
             if not self.intro_sequence_finished:
-                # Use get_game_setting for INTRO_SCREEN_DURATION_MS for consistency
                 if current_time_ms - self.intro_screen_start_time >= gs.get_game_setting("INTRO_SCREEN_DURATION_MS", 6000):
                     self.advance_intro_screen()
 
     def handle_input(self, event, current_game_state):
         """
         Handles player input for UI-centric game states.
-        Called by EventManager.
-        Returns:
-            bool: True if the event was consumed, False otherwise.
         """
-        # Centralized sound playing for UI feedback
         def play_ui_sound(sound_name, volume=0.6):
             if hasattr(self.game_controller, 'play_sound'):
                 self.game_controller.play_sound(sound_name, volume)
@@ -152,7 +128,7 @@ class UIFlowController:
         elif current_game_state == GAME_STATE_CODEX:
             return self._handle_codex_input(event, play_ui_sound)
         elif current_game_state == GAME_STATE_ENTER_NAME:
-            return self._handle_enter_name_input(event, play_ui_sound) # Sound might be different here
+            return self._handle_enter_name_input(event, play_ui_sound) 
         elif current_game_state == GAME_STATE_GAME_OVER:
             return self._handle_game_over_input(event, play_ui_sound)
         elif current_game_state == GAME_STATE_GAME_INTRO_SCROLL:
@@ -173,11 +149,12 @@ class UIFlowController:
             elif event.key == pygame.K_RETURN:
                 play_sound_func('ui_confirm')
                 action = self.menu_options[self.selected_menu_option]
+                logger.info(f"Main menu action selected: {action}")
                 if action == "Start Game":
                     self.scene_manager.set_game_state(GAME_STATE_GAME_INTRO_SCROLL)
                 elif action == "Maze Defense":
-                    # GameController will handle the actual initialization
-                    self.game_controller.initialize_specific_game_mode("maze_defense")
+                    # Only set the state, GameController.handle_scene_transition will call initialize_specific_game_mode
+                    self.scene_manager.set_game_state(GAME_STATE_MAZE_DEFENSE)
                 elif action == "Select Drone":
                     self.scene_manager.set_game_state(GAME_STATE_DRONE_SELECT)
                 elif action == "Codex":
@@ -188,7 +165,7 @@ class UIFlowController:
                     self.scene_manager.set_game_state(GAME_STATE_LEADERBOARD)
                 elif action == "Quit":
                     self.game_controller.quit_game()
-            elif event.key == pygame.K_q:
+            elif event.key == pygame.K_q: # Allow q to quit from main menu
                 self.game_controller.quit_game()
             return True
         return False
@@ -237,7 +214,6 @@ class UIFlowController:
             elif event.key == pygame.K_RETURN:
                 if current_item["type"] == "action" and setting_key == "RESET_SETTINGS_ACTION":
                     gs.reset_all_settings_to_default()
-                    # GameController needs to handle screen reinitialization if fullscreen changes
                     if hasattr(self.game_controller, 'check_and_apply_screen_settings_change'):
                         self.game_controller.check_and_apply_screen_settings_change()
                     play_sound_func('ui_confirm')
@@ -281,7 +257,6 @@ class UIFlowController:
         if event.type == pygame.KEYDOWN:
             play_sound_func('ui_select', 0.6)
             if self.codex_current_view == "categories":
-                # (Category navigation logic - remains largely the same)
                 if event.key == pygame.K_UP: self.codex_selected_category_index = (self.codex_selected_category_index - 1 + len(self.codex_categories_list)) % len(self.codex_categories_list) if self.codex_categories_list else 0
                 elif event.key == pygame.K_DOWN: self.codex_selected_category_index = (self.codex_selected_category_index + 1) % len(self.codex_categories_list) if self.codex_categories_list else 0
                 elif event.key == pygame.K_RETURN:
@@ -291,7 +266,6 @@ class UIFlowController:
                         self._populate_codex_entries_for_category()
                 elif event.key == pygame.K_ESCAPE: self.scene_manager.set_game_state(GAME_STATE_MAIN_MENU)
             elif self.codex_current_view == "entries":
-                # (Entry navigation logic - remains largely the same)
                 if event.key == pygame.K_UP: self.codex_selected_entry_index_in_category = (self.codex_selected_entry_index_in_category - 1 + len(self.codex_entries_in_category_list)) % len(self.codex_entries_in_category_list) if self.codex_entries_in_category_list else 0
                 elif event.key == pygame.K_DOWN: self.codex_selected_entry_index_in_category = (self.codex_selected_entry_index_in_category + 1) % len(self.codex_entries_in_category_list) if self.codex_entries_in_category_list else 0
                 elif event.key == pygame.K_RETURN:
@@ -300,7 +274,6 @@ class UIFlowController:
                         self.codex_current_view = "content"; self.codex_content_scroll_offset = 0
                 elif event.key == pygame.K_ESCAPE: self.codex_current_view = "categories"; self.codex_current_category_name = None; self.codex_selected_entry_id = None; self.codex_content_scroll_offset = 0
             elif self.codex_current_view == "content":
-                # (Content scrolling logic - remains largely the same)
                 if event.key == pygame.K_UP: self.codex_content_scroll_offset = max(0, self.codex_content_scroll_offset - 1)
                 elif event.key == pygame.K_DOWN:
                     max_visible = self.ui_manager.codex_max_visible_lines_content if self.ui_manager and hasattr(self.ui_manager, 'codex_max_visible_lines_content') and self.ui_manager.codex_max_visible_lines_content > 0 else 1
@@ -314,18 +287,17 @@ class UIFlowController:
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_RETURN:
                 if self.player_name_input_cache:
-                    # GameController will handle the actual submission and state change
                     self.game_controller.submit_leaderboard_name(self.player_name_input_cache)
-                else: # If name is empty, go to leaderboard or menu
-                    play_sound_func('ui_denied') # Maybe a different sound for empty submission
+                else: 
+                    play_sound_func('ui_denied') 
                     self.scene_manager.set_game_state(GAME_STATE_LEADERBOARD)
-                self.player_name_input_cache = "" # Clear cache after attempt
+                self.player_name_input_cache = "" 
             elif event.key == pygame.K_BACKSPACE:
                 self.player_name_input_cache = self.player_name_input_cache[:-1]
-                play_sound_func('ui_select', 0.4) # Softer sound for backspace
+                play_sound_func('ui_select', 0.4) 
             elif len(self.player_name_input_cache) < 6 and event.unicode.isalpha():
                 self.player_name_input_cache += event.unicode.upper()
-                play_sound_func('ui_select', 0.5) # Sound for typing
+                play_sound_func('ui_select', 0.5) 
             return True
         return False
 
@@ -335,7 +307,7 @@ class UIFlowController:
             is_high = leaderboard.is_high_score(self.game_controller.score, self.game_controller.level)
             
             if can_submit and is_high:
-                play_sound_func('ui_confirm') # Sound for proceeding to name entry
+                play_sound_func('ui_confirm') 
                 self.scene_manager.set_game_state(GAME_STATE_ENTER_NAME)
             elif event.key == pygame.K_r:
                 play_sound_func('ui_confirm')
@@ -356,9 +328,8 @@ class UIFlowController:
             if self.intro_sequence_finished:
                 if event.key == pygame.K_RETURN or event.key == pygame.K_SPACE:
                     play_sound_func('ui_confirm')
-                    # GameController handles the actual game session initialization
-                    self.game_controller.initialize_specific_game_mode("standard_play")
-            else: # Intro not finished, skip current screen
+                    self.scene_manager.set_game_state(GAME_STATE_PLAYING) # Transition to standard play
+            else: 
                 if event.key == pygame.K_RETURN or event.key == pygame.K_SPACE or event.key == pygame.K_ESCAPE:
                     play_sound_func('ui_select', 0.5)
                     self.skip_current_intro_screen()
@@ -366,7 +337,6 @@ class UIFlowController:
         return False
 
     def _handle_vault_result_input(self, event, play_sound_func):
-        """Handles input for Architect Vault Success/Failure screens."""
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_RETURN or event.key == pygame.K_SPACE or event.key == pygame.K_m:
                 play_sound_func('ui_confirm')
@@ -374,7 +344,6 @@ class UIFlowController:
                 return True
         return False
 
-    # --- Scene Initialization/Data Population Methods ---
     def initialize_main_menu(self):
         self.selected_menu_option = 0
 
@@ -417,8 +386,8 @@ class UIFlowController:
         unlocked_ids = self.drone_system.get_unlocked_lore_ids()
         all_lore = self.drone_system.get_all_loaded_lore_entries()
         self.codex_entries_in_category_list = []
-        for id in unlocked_ids:
-            entry_data = all_lore.get(id)
+        for id_val in unlocked_ids: # Corrected variable name
+            entry_data = all_lore.get(id_val)
             if entry_data and entry_data.get("category", "Misc") == self.codex_current_category_name:
                 self.codex_entries_in_category_list.append(entry_data)
         self.codex_entries_in_category_list.sort(key=lambda e: e.get("title", "Untitled"))
@@ -443,14 +412,12 @@ class UIFlowController:
                 self.intro_sequence_finished = True
     
     def initialize_architect_vault_result_screen(self, success, failure_reason=""):
-        """Sets up messages for the vault success/failure screens."""
         if success:
             self.architect_vault_result_message = "Vault Conquered! Blueprint Acquired!"
             self.architect_vault_result_message_color = gs.GOLD
         else:
             self.architect_vault_result_message = f"Vault Mission Failed: {failure_reason}"
             self.architect_vault_result_message_color = gs.RED
-        # UIManager will use these to draw the screen.
 
     def reset_ui_flow_states(self):
         self.selected_menu_option = 0
@@ -458,10 +425,8 @@ class UIFlowController:
         self.selected_setting_index = 0
         self.player_name_input_cache = ""
         self.initialize_codex() 
-        # Game intro data is static, but its progression state needs reset
         self.current_intro_screen_index = 0
         self.intro_sequence_finished = False
         self.intro_screen_start_time = 0
         self.architect_vault_result_message = ""
-        print("UIFlowController: UI states reset.")
-
+        logger.info("UIFlowController: UI states reset.")

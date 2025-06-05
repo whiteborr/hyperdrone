@@ -7,7 +7,7 @@ import game_settings as gs
 from game_settings import (
     TILE_SIZE, WEAPON_MODES_SEQUENCE, POWERUP_TYPES,
     GAME_STATE_PLAYING, GAME_STATE_ARCHITECT_VAULT_GAUNTLET,
-    GAME_STATE_ARCHITECT_VAULT_EXTRACTION, GAME_STATE_ARCHITECT_VAULT_BOSS_FIGHT, # Added boss fight state
+    GAME_STATE_ARCHITECT_VAULT_EXTRACTION, GAME_STATE_ARCHITECT_VAULT_BOSS_FIGHT,
     GAME_STATE_MAZE_DEFENSE, ARCHITECT_VAULT_DRONES_PER_WAVE, ARCHITECT_VAULT_GAUNTLET_WAVES,
     MAZE_GUARDIAN_HEALTH, LIGHTNING_DAMAGE, CORE_FRAGMENT_DETAILS
 )
@@ -17,7 +17,7 @@ from entities import (
     PlayerDrone, Enemy, SentinelDrone, MazeGuardian,
     Bullet, Missile, LightningZap, Particle,
     WeaponUpgradeItem, ShieldItem, SpeedBoostItem,
-    Turret, CoreReactor # For defense mode
+    Turret, CoreReactor, MazeChapter2 # Added MazeChapter2 for type checking
 )
 
 # Managers that CombatController will likely interact with or manage
@@ -93,23 +93,29 @@ class CombatController:
             current_time_ms (int): The current game time in milliseconds.
             delta_time_ms (int): The time elapsed since the last frame in milliseconds.
         """
-        if not self.player or not self.maze:
-            return # Not ready to update combat
-
+        # Guard clause: if crucial references are missing, don't update.
+        # Player and maze are essential for most combat logic.
+        # For Maze Defense, player might be None, but maze and core_reactor should exist.
         current_game_state = self.game_controller.scene_manager.get_current_state()
+        if current_game_state != GAME_STATE_MAZE_DEFENSE and (not self.player or not self.maze):
+            return 
+        if current_game_state == GAME_STATE_MAZE_DEFENSE and (not self.maze or not self.core_reactor):
+            return
+
 
         # Player update (movement is handled by PlayerActions, combat aspects here)
-        if self.player.alive:
+        # Player object might not exist in Maze Defense mode if it's purely AI vs AI.
+        if self.player and self.player.alive:
             # Player's projectiles are updated within player.update()
             # Player power-ups are updated within player.update()
             pass # Player shooting is typically event-driven via PlayerActions
 
         # Enemy updates (delegated to EnemyManager)
-        player_pos_pixels = self.player.get_position() if self.player.alive else None
+        player_pos_pixels = self.player.get_position() if self.player and self.player.alive else None
         game_area_x_offset = self.maze.game_area_x_offset if self.maze else 0
         
         is_defense_mode_active = (current_game_state == GAME_STATE_MAZE_DEFENSE)
-        target_for_enemies = self.core_reactor.rect.center if is_defense_mode_active and self.core_reactor else player_pos_pixels
+        target_for_enemies = self.core_reactor.rect.center if is_defense_mode_active and self.core_reactor and self.core_reactor.alive else player_pos_pixels
 
         self.enemy_manager.update_enemies(
             target_for_enemies, 
@@ -128,7 +134,7 @@ class CombatController:
 
         # Turret updates (for defense mode)
         if is_defense_mode_active:
-            self.turrets_group.update(self.enemy_manager.get_sprites(), self.maze, game_area_x_offset)
+            self.turrets_group.update(self.enemy_manager.get_sprites(), self.maze, game_area_x_offset) # Pass necessary args
             if self.core_reactor and not self.core_reactor.alive:
                 self.game_controller.scene_manager.set_game_state(gs.GAME_STATE_GAME_OVER) # Or a specific defense_lost state
                 return
@@ -153,11 +159,19 @@ class CombatController:
 
     def _handle_collisions(self, current_game_state):
         """Handles all combat-related collisions."""
-        if not self.player or not self.player.alive:
+        # Player might not exist in some modes (e.g., pure AI vs AI defense)
+        if not self.player and current_game_state != GAME_STATE_MAZE_DEFENSE : # If player is expected but missing
+            return
+        if self.player and not self.player.alive and current_game_state != GAME_STATE_MAZE_DEFENSE: # If player exists but is dead
+             # Still process enemy projectiles if player is dead but turrets/reactor might be hit
+            if current_game_state == GAME_STATE_MAZE_DEFENSE:
+                self._handle_enemy_projectile_collisions(current_game_state)
             return
 
+
         # 1. Player Projectiles vs. Enemies / Boss
-        self._handle_player_projectile_collisions()
+        if self.player and self.player.alive: # Only if player is alive and can shoot
+            self._handle_player_projectile_collisions()
 
         # 2. Enemy/Boss Projectiles vs. Player / Turrets / Reactor
         self._handle_enemy_projectile_collisions(current_game_state)
@@ -166,7 +180,8 @@ class CombatController:
         self._handle_physical_collisions(current_game_state)
         
         # 4. Player vs. Power-ups
-        self._handle_player_power_up_collisions()
+        if self.player and self.player.alive: # Only if player is alive and can collect
+            self._handle_player_power_up_collisions()
 
     def _handle_player_projectile_collisions(self):
         """Handles collisions of player's projectiles with enemies and boss."""
@@ -180,7 +195,7 @@ class CombatController:
 
         enemies_to_check = self.enemy_manager.get_sprites()
 
-        for projectile in list(player_projectiles):
+        for projectile in list(player_projectiles): # Iterate over a copy
             if not projectile.alive:
                 continue
 
@@ -209,7 +224,7 @@ class CombatController:
             # Player projectile vs. Regular Enemies
             # Use collision_rect for enemies if available
             hit_enemies = pygame.sprite.spritecollide(
-                projectile, enemies_to_check, False, 
+                projectile, enemies_to_check, False, # False: don't kill enemy on collision yet
                 lambda proj, enemy: proj.rect.colliderect(getattr(enemy, 'collision_rect', enemy.rect))
             )
             for enemy in hit_enemies:
@@ -222,17 +237,19 @@ class CombatController:
                     if not enemy.alive:
                         self.game_controller.score += 50 # Standard enemy score
                         self.game_controller.drone_system.add_player_cores(10) # Standard enemy core reward
-                        self.game_controller._create_explosion(enemy.rect.centerx, enemy.rect.centery, specific_sound='enemy_shoot')
+                        self.game_controller._create_explosion(enemy.rect.centerx, enemy.rect.centery, specific_sound='enemy_shoot') # Use a generic enemy explosion sound
                         # Check for level clear condition if in standard playing mode
                         if self.game_controller.scene_manager.get_current_state() == GAME_STATE_PLAYING:
                             self.game_controller.all_enemies_killed_this_level = all(not e.alive for e in enemies_to_check)
                             if self.game_controller.all_enemies_killed_this_level:
                                 self.game_controller._check_level_clear_condition()
                     
+                    # Handle piercing
                     if not (hasattr(projectile, 'max_pierces') and projectile.pierces_done < projectile.max_pierces):
-                        projectile.kill()
+                        projectile.kill() # Kill projectile if it cannot pierce or has pierced max times
                     elif hasattr(projectile, 'pierces_done'):
-                        projectile.pierces_done +=1
+                        projectile.pierces_done +=1 # Increment pierce count
+                    
                     if not projectile.alive:
                         break # Projectile destroyed, move to next projectile
 
@@ -243,28 +260,27 @@ class CombatController:
             if hasattr(enemy, 'bullets'): all_hostile_projectiles.add(enemy.bullets)
         
         if self.boss_active and self.maze_guardian and self.maze_guardian.alive:
-            if hasattr(self.maze_guardian, 'bullets'): all_hostile_projectiles.add(self.maze_guardian.bullets) # If boss shoots bullets
-            if hasattr(self.maze_guardian, 'laser_beams'): all_hostile_projectiles.add(self.maze_guardian.laser_beams) # If boss shoots lasers
+            if hasattr(self.maze_guardian, 'bullets'): all_hostile_projectiles.add(self.maze_guardian.bullets)
+            if hasattr(self.maze_guardian, 'laser_beams'): all_hostile_projectiles.add(self.maze_guardian.laser_beams)
 
-        for projectile in list(all_hostile_projectiles):
+        for projectile in list(all_hostile_projectiles): # Iterate over a copy
             if not projectile.alive: continue
 
             # Hostile projectile vs. Player
-            if self.player.alive and projectile.rect.colliderect(self.player.collision_rect):
+            if self.player and self.player.alive and projectile.rect.colliderect(self.player.collision_rect):
                 self.player.take_damage(projectile.damage, self.game_controller.sounds.get('crash'))
-                if not (hasattr(projectile, 'is_persistent') and projectile.is_persistent): # e.g. a beam
+                if not (hasattr(projectile, 'is_persistent') and projectile.is_persistent): 
                     projectile.kill()
-                if not self.player.alive: # Player died
+                if not self.player.alive: 
                     self.game_controller._handle_player_death_or_life_loss("Drone Destroyed!")
-                    # No need to continue checking this projectile if player is dead, but other projectiles might still hit turrets/reactor
-                if not projectile.alive: continue # Projectile was destroyed hitting player
+                if not projectile.alive: continue 
 
             # Hostile projectile vs. Turrets (Defense Mode)
             if current_game_state == GAME_STATE_MAZE_DEFENSE and self.turrets_group:
-                hit_turrets = pygame.sprite.spritecollide(projectile, self.turrets_group, False)
+                hit_turrets = pygame.sprite.spritecollide(projectile, self.turrets_group, False) # False: don't kill turret yet
                 for turret in hit_turrets:
-                    if hasattr(turret, 'take_damage'): # Assuming turrets have a take_damage method
-                        turret.take_damage(projectile.damage) # Turrets might not have sound on hit
+                    if hasattr(turret, 'take_damage'): 
+                        turret.take_damage(projectile.damage) 
                     if not (hasattr(projectile, 'is_persistent') and projectile.is_persistent):
                         projectile.kill()
                     if not projectile.alive: break 
@@ -273,11 +289,11 @@ class CombatController:
             # Hostile projectile vs. Core Reactor (Defense Mode)
             if current_game_state == GAME_STATE_MAZE_DEFENSE and self.core_reactor and self.core_reactor.alive:
                 if projectile.rect.colliderect(self.core_reactor.rect):
-                    self.core_reactor.take_damage(projectile.damage, self.game_controller) # Pass game_controller for sound
+                    self.core_reactor.take_damage(projectile.damage, self.game_controller) 
                     if not (hasattr(projectile, 'is_persistent') and projectile.is_persistent):
                         projectile.kill()
                     if not self.core_reactor.alive:
-                        self.game_controller.scene_manager.set_game_state(gs.GAME_STATE_GAME_OVER) # Or specific defense_lost state
+                        self.game_controller.scene_manager.set_game_state(gs.GAME_STATE_GAME_OVER) 
                     if not projectile.alive: continue
             
             # Hostile projectile vs. Walls (if not piercing)
@@ -289,36 +305,41 @@ class CombatController:
 
     def _handle_physical_collisions(self, current_game_state):
         """Handles physical collisions: Player vs Enemy/Boss, Enemy vs Reactor."""
-        if not self.player or not self.player.alive: return
+        # Player vs. Enemy/Boss (only if player exists and is alive)
+        if self.player and self.player.alive:
+            enemies_collided_player = pygame.sprite.spritecollide(
+                self.player, self.enemy_manager.get_sprites(), False, # False: don't kill enemy on collision
+                lambda p, e: p.collision_rect.colliderect(getattr(e, 'collision_rect', e.rect))
+            )
+            for enemy in enemies_collided_player:
+                if enemy.alive: # Ensure enemy is also alive for mutual damage
+                    self.player.take_damage(34, self.game_controller.sounds.get('crash')) # Player takes damage
+                    enemy.take_damage(50) # Enemy also takes some damage from collision
+                    if not enemy.alive: # If enemy died from collision
+                         self.game_controller.score += 10 # Small score for collision kill
+                         self.game_controller._create_explosion(enemy.rect.centerx, enemy.rect.centery, specific_sound='crash')
 
-        # Player vs. Enemy/Boss
-        enemies_collided_player = pygame.sprite.spritecollide(
-            self.player, self.enemy_manager.get_sprites(), False,
-            lambda p, e: p.collision_rect.colliderect(getattr(e, 'collision_rect', e.rect))
-        )
-        for enemy in enemies_collided_player:
-            if enemy.alive:
-                self.player.take_damage(34, self.game_controller.sounds.get('crash')) # Standard collision damage
-                if not self.player.alive:
-                    self.game_controller._handle_player_death_or_life_loss("Drone Destroyed!")
-                    return # Player died, no more checks needed for player
+                    if not self.player.alive: # If player died
+                        self.game_controller._handle_player_death_or_life_loss("Drone Destroyed!")
+                        return # Player died, no more checks needed for player
 
-        if self.boss_active and self.maze_guardian and self.maze_guardian.alive:
-            if self.player.collision_rect.colliderect(self.maze_guardian.collision_rect):
-                self.player.take_damage(50, self.game_controller.sounds.get('crash')) # Higher boss collision damage
-                if not self.player.alive:
-                    self.game_controller._handle_player_death_or_life_loss("Drone Destroyed!")
-                    return
+            if self.boss_active and self.maze_guardian and self.maze_guardian.alive:
+                if self.player.collision_rect.colliderect(self.maze_guardian.collision_rect):
+                    self.player.take_damage(50, self.game_controller.sounds.get('crash')) # Higher boss collision damage
+                    # Boss might also take some damage or have a special reaction
+                    if not self.player.alive:
+                        self.game_controller._handle_player_death_or_life_loss("Drone Destroyed!")
+                        return
 
         # Enemy vs. Core Reactor (Defense Mode)
         if current_game_state == GAME_STATE_MAZE_DEFENSE and self.core_reactor and self.core_reactor.alive:
             enemies_hitting_reactor = pygame.sprite.spritecollide(
-                self.core_reactor, self.enemy_manager.get_sprites(), True, # True to kill enemy on impact
-                pygame.sprite.collide_rect_ratio(0.7)
+                self.core_reactor, self.enemy_manager.get_sprites(), True, # True to kill enemy on impact with reactor
+                pygame.sprite.collide_rect_ratio(0.7) # Use a reasonable collision ratio
             )
             for enemy in enemies_hitting_reactor:
                 contact_dmg = getattr(enemy, 'contact_damage', 25) # Use enemy's specific contact damage
-                self.core_reactor.take_damage(contact_dmg, self.game_controller)
+                self.core_reactor.take_damage(contact_dmg, self.game_controller) # Pass GC for sound
                 self.game_controller._create_explosion(enemy.rect.centerx, enemy.rect.centery, specific_sound='crash')
                 if not self.core_reactor.alive:
                     self.game_controller.scene_manager.set_game_state(gs.GAME_STATE_GAME_OVER) # Or defense_lost
@@ -330,14 +351,14 @@ class CombatController:
             return
 
         collided_powerups = pygame.sprite.spritecollide(
-            self.player, self.power_ups_group, False, pygame.sprite.collide_rect_ratio(0.7)
+            self.player, self.power_ups_group, False, pygame.sprite.collide_rect_ratio(0.7) # False: don't kill yet
         )
         for item in collided_powerups:
             if not item.collected and not item.expired and hasattr(item, 'apply_effect'):
-                item.apply_effect(self.player) # PlayerDrone's method handles specific effect
-                item.collected = True
-                item.kill() # Remove from power_ups_group
-                self.game_controller.play_sound('weapon_upgrade_collect') # Generic powerup sound
+                item.apply_effect(self.player) 
+                item.collected = True # Mark as collected
+                item.kill() # Remove from power_ups_group after applying effect
+                self.game_controller.play_sound('weapon_upgrade_collect') 
                 self.game_controller.score += 25
 
 
@@ -347,10 +368,8 @@ class CombatController:
             if p_up.update(): # update_collectible_state returns True if expired/collected
                 p_up.kill()
 
-        # Power-up spawning logic (moved from GameController)
-        # This should only happen in relevant game states (e.g., PLAYING, not menus or boss fights directly)
         current_game_state = self.game_controller.scene_manager.get_current_state()
-        if current_game_state == GAME_STATE_PLAYING: # Only spawn in standard play for now
+        if current_game_state == GAME_STATE_PLAYING: 
             if random.random() < (gs.get_game_setting("POWERUP_SPAWN_CHANCE") / gs.FPS if gs.FPS > 0 else 0.01):
                 if len(self.power_ups_group) < gs.get_game_setting("MAX_POWERUPS_ON_SCREEN"):
                     self._try_spawn_powerup_item_internal()
@@ -382,10 +401,8 @@ class CombatController:
         """Spawns the Maze Guardian boss."""
         if not self.player or not self.maze: return
 
-        self.enemy_manager.reset_all() # Clear other enemies
+        self.enemy_manager.reset_all() 
         
-        # Determine spawn position (e.g., center of maze or a predefined boss arena spot)
-        # For now, roughly center of playable area
         boss_spawn_x = self.maze.game_area_x_offset + (gs.WIDTH - self.maze.game_area_x_offset) / 2
         boss_spawn_y = gs.GAME_PLAY_AREA_HEIGHT / 2
         
@@ -393,7 +410,7 @@ class CombatController:
             x=boss_spawn_x, y=boss_spawn_y,
             player_ref=self.player,
             maze_ref=self.maze,
-            game_controller_ref=self.game_controller # Pass full game_controller for sounds etc.
+            game_controller_ref=self.game_controller 
         )
         self.boss_active = True
         self.maze_guardian_defeat_processed = False
@@ -408,40 +425,31 @@ class CombatController:
         self.game_controller.drone_system.add_player_cores(1500)
         self.game_controller.drone_system.add_defeated_boss("MAZE_GUARDIAN")
         
-        # Unlock lore, potentially trigger story beats via GameController
         self.game_controller.drone_system.check_and_unlock_lore_entries(event_trigger="story_beat_trigger_SB01")
         self.game_controller.trigger_story_beat("story_beat_SB01")
 
-        # Spawn Architect's Vault Core Fragment if applicable
         vault_core_id = "vault_core"
         vault_core_details = CORE_FRAGMENT_DETAILS.get("fragment_vault_core")
         if vault_core_details and not self.game_controller.drone_system.has_collected_fragment(vault_core_id):
             if self.game_controller.drone_system.collect_core_fragment(vault_core_id):
-                # Visual feedback for fragment collection (animating to HUD)
-                # This part might need access to UIManager or GameController's animation list
-                # For now, just log it. GameController can handle the animation trigger.
                 print(f"CombatController: Vault Core Fragment '{vault_core_id}' collected after boss defeat.")
                 self.game_controller.set_story_message(f"Lore Unlocked: {vault_core_details.get('name', 'Vault Core Data')}")
 
 
         self.boss_active = False
-        if self.maze_guardian: self.maze_guardian.kill(); self.maze_guardian = None # Remove boss sprite
+        if self.maze_guardian: self.maze_guardian.kill(); self.maze_guardian = None 
         self.maze_guardian_defeat_processed = True
         
-        # Transition to the next phase (e.g., extraction in Architect's Vault)
-        # This is typically handled by the GameController based on the current game state
         if self.game_controller.scene_manager.get_current_state() == GAME_STATE_ARCHITECT_VAULT_BOSS_FIGHT:
             self.game_controller.architect_vault_message = "MAZE GUARDIAN DEFEATED! ACCESS GRANTED!"
             self.game_controller.architect_vault_message_timer = pygame.time.get_ticks() + 4000
-            # The GameController's update loop for architect vault will handle transition to extraction
-            # after message timer.
         
         print("CombatController: Maze Guardian defeated processing complete.")
 
     def reset_combat_state(self):
         """Resets combat-specific states for a new game or level."""
         self.enemy_manager.reset_all()
-        self.wave_manager.reset() # If defense mode was active
+        self.wave_manager.reset() 
         self.turrets_group.empty()
         self.power_ups_group.empty()
         self.explosion_particles_group.empty()
@@ -454,7 +462,7 @@ class CombatController:
         self.maze_guardian = None
         self.boss_active = False
         self.maze_guardian_defeat_processed = False
-        self.core_reactor = None # Reset reactor reference
+        self.core_reactor = None 
         
         self.architect_vault_gauntlet_current_wave = 0
         print("CombatController: Combat state reset.")
@@ -462,70 +470,81 @@ class CombatController:
     # --- Turret specific methods for Defense Mode ---
     def try_place_turret(self, screen_pos):
         """Attempts to place a turret at the given screen position."""
-        if not self.maze or not self.core_reactor: return False # Not in defense mode or maze not set
+        if not self.maze or not self.core_reactor or \
+           not isinstance(self.maze, MazeChapter2): # Ensure it's the correct maze type
+            self.game_controller.play_sound('ui_denied', 0.6)
+            print("CombatController: Cannot place turret - not in MazeChapter2 defense mode or maze/reactor missing.")
+            return False
 
         # Convert screen position to grid position
-        grid_col = (screen_pos[0] - self.maze.game_area_x_offset) // TILE_SIZE
-        grid_row = screen_pos[1] // TILE_SIZE
+        grid_c = int((screen_pos[0] - self.maze.game_area_x_offset) / TILE_SIZE)
+        grid_r = int(screen_pos[1] / TILE_SIZE)
 
-        # Validate grid position and tile type (should be path, not wall/reactor)
-        if not (0 <= grid_row < self.maze.actual_maze_rows and \
-                0 <= grid_col < self.maze.actual_maze_cols):
+        # Validate grid position boundaries
+        if not (0 <= grid_r < self.maze.actual_maze_rows and \
+                0 <= grid_c < self.maze.actual_maze_cols):
             self.game_controller.play_sound('ui_denied', 0.6)
+            print(f"CombatController: Turret placement out of bounds: ({grid_r},{grid_c})")
             return False
         
-        # Check if the tile is a valid placement spot (e.g., path tile, not occupied)
-        # This logic might be more complex in MazeChapter2 (e.g., specific turret spots)
-        # For now, a simple check against walls and existing turrets/reactor.
-        tile_center_x_abs = grid_col * TILE_SIZE + TILE_SIZE // 2 + self.maze.game_area_x_offset
-        tile_center_y_abs = grid_row * TILE_SIZE + TILE_SIZE // 2
+        # Check if the player has enough turrets left to place
+        # Turret.MAX_TURRETS is defined in entities.turret
+        if len(self.turrets_group) >= Turret.MAX_UPGRADE_LEVEL + 2 : # Example: MAX_TURRETS = 5 (MAX_UPGRADE_LEVEL is 3, so 3+2=5)
+                                                                    # This should be Turret.MAX_TURRETS if that's a class var in your Turret
+            max_turrets_allowed = Turret.MAX_UPGRADE_LEVEL + 2 # Assuming this is the logic for max turrets
+            if hasattr(Turret, 'MAX_TURRETS'): # Prefer a direct class variable if it exists
+                max_turrets_allowed = Turret.MAX_TURRETS
 
-        if self.maze.is_wall(tile_center_x_abs, tile_center_y_abs):
-            self.game_controller.play_sound('ui_denied', 0.6)
-            return False
-        
-        # Check for collision with existing turrets
-        for existing_turret in self.turrets_group:
-            if math.hypot(existing_turret.x - tile_center_x_abs, existing_turret.y - tile_center_y_abs) < TILE_SIZE * 0.5:
+            if len(self.turrets_group) >= max_turrets_allowed:
                 self.game_controller.play_sound('ui_denied', 0.6)
+                print(f"CombatController: Max turrets ({max_turrets_allowed}) already placed.")
                 return False
-        
-        # Check for collision with core reactor
-        if self.core_reactor and self.core_reactor.rect.collidepoint(tile_center_x_abs, tile_center_y_abs):
-            self.game_controller.play_sound('ui_denied', 0.6)
-            return False
 
+        # Use MazeChapter2's specific validation method
+        if not self.maze.can_place_turret(grid_r, grid_c): # This now checks 'T' and path blocking
+            self.game_controller.play_sound('ui_denied', 0.6)
+            print(f"CombatController: MazeChapter2.can_place_turret returned false for ({grid_r},{grid_c}).")
+            return False
+        
         # Check cost
-        turret_cost = Turret.TURRET_COST # Get cost from Turret class
+        turret_cost = Turret.TURRET_COST 
         if self.game_controller.drone_system.get_player_cores() >= turret_cost:
             if self.game_controller.drone_system.spend_player_cores(turret_cost):
+                # Create turret at the center of the grid cell
+                tile_center_x_abs = grid_c * TILE_SIZE + TILE_SIZE // 2 + self.maze.game_area_x_offset
+                tile_center_y_abs = grid_r * TILE_SIZE + TILE_SIZE // 2
+                
+                # Use the Turret class from entities
                 new_turret = Turret(tile_center_x_abs, tile_center_y_abs, self.game_controller)
                 self.turrets_group.add(new_turret)
+                
+                # Mark the spot as occupied in MazeChapter2's grid
+                self.maze.mark_turret_spot_as_occupied(grid_r, grid_c) # New method in MazeChapter2
+                
                 self.game_controller.play_sound('turret_place_placeholder', 0.7)
-                print(f"CombatController: Turret placed at grid ({grid_row},{grid_col}).")
+                print(f"CombatController: Turret placed at grid ({grid_r},{grid_c}).")
                 return True
         
-        self.game_controller.play_sound('ui_denied', 0.6) # Not enough cores or other failure
+        self.game_controller.play_sound('ui_denied', 0.6) 
+        print(f"CombatController: Failed to place turret at ({grid_r},{grid_c}) - insufficient cores or other.")
         return False
 
     def try_upgrade_turret(self, turret_to_upgrade):
         """Attempts to upgrade the specified turret."""
         if turret_to_upgrade and turret_to_upgrade in self.turrets_group:
-            upgrade_cost = Turret.UPGRADE_COST # Get cost from Turret class
+            upgrade_cost = Turret.UPGRADE_COST 
             if self.game_controller.drone_system.get_player_cores() >= upgrade_cost:
-                if turret_to_upgrade.upgrade(): # Turret.upgrade() handles its own level logic
+                if turret_to_upgrade.upgrade(): 
                     self.game_controller.drone_system.spend_player_cores(upgrade_cost)
                     self.game_controller.play_sound('weapon_upgrade_collect', 0.8)
                     print(f"CombatController: Turret at ({turret_to_upgrade.x},{turret_to_upgrade.y}) upgraded to level {turret_to_upgrade.upgrade_level}.")
-                    # If UIManager needs to update display for selected turret:
                     if self.game_controller.ui_manager and self.game_controller.ui_manager.build_menu:
                         self.game_controller.ui_manager.build_menu.set_selected_turret(turret_to_upgrade)
                     return True
-                else: # Max level or other upgrade failure
+                else: 
                     self.game_controller.play_sound('ui_denied', 0.6)
-            else: # Not enough cores
+            else: 
                 self.game_controller.play_sound('ui_denied', 0.6)
-        else: # No turret selected or invalid turret
+        else: 
             self.game_controller.play_sound('ui_denied', 0.6)
         return False
-
