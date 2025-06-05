@@ -448,8 +448,6 @@ if __name__ == '__main__':
     test_maze_pixel_width = MazeChapter2.COLS * TILE_SIZE
     if test_maze_pixel_width > screen_width :
          screen_width = test_maze_pixel_width + 20 
-         logger_main.info(f"Test: Adjusted screen_width to {screen_width} to fit maze cols {MazeChapter2.COLS} at TILE_SIZE {TILE_SIZE}")
-
 
     screen = pygame.display.set_mode((screen_width, screen_height))
     pygame.display.set_caption("MazeChapter2 Test (Open Map Debug)")
@@ -459,8 +457,6 @@ if __name__ == '__main__':
         def __init__(self):
             self.game_area_x_offset = (screen_width - (MazeChapter2.COLS * TILE_SIZE)) // 2 
             if self.game_area_x_offset < 0: self.game_area_x_offset = 0 
-            logger_main.info(f"MockGameController: game_area_x_offset = {self.game_area_x_offset} for screen_width {screen_width}")
-
             
             self.turrets_group = pygame.sprite.Group() 
             class MockDroneSystem:
@@ -494,7 +490,6 @@ if __name__ == '__main__':
             grid_c = int((screen_pos[0] - self.maze.game_area_x_offset) / TILE_SIZE)
             grid_r = int(screen_pos[1] / TILE_SIZE)
             
-            logger_main.debug(f"Attempting to place turret at screen_pos {screen_pos} -> grid ({grid_r},{grid_c})")
 
             if self.maze.can_place_turret(grid_r, grid_c): 
                 turret_cost = getattr(gs, 'TURRET_BASE_COST', 50) 
@@ -504,7 +499,6 @@ if __name__ == '__main__':
                     new_turret = MockTurret(abs_turret_x, abs_turret_y) 
                     self.turrets_group.add(new_turret)
                     self.maze.mark_turret_spot_as_occupied(grid_r, grid_c) 
-                    logger_main.info(f"MockCombat: Turret placed at grid ({grid_r},{grid_c}). Cores left: {self.game_controller.drone_system.get_player_cores()}")
                     return True
                 else:
                     logger_main.warning(f"MockCombat: Insufficient cores to place turret. Have: {self.game_controller.drone_system.get_player_cores()}, Need: {turret_cost}")

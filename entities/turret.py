@@ -106,7 +106,6 @@ class Turret(pygame.sprite.Sprite):
 
         self.turret_base_color_fallback = (100, 100, 120)
         self._ensure_drawable_state()
-        logger.debug(f"Turret ID {id(self)} initialized at ({x},{y}), Level {self.upgrade_level}, Weapon Mode: {self.current_weapon_mode}. Rect: {self.rect}, Image: {'Set' if self.image else 'None'}")
 
     def _ensure_drawable_state(self):
         """Ensures self.image and self.rect are valid for drawing by Group.draw()."""
@@ -123,7 +122,6 @@ class Turret(pygame.sprite.Sprite):
                 self.rect = pygame.Rect(int(self.x - self.SPRITE_SIZE[0]//2), int(self.y - self.SPRITE_SIZE[1]//2), self.SPRITE_SIZE[0], self.SPRITE_SIZE[1])
                 self.image = pygame.Surface(self.rect.size, pygame.SRCALPHA)
                 self.image.fill((255,100,0,100)) # Orange error fallback
-                logger.error(f"Turret ID {id(self)} _ensure_drawable_state: Critical - image AND rect were None. Forced creation.")
         elif self.image and self.rect.size != self.image.get_size():
              current_center = self.rect.center # Preserve center
              self.rect = self.image.get_rect(center=current_center)
@@ -136,7 +134,6 @@ class Turret(pygame.sprite.Sprite):
                 loaded_image = pygame.image.load(image_path).convert_alpha()
                 self.original_image = pygame.transform.smoothscale(loaded_image, self.SPRITE_SIZE)
             except pygame.error as e:
-                logger.error(f"Turret ID {id(self)}: Error loading sprite '{image_path}': {e}")
                 self.original_image = None
         else:
             logger.warning(f"Turret ID {id(self)}: Sprite path not found '{image_path}'.")
@@ -235,16 +232,12 @@ class Turret(pygame.sprite.Sprite):
                                         self.current_bullet_size, PLAYER_BULLET_COLOR, int(self.current_damage),
                                         max_bounces=bounces, max_pierces=pierces, can_pierce_walls=can_pierce_w)
                     self.bullets.add(new_bullet)
-                logger.debug(f"Turret ({self.x:.0f},{self.y:.0f}) FIRED standard/variant. Mode: {self.current_weapon_mode}. Bullets in group: {len(self.bullets)}")
-                # if self.game_controller_ref and hasattr(self.game_controller_ref, 'play_sound'): self.game_controller_ref.play_sound('turret_shoot_placeholder', 0.3)
 
         if self.current_weapon_mode == WEAPON_MODE_HEATSEEKER or self.current_weapon_mode == WEAPON_MODE_HEATSEEKER_PLUS_BULLETS:
             if (current_time - self.last_missile_shot_time) > self.current_missile_cooldown:
                 self.last_missile_shot_time = current_time
                 new_missile = Missile(base_spawn_x, base_spawn_y, self.angle, int(self.current_damage), enemies_group)
                 self.missiles.add(new_missile)
-                logger.debug(f"Turret ({self.x:.0f},{self.y:.0f}) FIRED MISSILE. Missiles in group: {len(self.missiles)}")
-                # if self.game_controller_ref and hasattr(self.game_controller_ref, 'play_sound'): self.game_controller_ref.play_sound('missile_launch', 0.4)
 
             if self.current_weapon_mode == WEAPON_MODE_HEATSEEKER_PLUS_BULLETS:
                  if (current_time - self.last_shot_time) > self.current_shoot_cooldown_std_bullet:
@@ -253,8 +246,6 @@ class Turret(pygame.sprite.Sprite):
                     new_bullet = Bullet(base_spawn_x, base_spawn_y, self.angle, PLAYER_BULLET_SPEED, bullet_lifetime_actual,
                                         PLAYER_DEFAULT_BULLET_SIZE, PLAYER_BULLET_COLOR, int(self.current_damage_std_bullet), max_bounces=2)
                     self.bullets.add(new_bullet)
-                    logger.debug(f"Turret ({self.x:.0f},{self.y:.0f}) Fired rapid bullet (Seeker+). Bullets in group: {len(self.bullets)}")
-                    # if self.game_controller_ref and hasattr(self.game_controller_ref, 'play_sound'): self.game_controller_ref.play_sound('turret_shoot_placeholder', 0.2)
 
         elif self.current_weapon_mode == WEAPON_MODE_LIGHTNING:
             if (current_time - self.last_lightning_time) > self.current_lightning_cooldown:
@@ -266,15 +257,12 @@ class Turret(pygame.sprite.Sprite):
                                        damage=int(self.current_damage), lifetime_frames=lightning_lifetime_frames_actual,
                                        maze_ref=maze_ref, game_area_x_offset=game_area_x_offset)
                 self.lightning_zaps.add(new_zap)
-                logger.debug(f"Turret ({self.x:.0f},{self.y:.0f}) FIRED LIGHTNING. Zaps in group: {len(self.lightning_zaps)}")
-                # if self.game_controller_ref and hasattr(self.game_controller_ref, 'play_sound'): self.game_controller_ref.play_sound('turret_shoot_placeholder', 0.3)
 
     def upgrade(self):
         if self.weapon_mode_index < self.MAX_UPGRADE_LEVEL:
             self.weapon_mode_index += 1
             self.upgrade_level = self.weapon_mode_index
             self._update_weapon_attributes()
-            logger.info(f"Turret at ({self.x:.0f},{self.y:.0f}) upgraded to level {self.upgrade_level}. New mode: {self.current_weapon_mode}")
             return True
         return False
 
