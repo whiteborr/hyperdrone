@@ -340,7 +340,7 @@ class UIFlowController:
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_RETURN or event.key == pygame.K_SPACE or event.key == pygame.K_m:
                 play_sound_func('ui_confirm')
-                self.scene_manager.set_game_state(GAME_STATE_MAIN_MENU)
+                self.scene_manager.set_game_state(GAME_STATE_MAZE_DEFENSE)
                 return True
         return False
 

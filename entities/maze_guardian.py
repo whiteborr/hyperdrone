@@ -291,18 +291,20 @@ class MazeGuardian(BaseDrone):
             # Ensure spawn is within bounds and not in a wall (simplified check)
             if maze and not maze.is_wall(spawn_x, spawn_y, TILE_SIZE * 0.5, TILE_SIZE * 0.5):
                  # Ensure enemy_manager is accessible and has the add_enemy method or similar
-                if hasattr(self.game_controller_ref.enemy_manager, 'spawn_specific_enemy_at_pos'):
-                    minion = SentinelDrone(spawn_x, spawn_y,
-                                           gs.get_game_setting("SENTINEL_DRONE_SPEED"),
-                                           gs.get_game_setting("SENTINEL_DRONE_HEALTH"),
-                                           gs.get_game_setting("SENTINEL_DRONE_SPRITE_PATH"),
-                                           player_ref=self.player_ref, # Minions target player
-                                           maze_ref=self.maze_ref,
-                                           game_controller_ref=self.game_controller_ref)
+                if hasattr(self.game_controller_ref.enemy_manager, 'spawn_specific_enemy_at_location'):
+                    self.game_controller_ref.enemy_manager.spawn_sentinel_drone_at_location(spawn_x, spawn_y)
+                elif hasattr(self.game_controller_ref.enemy_manager, 'add_enemy'):
+                    # CORRECTED: The call to SentinelDrone now uses the correct arguments.
+                    minion = SentinelDrone(x=spawn_x, y=spawn_y,
+                                           player_bullet_size_base=gs.get_game_setting("PLAYER_DEFAULT_BULLET_SIZE"),
+                                           shoot_sound=self.game_controller_ref.sounds.get('enemy_shoot'),
+                                           sprite_path=gs.get_game_setting("SENTINEL_DRONE_SPRITE_PATH"),
+                                           target_player_ref=self.player_ref)
                     self.game_controller_ref.enemy_manager.add_enemy(minion)
 
                 if self.game_controller_ref:
                     self.game_controller_ref.play_sound('minion_spawn', 0.6)
+                    
 
     def draw(self, surface):
         if not self.image or not self.rect: return # Safety check

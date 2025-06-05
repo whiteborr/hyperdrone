@@ -17,7 +17,7 @@ from .puzzle_controller import PuzzleController
 from .ui_flow_controller import UIFlowController
 from ui import UIManager
 from entities import (
-    PlayerDrone, CollectibleRing, WeaponUpgradeItem, ShieldItem, SpeedBoostItem,
+    PlayerDrone, Ring as CollectibleRing, WeaponUpgradeItem, ShieldItem, SpeedBoostItem,
     CoreFragmentItem, VaultLogItem, GlyphTabletItem, AncientAlienTerminal,
     ArchitectEchoItem, CoreReactor, Turret, LightningZap, Missile, Particle,
     MazeGuardian, SentinelDrone, EscapeZone, Maze, MazeChapter2, Bullet
@@ -585,6 +585,12 @@ class GameController:
             self.puzzle_controller.player = self.player 
 
     def initialize_architect_vault_session_phases(self, phase):
+        # CORRECTED: Moved these calls to the beginning of the function.
+        # This ensures the combat controller is ready before phase-specific logic,
+        # like spawning the boss, is executed.
+        self.combat_controller.set_active_entities(self.player, self.maze, explosion_particles_group=self.explosion_particles_group)
+        self.puzzle_controller.set_active_entities(self.player, self.drone_system, self.scene_manager, architect_vault_terminals_group=self.architect_vault_puzzle_terminals_group)
+
         self.architect_vault_current_phase = phase
         self.architect_vault_phase_timer_start = pygame.time.get_ticks() 
         logger.info(f"Architect Vault Phase Initialized: {phase}")
@@ -624,10 +630,7 @@ class GameController:
             self._spawn_escape_zone() 
             self.level_time_remaining_ms = gs.get_game_setting("ARCHITECT_VAULT_EXTRACTION_TIMER_MS") 
             self.architect_vault_message_timer = pygame.time.get_ticks() + 5000
-        
-        self.combat_controller.set_active_entities(self.player, self.maze, explosion_particles_group=self.explosion_particles_group)
-        self.puzzle_controller.set_active_entities(self.player, self.drone_system, self.scene_manager, architect_vault_terminals_group=self.architect_vault_puzzle_terminals_group)
-
+            
     def handle_architect_vault_success_scene(self):
         self.ui_flow_controller.initialize_architect_vault_result_screen(success=True)
         if self.drone_system:
@@ -989,9 +992,14 @@ class GameController:
         
         all_frags_collected = self.drone_system.are_all_core_fragments_collected() if self.drone_system else False
         vault_not_done = not self.drone_system.has_completed_architect_vault() if self.drone_system else True
+        
+        # CORRECTED LOGIC:
+        # Instead of calling initialize_specific_game_mode directly, we now correctly
+        # set the game state. The SceneManager and handle_scene_transition will
+        # then take care of the proper initialization.
         if not from_bonus_level_completion and all_frags_collected and vault_not_done and \
            not self.scene_manager.get_current_state().startswith("architect_vault"):
-            self.initialize_specific_game_mode("architect_vault_entry", old_state=self.scene_manager.get_current_state(), phase_to_start="intro") # Pass old_state
+            self.scene_manager.set_game_state(GAME_STATE_ARCHITECT_VAULT_INTRO)
             return
 
         if not from_bonus_level_completion: 
@@ -1039,7 +1047,7 @@ class GameController:
         self.animating_fragments_to_hud.clear()
         
         if self.player: self.player.moving_forward = False 
-        self.scene_manager.set_game_state(GAME_STATE_PLAYING) 
+        self.scene_manager.set_game_state(GAME_STATE_PLAYING)
 
     def _reset_player_after_death_internal(self):
         if not self.player: return
