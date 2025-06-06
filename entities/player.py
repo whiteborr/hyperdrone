@@ -88,7 +88,6 @@ class PlayerDrone(BaseDrone):
         
         self.max_health = self.base_hp
         self.health = self.max_health
-        self.current_speed = self.speed
         self.rotation_speed = self.base_turn_speed
         
         # <<< NEW STATE FOR CRUISE CONTROL >>>
@@ -494,14 +493,14 @@ class PlayerDrone(BaseDrone):
         self.active_powerup_type = "speed_boost"  # Mark that speed boost is armed
 
     def attempt_speed_boost_activation(self):
-        # (This method's logic remains the same)
+        # --- START FIX ---
         if self.active_powerup_type == "speed_boost" and not self.speed_boost_active and self.moving_forward:
             self.speed_boost_active = True
             self.speed_boost_end_time = pygame.time.get_ticks() + self.speed_boost_duration
-            self.original_speed_before_boost = self.current_speed # Store current speed
-            self.current_speed = self.current_speed * self.speed_boost_multiplier # Apply boost
-            # Activate shield along with speed boost
-            self.activate_shield(self.speed_boost_duration, is_from_speed_boost=True) 
+            self.original_speed_before_boost = self.speed # Store current base speed
+            self.speed = self.speed * self.speed_boost_multiplier # Directly modify the speed attribute used for movement
+            self.activate_shield(self.speed_boost_duration, is_from_speed_boost=True)
+        # --- END FIX ---
 
     def try_activate_cloak(self, current_time_ms):
         # (This method's logic remains the same for cloak activation timing)
@@ -526,24 +525,23 @@ class PlayerDrone(BaseDrone):
         return True
 
     def update_powerups(self, current_time_ms):
-        # (This method's logic remains the same for managing power-up timers)
+        # --- START FIX ---
         # Shield
         if self.shield_active and current_time_ms > self.shield_end_time:
-            # Only deactivate shield if it wasn't tied to a speed boost that's still active
             if not (self.shield_tied_to_speed_boost and self.speed_boost_active and current_time_ms <= self.speed_boost_end_time):
                 self.shield_active = False
-                if self.active_powerup_type == "shield": self.active_powerup_type = None # Clear if shield was the primary powerup
-                self.shield_tied_to_speed_boost = False # Reset flag
+                if self.active_powerup_type == "shield": self.active_powerup_type = None
+                self.shield_tied_to_speed_boost = False
         
         # Speed Boost
         if self.speed_boost_active and current_time_ms > self.speed_boost_end_time:
             self.speed_boost_active = False
-            self.current_speed = self.original_speed_before_boost # Restore original speed
-            if self.active_powerup_type == "speed_boost": self.active_powerup_type = None # Clear if speed boost was primary
-            # If shield was tied to this speed boost, it should also deactivate
+            self.speed = self.original_speed_before_boost # Restore original speed
+            if self.active_powerup_type == "speed_boost": self.active_powerup_type = None
             if self.shield_tied_to_speed_boost: 
                 self.shield_active = False
                 self.shield_tied_to_speed_boost = False
+        # --- END FIX ---
         
         # Cloak
         if self.cloak_active and current_time_ms > self.cloak_end_time:
@@ -562,7 +560,6 @@ class PlayerDrone(BaseDrone):
         self.base_hp = drone_stats.get("hp", get_game_setting("PLAYER_MAX_HEALTH"))
         self.base_speed = drone_stats.get("speed", get_game_setting("PLAYER_SPEED"))
         self.speed = self.base_speed
-        self.current_speed = self.speed
         self.original_speed_before_boost = self.speed
 
         self.base_turn_speed = drone_stats.get("turn_speed", get_game_setting("ROTATION_SPEED"))
@@ -613,15 +610,16 @@ class PlayerDrone(BaseDrone):
         self.reset_active_powerups()
 
     def reset_active_powerups(self):
-        # (This method's logic remains the same)
+        # --- START FIX ---
         self.shield_active = False; self.shield_end_time = 0
         self.speed_boost_active = False; self.speed_boost_end_time = 0
-        self.current_speed = self.base_speed # Reset to base speed from current drone stats
+        self.speed = self.base_speed # Reset to base speed from current drone stats
         self.original_speed_before_boost = self.base_speed
         self.cloak_active = False; self.is_cloaked_visual = False; self.cloak_end_time = 0
         self.active_powerup_type = None
         self.thrust_particles.empty()
         self.shield_tied_to_speed_boost = False
+        # --- END FIX ---
 
     def get_position(self):
         # (This method's logic remains the same)

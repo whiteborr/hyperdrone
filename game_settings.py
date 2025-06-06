@@ -6,7 +6,7 @@ import pygame
 WIDTH = 1920
 HEIGHT = 1080
 FPS = 60
-FULLSCREEN_MODE = False 
+FULLSCREEN_MODE = True 
 MUSIC_VOLUME_MULTIPLIER = 0.5 
 SFX_VOLUME_MULTIPLIER = 0.7   
 
@@ -227,12 +227,31 @@ SPEED_BOOST_POWERUP_DURATION = POWERUP_TYPES["speed_boost"]["duration"]
 TOTAL_CORE_FRAGMENTS_NEEDED = 3 
 CORE_FRAGMENT_VISUAL_SIZE = TILE_SIZE // 2.5
 
+# --- START FIX ---
+# Added "required_for_vault": True to the three fragments needed for the vault puzzle.
 CORE_FRAGMENT_DETAILS = { 
-    "fragment_alpha": {"id": "cf_alpha", "name": "Alpha Core Fragment", "icon_filename": "core_fragment_alpha.png", "description": "Pulses with unstable energy.", "spawn_info": {"level": 3}, "buff": {"type": "speed", "value": 1.05}},
-    "fragment_beta": {"id": "cf_beta", "name": "Beta Core Fragment", "icon_filename": "core_fragment_beta.png", "description": "Hums with alien resonance.", "spawn_info": {"level": 6}, "buff": {"type": "bullet_damage_multiplier", "value": 1.05}},
-    "fragment_gamma": {"id": "cf_gamma", "name": "Gamma Core Fragment", "icon_filename": "core_fragment_gamma.png", "description": "A critical processing unit.", "spawn_info": {"level": 9}, "buff_alt": {"type": "damage_reduction", "value": 0.05}},
-    "fragment_vault_core": {"id": "vault_core", "name": "Vault Core", "icon_filename": "vault_core_icon.png", "description": "Heart of the Vault defenses.", "display_color": GOLD, "reward_level": "architect_vault_boss"} 
+    "fragment_alpha": {
+        "id": "cf_alpha", "name": "Alpha Core Fragment", "icon_filename": "core_fragment_alpha.png", 
+        "description": "Pulses with unstable energy.", "spawn_info": {"level": 3}, 
+        "buff": {"type": "speed", "value": 1.05}, "required_for_vault": True
+    },
+    "fragment_beta": {
+        "id": "cf_beta", "name": "Beta Core Fragment", "icon_filename": "core_fragment_beta.png", 
+        "description": "Hums with alien resonance.", "spawn_info": {"level": 6}, 
+        "buff": {"type": "bullet_damage_multiplier", "value": 1.05}, "required_for_vault": True
+    },
+    "fragment_gamma": {
+        "id": "cf_gamma", "name": "Gamma Core Fragment", "icon_filename": "core_fragment_gamma.png", 
+        "description": "A critical processing unit.", "spawn_info": {"level": 9}, 
+        "buff_alt": {"type": "damage_reduction", "value": 0.05}, "required_for_vault": True
+    },
+    "fragment_vault_core": {
+        "id": "vault_core", "name": "Vault Core", "icon_filename": "vault_core_icon.png", 
+        "description": "Heart of the Vault defenses.", "display_color": GOLD, 
+        "reward_level": "architect_vault_boss"
+    } 
 }
+# --- END FIX ---
 
 ARCHITECT_VAULT_EXTRACTION_TIMER_MS = 90000
 ARCHITECT_VAULT_GAUNTLET_WAVES = 3

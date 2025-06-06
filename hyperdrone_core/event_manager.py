@@ -65,8 +65,12 @@ class EventManager:
                            self.game_controller.ui_manager.build_menu.selected_turret_on_map:
                            self.combat_controller.try_upgrade_turret(self.game_controller.ui_manager.build_menu.selected_turret_on_map)
                     elif event.key == pygame.K_SPACE:
+                        # --- START FIX ---
+                        # Corrected the method name from try_start_next_wave to manual_start_next_wave
+                        # and removed the unnecessary current_time_ms argument.
                         if self.combat_controller.wave_manager:
-                           self.combat_controller.wave_manager.try_start_next_wave(current_time_ms)
+                           self.combat_controller.wave_manager.manual_start_next_wave()
+                        # --- END FIX ---
                 
                 if event.key == pygame.K_p and (is_gameplay_state or current_game_state == GAME_STATE_MAZE_DEFENSE):
                     self.game_controller.toggle_pause()
@@ -95,7 +99,6 @@ class EventManager:
                                            current_game_state.startswith("architect_vault")
 
         if is_gameplay_state_for_continuous and not self.game_controller.paused:
-            # <<< FIX: Changed method name from handle_continuous_input to update_player_movement_and_actions >>>
             self.game_controller.player_actions.update_player_movement_and_actions(current_time_ms)
 
 

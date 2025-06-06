@@ -133,13 +133,17 @@ class MazeGuardian(BaseDrone):
         pass
 
     def _choose_new_target_position(self, maze, game_area_x_offset):
-        # (This method's logic remains the same)
         if not maze: return self.rect.center
         path_cells = []
-        if hasattr(maze, 'get_path_cells_abs'): path_cells = maze.get_path_cells_abs()
+        # --- START FIX ---
+        # Corrected the method name check from 'get_path_cells_abs' to 'get_walkable_tiles_abs'
+        if hasattr(maze, 'get_walkable_tiles_abs'):
+            path_cells = maze.get_walkable_tiles_abs()
+        # --- END FIX ---
         elif hasattr(maze, 'get_path_cells'):
             path_cells_rel = maze.get_path_cells()
             path_cells = [(x + game_area_x_offset, y) for x,y in path_cells_rel]
+
         if not path_cells: return self.rect.center
         attempts, max_attempts, min_dist_from_self = 0, 10, TILE_SIZE * 3
         while attempts < max_attempts:
@@ -150,8 +154,8 @@ class MazeGuardian(BaseDrone):
             attempts += 1
         self.target_pos = random.choice(path_cells)
 
-    def update(self, player_pos, maze, current_time_ms, game_area_x_offset=0):
-        # (This method's logic remains the same)
+    def update(self, player_pos, maze, current_time_ms, game_area_x_offset=0, is_defense_mode=False):
+        # (The rest of the method's logic remains the same)
         if not self.alive: return
         if self.target_pos is None or current_time_ms > self.move_timer:
             self._choose_new_target_position(maze, game_area_x_offset)

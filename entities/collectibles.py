@@ -229,8 +229,14 @@ class CoreFragmentItem(Collectible):
         item_color = fragment_config_details.get("display_color", PURPLE)
         
         # Construct asset key from fragment_id
-        icon_asset_key = f"fragment_{self.fragment_id}_icon" # e.g., "fragment_cf_alpha_icon"
-        loaded_original_icon = asset_manager.get_image(icon_asset_key)
+        icon_asset_key = f"fragment_{self.fragment_id}_icon"
+        
+        # --- START FIX ---
+        # Define the target size as a tuple based on the game setting.
+        target_icon_size = (int(CORE_FRAGMENT_VISUAL_SIZE), int(CORE_FRAGMENT_VISUAL_SIZE))
+        # Request the scaled image from the AssetManager.
+        loaded_original_icon = asset_manager.get_image(icon_asset_key, scale_to_size=target_icon_size)
+        # --- END FIX ---
 
         super().__init__(x, y, base_color=item_color, size=CORE_FRAGMENT_VISUAL_SIZE, thickness=3, original_icon_surface=loaded_original_icon)
 

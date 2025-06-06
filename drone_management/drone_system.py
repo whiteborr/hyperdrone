@@ -28,6 +28,11 @@ class DroneSystem:
         self.collected_core_fragments = set()
         self.collected_glyph_tablets = set()
         self.solved_puzzle_terminals = set()
+        
+        # --- START FIX ---
+        # Added a set to track defeated bosses.
+        self.defeated_bosses = set()
+        # --- END FIX ---
 
         # Vault status
         self.architect_vault_completed = False
@@ -44,7 +49,7 @@ class DroneSystem:
             with open(self.LORE_FILE, 'r') as f:
                 lore_data_list = json.load(f)
                 
-                # <<< FIX: Convert the loaded list into a dictionary, keyed by the 'id' field. >>>
+                # Convert the loaded list into a dictionary, keyed by the 'id' field.
                 lore_data_dict = {entry['id']: entry for entry in lore_data_list if 'id' in entry}
                 
                 logger.info(f"DroneSystem: Successfully loaded and processed {len(lore_data_dict)} lore entries.")
@@ -67,6 +72,10 @@ class DroneSystem:
                     self.architect_vault_completed = data.get("architect_vault_completed", False)
                     self.collected_glyph_tablets.update(data.get("collected_glyph_tablets", []))
                     self.solved_puzzle_terminals.update(data.get("solved_puzzle_terminals", []))
+                    # --- START FIX ---
+                    # Load defeated bosses from the save file.
+                    self.defeated_bosses.update(data.get("defeated_bosses", []))
+                    # --- END FIX ---
             except (IOError, json.JSONDecodeError) as e:
                 logger.error(f"DroneSystem: Error loading save file '{self.SAVE_FILE}': {e}")
         else:
@@ -83,7 +92,11 @@ class DroneSystem:
             "collected_core_fragments": list(self.collected_core_fragments),
             "architect_vault_completed": self.architect_vault_completed,
             "collected_glyph_tablets": list(self.collected_glyph_tablets),
-            "solved_puzzle_terminals": list(self.solved_puzzle_terminals)
+            "solved_puzzle_terminals": list(self.solved_puzzle_terminals),
+            # --- START FIX ---
+            # Save the set of defeated bosses.
+            "defeated_bosses": list(self.defeated_bosses)
+            # --- END FIX ---
         }
         try:
             os.makedirs(os.path.dirname(self.SAVE_FILE), exist_ok=True)
@@ -91,6 +104,18 @@ class DroneSystem:
                 json.dump(data, f, indent=4)
         except IOError as e:
             logger.error(f"DroneSystem: Error saving progress to file '{self.SAVE_FILE}': {e}")
+
+    # --- START FIX ---
+    # Added the missing 'add_defeated_boss' method.
+    def add_defeated_boss(self, boss_id):
+        """Adds a boss ID to the set of defeated bosses and saves progress."""
+        if boss_id not in self.defeated_bosses:
+            self.defeated_bosses.add(boss_id)
+            self._save_unlocks()
+            logger.info(f"DroneSystem: Boss '{boss_id}' marked as defeated.")
+            return True
+        return False
+    # --- END FIX ---
 
     def get_all_drone_ids_in_order(self):
         return list(self.drones.keys())
@@ -127,6 +152,11 @@ class DroneSystem:
         if unlock_type == "cores":
             if self.player_cores >= unlock_value:
                 self.player_cores -= unlock_value
+                self.unlocked_drones.add(drone_id)
+                self._save_unlocks()
+                return True
+        elif unlock_type == "boss":
+             if unlock_value in self.defeated_bosses:
                 self.unlocked_drones.add(drone_id)
                 self._save_unlocks()
                 return True

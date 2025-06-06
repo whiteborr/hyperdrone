@@ -148,7 +148,10 @@ class GameController:
                 # This format tells the AssetManager to load ONE font file and create MULTIPLE sizes from it.
                 "ui_text": {"path": "fonts/neuropol.otf", "sizes": [28, 24, 16]},
                 "ui_values": {"path": "fonts/neuropol.otf", "sizes": [30]},
-                "ui_emoji_general": {"path": "fonts/seguiemj.ttf", "sizes": [32, 28]},
+                # --- START FIX ---
+                # Added size 24 to the manifest for the emoji font.
+                "ui_emoji_general": {"path": "fonts/seguiemj.ttf", "sizes": [32, 28, 24, 19]},
+                # --- END FIX ---
                 "ui_emoji_small": {"path": "fonts/seguiemj.ttf", "sizes": [20, 26]},
                 "small_text": {"path": "fonts/neuropol.otf", "sizes": [24]},
                 "medium_text": {"path": "fonts/neuropol.otf", "sizes": [48]},
@@ -558,13 +561,19 @@ class GameController:
         if self.player and self.collected_rings_count >= self.total_rings_per_level and \
            self.all_enemies_killed_this_level and not self.level_cleared_pending_animation:
             
-            if not self.level_clear_fragment_spawned_this_level:
-                if self._attempt_level_clear_fragment_spawn(): 
-                    self.level_clear_fragment_spawned_this_level = True
-                    return 
-            
-            if self.player: self.player.moving_forward = False; self.player.is_cruising = False
-            self.level_cleared_pending_animation = True 
+            # Attempt to spawn a reward fragment.
+            fragment_spawned = self._attempt_level_clear_fragment_spawn()
+
+            if fragment_spawned:
+                # If a fragment was spawned, mark it and wait for collection.
+                self.level_clear_fragment_spawned_this_level = True
+            else:
+                # If no fragment was spawned (because none was defined for this level),
+                # immediately trigger the level clear animation sequence.
+                if self.player: 
+                    self.player.moving_forward = False
+                    self.player.is_cruising = False
+                self.level_cleared_pending_animation = True
 
     def _attempt_level_clear_fragment_spawn(self):
         fragment_id_to_spawn, fragment_details_to_spawn = None, None
