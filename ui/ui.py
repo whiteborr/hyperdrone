@@ -653,7 +653,7 @@ class UIManager:
 
         # Menu options with icons (emojis or symbols)
         menu_options_with_icons = { 
-            "Start Game": "🛸 Start Game", "Maze Defense": "🛡️ Maze Defense", 
+            "Start Game": "🛸 Start Game", "Maze Defense": "🧱 Maze Defense", 
             "Select Drone": "\U0001F579 Select Drone", "Codex": "📜 Codex", 
             "Settings": "\u2699 Settings", "Leaderboard": "🏆 Leaderboard", "Quit": "❌ Quit" 
         }
@@ -690,9 +690,9 @@ class UIManager:
             max_combined_width = max(max_combined_width, current_combined_width)
             max_content_height = max(max_content_height, current_content_height)
         
-        horizontal_padding = 40 
-        vertical_padding = 20
-        min_button_width = 300 
+        horizontal_padding = 30  # Reduced from 40
+        vertical_padding = 15    # Reduced from 20
+        min_button_width = 280   # Reduced from 300
         fixed_button_width = max(min_button_width, max_combined_width + horizontal_padding)
         fixed_button_height = max_content_height + vertical_padding
 
@@ -733,23 +733,15 @@ class UIManager:
                 icon_rect.left = content_start_x
                 button_surface.blit(icon_surf, icon_rect)
                 content_start_x = icon_rect.right + icon_label_spacing
-            
+
             label_rect = label_surf.get_rect(centery=y_center_content)
             label_rect.left = content_start_x
             button_surface.blit(label_surf, label_rect)
             
             current_button_y = menu_item_start_y + i * item_spacing
             button_screen_rect = button_surface.get_rect(center=(WIDTH // 2, current_button_y))
-            self.screen.blit(button_surface, button_screen_rect) # Draw button to screen
-            
-        # Draw navigation instructions
-        instr_text = "Use UP/DOWN keys, ENTER to select."
-        instr_surf = self._render_text_safe(instr_text, "small_text", self.INSTRUCTION_TEXT_COLOR)
-        instr_bg_box = pygame.Surface((instr_surf.get_width() + self.INSTRUCTION_PADDING_X, instr_surf.get_height() + self.INSTRUCTION_PADDING_Y), pygame.SRCALPHA)
-        instr_bg_box.fill(self.INSTRUCTION_BG_COLOR)
-        instr_bg_box.blit(instr_surf, instr_surf.get_rect(center=(instr_bg_box.get_width() // 2, instr_bg_box.get_height() // 2)))
-        self.screen.blit(instr_bg_box, instr_bg_box.get_rect(center=(WIDTH // 2, self.BOTTOM_INSTRUCTION_CENTER_Y)))
-        
+            self.screen.blit(button_surface, button_screen_rect)
+                   
         # Display warning if settings are modified (disables leaderboard)
         if gs.SETTINGS_MODIFIED:
             warning_surf = self._render_text_safe("Custom settings active: Leaderboard disabled.", "small_text", YELLOW)
@@ -1216,28 +1208,74 @@ class UIManager:
         collectibles_x_anchor = WIDTH - h_padding # Anchor from right edge
         current_collectibles_y_right = panel_y_start + panel_height - v_padding # Start from bottom
 
-        # Player Cores
-        cores_emoji_char = "💠"
-        cores_x_char = "x" # Separator "x"
-        cores_value_str = str(self.drone_system.get_player_cores())
-        cores_icon_surf = self._render_text_safe(cores_emoji_char, "ui_emoji_general", GOLD)
-        cores_x_surf = self._render_text_safe(cores_x_char, "small_text", WHITE)
-        cores_value_text_surf = self._render_text_safe(cores_value_str, "small_text", GOLD)
+        # REVISED: Player Cores Progress Bar
+        core_milestone_data = [
+            {'threshold': 1000,   'color': LIGHT_BLUE, 'label': '1K'},
+            {'threshold': 5000,   'color': GREEN,      'label': '5K'},
+            {'threshold': 10000,  'color': ORANGE,     'label': '10K'},
+            {'threshold': 20000,  'color': RED,        'label': '20K'},
+            {'threshold': 50000,  'color': PURPLE,     'label': '50K'},
+            {'threshold': 100000, 'color': GOLD,       'label': 'MAX'}
+        ]
+        current_cores = self.drone_system.get_player_cores()
         
-        total_cores_width = (cores_icon_surf.get_width() + text_icon_spacing + 
-                             cores_x_surf.get_width() + text_icon_spacing + 
-                             cores_value_text_surf.get_width())
-        cores_start_x_draw = collectibles_x_anchor - total_cores_width # Position from right
-        cores_display_max_height = max(cores_icon_surf.get_height(), cores_x_surf.get_height(), cores_value_text_surf.get_height())
-        cores_y_pos = current_collectibles_y_right - cores_display_max_height # Position at bottom of this section
+        # Determine current tier and progress
+        lower_bound = 0
+        upper_bound = core_milestone_data[0]['threshold']
+        bar_color = core_milestone_data[0]['color']
+        milestone_label_str = core_milestone_data[0]['label']
+
+        for i in range(len(core_milestone_data)):
+            tier_info = core_milestone_data[i]
+            if current_cores < tier_info['threshold']:
+                upper_bound = tier_info['threshold']
+                bar_color = tier_info['color']
+                milestone_label_str = tier_info['label']
+                if i > 0:
+                    lower_bound = core_milestone_data[i-1]['threshold']
+                break
+        else: # Handle max level
+            tier_info = core_milestone_data[-1]
+            lower_bound = tier_info['threshold']
+            upper_bound = lower_bound
+            bar_color = tier_info['color']
+            milestone_label_str = tier_info['label']
+
+        # Calculate progress percentage
+        tier_range = upper_bound - lower_bound
+        progress_in_tier = current_cores - lower_bound
+        progress_percentage = 1.0
+        if tier_range > 0:
+            progress_percentage = min(1.0, progress_in_tier / tier_range)
         
-        current_x_offset = cores_start_x_draw
-        self.screen.blit(cores_icon_surf, (current_x_offset, cores_y_pos + (cores_display_max_height - cores_icon_surf.get_height()) // 2))
-        current_x_offset += cores_icon_surf.get_width() + text_icon_spacing
-        self.screen.blit(cores_x_surf, (current_x_offset, cores_y_pos + (cores_display_max_height - cores_x_surf.get_height()) // 2))
-        current_x_offset += cores_x_surf.get_width() + text_icon_spacing
-        self.screen.blit(cores_value_text_surf, (current_x_offset, cores_y_pos + (cores_display_max_height - cores_value_text_surf.get_height()) // 2))
-        current_collectibles_y_right = cores_y_pos - element_spacing # Move Y up
+        # Define bar visuals
+        core_bar_width = 150
+        core_bar_height = bar_height
+        core_bar_filled_width = int(core_bar_width * progress_percentage)
+        
+        # Render text and icon
+        milestone_label_surf = self._render_text_safe(milestone_label_str, "small_text", bar_color)
+        core_icon_surf = self._render_text_safe("💠", "ui_emoji_small", GOLD)
+        
+        # Positioning
+        core_bar_y_pos = current_collectibles_y_right - core_bar_height
+        label_x = collectibles_x_anchor - milestone_label_surf.get_width()
+        core_bar_x_pos = label_x - core_bar_width - 5 # Add padding between bar and label
+        icon_x = core_bar_x_pos - core_icon_surf.get_width() - icon_to_bar_gap
+        
+        # Draw Core Bar Icon
+        self.screen.blit(core_icon_surf, (icon_x, core_bar_y_pos + (core_bar_height - core_icon_surf.get_height()) // 2))
+
+        # Draw Core Bar
+        pygame.draw.rect(self.screen, DARK_GREY, (core_bar_x_pos, core_bar_y_pos, core_bar_width, core_bar_height))
+        if core_bar_filled_width > 0:
+            pygame.draw.rect(self.screen, bar_color, (core_bar_x_pos, core_bar_y_pos, core_bar_filled_width, core_bar_height))
+        pygame.draw.rect(self.screen, WHITE, (core_bar_x_pos, core_bar_y_pos, core_bar_width, core_bar_height), 1)
+
+        # Draw Milestone Label
+        self.screen.blit(milestone_label_surf, (label_x, core_bar_y_pos + (core_bar_height - milestone_label_surf.get_height()) // 2))
+
+        current_collectibles_y_right = core_bar_y_pos - element_spacing # Move Y up
 
         # Core Fragments
         fragment_icon_h = self.ui_icon_size_fragments[1]
@@ -1253,8 +1291,21 @@ class UIManager:
         
         displayable_fragment_ids = fragment_display_order_ids[:TOTAL_CORE_FRAGMENTS_NEEDED] # Show slots for needed fragments
         
-        if hasattr(self.game_controller, 'fragment_ui_target_positions'): # Clear old target positions
-            self.game_controller.fragment_ui_target_positions.clear()
+        if hasattr(self.game_controller, 'animating_rings_to_hud'):
+            for ring_anim in self.game_controller.animating_rings_to_hud:
+                if 'surface' in ring_anim and ring_anim['surface']:
+                    anim_surf = ring_anim['surface']
+                    draw_x = int(ring_anim['pos'][0] - anim_surf.get_width() / 2)
+                    draw_y = int(ring_anim['pos'][1] - anim_surf.get_height() / 2)
+                    self.screen.blit(anim_surf, (draw_x, draw_y))
+        
+        if hasattr(self.game_controller, 'animating_fragments_to_hud'):
+            for frag_anim in self.game_controller.animating_fragments_to_hud:
+                if 'surface' in frag_anim and frag_anim['surface']:
+                    anim_surf = frag_anim['surface']
+                    draw_x = int(frag_anim['pos'][0] - anim_surf.get_width() / 2)
+                    draw_y = int(frag_anim['pos'][1] - anim_surf.get_height() / 2)
+                    self.screen.blit(anim_surf, (draw_x, draw_y))
 
         if TOTAL_CORE_FRAGMENTS_NEEDED > 0 :
             total_fragments_width = TOTAL_CORE_FRAGMENTS_NEEDED * self.ui_icon_size_fragments[0] + \
@@ -1304,106 +1355,7 @@ class UIManager:
             target_slot_center_y = rings_y_pos_hud + self.ui_icon_size_rings[1] // 2
             if hasattr(self.game_controller, 'ring_ui_target_pos'): 
                 self.game_controller.ring_ui_target_pos = (target_slot_center_x, target_slot_center_y)
-        
-        # --- Center of HUD (Score, Level, Timer) ---
-        score_emoji_char = "🏆 "
-        score_text_str = f"Score: {self.game_controller.score}"
-        score_emoji_surf = self._render_text_safe(score_emoji_char, "ui_emoji_general", GOLD)
-        score_text_surf = self._render_text_safe(score_text_str, "ui_text", GOLD)
-        
-        level_emoji_char = "🎯 "
-        level_text_str = f"Level: {self.game_controller.level}"
-        current_scene_state = self.scene_manager.get_current_state()
-        if current_scene_state == GAME_STATE_BONUS_LEVEL_PLAYING: 
-            level_text_str = "Bonus!"
-        elif current_scene_state.startswith("architect_vault"): 
-            level_text_str = "Architect's Vault"
-        level_emoji_surf = self._render_text_safe(level_emoji_char, "ui_emoji_general", CYAN)
-        level_text_surf = self._render_text_safe(level_text_str, "ui_text", CYAN)
-        
-        # Timer display
-        time_icon_char = "⏱ "
-        time_ms_to_display = self.game_controller.level_time_remaining_ms
-        if current_scene_state == GAME_STATE_BONUS_LEVEL_PLAYING: # Adjust for bonus level timer
-            elapsed_bonus_time_ms = current_time_ticks - self.game_controller.bonus_level_timer_start
-            bonus_duration_ms = self.game_controller.bonus_level_duration_ms
-            time_ms_to_display = max(0, bonus_duration_ms - elapsed_bonus_time_ms)
-        
-        time_seconds_total = max(0, time_ms_to_display // 1000)
-        time_value_str = f"{time_seconds_total // 60:02d}:{time_seconds_total % 60:02d}" # Format MM:SS
-        time_color = WHITE
-        
-        is_vault_extraction = (current_scene_state.startswith("architect_vault") and 
-                               self.game_controller.architect_vault_current_phase == "extraction")
-        
-        if not is_vault_extraction: # Standard timer color logic
-            if time_seconds_total <= 10: 
-                time_color = RED if (current_time_ticks // 250) % 2 == 0 else DARK_RED # Flashing red
-            elif time_seconds_total <= 30: 
-                time_color = YELLOW # Warning yellow
-        
-        time_icon_surf = self._render_text_safe(time_icon_char, "ui_emoji_general", time_color)
-        time_value_surf = self._render_text_safe(time_value_str, "ui_text", time_color)
-        
-        # Calculate max height for vertical centering of score/level/timer
-        max_central_element_height = 0
-        if score_emoji_surf: max_central_element_height = max(max_central_element_height, score_emoji_surf.get_height())
-        if score_text_surf: max_central_element_height = max(max_central_element_height, score_text_surf.get_height())
-        if level_emoji_surf: max_central_element_height = max(max_central_element_height, level_emoji_surf.get_height())
-        if level_text_surf: max_central_element_height = max(max_central_element_height, level_text_surf.get_height())
-        if time_icon_surf and not is_vault_extraction: max_central_element_height = max(max_central_element_height, time_icon_surf.get_height())
-        if time_value_surf and not is_vault_extraction: max_central_element_height = max(max_central_element_height, time_value_surf.get_height())
-        
-        info_y_baseline = panel_y_start + (panel_height - max_central_element_height) // 2 # Vertical center in panel
-        spacing_between_center_elements = 25
-        
-        # Calculate total width of central elements for horizontal centering
-        center_elements_total_width = (score_emoji_surf.get_width() + text_icon_spacing + 
-                                       score_text_surf.get_width() + spacing_between_center_elements + 
-                                       level_emoji_surf.get_width() + text_icon_spacing + 
-                                       level_text_surf.get_width())
-        if not is_vault_extraction: # Add timer width if not in vault extraction
-            center_elements_total_width += (spacing_between_center_elements + 
-                                            time_icon_surf.get_width() + text_icon_spacing + 
-                                            time_value_surf.get_width())
-        
-        current_info_x = (WIDTH - center_elements_total_width) // 2 # Start X for central elements
-        
-        # Draw Score
-        self.screen.blit(score_emoji_surf, (current_info_x, info_y_baseline + (max_central_element_height - score_emoji_surf.get_height()) // 2))
-        current_info_x += score_emoji_surf.get_width() + text_icon_spacing
-        self.screen.blit(score_text_surf, (current_info_x, info_y_baseline + (max_central_element_height - score_text_surf.get_height()) // 2))
-        current_info_x += score_text_surf.get_width() + spacing_between_center_elements
-        
-        # Draw Level
-        self.screen.blit(level_emoji_surf, (current_info_x, info_y_baseline + (max_central_element_height - level_emoji_surf.get_height()) // 2))
-        current_info_x += level_emoji_surf.get_width() + text_icon_spacing
-        self.screen.blit(level_text_surf, (current_info_x, info_y_baseline + (max_central_element_height - level_text_surf.get_height()) // 2))
-        current_info_x += level_text_surf.get_width() + spacing_between_center_elements
-        
-        # Draw Timer (if not in vault extraction)
-        if not is_vault_extraction:
-            self.screen.blit(time_icon_surf, (current_info_x, info_y_baseline + (max_central_element_height - time_icon_surf.get_height()) // 2))
-            current_info_x += time_icon_surf.get_width() + text_icon_spacing
-            self.screen.blit(time_value_surf, (current_info_x, info_y_baseline + (max_central_element_height - time_value_surf.get_height()) // 2))
-        
-        # Draw animating collectibles (rings/fragments flying to HUD)
-        if hasattr(self.game_controller, 'animating_rings_to_hud'):
-            for ring_anim in self.game_controller.animating_rings_to_hud:
-                if 'surface' in ring_anim and ring_anim['surface']:
-                    anim_surf = ring_anim['surface']
-                    draw_x = int(ring_anim['pos'][0] - anim_surf.get_width() / 2)
-                    draw_y = int(ring_anim['pos'][1] - anim_surf.get_height() / 2)
-                    self.screen.blit(anim_surf, (draw_x, draw_y))
-        
-        if hasattr(self.game_controller, 'animating_fragments_to_hud'):
-            for frag_anim in self.game_controller.animating_fragments_to_hud:
-                if 'surface' in frag_anim and frag_anim['surface']:
-                    anim_surf = frag_anim['surface']
-                    draw_x = int(frag_anim['pos'][0] - anim_surf.get_width() / 2)
-                    draw_y = int(frag_anim['pos'][1] - anim_surf.get_height() / 2)
-                    self.screen.blit(anim_surf, (draw_x, draw_y))
-
+                
     def get_scaled_fragment_icon(self, fragment_id):
         """Returns a scaled icon for a given fragment ID, loading if necessary."""
         # Ensure assets are loaded if not already
