@@ -42,22 +42,22 @@ except ImportError:
 
 
 logger = logging.getLogger(__name__)
-# BasicConfig should ideally be called once at the application entry point.
 if not logging.getLogger().hasHandlers():
     logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - [%(name)s] - %(message)s')
 
 
-TURRET_IMAGE_PATHS = {
-    WEAPON_MODE_DEFAULT: "assets/images/level_elements/turret1.png",
-    WEAPON_MODE_TRI_SHOT: "assets/images/level_elements/turret2.png",
-    WEAPON_MODE_RAPID_SINGLE: "assets/images/level_elements/turret1.png",
-    WEAPON_MODE_RAPID_TRI: "assets/images/level_elements/turret2.png",
-    WEAPON_MODE_BIG_SHOT: "assets/images/level_elements/turret1.png",
-    WEAPON_MODE_BOUNCE: "assets/images/level_elements/turret1.png",
-    WEAPON_MODE_PIERCE: "assets/images/level_elements/turret1.png",
-    WEAPON_MODE_HEATSEEKER: "assets/images/level_elements/turret3.png",
-    WEAPON_MODE_HEATSEEKER_PLUS_BULLETS: "assets/images/level_elements/turret3.png",
-    WEAPON_MODE_LIGHTNING: "assets/images/level_elements/turret4.png",
+# Map weapon modes to the asset keys defined in GameController's manifest
+TURRET_ASSET_KEYS = {
+    WEAPON_MODE_DEFAULT: "turret_default_base_img",
+    WEAPON_MODE_TRI_SHOT: "turret_trishot_base_img",
+    WEAPON_MODE_RAPID_SINGLE: "turret_default_base_img", # Reuses default sprite
+    WEAPON_MODE_RAPID_TRI: "turret_trishot_base_img",   # Reuses tri-shot sprite
+    WEAPON_MODE_BIG_SHOT: "turret_default_base_img",    # Reuses default sprite
+    WEAPON_MODE_BOUNCE: "turret_default_base_img",      # Reuses default sprite
+    WEAPON_MODE_PIERCE: "turret_default_base_img",      # Reuses default sprite
+    WEAPON_MODE_HEATSEEKER: "turret_seeker_base_img",
+    WEAPON_MODE_HEATSEEKER_PLUS_BULLETS: "turret_seeker_base_img",
+    WEAPON_MODE_LIGHTNING: "turret_lightning_base_img",
 }
 
 class Turret(pygame.sprite.Sprite):
@@ -69,11 +69,12 @@ class Turret(pygame.sprite.Sprite):
     BASE_RANGE = TILE_SIZE * 3
     SPRITE_SIZE = (int(TILE_SIZE * 0.8), int(TILE_SIZE * 0.8))
 
-    def __init__(self, x, y, game_controller_ref):
+    def __init__(self, x, y, game_controller_ref, asset_manager):
         super().__init__()
         self.x = float(x)
         self.y = float(y)
         self.game_controller_ref = game_controller_ref
+        self.asset_manager = asset_manager # Store AssetManager
         self.angle = 0
         self.target = None
         self.upgrade_level = 0
@@ -108,7 +109,7 @@ class Turret(pygame.sprite.Sprite):
         self._ensure_drawable_state()
 
     def _ensure_drawable_state(self):
-        """Ensures self.image and self.rect are valid for drawing by Group.draw()."""
+        """Ensures self.image and self.rect are valid for drawing."""
         if not hasattr(self, 'original_image') or self.original_image is None:
             self._load_sprite_for_weapon_mode()
 
@@ -121,32 +122,41 @@ class Turret(pygame.sprite.Sprite):
             else:
                 self.rect = pygame.Rect(int(self.x - self.SPRITE_SIZE[0]//2), int(self.y - self.SPRITE_SIZE[1]//2), self.SPRITE_SIZE[0], self.SPRITE_SIZE[1])
                 self.image = pygame.Surface(self.rect.size, pygame.SRCALPHA)
-                self.image.fill((255,100,0,100)) # Orange error fallback
+                self.image.fill((255,100,0,100))
         elif self.image and self.rect.size != self.image.get_size():
-             current_center = self.rect.center # Preserve center
+             current_center = self.rect.center
              self.rect = self.image.get_rect(center=current_center)
 
 
     def _load_sprite_for_weapon_mode(self):
-        image_path = TURRET_IMAGE_PATHS.get(self.current_weapon_mode, TURRET_IMAGE_PATHS[WEAPON_MODE_DEFAULT])
-        if os.path.exists(image_path):
+        """Loads the turret sprite from the AssetManager based on the current weapon mode."""
+        asset_key = TURRET_ASSET_KEYS.get(self.current_weapon_mode, TURRET_ASSET_KEYS[WEAPON_MODE_DEFAULT])
+        
+        # Get the pre-loaded image from the asset manager
+        loaded_image = self.asset_manager.get_image(asset_key)
+
+        if loaded_image:
             try:
-                loaded_image = pygame.image.load(image_path).convert_alpha()
+                # Scale the loaded image to the correct sprite size for the turret
                 self.original_image = pygame.transform.smoothscale(loaded_image, self.SPRITE_SIZE)
-            except pygame.error as e:
+            except (ValueError, pygame.error) as e:
+                logger.error(f"Turret: Error scaling sprite for key '{asset_key}': {e}. Using fallback.")
                 self.original_image = None
         else:
-            logger.warning(f"Turret ID {id(self)}: Sprite path not found '{image_path}'.")
+            logger.warning(f"Turret: Sprite for key '{asset_key}' not found in AssetManager.")
             self.original_image = None
 
-        if not self.original_image:
+        # Fallback procedural sprite if image loading failed
+        if self.original_image is None:
             self.original_image = pygame.Surface(self.SPRITE_SIZE, pygame.SRCALPHA)
             pygame.draw.rect(self.original_image, self.turret_base_color_fallback, self.original_image.get_rect(), border_radius=3)
-            barrel_rect = pygame.Rect(self.SPRITE_SIZE[0] * 0.4, self.SPRITE_SIZE[1] * 0.7, self.SPRITE_SIZE[0] * 0.2, self.SPRITE_SIZE[1] * 0.3) # Pointing "up"
+            barrel_rect = pygame.Rect(self.SPRITE_SIZE[0] * 0.4, self.SPRITE_SIZE[1] * 0.7, self.SPRITE_SIZE[0] * 0.2, self.SPRITE_SIZE[1] * 0.3)
             pygame.draw.rect(self.original_image, (50,50,50), barrel_rect)
-        self._draw_turret()
+        
+        self._draw_turret() # Update self.image with the newly loaded original
 
     def _update_weapon_attributes(self):
+        """Recalculates turret stats based on upgrade level and weapon mode."""
         self.current_weapon_mode = WEAPON_MODES_SEQUENCE[self.weapon_mode_index]
         self.current_damage = 15 + (self.upgrade_level * 5)
         self.current_bullet_size = PLAYER_DEFAULT_BULLET_SIZE
@@ -169,18 +179,23 @@ class Turret(pygame.sprite.Sprite):
         elif self.current_weapon_mode == WEAPON_MODE_LIGHTNING:
             self.current_damage = LIGHTNING_DAMAGE + (self.upgrade_level * 7)
             self.current_lightning_cooldown = LIGHTNING_COOLDOWN / (1 + 0.1 * self.upgrade_level)
+        
+        # Load the correct sprite for the new weapon mode
         self._load_sprite_for_weapon_mode()
 
     def _draw_turret(self):
+        """Rotates the original sprite to create the current image."""
         if not self.original_image:
+             # This fallback should ideally not be needed if _load_sprite_for_weapon_mode works
              self.original_image = pygame.Surface(self.SPRITE_SIZE, pygame.SRCALPHA)
              self.original_image.fill(self.turret_base_color_fallback)
+        
         current_center = self.rect.center if self.rect else (int(self.x), int(self.y))
         self.image = pygame.transform.rotate(self.original_image, -self.angle)
         self.rect = self.image.get_rect(center=current_center)
 
-
     def find_target(self, enemies_group):
+        # (No change to this method's logic)
         self.target = None
         closest_enemy = None
         min_dist_sq = self.current_range ** 2
@@ -195,6 +210,7 @@ class Turret(pygame.sprite.Sprite):
         self.target = closest_enemy
 
     def aim_at_target(self):
+        # (No change to this method's logic)
         if self.target and self.target.alive:
             dx = self.target.rect.centerx - self.x
             dy = self.target.rect.centery - self.y
@@ -208,6 +224,8 @@ class Turret(pygame.sprite.Sprite):
         return False
 
     def shoot(self, enemies_group, maze_ref):
+        # (No change to this method's logic, as it creates projectiles procedurally)
+        # Sounds are played by CombatController, not the Turret itself.
         current_time = pygame.time.get_ticks()
         if not self.target or not self.target.alive or not self.rect:
             return
@@ -253,12 +271,14 @@ class Turret(pygame.sprite.Sprite):
                 game_area_x_offset = self.game_controller_ref.maze.game_area_x_offset if self.game_controller_ref and hasattr(self.game_controller_ref, 'maze') and self.game_controller_ref.maze else 0
                 lightning_lifetime_frames_actual = gs.get_game_setting("LIGHTNING_LIFETIME", 120)
 
+                # LightningZap constructor needs a player_ref for some logic, we pass self (the Turret)
                 new_zap = LightningZap(player_ref=self, initial_target_enemy_ref=self.target,
                                        damage=int(self.current_damage), lifetime_frames=lightning_lifetime_frames_actual,
                                        maze_ref=maze_ref, game_area_x_offset=game_area_x_offset)
                 self.lightning_zaps.add(new_zap)
 
     def upgrade(self):
+        # (No change to this method's logic)
         if self.weapon_mode_index < self.MAX_UPGRADE_LEVEL:
             self.weapon_mode_index += 1
             self.upgrade_level = self.weapon_mode_index
@@ -267,6 +287,7 @@ class Turret(pygame.sprite.Sprite):
         return False
 
     def update(self, enemies_group, maze_ref, game_area_x_offset=0):
+        # (No change to this method's logic)
         self.find_target(enemies_group)
         if self.aim_at_target():
             self.shoot(enemies_group, maze_ref)
@@ -276,15 +297,14 @@ class Turret(pygame.sprite.Sprite):
         self.lightning_zaps.update(pygame.time.get_ticks())
 
     def draw(self, surface):
+        # (No change to this method's logic)
         if self.image and self.rect:
             surface.blit(self.image, self.rect)
         else:
-             # Fallback drawing if image/rect is missing
              fallback_rect = self.rect if self.rect else pygame.Rect(int(self.x - self.SPRITE_SIZE[0]//2), int(self.y - self.SPRITE_SIZE[1]//2), self.SPRITE_SIZE[0], self.SPRITE_SIZE[1])
              pygame.draw.rect(surface, gs.ORANGE, fallback_rect, 3)
              if not self.image: logger.warning(f"Turret ID {id(self)} DRAWING FALLBACK (Orange Rect) because self.image is None.")
              if not self.rect: logger.warning(f"Turret ID {id(self)} DRAWING FALLBACK (Orange Rect) because self.rect is None.")
-
 
         if self.show_range_indicator and self.rect:
             range_color = (0,100,255, 70)
@@ -292,20 +312,13 @@ class Turret(pygame.sprite.Sprite):
             pygame.draw.circle(temp_range_surface, range_color, (int(self.current_range), int(self.current_range)), int(self.current_range))
             surface.blit(temp_range_surface, (self.rect.centerx - self.current_range, self.rect.centery - self.current_range))
 
-        # Draw bullets
-        if self.bullets and len(self.bullets) > 0:
-            self.bullets.draw(surface)
-
-        # Draw missiles
-        if self.missiles and len(self.missiles) > 0:
-            self.missiles.draw(surface)
-
-        # Draw lightning zaps
+        if self.bullets and len(self.bullets) > 0: self.bullets.draw(surface)
+        if self.missiles and len(self.missiles) > 0: self.missiles.draw(surface)
         if self.lightning_zaps and len(self.lightning_zaps) > 0:
-            for zap in self.lightning_zaps: # Iterate and call draw for each zap
+            for zap in self.lightning_zaps:
                 if hasattr(zap, 'draw') and callable(getattr(zap, 'draw')):
                      zap.draw(surface)
 
     def take_damage(self, amount):
-        # Turrets are currently invulnerable in Maze Defense
+        # Turrets are currently invulnerable
         pass

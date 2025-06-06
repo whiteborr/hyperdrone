@@ -8,13 +8,16 @@ from .scene_manager import SceneManager
 from .event_manager import EventManager
 from .player_actions import PlayerActions
 from .enemy_manager import EnemyManager
-from .ring_puzzle_module import RingPuzzle
+from .ring_puzzle_module import RingPuzzle # Assuming this is the correct name and location
 from .wave_manager import WaveManager
 
 # Import NEW sub-controller classes
 from .combat_controller import CombatController
 from .puzzle_controller import PuzzleController
 from .ui_flow_controller import UIFlowController
+
+# Import the NEW AssetManager class
+from .asset_manager import AssetManager # <<< ADDED THIS LINE
 
 # Import the leaderboard module directly if it contains functions to be used
 from . import leaderboard
@@ -29,12 +32,15 @@ __all__ = [
     "EnemyManager",
     "RingPuzzle",
     "WaveManager",
-    "CombatController",     # Added
-    "PuzzleController",     # Added
-    "UIFlowController",     # Added
+    "CombatController",
+    "PuzzleController",
+    "UIFlowController",
+    "AssetManager",         # <<< ADDED AssetManager HERE
     "leaderboard"
 ]
 
 # You can also add any package-level initialization code here if needed,
 # though for this structure, it's often not necessary.
-print("Hyperdrone Core Systems (including sub-controllers) Initialized.")
+# Consider moving the "Hyperdrone Core Systems Initialized" print to a logging statement
+# within the GameController or AssetManager if it's for debugging.
+# print("Hyperdrone Core Systems (including AssetManager) Initialized.")
