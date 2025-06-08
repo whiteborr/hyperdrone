@@ -29,33 +29,31 @@ class DroneSystem:
         self.collected_glyph_tablets = set()
         self.solved_puzzle_terminals = set()
         
-        # --- START FIX ---
-        # Added a set to track defeated bosses.
+        # Track defeated bosses for unlocks
         self.defeated_bosses = set()
-        # --- END FIX ---
 
         # Vault status
         self.architect_vault_completed = False
 
         self._load_unlocks()
-        logger.info(f"DroneSystem initialized. Unlocked drones: {self.unlocked_drones}. Selected: {self.selected_drone_id}")
+        logger.info(f"DroneSystem initialized. Unlocked: {self.unlocked_drones}. Selected: {self.selected_drone_id}")
 
     def _load_all_lore_entries(self):
         """Loads all possible lore entries from the JSON file and converts the list to a dictionary."""
         if not os.path.exists(self.LORE_FILE):
-            logger.error(f"DroneSystem: Lore file not found at '{self.LORE_FILE}'. No lore will be available.")
+            logger.error(f"Lore file not found at '{self.LORE_FILE}'. No lore will be available.")
             return {}
         try:
-            with open(self.LORE_FILE, 'r') as f:
-                lore_data_list = json.load(f)
+            with open(self.LORE_FILE, 'r', encoding='utf-8') as f:
+                lore_data_list = json.load(f).get("entries", [])
                 
                 # Convert the loaded list into a dictionary, keyed by the 'id' field.
                 lore_data_dict = {entry['id']: entry for entry in lore_data_list if 'id' in entry}
                 
-                logger.info(f"DroneSystem: Successfully loaded and processed {len(lore_data_dict)} lore entries.")
+                logger.info(f"Successfully loaded and processed {len(lore_data_dict)} lore entries.")
                 return lore_data_dict
-        except (IOError, json.JSONDecodeError, TypeError) as e:
-            logger.error(f"DroneSystem: Error loading or parsing lore file '{self.LORE_FILE}': {e}")
+        except (IOError, json.JSONDecodeError, TypeError, KeyError) as e:
+            logger.error(f"Error loading or parsing lore file '{self.LORE_FILE}': {e}")
             return {}
 
     def _load_unlocks(self):
@@ -72,14 +70,11 @@ class DroneSystem:
                     self.architect_vault_completed = data.get("architect_vault_completed", False)
                     self.collected_glyph_tablets.update(data.get("collected_glyph_tablets", []))
                     self.solved_puzzle_terminals.update(data.get("solved_puzzle_terminals", []))
-                    # --- START FIX ---
-                    # Load defeated bosses from the save file.
                     self.defeated_bosses.update(data.get("defeated_bosses", []))
-                    # --- END FIX ---
             except (IOError, json.JSONDecodeError) as e:
-                logger.error(f"DroneSystem: Error loading save file '{self.SAVE_FILE}': {e}")
+                logger.error(f"Error loading save file '{self.SAVE_FILE}': {e}")
         else:
-            logger.info(f"DroneSystem: No save file found at '{self.SAVE_FILE}'. Starting with defaults.")
+            logger.info(f"No save file found at '{self.SAVE_FILE}'. Starting with defaults.")
             self._save_unlocks() # Create a new save file with defaults
 
     def _save_unlocks(self):
@@ -93,29 +88,23 @@ class DroneSystem:
             "architect_vault_completed": self.architect_vault_completed,
             "collected_glyph_tablets": list(self.collected_glyph_tablets),
             "solved_puzzle_terminals": list(self.solved_puzzle_terminals),
-            # --- START FIX ---
-            # Save the set of defeated bosses.
             "defeated_bosses": list(self.defeated_bosses)
-            # --- END FIX ---
         }
         try:
             os.makedirs(os.path.dirname(self.SAVE_FILE), exist_ok=True)
             with open(self.SAVE_FILE, 'w') as f:
                 json.dump(data, f, indent=4)
         except IOError as e:
-            logger.error(f"DroneSystem: Error saving progress to file '{self.SAVE_FILE}': {e}")
+            logger.error(f"Error saving progress to file '{self.SAVE_FILE}': {e}")
 
-    # --- START FIX ---
-    # Added the missing 'add_defeated_boss' method.
     def add_defeated_boss(self, boss_id):
         """Adds a boss ID to the set of defeated bosses and saves progress."""
         if boss_id not in self.defeated_bosses:
             self.defeated_bosses.add(boss_id)
             self._save_unlocks()
-            logger.info(f"DroneSystem: Boss '{boss_id}' marked as defeated.")
+            logger.info(f"Boss '{boss_id}' marked as defeated.")
             return True
         return False
-    # --- END FIX ---
 
     def get_all_drone_ids_in_order(self):
         return list(self.drones.keys())
@@ -131,7 +120,11 @@ class DroneSystem:
 
     def get_drone_stats(self, drone_id, is_in_architect_vault=False):
         config = self.get_drone_config(drone_id)
-        return config.get("vault_stats") if is_in_architect_vault and "vault_stats" in config else config.get("stats", {})
+        # Use a more robust check for 'base_stats'
+        stats_source = config.get("base_stats", {})
+        if is_in_architect_vault and "vault_stats" in config:
+            stats_source = config.get("vault_stats")
+        return stats_source
 
     def set_selected_drone(self, drone_id):
         if self.is_drone_unlocked(drone_id):
@@ -154,13 +147,17 @@ class DroneSystem:
                 self.player_cores -= unlock_value
                 self.unlocked_drones.add(drone_id)
                 self._save_unlocks()
+                logger.info(f"Drone '{drone_id}' unlocked by spending {unlock_value} cores.")
                 return True
         elif unlock_type == "boss":
              if unlock_value in self.defeated_bosses:
                 self.unlocked_drones.add(drone_id)
                 self._save_unlocks()
+                logger.info(f"Drone '{drone_id}' unlocked by defeating boss '{unlock_value}'.")
                 return True
         elif unlock_type == "level_reach":
+            # This logic would need to be called by the game controller when a level is completed.
+            # For now, it remains as a potential unlock method.
             pass
         return False
 
@@ -183,7 +180,7 @@ class DroneSystem:
         """Unlocks a specific lore entry if it's not already unlocked."""
         if lore_id in self.all_lore_entries and lore_id not in self.unlocked_lore_ids:
             self.unlocked_lore_ids.add(lore_id)
-            logger.info(f"DroneSystem: Lore Codex Entry '{lore_id}' unlocked!")
+            logger.info(f"Lore Codex Entry '{lore_id}' unlocked!")
             self._save_unlocks()
             return [lore_id]
         return []
@@ -191,16 +188,14 @@ class DroneSystem:
     def check_and_unlock_lore_entries(self, event_trigger, **kwargs):
         """Checks conditions for all lore entries and unlocks them if criteria are met."""
         unlocked_ids_this_check = []
-        # This loop now works correctly because self.all_lore_entries is a dictionary
         for lore_id, entry in self.all_lore_entries.items():
             if lore_id not in self.unlocked_lore_ids:
-                if entry.get("unlock_trigger") == event_trigger:
+                if entry.get("unlocked_by") == event_trigger:
                     self.unlock_lore_entry_by_id(lore_id)
                     unlocked_ids_this_check.append(lore_id)
         return unlocked_ids_this_check
 
     def get_lore_entry_details(self, lore_id):
-        # This method now works correctly because self.all_lore_entries is a dictionary
         return self.all_lore_entries.get(lore_id)
         
     def has_unlocked_lore(self, lore_id):
@@ -217,7 +212,7 @@ class DroneSystem:
             if entry and "category" in entry:
                 categories.add(entry["category"])
         
-        preferred_order = ["Main Story", "Drones", "Factions", "Alien Races", "Technology", "Locations"]
+        preferred_order = ["Story", "Architect's Echoes", "Drones", "Alien Tech", "Alien Races", "Locations", "Story Beats"]
         
         sorted_categories = sorted(list(categories), key=lambda x: preferred_order.index(x) if x in preferred_order else len(preferred_order))
         
@@ -231,6 +226,7 @@ class DroneSystem:
             if entry and entry.get("category") == category_name:
                 entries.append(entry)
         
+        # Ensure a 'sequence' key exists for sorting, default to 0 if not present
         entries.sort(key=lambda x: x.get('sequence', 0))
         return entries
         
@@ -250,11 +246,14 @@ class DroneSystem:
     def are_all_core_fragments_collected(self):
         """Checks if all fragments *required for the vault* are collected."""
         required_fragments = {details['id'] for _, details in gs.CORE_FRAGMENT_DETAILS.items() if details and details.get('required_for_vault')}
+        if not required_fragments:
+            logger.warning("No fragments marked as 'required_for_vault'. Vault may be permanently locked.")
+            return False
         return required_fragments.issubset(self.collected_core_fragments)
         
     def reset_collected_fragments_in_storage(self):
         self.collected_core_fragments.clear()
-        logger.info("DroneSystem: Persisted collected core fragments have been reset for new game session.")
+        logger.info("Persisted collected core fragments have been reset for new game session.")
         self._save_unlocks()
 
     def mark_architect_vault_completed(self, success_status):
@@ -266,7 +265,7 @@ class DroneSystem:
         
     def reset_architect_vault_status(self):
         self.architect_vault_completed = False
-        logger.info("DroneSystem: Architect's Vault completion status reset for new game session.")
+        logger.info("Architect's Vault completion status reset for new game session.")
         self._save_unlocks()
 
     def add_collected_glyph_tablet(self, tablet_id):
@@ -287,4 +286,5 @@ class DroneSystem:
         return terminal_id in self.solved_puzzle_terminals
 
     def set_player_level(self, level):
+        """Placeholder for potential future logic related to player level."""
         pass
