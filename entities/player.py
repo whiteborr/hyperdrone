@@ -625,15 +625,32 @@ class PlayerDrone(BaseDrone):
         # (This method's logic remains the same)
         return (self.x, self.y)
 
-    def draw(self, surface):
-        # (This method's drawing logic remains largely the same, using self.image)
-        if not self.alive and not self.bullets_group and not self.missiles_group and not self.lightning_zaps_group and not self.thrust_particles:
-            return # Nothing to draw if dead and no lingering effects
+    def draw(self, surface, camera=None):
+        if not self.alive and not any([self.bullets_group, self.missiles_group, self.lightning_zaps_group, self.thrust_particles]):
+            return
         
-        self.thrust_particles.draw(surface) # Draw thrust particles first (behind drone)
-        
-        if self.alive and self.image and self.original_image: # Ensure images are loaded  
-            surface.blit(self.image, self.rect) # self.image is the rotated, alpha-set version
+        # Draw projectiles and particles, passing camera down
+        if camera:
+            for particle in self.thrust_particles: particle.draw(surface, camera)
+            for bullet in self.bullets_group: bullet.draw(surface, camera)
+            for missile in self.missiles_group: missile.draw(surface, camera)
+            for zap in self.lightning_zaps_group: zap.draw(surface, camera)
+        else:
+            self.thrust_particles.draw(surface)
+            self.bullets_group.draw(surface)
+            self.missiles_group.draw(surface)
+            self.lightning_zaps_group.draw(surface)
+
+        if self.alive and self.image:
+            if camera:
+                scaled_size = (int(self.rect.width * camera.zoom_level), int(self.rect.height * camera.zoom_level))
+                if scaled_size[0] > 0 and scaled_size[1] > 0:
+                    # We use the rotated self.image, no need to re-rotate
+                    scaled_image = pygame.transform.smoothscale(self.image, scaled_size)
+                    screen_rect = camera.apply_to_rect(self.rect)
+                    surface.blit(scaled_image, screen_rect)
+            else:
+                surface.blit(self.image, self.rect)
             
             # Shield visual effect
             if self.shield_active:
@@ -670,25 +687,28 @@ class PlayerDrone(BaseDrone):
                     if hasattr(zap, 'alive') and zap.alive: # Only draw if zap is alive
                         zap.draw(surface) # LightningZap has its own complex draw method
             
-        # Draw health bar only if alive
         if self.alive:
-            self.draw_health_bar(surface)
+            self.draw_health_bar(surface, camera)
 
-    def draw_health_bar(self, surface):
-        # (This method's logic remains the same)
-        if not self.alive or not self.rect: return 
+    def draw_health_bar(self, surface, camera=None):
+        if not self.alive or not self.rect: return
         
-        bar_width = self.rect.width * 0.8; bar_height = 5
-        bar_x = self.rect.centerx - bar_width / 2; bar_y = self.rect.top - bar_height - 3 # Position above drone
+        bar_width = self.rect.width * 0.8
+        bar_height = 5
+        
+        if camera:
+            screen_rect = camera.apply_to_rect(self.rect)
+            bar_x = screen_rect.centerx - bar_width / 2
+            bar_y = screen_rect.top - bar_height - 3
+        else:
+            bar_x = self.rect.centerx - bar_width / 2
+            bar_y = self.rect.top - bar_height - 3
         
         health_percentage = max(0, self.health / self.max_health) if self.max_health > 0 else 0
         filled_width = bar_width * health_percentage
         
-        pygame.draw.rect(surface, (80,0,0) if health_percentage < 0.3 else (50,50,50), (bar_x, bar_y, bar_width, bar_height)) # Background
-        
-        fill_color = RED
-        if health_percentage >= 0.6: fill_color = GREEN
-        elif health_percentage >= 0.3: fill_color = YELLOW
-        
-        if filled_width > 0: pygame.draw.rect(surface, fill_color, (bar_x, bar_y, filled_width, bar_height)) # Filled portion
-        pygame.draw.rect(surface, WHITE, (bar_x, bar_y, bar_width, bar_height), 1) # Border
+        pygame.draw.rect(surface, (80,0,0), (bar_x, bar_y, bar_width, bar_height))
+        if filled_width > 0:
+            fill_color = RED if health_percentage < 0.3 else YELLOW if health_percentage > 0.6 else GREEN
+            pygame.draw.rect(surface, fill_color, (bar_x, bar_y, filled_width, bar_height))
+        pygame.draw.rect(surface, WHITE, (bar_x, bar_y, bar_width, bar_height), 1)

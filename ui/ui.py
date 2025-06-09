@@ -99,7 +99,7 @@ class UIManager:
                         logger.warning(f"UIManager: Core fragment icon for ID '{frag_id}' (key: '{asset_key}') not found. Using fallback.")
                         self.ui_asset_surfaces["core_fragment_icons"][frag_id] = self._create_fallback_icon_surface(self.ui_icon_size_fragments, frag_id[:1] if frag_id else "!", PURPLE)
         
-        reactor_icon_asset = self.asset_manager.get_image("reactor_hud_icon_key", scale_to_size=self.ui_icon_size_reactor)
+        reactor_icon_asset = self.asset_manager.get_image("core_reactor_image", scale_to_size=self.ui_icon_size_reactor)
         if reactor_icon_asset: self.ui_asset_surfaces["reactor_icon_placeholder"] = reactor_icon_asset
         else: self.ui_asset_surfaces["reactor_icon_placeholder"] = self._create_fallback_icon_surface(self.ui_icon_size_reactor, "⚛", (50,50,200), font_key="ui_emoji_general")
 
@@ -941,7 +941,6 @@ class UIManager:
         icon_to_bar_gap = 10; icon_spacing = 5; text_icon_spacing = 2
         current_time_ticks = pygame.time.get_ticks()
         
-        # Font keys and sizes (match manifest)
         ui_text_font_key = "ui_text"; ui_text_font_size = 28
         ui_values_font_key = "ui_values"; ui_values_font_size = 30
         ui_emoji_general_key = "ui_emoji_general"; ui_emoji_general_size = 32
@@ -1036,10 +1035,14 @@ class UIManager:
                 if bar_width_fill_powerup > 0: pygame.draw.rect(self.screen, powerup_bar_fill_color, (bar_start_x_powerup, powerup_bar_y_pos, bar_width_fill_powerup, bar_height))
                 pygame.draw.rect(self.screen, WHITE, (bar_start_x_powerup, powerup_bar_y_pos, bar_segment_width_powerup, bar_height), 1)
         
-        # --- Right Side of HUD ---
-        # ... (Collectible display logic uses self.ui_asset_surfaces for icons) ...
-        # ... (and _render_text_safe for text like core count) ...
-        collectibles_x_anchor = WIDTH - h_padding; current_collectibles_y_right = panel_y_start + panel_height - v_padding
+        # --- Right Side ---
+        collectibles_x_anchor = WIDTH - h_padding
+        current_collectibles_y_right = panel_y_start + panel_height - v_padding
+        level_text_str = f"LEVEL: {self.game_controller.level}"
+        level_surf = self._render_text_safe(level_text_str, "ui_text", CYAN, fallback_size=ui_text_font_size)
+        level_rect = level_surf.get_rect(right=collectibles_x_anchor, bottom=current_collectibles_y_right)
+        self.screen.blit(level_surf, level_rect)
+        current_collectibles_y_right -= level_surf.get_height() + element_spacing
         core_milestone_data = [{'threshold': 1000, 'color': LIGHT_BLUE, 'label': '1K'}, {'threshold': 5000, 'color': GREEN, 'label': '5K'}, {'threshold': 10000, 'color': ORANGE, 'label': '10K'}, {'threshold': 20000, 'color': RED, 'label': '20K'}, {'threshold': 50000, 'color': PURPLE, 'label': '50K'}, {'threshold': 100000, 'color': GOLD, 'label': 'MAX'}]
         current_cores = self.drone_system.get_player_cores(); lower_bound = 0; upper_bound = core_milestone_data[0]['threshold']
         bar_color = core_milestone_data[0]['color']; milestone_label_str = core_milestone_data[0]['label']
