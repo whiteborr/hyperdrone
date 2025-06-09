@@ -65,6 +65,9 @@ class CombatController:
         if current_game_state == GAME_STATE_MAZE_DEFENSE and (not self.maze or not self.core_reactor):
             return
 
+        if self.player and self.player.alive:
+            pass 
+
         player_pos_pixels = self.player.get_position() if self.player and self.player.alive else None
         game_area_x_offset = self.maze.game_area_x_offset if self.maze else 0
         
@@ -75,6 +78,7 @@ class CombatController:
             target_for_enemies, 
             self.maze, 
             current_time_ms, 
+            delta_time_ms,
             game_area_x_offset,
             is_defense_mode=is_defense_mode_active
         )
@@ -124,7 +128,8 @@ class CombatController:
             self._handle_player_power_up_collisions()
 
     def _handle_turret_projectile_collisions(self):
-        if not self.turrets_group or not self.enemy_manager: return
+        if not self.turrets_group or not self.enemy_manager:
+            return
         enemies_to_check = self.enemy_manager.get_sprites()
         if not enemies_to_check: return
 
@@ -136,132 +141,219 @@ class CombatController:
 
             for projectile in list(turret_projectiles): 
                 if not projectile.alive: continue
-                hit_enemies = pygame.sprite.spritecollide(projectile, enemies_to_check, False, lambda proj, enemy: proj.rect.colliderect(getattr(enemy, 'collision_rect', enemy.rect)))
+                
+                hit_enemies = pygame.sprite.spritecollide(
+                    projectile, enemies_to_check, False, 
+                    lambda proj, enemy: proj.rect.colliderect(getattr(enemy, 'collision_rect', enemy.rect))
+                )
                 for enemy in hit_enemies:
                     if enemy.alive:
-                        damage_to_enemy = projectile.damage if not isinstance(projectile, LightningZap) else projectile.damage
+                        damage_to_enemy = projectile.damage
+                        if isinstance(projectile, LightningZap):
+                            damage_to_enemy = projectile.damage 
                         enemy.take_damage(damage_to_enemy)
                         if not enemy.alive:
                             self.game_controller._create_explosion(enemy.rect.centerx, enemy.rect.centery, specific_sound_key='enemy_shoot')
                         
-                        if isinstance(projectile, LightningZap): pass
-                        elif not (hasattr(projectile, 'max_pierces') and projectile.pierces_done < projectile.max_pierces): projectile.kill()
-                        elif hasattr(projectile, 'pierces_done'): projectile.pierces_done +=1
+                        if isinstance(projectile, LightningZap):
+                           pass
+                        elif not (hasattr(projectile, 'max_pierces') and projectile.pierces_done < projectile.max_pierces):
+                            projectile.kill()
+                        elif hasattr(projectile, 'pierces_done'):
+                            projectile.pierces_done +=1
+                        
                         if not projectile.alive: break 
     
     def _handle_player_projectile_collisions(self):
-        if not self.player or not self.player.alive: return
+        if not self.player or not self.player.alive:
+            return
+
         player_projectiles = pygame.sprite.Group()
         if hasattr(self.player, 'bullets_group'): player_projectiles.add(self.player.bullets_group)
         if hasattr(self.player, 'missiles_group'): player_projectiles.add(self.player.missiles_group)
         if hasattr(self.player, 'lightning_zaps_group'): player_projectiles.add(self.player.lightning_zaps_group)
+
         enemies_to_check = self.enemy_manager.get_sprites()
 
-        for projectile in list(player_projectiles): 
-            if not projectile.alive: continue
+        for projectile in list(player_projectiles):
+            if not projectile.alive:
+                continue
+
             if self.boss_active and self.maze_guardian and self.maze_guardian.alive:
                 hit_a_corner = False
                 for corner in self.maze_guardian.corners:
                     if corner['status'] != 'destroyed' and projectile.rect.colliderect(corner['rect']):
-                        damage_to_corner = projectile.damage if not isinstance(projectile, LightningZap) else gs.get_game_setting("LIGHTNING_DAMAGE", 15)
-                        if self.maze_guardian.damage_corner(corner['id'], damage_to_corner): self.game_controller.score += 250; self.game_controller.drone_system.add_player_cores(25)
+                        damage_to_corner = projectile.damage
+                        if isinstance(projectile, LightningZap):
+                            damage_to_corner = gs.get_game_setting("LIGHTNING_DAMAGE", 15)
+                        
+                        if self.maze_guardian.damage_corner(corner['id'], damage_to_corner):
+                            self.game_controller.score += 250
+                            self.game_controller.drone_system.add_player_cores(25)
+                        
                         hit_a_corner = True
-                        if isinstance(projectile, LightningZap): pass
-                        elif not (hasattr(projectile, 'max_pierces') and projectile.pierces_done < projectile.max_pierces): projectile.kill()
-                        elif hasattr(projectile, 'pierces_done'): projectile.pierces_done +=1
-                        break 
-                if hit_a_corner and not projectile.alive: continue 
-            hit_enemies = pygame.sprite.spritecollide(projectile, enemies_to_check, False, lambda proj, enemy: proj.rect.colliderect(getattr(enemy, 'collision_rect', enemy.rect)))
+                        if isinstance(projectile, LightningZap):
+                           pass
+                        elif not (hasattr(projectile, 'max_pierces') and projectile.pierces_done < projectile.max_pierces):
+                            projectile.kill()
+                        elif hasattr(projectile, 'pierces_done'):
+                             projectile.pierces_done +=1
+                        break
+                if hit_a_corner and not projectile.alive:
+                    continue
+
+            hit_enemies = pygame.sprite.spritecollide(
+                projectile, enemies_to_check, False, 
+                lambda proj, enemy: proj.rect.colliderect(getattr(enemy, 'collision_rect', enemy.rect))
+            )
             for enemy in hit_enemies:
                 if enemy.alive:
                     damage_to_enemy = projectile.damage
-                    if isinstance(projectile, LightningZap):
-                         if not projectile.damage_applied : enemy.take_damage(damage_to_enemy)
-                    else: enemy.take_damage(damage_to_enemy)
+                    if isinstance(projectile, LightningZap): 
+                         if not projectile.damage_applied :
+                            enemy.take_damage(damage_to_enemy)
+                    else:
+                        enemy.take_damage(damage_to_enemy)
+
                     if not enemy.alive:
-                        self.game_controller.score += 50; self.game_controller.drone_system.add_player_cores(10) 
+                        self.game_controller.score += 50 
+                        self.game_controller.drone_system.add_player_cores(10) 
                         self.game_controller._create_explosion(enemy.rect.centerx, enemy.rect.centery, specific_sound_key='enemy_shoot') 
-                        if self.game_controller.scene_manager.get_current_state() == GAME_STATE_PLAYING:
-                            self.game_controller.all_enemies_killed_this_level = all(not e.alive for e in enemies_to_check)
-                            if self.game_controller.all_enemies_killed_this_level: self.game_controller._check_level_clear_condition()
-                    if isinstance(projectile, LightningZap): pass 
-                    elif not (hasattr(projectile, 'max_pierces') and projectile.pierces_done < projectile.max_pierces): projectile.kill() 
-                    elif hasattr(projectile, 'pierces_done'): projectile.pierces_done +=1 
-                    if not projectile.alive: break 
+                        self.game_controller.check_for_all_enemies_killed()
+                    
+                    if isinstance(projectile, LightningZap):
+                        pass 
+                    elif not (hasattr(projectile, 'max_pierces') and projectile.pierces_done < projectile.max_pierces):
+                        projectile.kill() 
+                    elif hasattr(projectile, 'pierces_done'):
+                        projectile.pierces_done +=1 
+                    
+                    if not projectile.alive:
+                        break 
 
     def _handle_enemy_projectile_collisions(self, current_game_state):
         all_hostile_projectiles = pygame.sprite.Group()
         for enemy in self.enemy_manager.get_sprites():
             if hasattr(enemy, 'bullets'): all_hostile_projectiles.add(enemy.bullets)
+        
         if self.boss_active and self.maze_guardian and self.maze_guardian.alive:
             if hasattr(self.maze_guardian, 'bullets'): all_hostile_projectiles.add(self.maze_guardian.bullets)
             if hasattr(self.maze_guardian, 'laser_beams'): all_hostile_projectiles.add(self.maze_guardian.laser_beams)
+
         for projectile in list(all_hostile_projectiles): 
             if not projectile.alive: continue
+
             if self.player and self.player.alive and projectile.rect.colliderect(self.player.collision_rect):
                 self.player.take_damage(projectile.damage, sound_key_on_hit='crash')
-                if not (hasattr(projectile, 'is_persistent') and projectile.is_persistent): projectile.kill()
-                if not self.player.alive: self.game_controller._handle_player_death_or_life_loss("Drone Destroyed!")
+                if not (hasattr(projectile, 'is_persistent') and projectile.is_persistent): 
+                    projectile.kill()
+                if not self.player.alive: 
+                    self.game_controller._handle_player_death_or_life_loss("Drone Destroyed!")
                 if not projectile.alive: continue 
+
             if current_game_state == GAME_STATE_MAZE_DEFENSE and self.turrets_group:
                 hit_turrets = pygame.sprite.spritecollide(projectile, self.turrets_group, False) 
                 for turret in hit_turrets:
-                    if hasattr(turret, 'take_damage'): turret.take_damage(projectile.damage) 
-                    if not (hasattr(projectile, 'is_persistent') and projectile.is_persistent): projectile.kill()
+                    if hasattr(turret, 'take_damage'): 
+                        turret.take_damage(projectile.damage) 
+                    if not (hasattr(projectile, 'is_persistent') and projectile.is_persistent):
+                        projectile.kill()
                     if not projectile.alive: break 
                 if not projectile.alive: continue
+
             if current_game_state == GAME_STATE_MAZE_DEFENSE and self.core_reactor and self.core_reactor.alive:
                 if projectile.rect.colliderect(self.core_reactor.rect):
                     self.core_reactor.take_damage(projectile.damage, self.game_controller)
-                    if not (hasattr(projectile, 'is_persistent') and projectile.is_persistent): projectile.kill()
-                    if not self.core_reactor.alive: self.game_controller.scene_manager.set_game_state(gs.GAME_STATE_GAME_OVER) 
+                    if not (hasattr(projectile, 'is_persistent') and projectile.is_persistent):
+                        projectile.kill()
+                    if not self.core_reactor.alive:
+                        self.game_controller.scene_manager.set_game_state(gs.GAME_STATE_GAME_OVER) 
                     if not projectile.alive: continue
+            
             if self.maze and not getattr(projectile, 'can_pierce_walls', False):
                  if self.maze.is_wall(projectile.rect.centerx, projectile.rect.centery, projectile.rect.width, projectile.rect.height):
-                    projectile.kill(); continue
+                    projectile.kill()
+                    continue
+
 
     def _handle_physical_collisions(self, current_game_state):
         if self.player and self.player.alive:
-            enemies_collided_player = pygame.sprite.spritecollide(self.player, self.enemy_manager.get_sprites(), False, lambda p, e: p.collision_rect.colliderect(getattr(e, 'collision_rect', e.rect)))
+            enemies_collided_player = pygame.sprite.spritecollide(
+                self.player, self.enemy_manager.get_sprites(), False, 
+                lambda p, e: p.collision_rect.colliderect(getattr(e, 'collision_rect', e.rect))
+            )
             for enemy in enemies_collided_player:
                 if enemy.alive: 
-                    self.player.take_damage(34, sound_key_on_hit='crash'); enemy.take_damage(50) 
-                    if not enemy.alive: self.game_controller.score += 10; self.game_controller._create_explosion(enemy.rect.centerx, enemy.rect.centery, specific_sound_key='crash')
-                    if not self.player.alive: self.game_controller._handle_player_death_or_life_loss("Drone Destroyed!"); return 
+                    self.player.take_damage(34, sound_key_on_hit='crash') 
+                    enemy.take_damage(50) 
+                    if not enemy.alive: 
+                         self.game_controller.score += 10 
+                         self.game_controller._create_explosion(enemy.rect.centerx, enemy.rect.centery, specific_sound_key='crash')
+                         self.game_controller.check_for_all_enemies_killed()
+
+                    if not self.player.alive: 
+                        self.game_controller._handle_player_death_or_life_loss("Drone Destroyed!")
+                        return 
+
             if self.boss_active and self.maze_guardian and self.maze_guardian.alive:
                 if self.player.collision_rect.colliderect(self.maze_guardian.collision_rect):
                     self.player.take_damage(50, sound_key_on_hit='crash') 
-                    if not self.player.alive: self.game_controller._handle_player_death_or_life_loss("Drone Destroyed!"); return
+                    if not self.player.alive:
+                        self.game_controller._handle_player_death_or_life_loss("Drone Destroyed!")
+                        return
+
         if current_game_state == GAME_STATE_MAZE_DEFENSE and self.core_reactor and self.core_reactor.alive:
-            enemies_hitting_reactor = pygame.sprite.spritecollide(self.core_reactor, self.enemy_manager.get_sprites(), True, pygame.sprite.collide_rect_ratio(0.7))
+            enemies_hitting_reactor = pygame.sprite.spritecollide(
+                self.core_reactor, self.enemy_manager.get_sprites(), True, 
+                pygame.sprite.collide_rect_ratio(0.7) 
+            )
             for enemy in enemies_hitting_reactor:
-                self.core_reactor.take_damage(getattr(enemy, 'contact_damage', 25), self.game_controller) 
+                contact_dmg = getattr(enemy, 'contact_damage', 25) 
+                self.core_reactor.take_damage(contact_dmg, self.game_controller) 
                 self.game_controller._create_explosion(enemy.rect.centerx, enemy.rect.centery, specific_sound_key='crash')
-                if not self.core_reactor.alive: self.game_controller.scene_manager.set_game_state(gs.GAME_STATE_GAME_OVER); return
+                if not self.core_reactor.alive:
+                    self.game_controller.scene_manager.set_game_state(gs.GAME_STATE_GAME_OVER) 
+                    return
 
     def _handle_player_power_up_collisions(self):
-        if not self.player or not self.player.alive or not self.power_ups_group: return
-        for item in pygame.sprite.spritecollide(self.player, self.power_ups_group, False, pygame.sprite.collide_rect_ratio(0.7)):
+        if not self.player or not self.player.alive or not self.power_ups_group:
+            return
+
+        collided_powerups = pygame.sprite.spritecollide(
+            self.player, self.power_ups_group, False, pygame.sprite.collide_rect_ratio(0.7) 
+        )
+        for item in collided_powerups:
             if not item.collected and not item.expired and hasattr(item, 'apply_effect'):
-                item.apply_effect(self.player); item.collected = True; item.kill() 
-                self.game_controller.play_sound('weapon_upgrade_collect'); self.game_controller.score += 25
+                item.apply_effect(self.player) 
+                item.collected = True 
+                item.kill() 
+                self.game_controller.play_sound('weapon_upgrade_collect') 
+                self.game_controller.score += 25
 
     def _update_power_ups(self, current_time_ms):
         for p_up in list(self.power_ups_group): 
-            if p_up.update(): p_up.kill()
-        if self.game_controller.scene_manager.get_current_state() == GAME_STATE_PLAYING: 
+            if p_up.update(): 
+                p_up.kill()
+        current_game_state = self.game_controller.scene_manager.get_current_state()
+        if current_game_state == GAME_STATE_PLAYING: 
             if random.random() < (gs.get_game_setting("POWERUP_SPAWN_CHANCE") / gs.FPS if gs.FPS > 0 else 0.01):
-                if len(self.power_ups_group) < gs.get_game_setting("MAX_POWERUPS_ON_SCREEN"): self._try_spawn_powerup_item_internal()
+                if len(self.power_ups_group) < gs.get_game_setting("MAX_POWERUPS_ON_SCREEN"):
+                    self._try_spawn_powerup_item_internal()
 
     def _try_spawn_powerup_item_internal(self):
         if not self.maze or not self.player: return
         spawn_pos = self.game_controller._get_safe_spawn_point(gs.POWERUP_SIZE, gs.POWERUP_SIZE)
         if not spawn_pos: return
-        chosen_type_key = random.choice(list(POWERUP_TYPES.keys()))
+        abs_x, abs_y = spawn_pos
+        powerup_type_keys = list(POWERUP_TYPES.keys())
+        if not powerup_type_keys: return
+        chosen_type_key = random.choice(powerup_type_keys)
         new_powerup = None
-        if chosen_type_key == "weapon_upgrade": new_powerup = WeaponUpgradeItem(spawn_pos[0], spawn_pos[1], asset_manager=self.asset_manager)
-        elif chosen_type_key == "shield": new_powerup = ShieldItem(spawn_pos[0], spawn_pos[1], asset_manager=self.asset_manager)
-        elif chosen_type_key == "speed_boost": new_powerup = SpeedBoostItem(spawn_pos[0], spawn_pos[1], asset_manager=self.asset_manager)
+        
+        if chosen_type_key == "weapon_upgrade": new_powerup = WeaponUpgradeItem(abs_x, abs_y, asset_manager=self.asset_manager)
+        elif chosen_type_key == "shield": new_powerup = ShieldItem(abs_x, abs_y, asset_manager=self.asset_manager)
+        elif chosen_type_key == "speed_boost": new_powerup = SpeedBoostItem(abs_x, abs_y, asset_manager=self.asset_manager)
+        
         if new_powerup: self.power_ups_group.add(new_powerup)
 
     def spawn_maze_guardian(self):
@@ -269,19 +361,29 @@ class CombatController:
         self.enemy_manager.reset_all() 
         boss_spawn_x = self.maze.game_area_x_offset + (gs.WIDTH - self.maze.game_area_x_offset) / 2
         boss_spawn_y = gs.GAME_PLAY_AREA_HEIGHT / 2
-        self.maze_guardian = MazeGuardian(x=boss_spawn_x, y=boss_spawn_y, player_ref=self.player, maze_ref=self.maze, game_controller_ref=self.game_controller, asset_manager=self.asset_manager)
+        self.maze_guardian = MazeGuardian(x=boss_spawn_x, y=boss_spawn_y, 
+                                          player_ref=self.player, maze_ref=self.maze, 
+                                          game_controller_ref=self.game_controller,
+                                          asset_manager=self.asset_manager)
         self.boss_active = True; self.maze_guardian_defeat_processed = False
         self.game_controller.play_sound('boss_intro', 0.8)
 
     def _handle_maze_guardian_defeated(self):
         if self.maze_guardian_defeat_processed: return
-        self.game_controller.score += 5000; self.game_controller.drone_system.add_player_cores(1500); self.game_controller.drone_system.add_defeated_boss("MAZE_GUARDIAN"); self.game_controller.trigger_story_beat("story_beat_SB01")
-        if vault_core_details := CORE_FRAGMENT_DETAILS.get("fragment_vault_core"):
-            if self.game_controller.drone_system.collect_core_fragment("vault_core"): self.game_controller.set_story_message(f"Lore Unlocked: {vault_core_details.get('name', 'Vault Core Data')}")
+        self.game_controller.score += 5000; self.game_controller.drone_system.add_player_cores(1500)
+        self.game_controller.drone_system.add_defeated_boss("MAZE_GUARDIAN")
+        self.game_controller.trigger_story_beat("story_beat_SB01")
+        
+        vault_core_id = "vault_core"; vault_core_details = CORE_FRAGMENT_DETAILS.get("fragment_vault_core")
+        if vault_core_details and not self.game_controller.drone_system.has_collected_fragment(vault_core_id):
+            if self.game_controller.drone_system.collect_core_fragment(vault_core_id):
+                self.game_controller.set_story_message(f"Lore Unlocked: {vault_core_details.get('name', 'Vault Core Data')}")
+        
         self.boss_active = False
         if self.maze_guardian: self.maze_guardian.kill(); self.maze_guardian = None 
         self.maze_guardian_defeat_processed = True
-        if self.game_controller.scene_manager.get_current_state() == GAME_STATE_ARCHITECT_VAULT_BOSS_FIGHT: self.game_controller.set_story_message("MAZE GUARDIAN DEFEATED! ACCESS GRANTED!", 4000)
+        if self.game_controller.scene_manager.get_current_state() == GAME_STATE_ARCHITECT_VAULT_BOSS_FIGHT:
+            self.game_controller.set_story_message("MAZE GUARDIAN DEFEATED! ACCESS GRANTED!", 4000)
 
     def reset_combat_state(self):
         self.enemy_manager.reset_all(); self.wave_manager.reset() 
@@ -293,31 +395,36 @@ class CombatController:
         self.maze_guardian = None; self.boss_active = False; self.maze_guardian_defeat_processed = False
         self.core_reactor = None; self.architect_vault_gauntlet_current_wave = 0
 
-    def try_place_turret(self, world_pos):
-        if not self.maze or not self.core_reactor or not isinstance(self.maze, MazeChapter2): self.game_controller.play_sound('ui_denied', 0.6); return False
-        grid_c = int((world_pos[0] - self.maze.game_area_x_offset) / TILE_SIZE); grid_r = int(world_pos[1] / TILE_SIZE)
-        if not (0 <= grid_r < self.maze.actual_maze_rows and 0 <= grid_c < self.maze.actual_maze_cols): self.game_controller.play_sound('ui_denied', 0.6); return False
-        if len(self.turrets_group) >= Turret.MAX_TURRETS: self.game_controller.play_sound('ui_denied', 0.6); return False
-        if not self.maze.can_place_turret(grid_r, grid_c): self.game_controller.play_sound('ui_denied', 0.6); return False
-        if self.game_controller.drone_system.spend_player_cores(Turret.TURRET_COST):
-            tile_center_x_abs, tile_center_y_abs = self.maze._grid_to_pixel_center(grid_r, grid_c)
-            self.turrets_group.add(Turret(tile_center_x_abs, tile_center_y_abs, self.game_controller, self.asset_manager)); self.maze.mark_turret_spot_as_occupied(grid_r, grid_c) 
-            self.game_controller.play_sound('turret_place_placeholder', 0.7); return True
+    def try_place_turret(self, screen_pos):
+        if not self.maze or not self.core_reactor or not isinstance(self.maze, MazeChapter2):
+            self.game_controller.play_sound('ui_denied', 0.6); return False
+        grid_c = int((screen_pos[0] - self.maze.game_area_x_offset) / TILE_SIZE); grid_r = int(screen_pos[1] / TILE_SIZE)
+        if not (0 <= grid_r < self.maze.actual_maze_rows and 0 <= grid_c < self.maze.actual_maze_cols):
+            self.game_controller.play_sound('ui_denied', 0.6); return False
+        
+        max_turrets_allowed = Turret.MAX_TURRETS 
+        if len(self.turrets_group) >= max_turrets_allowed:
+            self.game_controller.play_sound('ui_denied', 0.6); return False
+        if not self.maze.can_place_turret(grid_r, grid_c):
+            self.game_controller.play_sound('ui_denied', 0.6); return False
+        turret_cost = Turret.TURRET_COST 
+        if self.game_controller.drone_system.get_player_cores() >= turret_cost:
+            if self.game_controller.drone_system.spend_player_cores(turret_cost):
+                tile_center_x_abs = grid_c * TILE_SIZE + TILE_SIZE//2 + self.maze.game_area_x_offset
+                tile_center_y_abs = grid_r * TILE_SIZE + TILE_SIZE//2
+                new_turret = Turret(tile_center_x_abs, tile_center_y_abs, self.game_controller, self.asset_manager)
+                self.turrets_group.add(new_turret); self.maze.mark_turret_spot_as_occupied(grid_r, grid_c) 
+                self.game_controller.play_sound('turret_place_placeholder', 0.7); return True
         self.game_controller.play_sound('ui_denied', 0.6); return False
 
     def try_upgrade_turret(self, turret_to_upgrade):
         if turret_to_upgrade and turret_to_upgrade in self.turrets_group:
-            if self.game_controller.drone_system.get_player_cores() >= Turret.UPGRADE_COST:
+            upgrade_cost = Turret.UPGRADE_COST 
+            if self.game_controller.drone_system.get_player_cores() >= upgrade_cost:
                 if turret_to_upgrade.upgrade(): 
-                    self.game_controller.drone_system.spend_player_cores(Turret.UPGRADE_COST)
+                    self.game_controller.drone_system.spend_player_cores(upgrade_cost)
                     self.game_controller.play_sound('weapon_upgrade_collect', 0.8)
-                    if self.game_controller.ui_manager and self.game_controller.ui_manager.build_menu: self.game_controller.ui_manager.build_menu.set_selected_turret(turret_to_upgrade)
+                    if self.game_controller.ui_manager and self.game_controller.ui_manager.build_menu:
+                        self.game_controller.ui_manager.build_menu.set_selected_turret(turret_to_upgrade)
                     return True
         self.game_controller.play_sound('ui_denied', 0.6); return False
-
-    def try_upgrade_clicked_turret(self, world_pos):
-        if not self.turrets_group: return False
-        for turret in self.turrets_group:
-            if turret.rect.collidepoint(world_pos):
-                return self.try_upgrade_turret(turret)
-        return False

@@ -64,17 +64,13 @@ class PlayerActions:
     def update_player_movement_and_actions(self, current_time_ms):
         """
         Called every frame to update the player's state based on continuous
-        (held-key) actions like turning and shooting. Forward movement is
-        handled by the PlayerDrone's 'is_cruising' state.
+        (held-key) actions like turning. Shooting is now handled in PlayerDrone.update().
         """
         if self.turn_left:
             self.turn("left")
         
         if self.turn_right:
             self.turn("right")
-
-        if self.is_shooting:
-            self.shoot(current_time_ms)
 
     def turn(self, direction):
         """Instructs the player drone to rotate."""

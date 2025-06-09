@@ -1,144 +1,280 @@
+# entities/maze_chapter2.py
 import pygame
 import os
 import random
 from heapq import heappush, heappop
 import math
-import logging
+import logging 
 import copy
 
 import game_settings as gs
-from game_settings import TILE_SIZE, BLUE, BLACK, RED, WHITE, GREEN, DARK_GREY
 
 logger = logging.getLogger(__name__)
 if not logger.hasHandlers():
-    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(name)s - %(message)s')
+    logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(name)s - %(message)s')
 
 
 class MazeChapter2:
+    # --- RELATIVE POSITIONS FOR DYNAMIC PLACEMENT ---
+    CORE_POS_RELATIVE = (0.5, 0.5)
+    TURRET_POSITIONS_RELATIVE = [
+        (0.25, 0.4), (0.25, 0.6),
+        (0.75, 0.4), (0.75, 0.6),
+        (0.5, 0.3)
+    ]
+    ENEMY_SPAWN_POSITIONS_RELATIVE = [
+        (0, 0.5), (1, 0.5), (0.5, 0), (0.5, 1)
+    ]
+
     def __init__(self, game_area_x_offset=0, maze_type="chapter2_tilemap"):
-        self.game_area_x_offset, self.maze_type = game_area_x_offset, maze_type
-        self.grid, self.actual_maze_rows, self.actual_maze_cols = [], 0, 0
-        self.enemy_spawn_grid_positions, self.turret_positions = [], []
-        self.core_reactor_grid_pos, self.core_reactor_abs_spawn_pos = None, None
-        self.enemy_spawn_points_abs, self.enemy_paths_to_core = [], {}
-        self.debug_mode = False
-        self.wall_color = gs.get_game_setting("ARCHITECT_VAULT_WALL_COLOR", BLUE)
-        self.path_color, self.turret_spot_color = BLACK, (*GREEN[:3], 150)
-        self.used_turret_spot_color = (*DARK_GREY[:3], 100)
+        self.game_area_x_offset = game_area_x_offset
+        self.maze_type = maze_type
         
-        self._generate_procedural_map(40, 22)
+        # --- DYNAMIC DIMENSION CALCULATION ---
+        height = gs.get_game_setting("HEIGHT")
+        width = gs.get_game_setting("WIDTH")
+        tile_size = gs.get_game_setting("TILE_SIZE")
+        
+        self.actual_maze_rows = height // tile_size
+        self.actual_maze_cols = (width - self.game_area_x_offset) // tile_size
+        
+        self.CORE_POS = (0, 0)
+        self.TURRET_POSITIONS = []
+        self.ENEMY_SPAWN_GRID_POSITIONS = []
+        
+        self.grid = self._build_tilemap()
+        
+        self.wall_color = gs.get_game_setting("ARCHITECT_VAULT_WALL_COLOR", gs.BLUE) 
+        self.path_color = gs.BLACK 
+        self.turret_spot_color = (0, 100, 0, 150) 
+        self.used_turret_spot_color = (50, 50, 50, 100)
 
-        if self.core_reactor_grid_pos:
-            self.core_reactor_abs_spawn_pos = self._grid_to_pixel_center(*self.core_reactor_grid_pos)
+        self.core_reactor_grid_pos = None 
+        self.core_reactor_abs_spawn_pos = None 
+        self._find_core_reactor_spawn() 
+
+        self.enemy_spawn_points_abs = [] 
+        self.enemy_paths_to_core = {} 
+        self._calculate_enemy_paths_and_spawn_points() 
+
+        self.debug_mode = False 
+        
+        core_status_message = f"Core found at {self.core_reactor_grid_pos}" if self.core_reactor_grid_pos else "Core NOT found"
+        logger.info(f"MazeChapter2 post-init (id: {id(self)}). Type: {maze_type}, Offset: {game_area_x_offset}, Grid: {self.actual_maze_rows}x{self.actual_maze_cols}. {core_status_message}. Enemy spawns: {len(self.enemy_spawn_points_abs)}")
+        
+        if not self.core_reactor_grid_pos :
+             logger.error(f"MazeChapter2 CRITICAL INIT CHECK: 'C' was NOT found in the generated grid. Check _build_tilemap and CORE_POS.")
+
+    def _build_tilemap(self):
+        grid = [[0 for _ in range(self.actual_maze_cols)] for _ in range(self.actual_maze_rows)]
+
+        core_r = int(self.actual_maze_rows * self.CORE_POS_RELATIVE[0])
+        core_c = int(self.actual_maze_cols * self.CORE_POS_RELATIVE[1])
+        if 0 <= core_r < self.actual_maze_rows and 0 <= core_c < self.actual_maze_cols:
+            grid[core_r][core_c] = 'C'
+            self.CORE_POS = (core_r, core_c)
         else:
-            logger.error("CRITICAL: Core 'C' not generated in the map.")
+            self.CORE_POS = (self.actual_maze_rows // 2, self.actual_maze_cols // 2)
+            grid[self.CORE_POS[0]][self.CORE_POS[1]] = 'C'
+
+        for rel_r, rel_c in self.TURRET_POSITIONS_RELATIVE:
+            r_turret = int(self.actual_maze_rows * rel_r)
+            c_turret = int(self.actual_maze_cols * rel_c)
+            if 0 <= r_turret < self.actual_maze_rows and 0 <= c_turret < self.actual_maze_cols:
+                grid[r_turret][c_turret] = 'T'
+                self.TURRET_POSITIONS.append((r_turret, c_turret))
+
+        for rel_r, rel_c in self.ENEMY_SPAWN_POSITIONS_RELATIVE:
+            r_spawn = int((self.actual_maze_rows - 1) * rel_r)
+            c_spawn = int((self.actual_maze_cols - 1) * rel_c)
+            r_spawn = max(0, min(r_spawn, self.actual_maze_rows - 1))
+            c_spawn = max(0, min(c_spawn, self.actual_maze_cols - 1))
+            if grid[r_spawn][c_spawn] == 0:
+                 self.ENEMY_SPAWN_GRID_POSITIONS.append((r_spawn, c_spawn))
+
+        for r_spawn, c_spawn in self.ENEMY_SPAWN_GRID_POSITIONS:
+            self._carve_path(grid, (r_spawn, c_spawn), (r_spawn, self.CORE_POS[1]))
+            self._carve_path(grid, (r_spawn, self.CORE_POS[1]), self.CORE_POS)
         
-        self.enemy_spawn_points_abs = [self._grid_to_pixel_center(r, c) for r, c in self.enemy_spawn_grid_positions]
-        self._calculate_all_enemy_paths()
-        logger.info(f"MazeChapter2 initialized. Core at {self.core_reactor_grid_pos}. Found {len(self.enemy_spawn_grid_positions)} spawns.")
+        return grid
 
-    def _generate_procedural_map(self, width, height):
-        self.actual_maze_rows, self.actual_maze_cols = height, width
-        grid = [[0 for _ in range(width)] for _ in range(height)]
-        for r in range(4, height - 4):
-            for c in range(4, width - 4):
-                if (5 <= r <= 8 or 13 <= r <= 16) and (5 <= c <= 14 or 25 <= c <= 34):
-                    grid[r][c] = 1
-        core_pos = (height // 2, width // 2)
-        self.core_reactor_grid_pos = core_pos
-        bunker_size = 1
-        for r_offset in range(-bunker_size, bunker_size + 1):
-            for c_offset in range(-bunker_size, bunker_size + 1):
-                grid[core_pos[0] + r_offset][core_pos[1] + c_offset] = 1
-        grid[core_pos[0]][core_pos[1]] = 'C'
-        grid[core_pos[0] - bunker_size][core_pos[1]] = 0
-        grid[core_pos[0] + bunker_size][core_pos[1]] = 0
-        grid[core_pos[0]][core_pos[1] - bunker_size] = 0
-        grid[core_pos[0]][core_pos[1] + bunker_size] = 0
-        spawns = [(0, 0), (0, width - 1), (height - 1, 0), (height - 1, width - 1)]
-        for r, c in spawns:
-            grid[r][c] = 'S'; self.enemy_spawn_grid_positions.append((r,c))
-        turrets = [(2, 7), (2, 32), (height - 3, 7), (height - 3, 32), (9, 10), (9, 29), (12, 10), (12, 29), (7, 17), (7, 22), (14, 17), (14, 22), (height // 2, 2), (height // 2, width - 3)]
-        for r,c in turrets:
-            if 0 <= r < height and 0 <= c < width: grid[r][c] = 'T'; self.turret_positions.append((r,c))
-        self.grid = grid
+    def _carve_path(self, grid, start_pos, end_pos):
+        r1, c1 = start_pos
+        r2, c2 = end_pos
+        if r1 == r2:
+            for c in range(min(c1, c2), max(c1, c2) + 1):
+                if 0 <= r1 < self.actual_maze_rows and 0 <= c < self.actual_maze_cols: 
+                    if grid[r1][c] == 0: grid[r1][c] = 0
+        elif c1 == c2:
+            for r in range(min(r1, r2), max(r1, r2) + 1):
+                if 0 <= r < self.actual_maze_rows and 0 <= c1 < self.actual_maze_cols: 
+                    if grid[r][c1] == 0: grid[r][c1] = 0
+    
+    def _find_core_reactor_spawn(self):
+        for r_idx, row in enumerate(self.grid):
+            for c_idx, tile in enumerate(row):
+                if tile == 'C':
+                    self.core_reactor_grid_pos = (r_idx, c_idx)
+                    center_x_abs = c_idx * gs.TILE_SIZE + gs.TILE_SIZE // 2 + self.game_area_x_offset
+                    center_y_abs = r_idx * gs.TILE_SIZE + gs.TILE_SIZE // 2
+                    self.core_reactor_abs_spawn_pos = (center_x_abs, center_y_abs)
+                    return 
 
-    def _calculate_all_enemy_paths(self):
-        if not self.core_reactor_grid_pos: return
-        for spawn_pos in self.enemy_spawn_grid_positions:
-            path = self.find_path_astar(spawn_pos, self.core_reactor_grid_pos)
-            if path: self.enemy_paths_to_core[spawn_pos] = [self._grid_to_pixel_center(r, c) for r, c in path]
-            else: logger.warning(f"No A* path found from spawn {spawn_pos} to core {self.core_reactor_grid_pos}.")
+    def _calculate_enemy_paths_and_spawn_points(self):
+        self.enemy_spawn_points_abs = []
+        self.enemy_paths_to_core = {}
+        if not self.core_reactor_grid_pos:
+            return
 
-    def _grid_to_pixel_center(self, r, c):
-        return (c * TILE_SIZE) + (TILE_SIZE//2) + self.game_area_x_offset, (r * TILE_SIZE) + (TILE_SIZE//2)
+        for r, c in self.ENEMY_SPAWN_GRID_POSITIONS:
+            center_x_abs = c * gs.TILE_SIZE + gs.TILE_SIZE // 2 + self.game_area_x_offset
+            center_y_abs = r * gs.TILE_SIZE + gs.TILE_SIZE // 2
+            self.enemy_spawn_points_abs.append((center_x_abs, center_y_abs))
+
+            path_grid_coords = self.find_path_astar((r, c), self.core_reactor_grid_pos)
+            if path_grid_coords:
+                pixel_path = [self._grid_to_pixel_center(gr, gc) for gr, gc in path_grid_coords]
+                self.enemy_paths_to_core[(r, c)] = pixel_path
+
+    def _grid_to_pixel_center(self, grid_row, grid_col):
+        pixel_x = (grid_col * gs.TILE_SIZE) + (gs.TILE_SIZE // 2) + self.game_area_x_offset
+        pixel_y = (grid_row * gs.TILE_SIZE) + (gs.TILE_SIZE // 2)
+        return pixel_x, pixel_y
 
     def get_neighbors(self, grid_pos):
-        r, c = grid_pos; neighbors = []
-        for dr, dc in [(0, 1), (0, -1), (1, 0), (-1, 0), (-1,-1), (-1,1), (1,-1), (1,1)]:
+        r, c = grid_pos
+        potential_neighbors = []
+        for dr, dc in [(0, 1), (0, -1), (1, 0), (-1, 0)]: 
             nr, nc = r + dr, c + dc
-            if 0 <= nr < self.actual_maze_rows and 0 <= nc < self.actual_maze_cols and self.grid[nr][nc] != 1: neighbors.append((nr, nc))
-        return neighbors
+            if 0 <= nr < self.actual_maze_rows and 0 <= nc < self.actual_maze_cols and self.grid[nr][nc] != 1:
+                potential_neighbors.append((nr, nc))
+        return potential_neighbors
 
-    def find_path_astar(self, start, end):
-        open_set = []
-        heappush(open_set, (0, start))
-        came_from = {}
-        g_score = { (r,c): float('inf') for r in range(self.actual_maze_rows) for c in range(self.actual_maze_cols) }
-        g_score[start] = 0
-        open_set_hash = {start}
+    def manhattan_distance(self, pos1, pos2):
+        return abs(pos1[0] - pos2[0]) + abs(pos1[1] - pos2[1])
+
+    def find_path_astar(self, start_grid_pos, end_grid_pos):
+        open_set = [] 
+        heappush(open_set, (0, start_grid_pos)) 
+        came_from = {} 
+        g_score = { (r,col): float('inf') for r in range(self.actual_maze_rows) for col in range(self.actual_maze_cols) }
+        g_score[start_grid_pos] = 0
+        f_score = { (r,col): float('inf') for r in range(self.actual_maze_rows) for col in range(self.actual_maze_cols) }
+        f_score[start_grid_pos] = self.manhattan_distance(start_grid_pos, end_grid_pos)
+        open_set_hash = {start_grid_pos} 
+
         while open_set:
-            current = heappop(open_set)[1]
-            if current == end:
-                path = [];
-                while current in came_from: path.append(current); current = came_from[current]
-                path.append(start); return path[::-1]
-            open_set_hash.remove(current)
-            for neighbor in self.get_neighbors(current):
-                tentative_g_score = g_score[current] + math.hypot(current[0]-neighbor[0], current[1]-neighbor[1])
-                if tentative_g_score < g_score.get(neighbor, float('inf')):
-                    came_from[neighbor] = current
-                    g_score[neighbor] = tentative_g_score
-                    f_score = tentative_g_score + math.hypot(neighbor[0]-end[0], neighbor[1]-end[1])
-                    if neighbor not in open_set_hash:
-                        heappush(open_set, (f_score, neighbor)); open_set_hash.add(neighbor)
-        return None
+            _, current_pos = heappop(open_set)
+            if current_pos not in open_set_hash: 
+                continue
+            open_set_hash.remove(current_pos)
 
-    def is_wall(self, x_abs, y_abs, width, height):
-        points = [(x_abs-width/2, y_abs-height/2), (x_abs+width/2, y_abs-height/2), (x_abs-width/2, y_abs+height/2), (x_abs+width/2, y_abs+height/2)]
-        for px, py in points:
-            c = int((px - self.game_area_x_offset) / TILE_SIZE); r = int(py / TILE_SIZE)
-            if not (0 <= r < self.actual_maze_rows and 0 <= c < self.actual_maze_cols): return True
-            if self.grid[r][c] == 1: return True
+            if current_pos == end_grid_pos:
+                path = []
+                temp = current_pos
+                while temp in came_from:
+                    path.append(temp)
+                    temp = came_from[temp]
+                path.append(start_grid_pos) 
+                return path[::-1] 
+
+            for neighbor_pos in self.get_neighbors(current_pos):
+                tentative_g_score = g_score[current_pos] + 1 
+                if tentative_g_score < g_score[neighbor_pos]:
+                    came_from[neighbor_pos] = current_pos
+                    g_score[neighbor_pos] = tentative_g_score
+                    f_score[neighbor_pos] = tentative_g_score + self.manhattan_distance(neighbor_pos, end_grid_pos)
+                    if neighbor_pos not in open_set_hash:
+                        heappush(open_set, (f_score[neighbor_pos], neighbor_pos))
+                        open_set_hash.add(neighbor_pos)
+        return None 
+
+    def is_wall(self, obj_center_x_abs, obj_center_y_abs, obj_width, obj_height):
+        points_to_check = [
+            (obj_center_x_abs - obj_width / 2, obj_center_y_abs - obj_height / 2), 
+            (obj_center_x_abs + obj_width / 2, obj_center_y_abs - obj_height / 2), 
+            (obj_center_x_abs - obj_width / 2, obj_center_y_abs + obj_height / 2), 
+            (obj_center_x_abs + obj_width / 2, obj_center_y_abs + obj_height / 2)
+        ]
+
+        for px, py in points_to_check:
+            grid_c = int((px - self.game_area_x_offset) / gs.TILE_SIZE)
+            grid_r = int(py / gs.TILE_SIZE)
+            if 0 <= grid_r < self.actual_maze_rows and 0 <= grid_c < self.actual_maze_cols:
+                if self.grid[grid_r][grid_c] == 1: return True
+            else: return True 
         return False
 
-    def can_place_turret(self, r, c):
-        return 0 <= r < self.actual_maze_rows and 0 <= c < self.actual_maze_cols and self.grid[r][c] == 'T'
+    def can_place_turret(self, grid_r, grid_c):
+        if not (0 <= grid_r < self.actual_maze_rows and 0 <= grid_c < self.actual_maze_cols):
+            return False 
+        if self.grid[grid_r][grid_c] != 'T':
+            return False
+        return True
 
-    def mark_turret_spot_as_occupied(self, r, c):
-        if self.can_place_turret(r, c): self.grid[r][c] = 'U'; return True
+    def mark_turret_spot_as_occupied(self, grid_r, grid_c):
+        if 0 <= grid_r < self.actual_maze_rows and 0 <= grid_c < self.actual_maze_cols:
+            if self.grid[grid_r][grid_c] == 'T':
+                self.grid[grid_r][grid_c] = 'U' 
+                return True
         return False
 
-    def draw(self, surface, camera):
-        if not camera: return
-        for r, row in enumerate(self.grid):
-            for c, tile in enumerate(row):
-                world_rect = pygame.Rect(c*TILE_SIZE + self.game_area_x_offset, r*TILE_SIZE, TILE_SIZE, TILE_SIZE)
-                screen_rect = camera.apply_to_rect(world_rect)
-                if not screen_rect.colliderect(surface.get_rect()): continue
-                if tile != 1: pygame.draw.rect(surface, self.path_color, screen_rect)
-                if tile == 1: pygame.draw.rect(surface, self.wall_color, screen_rect)
-                elif tile == 'C': pygame.draw.circle(surface, gs.CYAN, screen_rect.center, int(TILE_SIZE/3 * camera.zoom_level))
-                elif tile in ('T', 'U'):
-                    overlay_color = self.turret_spot_color if tile == 'T' else self.used_turret_spot_color
-                    border_color = GREEN if tile == 'T' else DARK_GREY
-                    if (scaled_size := int(TILE_SIZE * camera.zoom_level)) > 0:
-                        temp_surf = pygame.Surface((scaled_size, scaled_size), pygame.SRCALPHA)
-                        temp_surf.fill(overlay_color); surface.blit(temp_surf, screen_rect.topleft)
-                        pygame.draw.rect(surface, border_color, screen_rect, 1)
+    def draw(self, surface, camera=None):
+        tile_size = gs.get_game_setting("TILE_SIZE")
+        for r_idx, row_data in enumerate(self.grid):
+            for c_idx, tile_type in enumerate(row_data):
+                x = c_idx * tile_size + self.game_area_x_offset
+                y = r_idx * tile_size
+                rect = (x, y, tile_size, tile_size)
 
-    def toggle_debug(self): self.debug_mode = not self.debug_mode; logger.info(f"MazeChapter2: Debug mode {'enabled' if self.debug_mode else 'disabled'}.")
-    def get_core_reactor_spawn_position_abs(self): return self.core_reactor_abs_spawn_pos
-    def get_enemy_spawn_points_abs(self): return self.enemy_spawn_points_abs
-    def get_enemy_path_to_core(self, spawn_pos): return self.enemy_paths_to_core.get(spawn_pos, [])
-    def get_path_cells_abs(self): return [self._grid_to_pixel_center(r, c) for r, row in enumerate(self.grid) for c, tile in enumerate(row) if tile != 1]
+                if tile_type == 1:
+                    pygame.draw.rect(surface, self.wall_color, rect)
+                elif tile_type == 0:
+                    pygame.draw.rect(surface, self.path_color, rect)
+                elif tile_type == 'C':
+                    pygame.draw.rect(surface, self.path_color, rect)
+                    pygame.draw.circle(surface, gs.CYAN, (x + tile_size // 2, y + tile_size // 2), tile_size // 3)
+                elif tile_type == 'T':
+                    pygame.draw.rect(surface, self.path_color, rect)
+                    temp_surface_for_turret_spot = pygame.Surface((tile_size, tile_size), pygame.SRCALPHA)
+                    temp_surface_for_turret_spot.fill(self.turret_spot_color)
+                    surface.blit(temp_surface_for_turret_spot, (x,y))
+                    pygame.draw.rect(surface, gs.GREEN, rect, 1)
+                elif tile_type == 'U':
+                    pygame.draw.rect(surface, self.path_color, rect)
+
+        if self.debug_mode:
+            for r_spawn, c_spawn in self.ENEMY_SPAWN_GRID_POSITIONS:
+                 abs_spawn_x, abs_spawn_y = self._grid_to_pixel_center(r_spawn, c_spawn)
+                 pygame.draw.circle(surface, (255, 0, 255), (int(abs_spawn_x), int(abs_spawn_y)), tile_size // 4)
+            
+            for (spawn_r, spawn_c), path_pixel_coords in self.enemy_paths_to_core.items():
+                if path_pixel_coords and len(path_pixel_coords) > 1:
+                    pygame.draw.lines(surface, (255, 165, 0), False, path_pixel_coords, 2) 
+
+    def toggle_debug(self):
+        self.debug_mode = not self.debug_mode
+        logger.info(f"MazeChapter2: Debug mode {'enabled' if self.debug_mode else 'disabled'}.")
+
+    def get_core_reactor_spawn_position_abs(self):
+        return self.core_reactor_abs_spawn_pos
+
+    def get_enemy_spawn_points_abs(self):
+        return self.enemy_spawn_points_abs
+
+    def get_enemy_path_to_core(self, enemy_spawn_grid_pos):
+        return self.enemy_paths_to_core.get(enemy_spawn_grid_pos, [])
+
+    def get_path_cells_abs(self):
+        path_cells = []
+        for r_idx, row in enumerate(self.grid):
+            for c_idx, tile_type in enumerate(row):
+                if tile_type != 1: 
+                    center_x_abs = c_idx * gs.TILE_SIZE + gs.TILE_SIZE // 2 + self.game_area_x_offset
+                    center_y_abs = r_idx * gs.TILE_SIZE + gs.TILE_SIZE // 2
+                    path_cells.append((center_x_abs, center_y_abs))
+        return path_cells
+
+    def get_random_path_cell_center_abs(self):
+        path_cells = self.get_path_cells_abs()
+        return random.choice(path_cells) if path_cells else None

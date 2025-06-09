@@ -2,7 +2,7 @@
 
 from .base_drone import BaseDrone
 from .player import PlayerDrone # CORRECTED: Import PlayerDrone directly
-from .enemy import Enemy, SentinelDrone 
+from .enemy import Enemy, SentinelDrone, DefenseDrone
 from .bullet import Bullet, Missile, LightningZap
 from .collectibles import (
     Ring, WeaponUpgradeItem, ShieldItem, SpeedBoostItem, 
