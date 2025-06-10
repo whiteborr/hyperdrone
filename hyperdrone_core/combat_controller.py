@@ -428,3 +428,16 @@ class CombatController:
                         self.game_controller.ui_manager.build_menu.set_selected_turret(turret_to_upgrade)
                     return True
         self.game_controller.play_sound('ui_denied', 0.6); return False
+
+    def try_upgrade_clicked_turret(self, world_pos):
+        """Finds a turret at the given world position and attempts to upgrade it."""
+        clicked_turret = None
+        for turret in self.turrets_group:
+            if turret.rect.collidepoint(world_pos):
+                clicked_turret = turret
+                break 
+
+        if clicked_turret:
+            return self.try_upgrade_turret(clicked_turret)
+        
+        return False

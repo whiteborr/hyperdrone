@@ -47,10 +47,8 @@ class PlayerDrone(BaseDrone):
         self.max_health = self.base_hp
         self.health = self.max_health
         self.rotation_speed = self.base_turn_speed
-        self.is_cruising = False
         self.original_image = None
         self.image = None
-        self._load_sprite()
         
         initial_weapon_mode_gs = gs.get_game_setting("INITIAL_WEAPON_MODE")
         try:
@@ -58,6 +56,8 @@ class PlayerDrone(BaseDrone):
         except ValueError:
             self.weapon_mode_index = 0 
         self.current_weapon_mode = gs.WEAPON_MODES_SEQUENCE[self.weapon_mode_index]
+        
+        self._load_sprite()
         
         self.bullets_group = pygame.sprite.Group() 
         self.missiles_group = pygame.sprite.Group() 
@@ -71,7 +71,6 @@ class PlayerDrone(BaseDrone):
         self.bullet_size = gs.get_game_setting("PLAYER_DEFAULT_BULLET_SIZE")
         self._update_weapon_attributes()
         
-        self.active_powerup_type = None 
         self.shield_active = False
         self.shield_end_time = 0
         self.shield_duration = gs.get_game_setting("SHIELD_POWERUP_DURATION")  
@@ -82,7 +81,6 @@ class PlayerDrone(BaseDrone):
         self.speed_boost_duration = gs.get_game_setting("SPEED_BOOST_POWERUP_DURATION")
         self.speed_boost_multiplier = gs.POWERUP_TYPES.get("speed_boost", {}).get("multiplier", 1.8)
         self.original_speed_before_boost = self.speed 
-        self.shield_tied_to_speed_boost = False 
         
         self.thrust_particles = pygame.sprite.Group()
         self.thrust_particle_spawn_timer = 0
@@ -103,19 +101,29 @@ class PlayerDrone(BaseDrone):
             self.collision_rect = pygame.Rect(self.x - col_size/2, self.y - col_size/2, col_size, col_size)
 
     def _load_sprite(self):
-        loaded_image = self.asset_manager.get_image(self.sprite_asset_key)
+        weapon_sprite_path = gs.WEAPON_MODE_ICONS.get(self.current_weapon_mode)
+        loaded_image = None
+        if weapon_sprite_path and isinstance(weapon_sprite_path, str):
+            asset_key = weapon_sprite_path.replace("assets/", "").replace("\\", "/")
+            loaded_image = self.asset_manager.get_image(asset_key)
         if loaded_image:
             self.original_image = pygame.transform.smoothscale(loaded_image, self.drone_visual_size)
         else:
-            self.original_image = self.asset_manager._create_fallback_surface(
-                size=self.drone_visual_size, text=self.drone_id[:1], color=(0,200,0,150)
-            )
+            logger.warning(f"Weapon sprite for mode {self.current_weapon_mode} not found. Using default sprite for drone {self.drone_id}.")
+            default_sprite_image = self.asset_manager.get_image(self.sprite_asset_key)
+            if default_sprite_image: self.original_image = pygame.transform.smoothscale(default_sprite_image, self.drone_visual_size)
+            else: self.original_image = self.asset_manager._create_fallback_surface(size=self.drone_visual_size, text=self.drone_id[:1], color=(0, 200, 0, 150))
         self.image = self.original_image.copy()
-        self.rect = self.image.get_rect(center=(int(self.x), int(self.y)))
+        current_center = self.rect.center if hasattr(self, 'rect') and self.rect else (int(self.x), int(self.y))
+        self.rect = self.image.get_rect(center=current_center)
         self.collision_rect = self.rect.inflate(-self.rect.width * 0.3, -self.rect.height * 0.3)
 
     def _update_weapon_attributes(self):
         pass
+
+    def set_movement(self, direction):
+        """Sets the drone's movement direction. 1 for fwd, -1 for back, 0 for stop."""
+        self.move_direction = direction
 
     def _emit_thrust_particles(self, current_time_ms):
         pass
@@ -131,19 +139,10 @@ class PlayerDrone(BaseDrone):
             self._update_thrust_particles()
             return
         
-        self.moving_forward = self.is_cruising
         self.update_powerups(current_time_ms) 
         self.update_movement(maze, game_area_x_offset) 
         
-        if player_actions.is_shooting:
-            self.shoot(
-                sound_asset_key='shoot',
-                missile_sound_asset_key='missile_launch',
-                maze=maze,
-                enemies_group=enemies_group
-            )
-
-        if self.speed_boost_active and self.moving_forward:
+        if self.speed_boost_active and self.move_direction > 0:
             self._emit_thrust_particles(current_time_ms)
         self._update_thrust_particles()
         
@@ -165,16 +164,19 @@ class PlayerDrone(BaseDrone):
     def _handle_wall_collision(self, maze, dx, dy):
         final_dx, final_dy = super()._handle_wall_collision(maze, dx, dy)
         collision_occurred = abs(final_dx - dx) > 1e-6 or abs(final_dy - dy) > 1e-6
-
         if collision_occurred:
             if not self.shield_active and not gs.get_game_setting("PLAYER_INVINCIBILITY"):
                 self.take_damage(10, self.crash_sound_key)
-            self.is_cruising = False
-        
+            self.move_direction = 0
         return final_dx, final_dy
 
     def rotate(self, direction, rotation_speed_override=None):
-        pass
+        speed = rotation_speed_override if rotation_speed_override is not None else self.rotation_speed
+        if direction == "left":
+            self.angle += speed
+        elif direction == "right":
+            self.angle -= speed
+        self.angle %= 360
 
     def shoot(self, sound_asset_key=None, missile_sound_asset_key=None, maze=None, enemies_group=None):
         pass
@@ -195,7 +197,11 @@ class PlayerDrone(BaseDrone):
         pass
 
     def cycle_weapon_state(self, force_cycle=True):
-        pass
+        if force_cycle:
+            self.weapon_mode_index = (self.weapon_mode_index + 1) % len(gs.WEAPON_MODES_SEQUENCE)
+            self.current_weapon_mode = gs.WEAPON_MODES_SEQUENCE[self.weapon_mode_index]
+            self._update_weapon_attributes()
+            self._load_sprite()
 
     def update_powerups(self, current_time_ms):
         pass

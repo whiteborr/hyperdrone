@@ -6,7 +6,7 @@ import pygame
 WIDTH = 1920
 HEIGHT = 1080
 FPS = 60
-FULLSCREEN_MODE = False 
+FULLSCREEN_MODE = True 
 MUSIC_VOLUME_MULTIPLIER = 0.5 
 SFX_VOLUME_MULTIPLIER = 0.7   
 
@@ -132,11 +132,16 @@ WEAPON_MODE_NAMES = {
     WEAPON_MODE_HEATSEEKER_PLUS_BULLETS: "Seeker + Rapid", WEAPON_MODE_LIGHTNING: "Chain Lightning"
 }
 WEAPON_MODE_ICONS = { 
-    WEAPON_MODE_DEFAULT: "🔫", WEAPON_MODE_TRI_SHOT: "🔱",
-    WEAPON_MODE_RAPID_SINGLE: "💨", WEAPON_MODE_RAPID_TRI: "⁂", 
-    WEAPON_MODE_BIG_SHOT: "💣", WEAPON_MODE_BOUNCE: "⚪",
-    WEAPON_MODE_PIERCE: "➤", WEAPON_MODE_HEATSEEKER: "🚀",
-    WEAPON_MODE_HEATSEEKER_PLUS_BULLETS: "🚀💨", WEAPON_MODE_LIGHTNING: "⚡",
+    WEAPON_MODE_DEFAULT: "assets/images/drones/drone_default.png", 
+    WEAPON_MODE_TRI_SHOT: "assets/images/drones/drone_tri_shot.png",
+    WEAPON_MODE_RAPID_SINGLE: "assets/images/drones/drone_rapid_single.png", 
+    WEAPON_MODE_RAPID_TRI: "assets/images/drones/drone_rapid_tri_shot.png", 
+    WEAPON_MODE_BIG_SHOT: "assets/images/drones/drone_big_shot.png",
+    WEAPON_MODE_BOUNCE: "assets/images/drones/drone_bounce.png",
+    WEAPON_MODE_PIERCE: "assets/images/drones/drone_pierce.png", 
+    WEAPON_MODE_HEATSEEKER: "assets/images/drones/drone_heatseeker.png",
+    WEAPON_MODE_HEATSEEKER_PLUS_BULLETS: "assets/images/drones/drone_heatseeker_plus_bullets.png", 
+    WEAPON_MODE_LIGHTNING: "assets/images/drones/drone_lightning.png",
 }
 
 # ==========================
@@ -225,10 +230,10 @@ TOTAL_CORE_FRAGMENTS_NEEDED = 3
 CORE_FRAGMENT_VISUAL_SIZE = TILE_SIZE // 2.5
 
 CORE_FRAGMENT_DETAILS = { 
-    "fragment_alpha": {"id": "cf_alpha", "name": "Alpha Core Fragment", "icon_filename": "collectibles/core_fragment_alpha.png", "description": "Pulses with unstable energy.", "spawn_info": {"level": 3}, "buff": {"type": "speed", "value": 1.05}, "required_for_vault": True},
-    "fragment_beta": {"id": "cf_beta", "name": "Beta Core Fragment", "icon_filename": "collectibles/core_fragment_beta.png", "description": "Hums with alien resonance.", "spawn_info": {"level": 6}, "buff": {"type": "bullet_damage_multiplier", "value": 1.05}, "required_for_vault": True},
-    "fragment_gamma": {"id": "cf_gamma", "name": "Gamma Core Fragment", "icon_filename": "collectibles/core_fragment_gamma.png", "description": "A critical processing unit.", "spawn_info": {"level": 9}, "buff_alt": {"type": "damage_reduction", "value": 0.05}, "required_for_vault": True},
-    "fragment_vault_core": {"id": "vault_core", "name": "Vault Core", "icon_filename": "collectibles/vault_core_icon.png", "description": "Heart of the Vault defenses.", "display_color": GOLD, "reward_level": "architect_vault_boss"} 
+    "fragment_alpha": {"id": "cf_alpha", "name": "Alpha Core Fragment", "icon_filename": "images/collectibles/core_fragment_alpha.png", "description": "Pulses with unstable energy.", "spawn_info": {"level": 3}, "buff": {"type": "speed", "value": 1.05}, "required_for_vault": True},
+    "fragment_beta": {"id": "cf_beta", "name": "Beta Core Fragment", "icon_filename": "images/collectibles/core_fragment_beta.png", "description": "Hums with alien resonance.", "spawn_info": {"level": 6}, "buff": {"type": "bullet_damage_multiplier", "value": 1.05}, "required_for_vault": True},
+    "fragment_gamma": {"id": "cf_gamma", "name": "Gamma Core Fragment", "icon_filename": "images/collectibles/core_fragment_gamma.png", "description": "A critical processing unit.", "spawn_info": {"level": 9}, "buff_alt": {"type": "damage_reduction", "value": 0.05}, "required_for_vault": True},
+    "fragment_vault_core": {"id": "vault_core", "name": "Vault Core", "icon_filename": "images/collectibles/vault_core_icon.png", "description": "Heart of the Vault defenses.", "display_color": GOLD, "reward_level": "architect_vault_boss"} 
 }
 
 ARCHITECT_VAULT_EXTRACTION_TIMER_MS = 90000

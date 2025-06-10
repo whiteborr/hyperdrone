@@ -26,6 +26,7 @@ from entities import (
 )
 from drone_management import DroneSystem, DRONE_DATA
 import game_settings as gs
+from hyperdrone_core.camera import Camera
 
 logger_gc = logging.getLogger(__name__)
 
@@ -114,6 +115,7 @@ class GameController:
         
         self.story_message = ""
         self.story_message_active = False
+        self.story_message_end_time = 0
         self.STORY_MESSAGE_DURATION = 5000
         self.triggered_story_beats = set()
 
@@ -133,30 +135,30 @@ class GameController:
         logger_gc.info("GameController initialized successfully.")
 
     def _preload_all_assets(self):
-        """
-        Loads all game assets defined in the manifest into the AssetManager.
-        This version contains corrected paths and a complete asset list.
-        """
         asset_manifest = {
             "images": {
-                # UI Icons
                 "ring_ui_icon": {"path": "images/collectibles/ring_ui_icon.png"},
                 "ring_ui_icon_empty": {"path": "images/collectibles/ring_ui_icon_empty.png"},
                 "menu_logo_hyperdrone": {"path": "images/ui/menu_logo_hyperdrone.png"},
                 "core_fragment_empty_icon": {"path": "images/collectibles/fragment_ui_icon_empty.png"},
-                "reactor_hud_icon_key": {"path": "images/ui/reactor_icon.png"},
-
-                # Powerups
+                "reactor_hud_icon_key": {"path": "images/level_elements/reactor_icon.png"},
+                "core_reactor_image": {"path": "images/level_elements/core_reactor.png", "alpha": True},
                 "shield_powerup_icon": {"path": "images/powerups/shield_icon.png"},
                 "speed_boost_powerup_icon": {"path": "images/powerups/speed_icon.png"},
                 "weapon_upgrade_powerup_icon": {"path": "images/powerups/weapon_icon.png"},
-                
-                # Enemy Sprites
                 "regular_enemy_sprite_key": {"path": gs.REGULAR_ENEMY_SPRITE_PATH.replace("assets/", ""), "alpha": True},
                 "prototype_drone_sprite_key": {"path": gs.PROTOTYPE_DRONE_SPRITE_PATH.replace("assets/", ""), "alpha": True},
                 "sentinel_drone_sprite_key": {"path": gs.SENTINEL_DRONE_SPRITE_PATH.replace("assets/", ""), "alpha": True},
                 "maze_guardian_sprite_key": {"path": gs.MAZE_GUARDIAN_SPRITE_PATH.replace("assets/", ""), "alpha": True},
-
+                "defense_drone_1_sprite_key": {"path": "images/enemies/defense_drone_1.png", "alpha": True},
+                "defense_drone_2_sprite_key": {"path": "images/enemies/defense_drone_2.png", "alpha": True},
+                "defense_drone_3_sprite_key": {"path": "images/enemies/defense_drone_3.png", "alpha": True},
+                "defense_drone_4_sprite_key": {"path": "images/enemies/defense_drone_4.png", "alpha": True},
+                "defense_drone_5_sprite_key": {"path": "images/enemies/defense_drone_5.png", "alpha": True},
+                "images/lore/scene1.png": {"path": "images/lore/scene1.png", "alpha": True},
+                "images/lore/scene2.png": {"path": "images/lore/scene2.png", "alpha": True},
+                "images/lore/scene3.png": {"path": "images/lore/scene3.png", "alpha": True},
+                "images/lore/scene4.png": {"path": "images/lore/scene4.png", "alpha": True},
             },
             "sounds": {
                 'collect_ring': "sounds/collect_ring.wav",
@@ -171,20 +173,20 @@ class GameController:
                 'missile_launch': "sounds/missile_launch.wav",
             },
             "fonts": {
-                "ui_text": {"path": "fonts/neuropol.otf", "sizes": [28, 24, 16]},
+                "ui_text": {"path": "fonts/neuropol.otf", "sizes": [28, 24, 20, 16, 32]},
                 "ui_values": {"path": "fonts/neuropol.otf", "sizes": [30]},
                 "small_text": {"path": "fonts/neuropol.otf", "sizes": [24]},
-                "medium_text": {"path": "fonts/neuropol.otf", "sizes": [48]},
-                "large_text": {"path": "fonts/neuropol.otf", "sizes": [74]},
+                "medium_text": {"path": "fonts/neuropol.otf", "sizes": [48, 36]},
+                "large_text": {"path": "fonts/neuropol.otf", "sizes": [74, 52, 48]},
                 "title_text": {"path": "fonts/neuropol.otf", "sizes": [90]},
             },
             "music": {
-                "menu_theme": "music/menu_music.wav",
-                "gameplay_theme": "music/gameplay_music.wav",
+                "menu_theme": "sounds/menu_music.wav",
+                "gameplay_theme": "sounds/gameplay_music.wav",
+                "defense_theme": "sounds/defense_mode_music.wav"
             }
         }
         
-        # Dynamically add assets from data files
         if gs.CORE_FRAGMENT_DETAILS:
             for _, details in gs.CORE_FRAGMENT_DETAILS.items():
                 if details and "id" in details and "icon_filename" in details:
@@ -195,6 +197,11 @@ class GameController:
                 asset_manifest["images"][f"drone_{drone_id}_ingame_sprite"] = {"path": config["ingame_sprite_path"].replace("assets/", ""), "alpha": True}
             if config.get("icon_path"):
                  asset_manifest["images"][f"drone_{drone_id}_hud_icon"] = {"path": config["icon_path"].replace("assets/", ""), "alpha": True}
+
+        for weapon_path in gs.WEAPON_MODE_ICONS.values():
+            if weapon_path and isinstance(weapon_path, str):
+                asset_key = weapon_path.replace("assets/", "").replace("\\", "/")
+                asset_manifest["images"][asset_key] = {"path": asset_key, "alpha": True}
         
         self.asset_manager.preload_manifest(asset_manifest)
         logger_gc.info("GameController: All assets preloaded via AssetManager.")
@@ -216,11 +223,88 @@ class GameController:
         current_time_ms = pygame.time.get_ticks()
         current_game_state = self.scene_manager.get_current_state()
         self.ui_flow_controller.update(current_time_ms, delta_time_ms, current_game_state)
+
+        if self.story_message_active and current_time_ms > self.story_message_end_time:
+            self.story_message_active = False
+            self.story_message = ""
+
+        if current_game_state == gs.GAME_STATE_GAME_INTRO_SCROLL:
+            if self.ui_flow_controller.intro_sequence_finished:
+                self.scene_manager.set_game_state(gs.GAME_STATE_PLAYING)
         
-        if current_game_state == gs.GAME_STATE_PLAYING and not self.paused:
+        elif current_game_state == gs.GAME_STATE_PLAYING and not self.paused:
             self._update_standard_playing_state(current_time_ms, delta_time_ms)
         
+        elif current_game_state == gs.GAME_STATE_MAZE_DEFENSE and not self.paused:
+            self.combat_controller.update(current_time_ms, delta_time_ms)
+            if self.camera:
+                if hasattr(self.ui_manager, 'build_menu') and self.ui_manager.build_menu:
+                    self.ui_manager.build_menu.update(pygame.mouse.get_pos(), current_game_state, self.camera)
+        
         if self.scene_manager: self.scene_manager.update()
+
+    def set_story_message(self, message, duration_ms=None):
+        self.story_message = message
+        self.story_message_active = True
+        duration_to_use = duration_ms if duration_ms is not None else self.STORY_MESSAGE_DURATION
+        self.story_message_end_time = pygame.time.get_ticks() + duration_to_use
+        logger_gc.info(f"Setting story message: '{message}' for {duration_to_use}ms")
+
+    def _create_explosion(self, x, y, num_particles=20, specific_sound_key=None):
+        """Creates a particle explosion at a given coordinate."""
+        for _ in range(num_particles):
+            self.explosion_particles_group.add(Particle(x, y, [gs.ORANGE, gs.YELLOW, gs.RED], 1, 4, 2, 8, gravity=0.1, shrink_rate=0.2, lifetime_frames=30))
+        if specific_sound_key:
+            self.play_sound(specific_sound_key)
+
+    def handle_scene_transition(self, new_state, old_state, **kwargs):
+        self.paused = False
+        if new_state == gs.GAME_STATE_MAIN_MENU:
+            self.ui_flow_controller.initialize_main_menu()
+        elif new_state == gs.GAME_STATE_DRONE_SELECT:
+            self.ui_flow_controller.initialize_drone_select()
+        elif new_state == gs.GAME_STATE_SETTINGS:
+            self.ui_flow_controller.initialize_settings(self._get_settings_menu_items_data_structure())
+        elif new_state == gs.GAME_STATE_LEADERBOARD:
+            self.ui_flow_controller.initialize_leaderboard()
+        elif new_state == gs.GAME_STATE_CODEX:
+            self.ui_flow_controller.initialize_codex()
+        elif new_state == gs.GAME_STATE_ENTER_NAME:
+            self.ui_flow_controller.initialize_enter_name()
+        elif new_state == gs.GAME_STATE_GAME_INTRO_SCROLL:
+            self.ui_flow_controller.initialize_game_intro(self._load_intro_data_from_json_internal())
+        elif new_state == gs.GAME_STATE_PLAYING:
+            self.initialize_specific_game_mode(gs.GAME_STATE_PLAYING, old_state, **kwargs)
+        elif new_state == gs.GAME_STATE_MAZE_DEFENSE:
+            self.initialize_specific_game_mode(gs.GAME_STATE_MAZE_DEFENSE, old_state, **kwargs)
+
+    def initialize_specific_game_mode(self, mode_type, old_state, **kwargs):
+        self.combat_controller.reset_combat_state()
+        self.puzzle_controller.reset_puzzles_state()
+        self.level = 1
+        self.score = 0
+        self.lives = gs.get_game_setting("PLAYER_LIVES")
+        
+        if mode_type == gs.GAME_STATE_MAZE_DEFENSE:
+            self.maze = MazeChapter2(game_area_x_offset=300) 
+            self.camera = Camera(self.maze.actual_maze_cols * gs.TILE_SIZE, self.maze.actual_maze_rows * gs.TILE_SIZE)
+            reactor_pos = self.maze.get_core_reactor_spawn_position_abs()
+            if reactor_pos:
+                self.core_reactor = CoreReactor(reactor_pos[0], reactor_pos[1], self.asset_manager, health=gs.DEFENSE_REACTOR_HEALTH)
+                self.reactor_group.add(self.core_reactor)
+            self.combat_controller.set_active_entities(player=None, maze=self.maze, core_reactor=self.core_reactor, turrets_group=self.turrets_group)
+            self.combat_controller.wave_manager.start_first_build_phase()
+        else: 
+            self.maze = Maze()
+            self.camera = None
+            spawn_x, spawn_y = self._get_safe_spawn_point(gs.TILE_SIZE * 0.7, gs.TILE_SIZE * 0.7)
+            drone_id = self.drone_system.get_selected_drone_id()
+            drone_stats = self.drone_system.get_drone_stats(drone_id)
+            sprite_key = f"drone_{drone_id}_ingame_sprite"
+            self.player = PlayerDrone(spawn_x, spawn_y, drone_id, drone_stats, self.asset_manager, sprite_key, 'crash', self.drone_system)
+            self.combat_controller.set_active_entities(player=self.player, maze=self.maze, power_ups_group=self.power_ups_group)
+            self.combat_controller.enemy_manager.spawn_enemies_for_level(self.level)
+            self.puzzle_controller.set_active_entities(player=self.player, drone_system=self.drone_system, scene_manager=self.scene_manager)
 
     def _update_standard_playing_state(self, current_time_ms, delta_time_ms):
         if not self.player: return
@@ -230,11 +314,19 @@ class GameController:
     def _draw_game_world(self):
         self.screen.fill(gs.BLACK)
         if self.maze:
-            self.maze.draw(self.screen)
+            self.maze.draw(self.screen, self.camera)
+        
+        self.explosion_particles_group.draw(self.screen) 
+
         if self.player:
             self.player.draw(self.screen)
         if self.combat_controller:
-            self.combat_controller.enemy_manager.draw_all(self.screen)
+            self.combat_controller.enemy_manager.draw_all(self.screen, self.camera)
+        if self.reactor_group:
+            self.reactor_group.draw(self.screen, self.camera)
+        if self.turrets_group:
+            for turret in self.turrets_group:
+                turret.draw(self.screen, self.camera)
 
     def quit_game(self):
         if self.drone_system: self.drone_system._save_unlocks()
@@ -242,10 +334,6 @@ class GameController:
         sys.exit()
 
     def _get_settings_menu_items_data_structure(self):
-        """
-        Defines the data structure for the settings menu. This allows the UI
-        to build the settings screen dynamically.
-        """
         return [
             {"label":"Base Max Health","key":"PLAYER_MAX_HEALTH","type":"numeric","min":50,"max":200,"step":10,"note":"Original Drone base, others vary"},
             {"label":"Starting Lives","key":"PLAYER_LIVES","type":"numeric","min":1,"max":9,"step":1},
@@ -257,55 +345,35 @@ class GameController:
         ]
     
     def _load_intro_data_from_json_internal(self):
-        """
-        Loads the sequence of screens for the game introduction from a JSON file.
-        """
-        # Fallback data in case the JSON file is missing or invalid
-        fallback_data = [
-            {"text": "The Architect — creator of the Vault\nand all drone intelligence — has vanished.", "image_path_key": "images/lore/scene1.png"},
-            {"text": "In his absence, the Vault has become corrupted,\nits corridors twisted into a cryptic maze.", "image_path_key": "images/lore/scene2.png"},
-            {"text": "You are a pilot entering the Vault to unravel the enigma.", "image_path_key": "images/lore/scene3.png"},
-            {"text": "The Architect's secrets lie ahead.\nSurvive.", "image_path_key": "images/lore/scene4.png"},
-        ]
-        
+        fallback_data = [{"text": "The Architect has vanished.", "image_path_key": "images/lore/scene1.png"}]
         intro_file_path = os.path.join("data", "intro.json") 
         if os.path.exists(intro_file_path):
             try:
                 with open(intro_file_path, 'r', encoding='utf-8') as f:
                     loaded_data = json.load(f)
-                    # Basic validation
                     if isinstance(loaded_data, list) and all("text" in item and "image_path" in item for item in loaded_data):
-                        # Transform the path to a key for the asset manager
                         transformed_data = []
                         for item in loaded_data:
                             new_item = item.copy()
                             original_path = new_item.pop("image_path")
-                            new_item["image_path_key"] = original_path.replace("assets/", "", 1)
+                            new_item["image_path_key"] = original_path.replace("assets/", "").replace("\\", "/")
                             transformed_data.append(new_item)
-                        logger_gc.info(f"Successfully loaded and transformed {len(transformed_data)} intro screens.")
                         return transformed_data
-                    else:
-                        logger_gc.warning("Intro.json format incorrect. Using fallback.")
-            except (IOError, json.JSONDecodeError) as e:
+            except Exception as e:
                 logger_gc.error(f"Error loading intro.json: {e}. Using fallback.")
-        else:
-            logger_gc.info("intro.json not found. Using fallback.")
-        
-        # Process fallback data to create image_path_key
-        for item in fallback_data:
-            if "image_path_key" not in item and "image_path" in item:
-                item["image_path_key"] = item.pop("image_path").replace("assets/", "", 1)
         return fallback_data
     
+    def _get_safe_spawn_point(self, w, h):
+        if self.maze and hasattr(self.maze, 'get_walkable_tiles_abs'):
+            walkable = self.maze.get_walkable_tiles_abs()
+            if walkable:
+                return random.choice(walkable)
+        return (200, 200)
+
     def check_and_apply_screen_settings_change(self): pass
     def play_sound(self, key, vol=0.7): pass
-    def _get_safe_spawn_point(self, w, h): return (200, 200)
-    def handle_scene_transition(self, new_state, old_state, **kwargs): pass
     def check_for_all_enemies_killed(self): pass
     def _check_level_clear_condition(self): pass
     def _attempt_level_clear_fragment_spawn(self): return False
     def _handle_collectible_collisions(self): pass
     def _handle_player_death_or_life_loss(self, reason=""): pass
-    def is_current_score_a_high_score(self): return False
-    def submit_leaderboard_name(self, name): pass
-    def initialize_specific_game_mode(self, mode_type, old_state, **kwargs): pass

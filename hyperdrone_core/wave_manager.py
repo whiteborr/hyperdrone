@@ -79,7 +79,7 @@ class WaveManager:
                 self.time_since_last_spawn_ms += delta_time_ms
                 if self.enemies_spawned_in_current_group < group["count"] and self.time_since_last_spawn_ms >= group["spawn_delay_ms"]:
                     
-                    spawn_grid_positions = self.game_controller.maze.enemy_spawn_grid_positions
+                    spawn_grid_positions = self.game_controller.maze.ENEMY_SPAWN_GRID_POSITIONS
                     if not spawn_grid_positions: return
 
                     spawn_grid_pos = random.choice(spawn_grid_positions)

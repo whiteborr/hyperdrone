@@ -12,7 +12,7 @@ class BaseDrone(pygame.sprite.Sprite):
         self.size = size
         self.speed = speed
         self.angle = 0.0
-        self.moving_forward = False
+        self.move_direction = 0  # 0 = stop, 1 = forward, -1 = backward
         self.alive = True
         
         self.rect = pygame.Rect(x - size / 2, y - size / 2, size, size)
@@ -26,14 +26,14 @@ class BaseDrone(pygame.sprite.Sprite):
         self.angle %= 360
 
     def update_movement(self, maze=None, game_area_x_offset=0):
-        if self.moving_forward:
+        if self.move_direction != 0:
             rad_angle = math.radians(self.angle)
-            dx = math.cos(rad_angle) * self.speed
-            dy = math.sin(rad_angle) * self.speed
+            # Apply direction to speed
+            dx = math.cos(rad_angle) * self.speed * self.move_direction
+            dy = math.sin(rad_angle) * self.speed * self.move_direction
             
             final_dx, final_dy = self._handle_wall_collision(maze, dx, dy)
             
-            # Before we apply the movement, check if the destination is valid.
             final_x = self.x + final_dx
             final_y = self.y + final_dy
             
@@ -50,7 +50,7 @@ class BaseDrone(pygame.sprite.Sprite):
 
     def draw(self, surface):
         if self.alive:
-            if self.image and (self.image.get_width() > 1 or self.image.get_height() > 1):
+            if hasattr(self, 'image') and self.image and (self.image.get_width() > 1 or self.image.get_height() > 1):
                 surface.blit(self.image, self.rect)
             else:
                 points = [ (self.size / 2, 0), (0, self.size), (self.size, self.size) ]
@@ -103,6 +103,7 @@ class BaseDrone(pygame.sprite.Sprite):
         self.y = float(y)
         self.angle = 0.0
         self.alive = True
-        self.moving_forward = False
+        self.move_direction = 0
         self.rect.center = (int(self.x), int(self.y))
-        self.collision_rect.center = self.rect.center
+        if self.collision_rect:
+            self.collision_rect.center = self.rect.center

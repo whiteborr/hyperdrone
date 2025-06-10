@@ -24,15 +24,26 @@ class AssetManager:
         logger.info(f"AssetManager initialized with absolute base path: '{self.base_asset_path}'")
 
     def _get_full_path(self, relative_path):
-        if not isinstance(relative_path, str):
-            return relative_path
-        return os.path.join(self.base_asset_path, relative_path)
+        # A simple check to ensure the relative_path is a string and could be a path
+        if not isinstance(relative_path, str) or not os.path.splitext(relative_path)[1]:
+            # If it's not a string or has no file extension, it's probably not a valid asset path.
+            # This will prevent emojis or other non-path strings from being processed.
+            logger.warning(f"AssetManager: '{relative_path}' was passed as a relative path but is not a valid file path string. Skipping.")
+            return None
+
+        # Join the paths and normalize them for the current OS to fix mixed separators
+        full_path = os.path.join(self.base_asset_path, relative_path)
+        return os.path.normpath(full_path)
 
     def load_image(self, relative_path, key=None, use_convert_alpha=True, colorkey=None):
         """Loads an image and caches its original, unscaled version."""
         if key is None: key = relative_path
         if key in self.images: return self.images[key]
+        
         full_path = self._get_full_path(relative_path)
+        if full_path is None: # The check in _get_full_path determined it's not a valid path
+            return None
+
         if not os.path.exists(full_path):
             logger.error(f"AssetManager: Image file not found at '{full_path}' for key '{key}'.")
             return None
@@ -52,7 +63,7 @@ class AssetManager:
         if not original_image:
             # If key not in cache, the key IS the path for non-manifest assets.
             # This prevents treating a key name like a file path.
-            if os.path.exists(self._get_full_path(key)):
+            if os.path.exists(self._get_full_path(key) or ""):
                  original_image = self.load_image(key)
             else:
                 logger.warning(f"AssetManager: Image with key or path '{key}' not found.")
@@ -90,7 +101,11 @@ class AssetManager:
     def load_sound(self, relative_path, key=None):
         if key is None: key = relative_path
         if key in self.sounds: return self.sounds[key]
+        
         full_path = self._get_full_path(relative_path)
+        if full_path is None:
+            return None
+
         if not os.path.exists(full_path):
             logger.error(f"AssetManager: Sound file not found: '{full_path}'.")
             return None
@@ -112,11 +127,12 @@ class AssetManager:
         full_path = self._get_full_path(relative_path) if relative_path else None
         
         try:
+            # Use full_path directly, which can be None for system default font
             font = pygame.font.Font(full_path, size)
             self.fonts[font_cache_key] = font
             logger.debug(f"AssetManager: Loaded font '{full_path or 'System Font'}' size {size} as '{font_cache_key}'.")
             return font
-        except pygame.error as e:
+        except (pygame.error, FileNotFoundError) as e: # Catch FileNotFoundError as well
             logger.error(f"AssetManager: Pygame error loading font '{full_path or 'System Font'}' size {size}: {e}")
             try:
                 logger.warning(f"AssetManager: Attempting fallback to system font for key '{base_key}' size {size}.")
@@ -144,7 +160,9 @@ class AssetManager:
 
     def get_music_path(self, key):
         relative_path = self.music_paths.get(key)
-        if relative_path: return self._get_full_path(relative_path)
+        if relative_path:
+            full_path = self._get_full_path(relative_path)
+            return full_path
         logger.warning(f"AssetManager: Music path for key '{key}' not found.")
         return None
 
@@ -152,15 +170,16 @@ class AssetManager:
         logger.info("AssetManager: Starting preload from manifest...")
         if "images" in manifest_dict:
             for key, config in manifest_dict["images"].items():
-                if not config.get("path"): logger.error(f"AssetManager (Manifest): Path missing for image key '{key}'."); continue
+                if not config.get("path"): 
+                    logger.error(f"AssetManager (Manifest): Path missing for image key '{key}'."); continue
                 self.load_image(config["path"], key=key)
         
         if "sounds" in manifest_dict:
             for key, path in manifest_dict["sounds"].items():
-                if not path: logger.error(f"AssetManager (Manifest): Path missing for sound key '{key}'."); continue
+                if not path: 
+                    logger.error(f"AssetManager (Manifest): Path missing for sound key '{key}'."); continue
                 self.load_sound(path, key=key)
         
-        # <<< CORRECTED FONT PRELOADING LOGIC >>>
         if "fonts" in manifest_dict:
             for base_key, config in manifest_dict["fonts"].items():
                 font_path = config.get("path")
@@ -173,7 +192,8 @@ class AssetManager:
 
         if "music" in manifest_dict:
             for key, path in manifest_dict["music"].items():
-                if not path: logger.error(f"AssetManager (Manifest): Path missing for music key '{key}'."); continue
+                if not path: 
+                    logger.error(f"AssetManager (Manifest): Path missing for music key '{key}'."); continue
                 self.add_music_path(key, path)
                 
         logger.info("AssetManager: Preload from manifest complete.")

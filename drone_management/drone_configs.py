@@ -18,9 +18,9 @@ logger = logging.getLogger(__name__)
 DRONE_DATA = {
     "DRONE": {
         "name": "Drone",
-        "sprite_path": "assets/images/drones/drone_2d.png",
-        "icon_path": "assets/images/drones/drone_2d.png",
-        "ingame_sprite_path": "assets/images/drones/drone_2d.png",
+        "sprite_path": "assets/images/drones/drone_default.png",
+        "icon_path": "assets/images/drones/drone_default.png",
+        "ingame_sprite_path": "assets/images/drones/drone_default.png",
         "base_stats": {
             "hp": PLAYER_MAX_HEALTH,
             "speed": PLAYER_SPEED,

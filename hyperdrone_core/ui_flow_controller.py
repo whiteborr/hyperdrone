@@ -5,6 +5,7 @@ import logging
 
 # Corrected import style
 import game_settings as gs
+from . import leaderboard
 
 logger = logging.getLogger(__name__)
 
@@ -85,12 +86,24 @@ class UIFlowController:
 
     def update(self, current_time_ms, delta_time_ms, current_game_state):
         """Called every frame to update UI animations or timed transitions."""
-        if current_game_state == gs.GAME_STATE_MAIN_MENU:
+        menu_like_states = [
+            gs.GAME_STATE_MAIN_MENU,
+            gs.GAME_STATE_LEADERBOARD,
+            gs.GAME_STATE_SETTINGS,
+            gs.GAME_STATE_DRONE_SELECT,
+            gs.GAME_STATE_CODEX,
+            gs.GAME_STATE_GAME_OVER,
+            gs.GAME_STATE_ENTER_NAME
+        ]
+        
+        if current_game_state in menu_like_states:
             if self.menu_stars:
                 height = gs.get_game_setting("HEIGHT")
                 width = gs.get_game_setting("WIDTH")
                 for star in self.menu_stars:
+                    # Update star position
                     star[1] += star[2] * (delta_time_ms / 1000.0)
+                    # Reset star if it goes off-screen
                     if star[1] > height:
                         star[0] = random.randint(0, width)
                         star[1] = 0
@@ -129,8 +142,7 @@ class UIFlowController:
         self.selected_setting_index = 0
 
     def initialize_leaderboard(self):
-        if self.game_controller and hasattr(self.game_controller, 'leaderboard'):
-            self.leaderboard_scores = self.game_controller.leaderboard.load_scores()
+        self.leaderboard_scores = leaderboard.load_scores()
 
     def initialize_codex(self):
         if not self.drone_system: return
@@ -157,8 +169,6 @@ class UIFlowController:
         self.current_intro_screen_index = 0
         self.intro_screen_start_time = pygame.time.get_ticks()
         self.intro_sequence_finished = False
-        if hasattr(self.game_controller, '_prepare_current_intro_screen_surfaces'):
-            self.game_controller._prepare_current_intro_screen_surfaces()
 
     def reset_ui_flow_states(self):
         """Resets all UI state variables to their defaults."""
@@ -300,7 +310,8 @@ class UIFlowController:
     def _handle_enter_name_input(self, key):
         if key == pygame.K_RETURN:
             if len(self.player_name_input_cache) > 0:
-                self.game_controller.submit_leaderboard_name(self.player_name_input_cache)
+                leaderboard.add_score(self.player_name_input_cache, self.game_controller.score, self.game_controller.level)
+                self.scene_manager.set_game_state(gs.GAME_STATE_LEADERBOARD)
             return True
         elif key == pygame.K_BACKSPACE:
             self.player_name_input_cache = self.player_name_input_cache[:-1]
@@ -315,10 +326,11 @@ class UIFlowController:
         return False
 
     def _handle_game_over_input(self, key):
-        if self.game_controller.is_current_score_a_high_score() and not gs.SETTINGS_MODIFIED:
+        score_is_high = leaderboard.is_high_score(self.game_controller.score, self.game_controller.level)
+        if score_is_high and not gs.SETTINGS_MODIFIED:
             self.scene_manager.set_game_state(gs.GAME_STATE_ENTER_NAME)
         else:
-            if key == pygame.K_r: self.scene_manager.set_game_state(gs.GAME_STATE_MAIN_MENU, action="restart")
+            if key == pygame.K_r: self.scene_manager.set_game_state(gs.GAME_STATE_PLAYING, action="restart")
             elif key == pygame.K_l: self.scene_manager.set_game_state(gs.GAME_STATE_LEADERBOARD)
             elif key == pygame.K_m: self.scene_manager.set_game_state(gs.GAME_STATE_MAIN_MENU)
             elif key == pygame.K_q: self.game_controller.quit_game()
@@ -332,16 +344,11 @@ class UIFlowController:
         
     def _handle_game_intro_input(self, key):
         if key == pygame.K_SPACE or key == pygame.K_RETURN:
-            if self.intro_sequence_finished:
-                self.scene_manager.set_game_state(gs.GAME_STATE_PLAYING)
+            if self.current_intro_screen_index >= len(self.intro_screens_data) - 1:
+                self.intro_sequence_finished = True
             else:
                 self.current_intro_screen_index += 1
-                if self.current_intro_screen_index >= len(self.intro_screens_data):
-                    self.intro_sequence_finished = True
-                else:
-                    self.intro_screen_start_time = pygame.time.get_ticks()
-                    if hasattr(self.game_controller, '_prepare_current_intro_screen_surfaces'):
-                        self.game_controller._prepare_current_intro_screen_surfaces()
+                self.intro_screen_start_time = pygame.time.get_ticks()
             return True
         elif key == pygame.K_ESCAPE:
             self.scene_manager.set_game_state(gs.GAME_STATE_MAIN_MENU)
