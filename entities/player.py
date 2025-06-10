@@ -54,7 +54,6 @@ class PlayerDrone(BaseDrone):
         except ValueError:
             self.weapon_mode_index = 0 
         self.current_weapon_mode = gs.WEAPON_MODES_SEQUENCE[self.weapon_mode_index]
-        self._load_sprite()
         
         self.bullets_group = pygame.sprite.Group()
         self.missiles_group = pygame.sprite.Group()
@@ -62,6 +61,10 @@ class PlayerDrone(BaseDrone):
         self.last_shot_time = 0
         self.current_shoot_cooldown = gs.PLAYER_BASE_SHOOT_COOLDOWN
         self.bullet_size = gs.get_game_setting("PLAYER_DEFAULT_BULLET_SIZE")
+        
+        # Initialize weapon properties based on initial weapon mode
+        self._update_weapon_properties()
+        self._load_sprite()
 
     def _load_sprite(self):
         # This logic for swapping sprites on weapon change is preserved
@@ -93,6 +96,9 @@ class PlayerDrone(BaseDrone):
         super().update(maze, game_area_x_offset)
         
         self.bullets_group.update(maze, game_area_x_offset)
+        self.missiles_group.update(enemies_group, maze, game_area_x_offset)
+        if hasattr(self, 'lightning_zaps_group'):
+            self.lightning_zaps_group.update(current_time_ms)
 
     def rotate(self, direction):
         super().rotate(direction, self.rotation_speed)
@@ -109,13 +115,74 @@ class PlayerDrone(BaseDrone):
             spawn_x = self.x + math.cos(rad_angle) * (self.rect.width / 2)
             spawn_y = self.y + math.sin(rad_angle) * (self.rect.height / 2)
             
-            new_bullet = Bullet(spawn_x, spawn_y, self.angle, gs.PLAYER_BULLET_SPEED, gs.PLAYER_BULLET_LIFETIME, self.bullet_size, gs.PLAYER_BULLET_COLOR, 15)
-            self.bullets_group.add(new_bullet)
+            # Create bullets based on weapon mode
+            if self.current_weapon_mode == gs.WEAPON_MODE_TRI_SHOT or self.current_weapon_mode == gs.WEAPON_MODE_RAPID_TRI:
+                # Create tri-shot bullets
+                for angle_offset in [-15, 0, 15]:
+                    shot_angle = self.angle + angle_offset
+                    new_bullet = Bullet(spawn_x, spawn_y, shot_angle, gs.PLAYER_BULLET_SPEED, 
+                                       gs.PLAYER_BULLET_LIFETIME, self.bullet_size, 
+                                       gs.PLAYER_BULLET_COLOR, 15)
+                    self.bullets_group.add(new_bullet)
+            elif self.current_weapon_mode == gs.WEAPON_MODE_BOUNCE:
+                # Create bouncing bullet
+                new_bullet = Bullet(spawn_x, spawn_y, self.angle, gs.PLAYER_BULLET_SPEED, 
+                                   gs.PLAYER_BULLET_LIFETIME, self.bullet_size, 
+                                   gs.PLAYER_BULLET_COLOR, 15, max_bounces=gs.BOUNCING_BULLET_MAX_BOUNCES)
+                self.bullets_group.add(new_bullet)
+            elif self.current_weapon_mode == gs.WEAPON_MODE_PIERCE:
+                # Create piercing bullet
+                new_bullet = Bullet(spawn_x, spawn_y, self.angle, gs.PLAYER_BULLET_SPEED, 
+                                   gs.PLAYER_BULLET_LIFETIME, self.bullet_size, 
+                                   gs.PLAYER_BULLET_COLOR, 15, max_pierces=gs.PIERCING_BULLET_MAX_PIERCES)
+                self.bullets_group.add(new_bullet)
+            elif self.current_weapon_mode == gs.WEAPON_MODE_HEATSEEKER or self.current_weapon_mode == gs.WEAPON_MODE_HEATSEEKER_PLUS_BULLETS:
+                # Create heatseeker missile
+                if missile_sound_asset_key and self.asset_manager:
+                    missile_sound = self.asset_manager.get_sound(missile_sound_asset_key)
+                    if missile_sound: missile_sound.play()
+                new_missile = Missile(spawn_x, spawn_y, self.angle, gs.get_game_setting("MISSILE_DAMAGE"), enemies_group)
+                self.missiles_group.add(new_missile)
+                
+                # Add regular bullets for HEATSEEKER_PLUS_BULLETS mode
+                if self.current_weapon_mode == gs.WEAPON_MODE_HEATSEEKER_PLUS_BULLETS:
+                    new_bullet = Bullet(spawn_x, spawn_y, self.angle, gs.PLAYER_BULLET_SPEED, 
+                                       gs.PLAYER_BULLET_LIFETIME, self.bullet_size, 
+                                       gs.PLAYER_BULLET_COLOR, 15)
+                    self.bullets_group.add(new_bullet)
+            elif self.current_weapon_mode == gs.WEAPON_MODE_LIGHTNING:
+                # Lightning weapon logic would go here
+                pass
+            else:
+                # Default single bullet
+                new_bullet = Bullet(spawn_x, spawn_y, self.angle, gs.PLAYER_BULLET_SPEED, 
+                                   gs.PLAYER_BULLET_LIFETIME, self.bullet_size, 
+                                   gs.PLAYER_BULLET_COLOR, 15)
+                self.bullets_group.add(new_bullet)
             
     def cycle_weapon_state(self):
         self.weapon_mode_index = (self.weapon_mode_index + 1) % len(gs.WEAPON_MODES_SEQUENCE)
         self.current_weapon_mode = gs.WEAPON_MODES_SEQUENCE[self.weapon_mode_index]
+        self._update_weapon_properties()
         self._load_sprite() 
+        
+    def _update_weapon_properties(self):
+        # Update bullet properties based on weapon mode
+        if self.current_weapon_mode == gs.WEAPON_MODE_BIG_SHOT:
+            self.bullet_size = gs.get_game_setting("PLAYER_BIG_BULLET_SIZE")
+            self.current_shoot_cooldown = gs.get_game_setting("PLAYER_BASE_SHOOT_COOLDOWN") * 1.5
+        elif self.current_weapon_mode in [gs.WEAPON_MODE_RAPID_SINGLE, gs.WEAPON_MODE_RAPID_TRI]:
+            self.bullet_size = gs.get_game_setting("PLAYER_DEFAULT_BULLET_SIZE")
+            self.current_shoot_cooldown = gs.get_game_setting("PLAYER_RAPID_FIRE_COOLDOWN")
+        elif self.current_weapon_mode == gs.WEAPON_MODE_BOUNCE:
+            self.bullet_size = gs.get_game_setting("PLAYER_DEFAULT_BULLET_SIZE")
+            self.current_shoot_cooldown = gs.get_game_setting("PLAYER_BASE_SHOOT_COOLDOWN")
+        elif self.current_weapon_mode == gs.WEAPON_MODE_PIERCE:
+            self.bullet_size = gs.get_game_setting("PLAYER_DEFAULT_BULLET_SIZE")
+            self.current_shoot_cooldown = gs.get_game_setting("PLAYER_BASE_SHOOT_COOLDOWN")
+        else:
+            self.bullet_size = gs.get_game_setting("PLAYER_DEFAULT_BULLET_SIZE")
+            self.current_shoot_cooldown = gs.get_game_setting("PLAYER_BASE_SHOOT_COOLDOWN")
 
     def take_damage(self, amount, sound_key_on_hit=None):
         if not self.alive: return
@@ -134,6 +201,12 @@ class PlayerDrone(BaseDrone):
             surface.blit(rotated_image, draw_rect)
             
         self.bullets_group.draw(surface)
+        self.missiles_group.draw(surface)
+        
+        # Draw lightning zaps
+        for zap in self.lightning_zaps_group:
+            if hasattr(zap, 'draw'):
+                zap.draw(surface, camera)
 
     def draw_health_bar(self, surface, camera=None):
         if not self.alive or not self.rect: return

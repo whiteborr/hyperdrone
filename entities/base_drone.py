@@ -44,10 +44,14 @@ class BaseDrone(pygame.sprite.Sprite):
                 new_y = self.y + dy
                 
                 # Check if the new position would cause a collision
-                if maze.is_wall(new_x, new_y, self.size, self.size):
+                wall_collision = maze.is_wall(new_x, new_y, self.size, self.size)
+                if wall_collision:
                     # If collision detected, don't move in that direction
                     dx = 0
                     dy = 0
+                    # Apply wall collision damage if this is a player drone
+                    if hasattr(self, 'take_damage') and hasattr(self, 'drone_id'):
+                        self.take_damage(5, 'crash')
             
             self.x += dx
             self.y += dy
