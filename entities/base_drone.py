@@ -37,6 +37,18 @@ class BaseDrone(pygame.sprite.Sprite):
             dx = math.cos(rad_angle) * self.speed
             dy = math.sin(rad_angle) * self.speed
             
+            # Check for wall collision before moving
+            if maze:
+                # Test the new position before actually moving
+                new_x = self.x + dx
+                new_y = self.y + dy
+                
+                # Check if the new position would cause a collision
+                if maze.is_wall(new_x, new_y, self.size, self.size):
+                    # If collision detected, don't move in that direction
+                    dx = 0
+                    dy = 0
+            
             self.x += dx
             self.y += dy
 
