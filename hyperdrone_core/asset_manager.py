@@ -47,34 +47,34 @@ class AssetManager:
             return None
 
     def get_image(self, key, scale_to_size=None, default_surface_params=None):
-        """
-        Retrieves an image. If scale_to_size is provided, it returns a scaled version,
-        creating and caching it for future requests if it doesn't exist.
-        """
-        if not scale_to_size:
-            if key in self.images: return self.images[key]
-            elif self.load_image(key): return self.images.get(key)
+        original_image = self.images.get(key)
         
-        if scale_to_size:
-            try:
-                scaled_key = f"{key}_scaled_{int(scale_to_size[0])}x{int(scale_to_size[1])}"
-                if scaled_key in self.images: return self.images[scaled_key]
-                
-                original_image = self.images.get(key) or self.load_image(key)
+        if not original_image:
+            # If key not in cache, the key IS the path for non-manifest assets.
+            # This prevents treating a key name like a file path.
+            if os.path.exists(self._get_full_path(key)):
+                 original_image = self.load_image(key)
+            else:
+                logger.warning(f"AssetManager: Image with key or path '{key}' not found.")
+                if default_surface_params: return self._create_fallback_surface(**default_surface_params)
+                return None
 
-                if original_image:
-                    scaled_w, scaled_h = int(scale_to_size[0]), int(scale_to_size[1])
-                    if scaled_w <= 0 or scaled_h <= 0: raise ValueError("Image scaling dimensions must be positive.")
-                    scaled_image = pygame.transform.smoothscale(original_image, (scaled_w, scaled_h))
-                    self.images[scaled_key] = scaled_image
-                    return scaled_image
-            except (ValueError, TypeError, pygame.error) as e:
-                logger.error(f"AssetManager: Error scaling image for key '{key}' to {scale_to_size}: {e}")
-                return self.images.get(key)
+        if not scale_to_size:
+            return original_image
 
-        logger.warning(f"AssetManager: Image with key '{key}' not found.")
-        if default_surface_params: return self._create_fallback_surface(**default_surface_params)
-        return None
+        try:
+            scaled_key = f"{key}_scaled_{int(scale_to_size[0])}x{int(scale_to_size[1])}"
+            if scaled_key in self.images: return self.images[scaled_key]
+            
+            scaled_w, scaled_h = int(scale_to_size[0]), int(scale_to_size[1])
+            if scaled_w <= 0 or scaled_h <= 0: raise ValueError("Image scaling dimensions must be positive.")
+            
+            scaled_image = pygame.transform.smoothscale(original_image, (scaled_w, scaled_h))
+            self.images[scaled_key] = scaled_image
+            return scaled_image
+        except (ValueError, TypeError, pygame.error) as e:
+            logger.error(f"AssetManager: Error scaling image for key '{key}' to {scale_to_size}: {e}")
+            return original_image
         
     def _create_fallback_surface(self, size=(32,32), color=(128,0,128), text=None, text_color=(255,255,255), font_key=None, font_size=20):
         surface = pygame.Surface(size, pygame.SRCALPHA); surface.fill(color)

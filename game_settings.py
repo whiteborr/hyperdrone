@@ -6,7 +6,7 @@ import pygame
 WIDTH = 1920
 HEIGHT = 1080
 FPS = 60
-FULLSCREEN_MODE = True 
+FULLSCREEN_MODE = False 
 MUSIC_VOLUME_MULTIPLIER = 0.5 
 SFX_VOLUME_MULTIPLIER = 0.7   
 
@@ -14,13 +14,14 @@ SFX_VOLUME_MULTIPLIER = 0.7
 # UI & Layout Settings
 # ==========================
 BOTTOM_PANEL_HEIGHT = 120 
-GAME_PLAY_AREA_HEIGHT = HEIGHT - BOTTOM_PANEL_HEIGHT 
+# GAME_PLAY_AREA_HEIGHT is now calculated dynamically where needed
+# e.g., in Maze.__init__ as height - BOTTOM_PANEL_HEIGHT
 
 # ==========================
 # Tile & Maze Settings
 # ==========================
 TILE_SIZE = 80            
-MAZE_ROWS = GAME_PLAY_AREA_HEIGHT // TILE_SIZE 
+# MAZE_ROWS is now calculated dynamically in the Maze classes
 
 # ==========================
 # Color Definitions
@@ -76,14 +77,13 @@ MISSILE_COLOR = MAGENTA
 MISSILE_SPEED = PLAYER_BULLET_SPEED * 0.8
 MISSILE_LIFETIME = PLAYER_BULLET_LIFETIME * 2 
 MISSILE_SIZE = 8 
-MISSILE_TURN_RATE = 8 # Increased from 4
+MISSILE_TURN_RATE = 8
 MISSILE_COOLDOWN = 3000 
 MISSILE_DAMAGE = 50
 
-# MODIFIED: LightningZap lifetime changed to 30 frames (0.5 seconds at 60 FPS)
 LIGHTNING_COLOR = ELECTRIC_BLUE
 LIGHTNING_DAMAGE = 15
-LIGHTNING_LIFETIME = 30 # In frames (0.5 seconds at 60 FPS)
+LIGHTNING_LIFETIME = 30
 LIGHTNING_COOLDOWN = 750 
 LIGHTNING_ZAP_RANGE = 250 
 LIGHTNING_BASE_THICKNESS = 5
@@ -118,14 +118,12 @@ WEAPON_MODE_HEATSEEKER_PLUS_BULLETS = 8
 WEAPON_MODE_LIGHTNING = 9
 
 INITIAL_WEAPON_MODE = WEAPON_MODE_DEFAULT
-
 WEAPON_MODES_SEQUENCE = [
     WEAPON_MODE_DEFAULT, WEAPON_MODE_TRI_SHOT, WEAPON_MODE_RAPID_SINGLE,
     WEAPON_MODE_RAPID_TRI, WEAPON_MODE_BIG_SHOT, WEAPON_MODE_BOUNCE,
     WEAPON_MODE_PIERCE, WEAPON_MODE_HEATSEEKER, WEAPON_MODE_HEATSEEKER_PLUS_BULLETS,
     WEAPON_MODE_LIGHTNING
 ]
-
 WEAPON_MODE_NAMES = {
     WEAPON_MODE_DEFAULT: "Single Shot", WEAPON_MODE_TRI_SHOT: "Tri-Shot",
     WEAPON_MODE_RAPID_SINGLE: "Rapid Single", WEAPON_MODE_RAPID_TRI: "Rapid Tri-Shot",
@@ -133,11 +131,10 @@ WEAPON_MODE_NAMES = {
     WEAPON_MODE_PIERCE: "Pierce Shot", WEAPON_MODE_HEATSEEKER: "Heatseeker",
     WEAPON_MODE_HEATSEEKER_PLUS_BULLETS: "Seeker + Rapid", WEAPON_MODE_LIGHTNING: "Chain Lightning"
 }
-
 WEAPON_MODE_ICONS = { 
     WEAPON_MODE_DEFAULT: "🔫", WEAPON_MODE_TRI_SHOT: "🔱",
     WEAPON_MODE_RAPID_SINGLE: "💨", WEAPON_MODE_RAPID_TRI: "⁂", 
-    WEAPON_MODE_BIG_SHOT: "💣", WEAPON_MODE_BOUNCE: "�",
+    WEAPON_MODE_BIG_SHOT: "💣", WEAPON_MODE_BOUNCE: "⚪",
     WEAPON_MODE_PIERCE: "➤", WEAPON_MODE_HEATSEEKER: "🚀",
     WEAPON_MODE_HEATSEEKER_PLUS_BULLETS: "🚀💨", WEAPON_MODE_LIGHTNING: "⚡",
 }
@@ -166,7 +163,7 @@ THRUST_PARTICLE_SHRINK_RATE_BLAST = 0.15
 ENEMY_SPEED = 1.5
 ENEMY_HEALTH = 100
 ENEMY_COLOR = RED 
-REGULAR_ENEMY_SPRITE_PATH = "assets/images/enemies/TR-3B_enemy.png"
+REGULAR_ENEMY_SPRITE_PATH = "images/enemies/TR-3B_enemy.png"
 ENEMY_BULLET_SPEED = 5
 ENEMY_BULLET_COOLDOWN = 1500 
 ENEMY_BULLET_LIFETIME = 75 
@@ -178,7 +175,7 @@ PROTOTYPE_DRONE_SPEED = 2.0
 PROTOTYPE_DRONE_COLOR = MAGENTA 
 PROTOTYPE_DRONE_SHOOT_COOLDOWN = 1200
 PROTOTYPE_DRONE_BULLET_SPEED = 6
-PROTOTYPE_DRONE_SPRITE_PATH = "assets/images/enemies/prototype_enemy.png"
+PROTOTYPE_DRONE_SPRITE_PATH = "images/enemies/prototype_enemy.png"
 
 # ==========================
 # MAZE_GUARDIAN Boss Settings
@@ -186,7 +183,7 @@ PROTOTYPE_DRONE_SPRITE_PATH = "assets/images/enemies/prototype_enemy.png"
 MAZE_GUARDIAN_HEALTH = 5000
 MAZE_GUARDIAN_SPEED = 1.0
 MAZE_GUARDIAN_COLOR = (80, 0, 120) 
-MAZE_GUARDIAN_SPRITE_PATH = "assets/images/enemies/maze_guardian.png"
+MAZE_GUARDIAN_SPRITE_PATH = "images/enemies/maze_guardian.png"
 MAZE_GUARDIAN_BULLET_SPEED = 6
 MAZE_GUARDIAN_BULLET_LIFETIME = 80
 MAZE_GUARDIAN_BULLET_COLOR = RED
@@ -202,7 +199,7 @@ MAZE_GUARDIAN_MINION_SPAWN_COOLDOWN_MS = 7000
 
 SENTINEL_DRONE_HEALTH = 75
 SENTINEL_DRONE_SPEED = 3.0
-SENTINEL_DRONE_SPRITE_PATH = "assets/images/enemies/sentinel_drone.png"
+SENTINEL_DRONE_SPRITE_PATH = "images/enemies/sentinel_drone.png"
 
 # ==========================
 # Power-up & Collectible Settings
@@ -214,9 +211,9 @@ WEAPON_UPGRADE_ITEM_LIFETIME = 15000
 POWERUP_ITEM_LIFETIME = 12000 
 
 POWERUP_TYPES = {
-    "shield": {"color": LIGHT_BLUE, "image_filename": "shield_icon.png", "duration": 10000},
-    "speed_boost": {"color": GREEN, "image_filename": "speed_icon.png", "duration": 7000, "multiplier": 1.8},
-    "weapon_upgrade": {"color": BLUE, "image_filename": "weapon_icon.png"}
+    "shield": {"color": LIGHT_BLUE, "image_filename": "images/powerups/shield_icon.png", "duration": 10000},
+    "speed_boost": {"color": GREEN, "image_filename": "images/powerups/speed_icon.png", "duration": 7000, "multiplier": 1.8},
+    "weapon_upgrade": {"color": BLUE, "image_filename": "images/powerups/weapon_icon.png"}
 }
 SHIELD_POWERUP_DURATION = POWERUP_TYPES["shield"]["duration"]
 SPEED_BOOST_POWERUP_DURATION = POWERUP_TYPES["speed_boost"]["duration"]
@@ -227,31 +224,12 @@ SPEED_BOOST_POWERUP_DURATION = POWERUP_TYPES["speed_boost"]["duration"]
 TOTAL_CORE_FRAGMENTS_NEEDED = 3 
 CORE_FRAGMENT_VISUAL_SIZE = TILE_SIZE // 2.5
 
-# --- START FIX ---
-# Added "required_for_vault": True to the three fragments needed for the vault puzzle.
 CORE_FRAGMENT_DETAILS = { 
-    "fragment_alpha": {
-        "id": "cf_alpha", "name": "Alpha Core Fragment", "icon_filename": "core_fragment_alpha.png", 
-        "description": "Pulses with unstable energy.", "spawn_info": {"level": 3}, 
-        "buff": {"type": "speed", "value": 1.05}, "required_for_vault": True
-    },
-    "fragment_beta": {
-        "id": "cf_beta", "name": "Beta Core Fragment", "icon_filename": "core_fragment_beta.png", 
-        "description": "Hums with alien resonance.", "spawn_info": {"level": 6}, 
-        "buff": {"type": "bullet_damage_multiplier", "value": 1.05}, "required_for_vault": True
-    },
-    "fragment_gamma": {
-        "id": "cf_gamma", "name": "Gamma Core Fragment", "icon_filename": "core_fragment_gamma.png", 
-        "description": "A critical processing unit.", "spawn_info": {"level": 9}, 
-        "buff_alt": {"type": "damage_reduction", "value": 0.05}, "required_for_vault": True
-    },
-    "fragment_vault_core": {
-        "id": "vault_core", "name": "Vault Core", "icon_filename": "vault_core_icon.png", 
-        "description": "Heart of the Vault defenses.", "display_color": GOLD, 
-        "reward_level": "architect_vault_boss"
-    } 
+    "fragment_alpha": {"id": "cf_alpha", "name": "Alpha Core Fragment", "icon_filename": "collectibles/core_fragment_alpha.png", "description": "Pulses with unstable energy.", "spawn_info": {"level": 3}, "buff": {"type": "speed", "value": 1.05}, "required_for_vault": True},
+    "fragment_beta": {"id": "cf_beta", "name": "Beta Core Fragment", "icon_filename": "collectibles/core_fragment_beta.png", "description": "Hums with alien resonance.", "spawn_info": {"level": 6}, "buff": {"type": "bullet_damage_multiplier", "value": 1.05}, "required_for_vault": True},
+    "fragment_gamma": {"id": "cf_gamma", "name": "Gamma Core Fragment", "icon_filename": "collectibles/core_fragment_gamma.png", "description": "A critical processing unit.", "spawn_info": {"level": 9}, "buff_alt": {"type": "damage_reduction", "value": 0.05}, "required_for_vault": True},
+    "fragment_vault_core": {"id": "vault_core", "name": "Vault Core", "icon_filename": "collectibles/vault_core_icon.png", "description": "Heart of the Vault defenses.", "display_color": GOLD, "reward_level": "architect_vault_boss"} 
 }
-# --- END FIX ---
 
 ARCHITECT_VAULT_EXTRACTION_TIMER_MS = 90000
 ARCHITECT_VAULT_GAUNTLET_WAVES = 3
@@ -267,12 +245,21 @@ DEFENSE_REACTOR_HEALTH = 1000
 DEFENSE_BUILD_PHASE_DURATION_MS = 30000 
 DEFENSE_WAVE_CLEAR_CORE_REWARD_BASE = 100 
 DEFENSE_WAVE_CLEAR_CORE_INCREMENT = 50  
+DEFENSE_DRONE_1_HEALTH = 75
+DEFENSE_DRONE_1_SPEED = 1.8
+DEFENSE_DRONE_2_HEALTH = 150
+DEFENSE_DRONE_2_SPEED = 1.2
+DEFENSE_DRONE_3_HEALTH = 50
+DEFENSE_DRONE_3_SPEED = 2.5
+DEFENSE_DRONE_4_HEALTH = 250
+DEFENSE_DRONE_4_SPEED = 1.0
+DEFENSE_DRONE_5_HEALTH = 100
+DEFENSE_DRONE_5_SPEED = 2.0
 
 TURRET_BASE_COST = 50 
 TURRET_UPGRADE_COST = 100 
 TURRET_MAX_UPGRADE_LEVEL = 3 
-MAX_TURRETS_DEFENSE_MODE = 10 # Added this for clarity
-
+MAX_TURRETS_DEFENSE_MODE = 10
 
 # ==========================
 # Game Progression & Miscellaneous
@@ -387,76 +374,27 @@ _CURRENT_GAME_SETTINGS = DEFAULT_SETTINGS.copy()
 def get_game_setting(key, default_override=None):
     if key in _CURRENT_GAME_SETTINGS:
         return _CURRENT_GAME_SETTINGS[key]
-    # Fallback to DEFAULT_SETTINGS if key not in _CURRENT_GAME_SETTINGS (e.g., new setting added)
     if key in DEFAULT_SETTINGS: 
-        # print(f"get_game_setting: Key '{key}' not in _CURRENT_GAME_SETTINGS, using DEFAULT_SETTINGS value: {DEFAULT_SETTINGS[key]}")
         return DEFAULT_SETTINGS[key]
-    # If still not found, use the provided default_override
-    # print(f"get_game_setting: Key '{key}' not found in any settings, using default_override: {default_override}")
     return default_override
 
 def set_game_setting(key, value):
+    """
+    SIMPLIFIED: This function now only updates the central settings dictionary.
+    """
     global SETTINGS_MODIFIED, _CURRENT_GAME_SETTINGS
-    global GAME_PLAY_AREA_HEIGHT, MAZE_ROWS 
-
     _CURRENT_GAME_SETTINGS[key] = value
-    if key in DEFAULT_SETTINGS: 
-        if _CURRENT_GAME_SETTINGS.get(key) != DEFAULT_SETTINGS.get(key):
-            SETTINGS_MODIFIED = True
-        else: 
-            # Check if any other setting is different from its default
-            SETTINGS_MODIFIED = any(
-                _CURRENT_GAME_SETTINGS.get(k) != DEFAULT_SETTINGS.get(k)
-                for k in DEFAULT_SETTINGS if k in _CURRENT_GAME_SETTINGS 
-            )
-    else: # If the key is not in DEFAULT_SETTINGS, it's considered a modification
+    
+    if key in DEFAULT_SETTINGS and value != DEFAULT_SETTINGS[key]:
         SETTINGS_MODIFIED = True
-
-    # Dynamically update global constants if they are changed via settings
-    if key in globals(): 
-        globals()[key] = value 
-        # Recalculate dependent globals if necessary
-        if key == "HEIGHT" or key == "BOTTOM_PANEL_HEIGHT":
-            GAME_PLAY_AREA_HEIGHT = get_game_setting("HEIGHT") - get_game_setting("BOTTOM_PANEL_HEIGHT")
-            globals()["GAME_PLAY_AREA_HEIGHT"] = GAME_PLAY_AREA_HEIGHT 
-            if get_game_setting("TILE_SIZE") > 0:
-                MAZE_ROWS = GAME_PLAY_AREA_HEIGHT // get_game_setting("TILE_SIZE")
-                globals()["MAZE_ROWS"] = MAZE_ROWS
-        elif key == "TILE_SIZE":
-            if get_game_setting("TILE_SIZE") > 0: 
-                # Need to ensure GAME_PLAY_AREA_HEIGHT is current before this recalc
-                current_game_play_height = get_game_setting("HEIGHT") - get_game_setting("BOTTOM_PANEL_HEIGHT") 
-                MAZE_ROWS = current_game_play_height // get_game_setting("TILE_SIZE")
-                globals()["MAZE_ROWS"] = MAZE_ROWS
+    else:
+        SETTINGS_MODIFIED = any(
+            _CURRENT_GAME_SETTINGS.get(k) != DEFAULT_SETTINGS.get(k)
+            for k in DEFAULT_SETTINGS if k in _CURRENT_GAME_SETTINGS
+        )
 
 def reset_all_settings_to_default():
     global SETTINGS_MODIFIED, _CURRENT_GAME_SETTINGS
-    global GAME_PLAY_AREA_HEIGHT, MAZE_ROWS # And other globals you might want to reset
-
     _CURRENT_GAME_SETTINGS = DEFAULT_SETTINGS.copy()
     SETTINGS_MODIFIED = False 
     print("Game settings have been reset to defaults.")
-
-    # Update all global constants that might have been changed
-    for key, value in _CURRENT_GAME_SETTINGS.items():
-        if key in globals(): # Check if it's a global constant defined at the module level
-            globals()[key] = value
-
-    # Recalculate dependent globals explicitly after all defaults are restored
-    GAME_PLAY_AREA_HEIGHT = get_game_setting("HEIGHT") - get_game_setting("BOTTOM_PANEL_HEIGHT")
-    globals()["GAME_PLAY_AREA_HEIGHT"] = GAME_PLAY_AREA_HEIGHT # Also update the global dict
-    if get_game_setting("TILE_SIZE") > 0:
-        MAZE_ROWS = GAME_PLAY_AREA_HEIGHT // get_game_setting("TILE_SIZE")
-        globals()["MAZE_ROWS"] = MAZE_ROWS
-    else: # Handle case where TILE_SIZE might be 0 to prevent division error
-        MAZE_ROWS = 0 
-        globals()["MAZE_ROWS"] = MAZE_ROWS
-
-
-# Initialize dependent globals based on initial settings
-GAME_PLAY_AREA_HEIGHT = get_game_setting("HEIGHT") - get_game_setting("BOTTOM_PANEL_HEIGHT")
-if TILE_SIZE > 0 : # Ensure TILE_SIZE is positive to avoid DivisionByZeroError
-    MAZE_ROWS = GAME_PLAY_AREA_HEIGHT // TILE_SIZE
-else:
-    MAZE_ROWS = 0 # Default or error state for MAZE_ROWS
-    print("Warning (game_settings.py): TILE_SIZE is 0 or invalid, MAZE_ROWS set to 0.")
