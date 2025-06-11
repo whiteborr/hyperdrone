@@ -114,12 +114,30 @@ class Enemy(pygame.sprite.Sprite):
 
         if self.stuck_timer > self.STUCK_TIME_THRESHOLD_MS:
             logger.warning(f"Enemy {id(self)} detected as stuck. Attempting to unstick.")
-            if hasattr(maze, 'get_path_cells_abs'):
-                nearby_tiles = [p for p in maze.get_path_cells_abs() if math.hypot(p[0] - self.x, p[1] - self.y) < gs.TILE_SIZE * 4]
-                if nearby_tiles:
-                    unstick_target = random.choice(nearby_tiles)
+            # Try to get walkable tiles from maze
+            walkable_tiles = []
+            if hasattr(maze, 'get_walkable_tiles_abs'):
+                walkable_tiles = maze.get_walkable_tiles_abs()
+            elif hasattr(maze, 'get_path_cells_abs'):
+                walkable_tiles = maze.get_path_cells_abs()
+                
+            if walkable_tiles:
+                # Find tiles that are not too close to current position
+                viable_tiles = [p for p in walkable_tiles if gs.TILE_SIZE * 3 < math.hypot(p[0] - self.x, p[1] - self.y) < gs.TILE_SIZE * 8]
+                if viable_tiles:
+                    unstick_target = random.choice(viable_tiles)
+                    # Force a new path calculation
+                    self.path = []
+                    self.last_path_recalc_time = 0
                     self._update_ai_with_astar(unstick_target, maze, current_time_ms, game_area_x_offset)
-            self.stuck_timer = 0; return True
+                else:
+                    # If no viable tiles found, try a random direction
+                    angle = random.uniform(0, 2 * math.pi)
+                    self.x += math.cos(angle) * gs.TILE_SIZE
+                    self.y += math.sin(angle) * gs.TILE_SIZE
+            
+            self.stuck_timer = 0
+            return True
         return False
 
     def _update_ai_with_astar(self, target_pos, maze, current_time_ms, game_area_x_offset):

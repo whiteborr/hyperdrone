@@ -450,3 +450,10 @@ def reset_all_settings_to_default():
     _CURRENT_GAME_SETTINGS = DEFAULT_SETTINGS.copy()
     SETTINGS_MODIFIED = False 
     print("Game settings have been reset to defaults.")
+# TR-3B Enemy Settings
+TR3B_SPEED = 2.0
+TR3B_HEALTH = 150
+TR3B_BULLET_COOLDOWN = 1200
+# Item and Powerup Settings
+POWERUP_SPAWN_INTERVAL = 15000  # 15 seconds between spawn attempts
+MAX_RINGS_PER_LEVEL = 5

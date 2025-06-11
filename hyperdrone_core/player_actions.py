@@ -25,8 +25,9 @@ class PlayerActions:
         # Toggle cruise control ON with forward key.
         if event.key == pygame.K_w or event.key == pygame.K_UP:
             player.is_cruising = True
-            if hasattr(player, 'active_powerup_type') and player.active_powerup_type == "speed_boost":
-                player.attempt_speed_boost_activation()
+            # Activate speed boost if armed
+            if hasattr(player, 'speed_boost_armed') and player.speed_boost_armed:
+                player.activate_speed_boost()
         
         # Toggle cruise control OFF with backward key.
         elif event.key == pygame.K_s or event.key == pygame.K_DOWN:

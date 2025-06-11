@@ -18,15 +18,19 @@ class Maze:
         self.tile_size = gs.get_game_setting("TILE_SIZE")
         self.bottom_panel_height = gs.get_game_setting("BOTTOM_PANEL_HEIGHT")
 
-        self.actual_maze_cols = (width - self.game_area_x_offset) // self.tile_size
-        self.actual_maze_rows = (height - self.bottom_panel_height) // self.tile_size
+        # Calculate maze dimensions to use all available space within the border
+        self.available_width = width - self.game_area_x_offset
+        self.available_height = height - self.bottom_panel_height
+        
+        # Calculate dimensions to ensure the maze extends to the borders
+        self.actual_maze_cols = self.available_width // self.tile_size
+        self.actual_maze_rows = self.available_height // self.tile_size
         
         # Grid: 1 for wall, 0 for path
         self.grid = [[1 for _ in range(self.actual_maze_cols)] for _ in range(self.actual_maze_rows)] 
         
         if self.actual_maze_rows > 0 and self.actual_maze_cols > 0:
             self._generate_maze_grid(1, 1)
-            self._create_perimeter()
 
         # This list of lines is for both drawing and collision detection
         self.walls = self._create_wall_lines()
@@ -46,22 +50,10 @@ class Maze:
                     self.grid[row + dr][col + dc] = 0 
                     self._generate_maze_grid(new_row, new_col) 
 
-    def _create_perimeter(self):
-        """Ensures the maze is fully enclosed by walls."""
-        if self.actual_maze_rows == 0 or self.actual_maze_cols == 0: return
-        for c in range(self.actual_maze_cols):
-            self.grid[0][c] = 1
-            self.grid[self.actual_maze_rows - 1][c] = 1
-        for r in range(self.actual_maze_rows):
-            self.grid[r][0] = 1
-            self.grid[r][self.actual_maze_cols - 1] = 1
-
     def _create_wall_lines(self):
-        """
-        Creates wall line segments based on the original implementation.
-        """
         lines = [] 
         ts = self.tile_size 
+        
         for r in range(self.actual_maze_rows): 
             for c in range(self.actual_maze_cols): 
                 if self.grid[r][c] == 1: 
@@ -71,35 +63,33 @@ class Maze:
                     x2 = x1 + ts if (c + 1 < self.actual_maze_cols and self.grid[r][c + 1] == 1) else x1 
                     y2 = y1 + ts if (r + 1 < self.actual_maze_rows and self.grid[r + 1][c] == 1) else y1 
                     
+                    # Handle edge cases for right and bottom borders
+                    if c == self.actual_maze_cols - 1:
+                        x2 = self.available_width
+                    if r == self.actual_maze_rows - 1:
+                        y2 = self.available_height
+                    
                     if x1 != x2 or y1 != y2: 
                         lines.append(((x1, y1), (x2, y2)))
+        
         return lines
         
     def _create_border_lines(self):
-        """
-        Creates border lines around the perimeter of the maze.
-        """
-        width = self.actual_maze_cols * self.tile_size
-        full_height = gs.get_game_setting("HEIGHT") - self.bottom_panel_height
-        
-        # Create the four border lines
+        # Create the four border lines exactly at the edges
         border_lines = [
             # Top border
-            ((0, 0), (width, 0)),
+            ((0, 0), (self.available_width, 0)),
             # Right border
-            ((width, 0), (width, full_height)),
-            # Bottom border - aligned exactly with the top of the HUD
-            ((0, full_height), (width, full_height)),
+            ((self.available_width, 0), (self.available_width, self.available_height)),
+            # Bottom border
+            ((0, self.available_height), (self.available_width, self.available_height)),
             # Left border
-            ((0, 0), (0, full_height))
+            ((0, 0), (0, self.available_height))
         ]
         
         return border_lines
 
     def draw(self, surface, camera=None): 
-        """
-        Draws the maze walls using the pre-computed list of line segments.
-        """
         wall_color = gs.ARCHITECT_VAULT_WALL_COLOR if self.maze_type == "architect_vault" else gs.BLUE
         wall_thickness = 2
         border_thickness = 3
@@ -122,9 +112,6 @@ class Maze:
             pygame.draw.line(surface, border_color, abs_p1, abs_p2, border_thickness) 
 
     def is_wall(self, obj_center_x_abs, obj_center_y_abs, obj_width, obj_height): 
-        """
-        Collision check based on the actual line segments using clipline.
-        """
         obj_rect = pygame.Rect(
             int(obj_center_x_abs - obj_width / 2), 
             int(obj_center_y_abs - obj_height / 2), 
@@ -153,9 +140,6 @@ class Maze:
         return False # No collision with any wall line segment
 
     def get_walkable_tiles_abs(self):
-        """
-        Returns a list of all walkable floor tiles as absolute pixel center coordinates.
-        """
         walkable_tiles = []
         for r in range(self.actual_maze_rows):
             for c in range(self.actual_maze_cols):

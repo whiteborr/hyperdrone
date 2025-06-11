@@ -40,10 +40,27 @@ class PlayerDrone(BaseDrone):
         self.base_hp = drone_stats.get("hp", gs.get_game_setting("PLAYER_MAX_HEALTH"))
         self.base_turn_speed = drone_stats.get("turn_speed", gs.get_game_setting("ROTATION_SPEED"))
         self.rotation_speed = self.base_turn_speed
+        self.base_speed = base_speed_from_stats  # Store base speed for powerups
         
         self.is_cruising = False 
         self.max_health = self.base_hp
         self.health = self.max_health
+        
+        # Powerup states
+        self.shield_active = False
+        self.shield_end_time = 0
+        self.shield_duration = 0
+        
+        self.speed_boost_armed = False
+        self.speed_boost_active = False
+        self.speed_boost_end_time = 0
+        self.speed_boost_duration = 0
+        self.speed_boost_multiplier = 1.0
+        
+        # Propulsion particles
+        self.propulsion_active = False
+        self.propulsion_particles = []
+        self.last_particle_time = 0
         
         self.original_image = None
         self.image = None
@@ -237,3 +254,145 @@ class PlayerDrone(BaseDrone):
         pygame.draw.rect(surface, (50,50,50), (bar_x, bar_y, bar_width, bar_height))
         if filled_width > 0: pygame.draw.rect(surface, fill_color, (bar_x, bar_y, filled_width, bar_height))
         pygame.draw.rect(surface, gs.WHITE, (bar_x, bar_y, bar_width, bar_height), 1)
+    def activate_shield(self, duration_ms):
+        """Activate shield effect for the specified duration"""
+        self.shield_active = True
+        self.shield_end_time = pygame.time.get_ticks() + duration_ms
+        self.shield_duration = duration_ms
+        logger.debug(f"Shield activated for {duration_ms}ms")
+        
+    def arm_speed_boost(self, duration_ms, multiplier=1.5):
+        """Store speed boost for later activation with UP key"""
+        self.speed_boost_armed = True
+        self.speed_boost_duration = duration_ms
+        self.speed_boost_multiplier = multiplier
+        logger.debug(f"Speed boost armed for {duration_ms}ms, multiplier: {multiplier}")
+        
+    def activate_speed_boost(self):
+        """Activate armed speed boost when UP key is pressed"""
+        if hasattr(self, 'speed_boost_armed') and self.speed_boost_armed:
+            # Activate speed boost
+            self.speed_boost_active = True
+            self.speed_boost_end_time = pygame.time.get_ticks() + self.speed_boost_duration
+            self.speed = self.base_speed * self.speed_boost_multiplier
+            
+            # Also activate shield for the same duration
+            self.shield_active = True
+            self.shield_end_time = pygame.time.get_ticks() + self.speed_boost_duration
+            
+            # Create propulsion particles
+            self.propulsion_active = True
+            
+            # Reset armed state
+            self.speed_boost_armed = False
+            
+            logger.debug(f"Speed boost activated with shield for {self.speed_boost_duration}ms")
+        
+    def update(self, current_time_ms, maze, enemies_group, player_actions, game_area_x_offset=0):
+        if not self.alive: return
+        
+        # Speed boost is now activated in player_actions.handle_key_down
+        
+        # Update shield status
+        if hasattr(self, 'shield_active') and self.shield_active:
+            if current_time_ms > self.shield_end_time:
+                self.shield_active = False
+                logger.debug("Shield deactivated")
+                
+        # Update speed boost status
+        if hasattr(self, 'speed_boost_active') and self.speed_boost_active:
+            if current_time_ms > self.speed_boost_end_time:
+                self.speed_boost_active = False
+                self.propulsion_active = False
+                self.speed = self.base_speed
+                logger.debug("Speed boost deactivated")
+            else:
+                # Create propulsion particles
+                if current_time_ms - self.last_particle_time > 50:  # Create particles every 50ms
+                    self._create_propulsion_particles()
+                    self.last_particle_time = current_time_ms
+        
+        self.moving_forward = self.is_cruising
+        
+        super().update(maze, game_area_x_offset)
+        
+        # Update particles
+        for particle in list(self.propulsion_particles):
+            particle.update()
+            if not particle.alive():
+                self.propulsion_particles.remove(particle)
+        
+        self.bullets_group.update(maze, game_area_x_offset)
+        self.missiles_group.update(enemies_group, maze, game_area_x_offset)
+        if hasattr(self, 'lightning_zaps_group'):
+            self.lightning_zaps_group.update(current_time_ms)
+            
+    def _create_propulsion_particles(self):
+        """Create propulsion particles behind the drone"""
+        from .particle import Particle
+        
+        # Calculate position behind the drone
+        angle_rad = math.radians(self.angle + 180)  # Opposite direction of drone
+        offset_x = math.cos(angle_rad) * (self.rect.width / 2)
+        offset_y = math.sin(angle_rad) * (self.rect.height / 2)
+        
+        # Create 2-3 particles
+        for _ in range(random.randint(2, 3)):
+            colors = [(255, 100, 0), (255, 200, 0), (255, 255, 0)]  # Orange, yellow, bright yellow
+            particle = Particle(
+                self.x + offset_x, self.y + offset_y,
+                colors,
+                min_speed=1.0, max_speed=2.0,
+                min_size=2.0, max_size=4.0,
+                gravity=0, shrink_rate=0.1,
+                lifetime_frames=15,
+                base_angle_deg=self.angle + 180,
+                spread_angle_deg=30
+            )
+            self.propulsion_particles.append(particle)
+            
+    def take_damage(self, amount, sound_key_on_hit=None):
+        if not self.alive: return
+        
+        # Check if shield is active
+        if hasattr(self, 'shield_active') and self.shield_active:
+            # Shield absorbs all damage
+            if sound_key_on_hit and self.asset_manager:
+                sound = self.asset_manager.get_sound(sound_key_on_hit)
+                if sound: sound.play()
+            return
+            
+        self.health -= amount
+        if sound_key_on_hit and self.asset_manager:
+            sound = self.asset_manager.get_sound(sound_key_on_hit)
+            if sound: sound.play()
+        if self.health <= 0:
+            self.health = 0
+            self.alive = False
+            
+    def draw(self, surface, camera=None):
+        # Draw propulsion particles first (behind the drone)
+        if hasattr(self, 'propulsion_particles'):
+            for particle in self.propulsion_particles:
+                particle.draw(surface, camera)
+        
+        if self.alive and self.original_image:
+            rotated_image = pygame.transform.rotate(self.original_image, -self.angle)
+            draw_rect = rotated_image.get_rect(center=self.rect.center)
+            surface.blit(rotated_image, draw_rect)
+            
+            # Draw shield effect if active
+            if hasattr(self, 'shield_active') and self.shield_active:
+                shield_radius = int(self.rect.width * 0.7)
+                shield_color = (100, 200, 255, 100)  # Light blue with transparency
+                shield_surface = pygame.Surface((shield_radius*2, shield_radius*2), pygame.SRCALPHA)
+                pygame.draw.circle(shield_surface, shield_color, (shield_radius, shield_radius), shield_radius)
+                surface.blit(shield_surface, (self.rect.centerx - shield_radius, self.rect.centery - shield_radius))
+            
+        self.bullets_group.draw(surface)
+        self.missiles_group.draw(surface)
+        
+        # Draw lightning zaps
+        for zap in self.lightning_zaps_group:
+            if hasattr(zap, 'draw'):
+                zap.draw(surface, camera)

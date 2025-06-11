@@ -121,7 +121,7 @@ class WeaponUpgradeItem(Collectible):
         return False
 
     def apply_effect(self, player_drone):
-        if hasattr(player_drone, 'cycle_weapon_state'): player_drone.cycle_weapon_state(force_cycle=True)
+        if hasattr(player_drone, 'cycle_weapon_state'): player_drone.cycle_weapon_state()
 
 class ShieldItem(Collectible):
     def __init__(self, x, y, *, asset_manager):

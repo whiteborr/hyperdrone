@@ -18,12 +18,10 @@ from .ui_flow_controller import UIFlowController
 from ui import UIManager
 from .asset_manager import AssetManager
 
-from entities import (
-    PlayerDrone, Ring as CollectibleRing, WeaponUpgradeItem, ShieldItem, SpeedBoostItem,
-    CoreFragmentItem, VaultLogItem, GlyphTabletItem, AncientAlienTerminal,
-    ArchitectEchoItem, CoreReactor, Turret, LightningZap, Missile, Particle,
-    MazeGuardian, SentinelDrone, EscapeZone, Maze, MazeChapter2, Bullet
-)
+from entities import PlayerDrone, CoreReactor, Turret, LightningZap, Missile, Particle
+from entities import MazeGuardian, SentinelDrone, EscapeZone, Maze, MazeChapter2, Bullet
+from entities.collectibles import Ring as CollectibleRing, WeaponUpgradeItem, ShieldItem, SpeedBoostItem
+from entities.collectibles import CoreFragmentItem, VaultLogItem, GlyphTabletItem, AncientAlienTerminal, ArchitectEchoItem
 from drone_management import DroneSystem, DRONE_DATA
 import game_settings as gs
 from hyperdrone_core.camera import Camera
@@ -63,13 +61,11 @@ class GameController:
         self.ui_flow_controller = UIFlowController(self)
         self.ui_manager = UIManager(self.screen, self.asset_manager, self, self.scene_manager, self.drone_system)
         
-        self.event_manager = EventManager(self, self.scene_manager, self.combat_controller, self.puzzle_controller, self.ui_flow_controller)
-        self.ui_flow_controller.set_dependencies(self.scene_manager, self.ui_manager, self.drone_system)
-        
         self.player = None
         self.maze = None
         self.camera = None
 
+        # Initialize sprite groups first
         self.collectible_rings_group = pygame.sprite.Group()
         self.power_ups_group = pygame.sprite.Group()
         self.core_fragments_group = pygame.sprite.Group()
@@ -83,6 +79,13 @@ class GameController:
         self.reactor_group = pygame.sprite.GroupSingle()
         self.turrets_group = pygame.sprite.Group()
         
+        # Add item manager for collectibles and powerups after sprite groups are initialized
+        from .item_manager import ItemManager
+        self.item_manager = ItemManager(self, self.asset_manager)
+        
+        self.event_manager = EventManager(self, self.scene_manager, self.combat_controller, self.puzzle_controller, self.ui_flow_controller)
+        self.ui_flow_controller.set_dependencies(self.scene_manager, self.ui_manager, self.drone_system)
+        
         # Game state variables
         self.score = 0
         self.level = 1
@@ -95,7 +98,9 @@ class GameController:
         self.displayed_collected_rings_count = 0
         self.total_rings_per_level = 5
         self.animating_rings_to_hud = []
-        self.ring_ui_target_pos = (gs.get_game_setting("WIDTH") - 50, gs.get_game_setting("HEIGHT") - gs.get_game_setting("BOTTOM_PANEL_HEIGHT") + 50)
+        # Position rings at the right side of the screen to match UI
+        self.ring_ui_target_pos = (gs.get_game_setting("WIDTH") - 150, 
+                                  gs.get_game_setting("HEIGHT") - gs.get_game_setting("BOTTOM_PANEL_HEIGHT") + 20)
         
         # Fragment collection variables
         self.hud_displayed_fragments = set()
@@ -179,7 +184,8 @@ class GameController:
         self.displayed_collected_rings_count = 0
         self.total_rings_per_level = 5
         self.animating_rings_to_hud = []
-        self.ring_ui_target_pos = (gs.get_game_setting("WIDTH") - 50, gs.get_game_setting("HEIGHT") - gs.get_game_setting("BOTTOM_PANEL_HEIGHT") + 50)
+        self.ring_ui_target_pos = (gs.get_game_setting("WIDTH") - 150, 
+                                  gs.get_game_setting("HEIGHT") - gs.get_game_setting("BOTTOM_PANEL_HEIGHT") + 20)
         self.hud_displayed_fragments = set()
         self.animating_fragments_to_hud = []
         self.fragment_ui_target_positions = {}
@@ -210,76 +216,8 @@ class GameController:
         logger_gc.info("GameController initialized successfully.")
 
     def _preload_all_assets(self):
-        asset_manifest = {
-            "images": {
-                "ring_ui_icon": {"path": gs.ASSET_PATHS["RING_UI_ICON"]},
-                "ring_ui_icon_empty": {"path": gs.ASSET_PATHS["RING_UI_ICON_EMPTY"]},
-                "menu_logo_hyperdrone": {"path": gs.ASSET_PATHS["MENU_LOGO"]},
-                "core_fragment_empty_icon": {"path": gs.ASSET_PATHS["CORE_FRAGMENT_EMPTY_ICON"]},
-                "reactor_hud_icon_key": {"path": gs.ASSET_PATHS["REACTOR_HUD_ICON"]},
-                "core_reactor_image": {"path": gs.ASSET_PATHS["CORE_REACTOR_IMAGE"], "alpha": True},
-                "shield_powerup_icon": {"path": gs.ASSET_PATHS["SHIELD_POWERUP_ICON"]},
-                "speed_boost_powerup_icon": {"path": gs.ASSET_PATHS["SPEED_BOOST_POWERUP_ICON"]},
-                "weapon_upgrade_powerup_icon": {"path": gs.ASSET_PATHS["WEAPON_UPGRADE_POWERUP_ICON"]},
-                "regular_enemy_sprite_key": {"path": gs.REGULAR_ENEMY_SPRITE_PATH, "alpha": True},
-                "prototype_drone_sprite_key": {"path": gs.PROTOTYPE_DRONE_SPRITE_PATH, "alpha": True},
-                "sentinel_drone_sprite_key": {"path": gs.SENTINEL_DRONE_SPRITE_PATH, "alpha": True},
-                "maze_guardian_sprite_key": {"path": gs.MAZE_GUARDIAN_SPRITE_PATH, "alpha": True},
-                "defense_drone_1_sprite_key": {"path": gs.ASSET_PATHS["DEFENSE_DRONE_1_SPRITE"], "alpha": True},
-                "defense_drone_2_sprite_key": {"path": gs.ASSET_PATHS["DEFENSE_DRONE_2_SPRITE"], "alpha": True},
-                "defense_drone_3_sprite_key": {"path": gs.ASSET_PATHS["DEFENSE_DRONE_3_SPRITE"], "alpha": True},
-                "defense_drone_4_sprite_key": {"path": gs.ASSET_PATHS["DEFENSE_DRONE_4_SPRITE"], "alpha": True},
-                "defense_drone_5_sprite_key": {"path": gs.ASSET_PATHS["DEFENSE_DRONE_5_SPRITE"], "alpha": True},
-                "images/lore/scene1.png": {"path": gs.ASSET_PATHS["LORE_SCENE_1"], "alpha": True},
-                "images/lore/scene2.png": {"path": gs.ASSET_PATHS["LORE_SCENE_2"], "alpha": True},
-                "images/lore/scene3.png": {"path": gs.ASSET_PATHS["LORE_SCENE_3"], "alpha": True},
-                "images/lore/scene4.png": {"path": gs.ASSET_PATHS["LORE_SCENE_4"], "alpha": True},
-            },
-            "sounds": {
-                'collect_ring': gs.ASSET_PATHS["COLLECT_RING_SOUND"],
-                'weapon_upgrade_collect': gs.ASSET_PATHS["WEAPON_UPGRADE_COLLECT_SOUND"],
-                'collect_fragment': gs.ASSET_PATHS["COLLECT_FRAGMENT_SOUND"],
-                'shoot': gs.ASSET_PATHS["SHOOT_SOUND"],
-                'enemy_shoot': gs.ASSET_PATHS["ENEMY_SHOOT_SOUND"],
-                'crash': gs.ASSET_PATHS["CRASH_SOUND"],
-                'level_up': gs.ASSET_PATHS["LEVEL_UP_SOUND"],
-                'ui_select': gs.ASSET_PATHS["UI_SELECT_SOUND"],
-                'ui_confirm': gs.ASSET_PATHS["UI_CONFIRM_SOUND"],
-                'missile_launch': gs.ASSET_PATHS["MISSILE_LAUNCH_SOUND"],
-                'prototype_drone_explode': gs.ASSET_PATHS["PROTOTYPE_DRONE_EXPLODE_SOUND"],
-            },
-            "fonts": {
-                "ui_text": {"path": gs.ASSET_PATHS["UI_TEXT_FONT"], "sizes": [28, 24, 20, 16, 32]},
-                "ui_values": {"path": gs.ASSET_PATHS["UI_TEXT_FONT"], "sizes": [30]},
-                "small_text": {"path": gs.ASSET_PATHS["UI_TEXT_FONT"], "sizes": [24]},
-                "medium_text": {"path": gs.ASSET_PATHS["UI_TEXT_FONT"], "sizes": [48, 36]},
-                "large_text": {"path": gs.ASSET_PATHS["UI_TEXT_FONT"], "sizes": [74, 52, 48]},
-                "title_text": {"path": gs.ASSET_PATHS["UI_TEXT_FONT"], "sizes": [90]},
-            },
-            "music": {
-                "menu_theme": gs.ASSET_PATHS["MENU_THEME_MUSIC"],
-                "gameplay_theme": gs.ASSET_PATHS["GAMEPLAY_THEME_MUSIC"],
-                "defense_theme": gs.ASSET_PATHS["DEFENSE_THEME_MUSIC"]
-            }
-        }
-        
-        if gs.CORE_FRAGMENT_DETAILS:
-            for _, details in gs.CORE_FRAGMENT_DETAILS.items():
-                if details and "id" in details and "icon_filename" in details:
-                    asset_manifest["images"][f"fragment_{details['id']}_icon"] = {"path": details['icon_filename']}
-
-        for drone_id, config in DRONE_DATA.items():
-            if config.get("ingame_sprite_path"): 
-                asset_manifest["images"][f"drone_{drone_id}_ingame_sprite"] = {"path": config["ingame_sprite_path"].replace("assets/", ""), "alpha": True}
-            if config.get("icon_path"):
-                 asset_manifest["images"][f"drone_{drone_id}_hud_icon"] = {"path": config["icon_path"].replace("assets/", ""), "alpha": True}
-
-        for weapon_path in gs.WEAPON_MODE_ICONS.values():
-            if weapon_path and isinstance(weapon_path, str):
-                asset_key = weapon_path.replace("assets/", "").replace("\\", "/")
-                asset_manifest["images"][asset_key] = {"path": asset_key, "alpha": True}
-        
-        self.asset_manager.preload_manifest(asset_manifest)
+        # Use the new method in AssetManager to preload all game assets
+        self.asset_manager.preload_game_assets()
         logger_gc.info("GameController: All assets preloaded via AssetManager.")
     
     def run(self):
@@ -420,6 +358,10 @@ class GameController:
         self.score = 0
         self.lives = gs.get_game_setting("PLAYER_LIVES")
         
+        # Reset item manager for the new level
+        if hasattr(self, 'item_manager'):
+            self.item_manager.reset_for_level()
+        
         if mode_type == gs.GAME_STATE_MAZE_DEFENSE:
             self.maze = MazeChapter2(game_area_x_offset=300) 
             self.camera = Camera(self.maze.actual_maze_cols * gs.TILE_SIZE, self.maze.actual_maze_rows * gs.TILE_SIZE)
@@ -445,11 +387,28 @@ class GameController:
         if not self.player: return
         self.player.update(current_time_ms, self.maze, self.combat_controller.enemy_manager.get_sprites(), self.player_actions, self.maze.game_area_x_offset if self.maze else 0)
         self.combat_controller.update(current_time_ms, delta_time_ms)
+        
+        # Update item manager to spawn collectibles and powerups
+        if hasattr(self, 'item_manager'):
+            self.item_manager.update(current_time_ms, self.maze)
+            
+        # Handle collectible collisions
+        self._handle_collectible_collisions()
+        
+        # Check if level is cleared
+        self._check_level_clear_condition()
 
     def _draw_game_world(self):
         self.screen.fill(gs.BLACK)
         if self.maze:
             self.maze.draw(self.screen, self.camera)
+        
+        # Draw collectibles and powerups
+        for item_group in [self.collectible_rings_group, self.power_ups_group, 
+                          self.core_fragments_group, self.vault_logs_group,
+                          self.glyph_tablets_group, self.architect_echoes_group]:
+            for item in item_group:
+                item.draw(self.screen, self.camera)
         
         # Update and draw explosion particles
         self.explosion_particles_group.update()
@@ -464,6 +423,34 @@ class GameController:
         if self.turrets_group:
             for turret in self.turrets_group:
                 turret.draw(self.screen, self.camera)
+                
+        # Draw animating rings
+        current_time = pygame.time.get_ticks()
+        ring_icon = self.asset_manager.get_image("ring_ui_icon")
+        
+        # Process each animating ring
+        for i in range(len(self.animating_rings_to_hud) - 1, -1, -1):
+            ring_data = self.animating_rings_to_hud[i]
+            elapsed = current_time - ring_data['start_time']
+            progress = min(1.0, elapsed / ring_data['duration'])
+            
+            if progress >= 1.0:
+                # Animation complete
+                self.displayed_collected_rings_count += 1
+                self.animating_rings_to_hud.pop(i)
+                continue
+                
+            # Calculate current position using easing
+            ease_progress = 1 - (1 - progress) ** 3  # Cubic ease out
+            x = ring_data['start_pos'][0] + (self.ring_ui_target_pos[0] - ring_data['start_pos'][0]) * ease_progress
+            y = ring_data['start_pos'][1] + (self.ring_ui_target_pos[1] - ring_data['start_pos'][1]) * ease_progress
+            
+            # Draw the ring icon
+            if ring_icon:
+                icon_size = int(gs.TILE_SIZE * 0.3 * (1 + 0.5 * (1 - progress)))  # Shrink as it moves
+                scaled_icon = pygame.transform.smoothscale(ring_icon, (icon_size, icon_size))
+                icon_rect = scaled_icon.get_rect(center=(x, y))
+                self.screen.blit(scaled_icon, icon_rect)
 
     def quit_game(self):
         if self.drone_system: self.drone_system._save_unlocks()
@@ -522,9 +509,121 @@ class GameController:
     def check_and_apply_screen_settings_change(self): pass
     def play_sound(self, key, vol=0.7): pass
     def check_for_all_enemies_killed(self): pass
-    def _check_level_clear_condition(self): pass
+    def _check_level_clear_condition(self):
+        """Check if the level has been cleared and progress to the next level if so"""
+        # Check if all rings are collected
+        if self.collected_rings_count >= self.total_rings_per_level:
+            # Stop the player drone when all rings are collected
+            if self.player and hasattr(self.player, 'is_cruising'):
+                self.player.is_cruising = False
+                
+            # Wait for all ring animations to complete before progressing
+            if len(self.animating_rings_to_hud) > 0:
+                return False
+                
+            # Check if all enemies are defeated
+            if self.combat_controller.enemy_manager.get_active_enemies_count() == 0:
+                # Store current weapon mode before creating new player
+                current_weapon_mode = self.player.current_weapon_mode
+                
+                # Progress to the next level
+                self.level += 1
+                self.score += 100  # Bonus for clearing the level
+                
+                # Reset for the next level
+                self.collected_rings_count = 0
+                self.displayed_collected_rings_count = 0
+                self.animating_rings_to_hud = []
+                
+                # Clear all items
+                if hasattr(self, 'item_manager'):
+                    self.item_manager.clear_all_items()
+                
+                # Create a new maze
+                self.maze = Maze()
+                
+                # Spawn the player at a safe location
+                spawn_x, spawn_y = self._get_safe_spawn_point(gs.TILE_SIZE * 0.7, gs.TILE_SIZE * 0.7)
+                drone_id = self.drone_system.get_selected_drone_id()
+                drone_stats = self.drone_system.get_drone_stats(drone_id)
+                sprite_key = f"drone_{drone_id}_ingame_sprite"
+                self.player = PlayerDrone(spawn_x, spawn_y, drone_id, drone_stats, 
+                                         self.asset_manager, sprite_key, 'crash', 
+                                         self.drone_system)
+                                         
+                # Restore weapon mode from previous level
+                while self.player.current_weapon_mode != current_weapon_mode:
+                    self.player.cycle_weapon_state()
+                
+                # Set up the new level
+                self.combat_controller.set_active_entities(player=self.player, maze=self.maze, power_ups_group=self.power_ups_group)
+                self.combat_controller.enemy_manager.spawn_enemies_for_level(self.level)
+                
+                # Spawn rings for the new level
+                if hasattr(self, 'item_manager'):
+                    self.item_manager.reset_for_level()
+                
+                # Display a message
+                self.set_story_message(f"Level {self.level} - Collect all rings!", 3000)
+                
+                # Play a sound
+                self.play_sound('level_up')
+                
+                return True
+        return False
     def _attempt_level_clear_fragment_spawn(self): return False
-    def _handle_collectible_collisions(self): pass
+    def _handle_collectible_collisions(self):
+        """Handle collisions between player and collectible items"""
+        if not self.player or not hasattr(self.player, 'rect'):
+            return
+            
+        # Check for ring collisions
+        for ring in pygame.sprite.spritecollide(self.player, self.collectible_rings_group, False):
+            ring.collected = True
+            self.collected_rings_count += 1
+            self.play_sound('collect_ring')
+            self.score += 10
+            
+            # Create animation for ring collection
+            self._animate_ring_to_hud(ring.rect.center)
+            
+        # Check for powerup collisions
+        for powerup in pygame.sprite.spritecollide(self.player, self.power_ups_group, False):
+            if isinstance(powerup, WeaponUpgradeItem):
+                powerup.apply_effect(self.player)
+                powerup.collected = True
+                self.play_sound('weapon_upgrade_collect')
+            elif isinstance(powerup, ShieldItem):
+                powerup.apply_effect(self.player)
+                powerup.collected = True
+                self.play_sound('collect_ring')
+            elif isinstance(powerup, SpeedBoostItem):
+                powerup.apply_effect(self.player)
+                powerup.collected = True
+                self.play_sound('collect_ring')
+                
+    def _animate_ring_to_hud(self, start_pos):
+        """Create an animation for a collected ring moving to the HUD"""
+        # Calculate the exact position of the collected ring in the HUD
+        collected_count = self.collected_rings_count - 1  # -1 because we already incremented the count
+        
+        # Use the exact same calculation as in the UI
+        rings_x = gs.get_game_setting("WIDTH") - 150
+        rings_y = gs.get_game_setting("HEIGHT") - gs.get_game_setting("BOTTOM_PANEL_HEIGHT") + 20
+        icon_size = 20  # Same as ui_icon_size_rings in UI
+        spacing = 5
+        
+        # Calculate the center of the target icon
+        target_x = rings_x + collected_count * (icon_size + spacing) + icon_size // 2
+        target_y = rings_y + icon_size // 2
+        
+        self.animating_rings_to_hud.append({
+            'pos': list(start_pos),
+            'start_time': pygame.time.get_ticks(),
+            'duration': 1000,  # 1 second animation
+            'start_pos': start_pos,
+            'target_pos': (target_x, target_y)
+        })
     def _handle_player_death_or_life_loss(self, reason=""):
         """Handle player death and respawn if lives remain."""
         self._create_explosion(self.player.x, self.player.y, 6, 'crash')

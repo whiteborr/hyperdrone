@@ -375,11 +375,16 @@ class UIManager:
                 pygame.draw.rect(self.screen, gs.YELLOW, (text_x, cooldown_bar_y, 150 * progress, 10))
                 pygame.draw.rect(self.screen, gs.WHITE, (text_x, cooldown_bar_y, 150, 10), 1)
 
-        rings_x, frags_x = gs.WIDTH - 300, gs.WIDTH - 300
+        # Position rings and fragments at the right side of the screen
+        rings_x, frags_x = gs.WIDTH - 150, gs.WIDTH - 150
         rings_y, frags_y = panel_y + 20, panel_y + 65
         ring_icon, ring_empty = self.ui_asset_surfaces.get("ring_icon"), self.ui_asset_surfaces.get("ring_icon_empty")
         if ring_icon and ring_empty:
-            for i in range(self.game_controller.total_rings_per_level): self.screen.blit(ring_icon if i < self.game_controller.collected_rings_count else ring_empty, (rings_x + i * (self.ui_icon_size_rings[0] + 5), rings_y))
+            for i in range(self.game_controller.total_rings_per_level): 
+                # Show filled icon only for rings that have completed their animation
+                show_filled = i < self.game_controller.displayed_collected_rings_count
+                self.screen.blit(ring_icon if show_filled else ring_empty, 
+                               (rings_x + i * (self.ui_icon_size_rings[0] + 5), rings_y))
         collected, required = self.drone_system.get_collected_fragments_ids(), sorted([d['id'] for d in gs.CORE_FRAGMENT_DETAILS.values() if d.get('required_for_vault')])
         for i, frag_id in enumerate(required):
             icon = self.ui_asset_surfaces["core_fragment_icons"].get(frag_id) if frag_id in collected else self.ui_asset_surfaces["core_fragment_empty_icon"]

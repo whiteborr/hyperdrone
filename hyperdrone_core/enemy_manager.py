@@ -1,6 +1,7 @@
 import pygame
 import random
 from entities import Enemy, SentinelDrone, DefenseDrone
+from entities.tr3b_enemy import TR3BEnemy
 import game_settings as gs
 from game_settings import TILE_SIZE 
 
@@ -21,14 +22,39 @@ class EnemyManager:
     def spawn_enemies_for_level(self, level):
         self.enemies.empty()
         num_enemies = min(level + 1, 7)
-        if level >= 4:
+        
+        if level >= 6:
+            # Spawn mix of TR-3B and Sentinel drones for higher levels
+            tr3b_count = min(level - 5, 3)  # Up to 3 TR-3B enemies based on level
+            sentinel_count = num_enemies - tr3b_count
+            
+            # Spawn TR-3B enemies
+            for _ in range(tr3b_count):
+                if pos := self.game_controller._get_safe_spawn_point(TILE_SIZE * 0.7, TILE_SIZE * 0.7):
+                    self.enemies.add(TR3BEnemy(pos[0], pos[1], gs.PLAYER_DEFAULT_BULLET_SIZE, 
+                                             self.asset_manager, "TR-3B_enemy_sprite_key", 
+                                             'enemy_shoot', self.game_controller.player))
+            
+            # Spawn Sentinel drones
+            for _ in range(sentinel_count):
+                if pos := self.game_controller._get_safe_spawn_point(TILE_SIZE * 0.6, TILE_SIZE * 0.6):
+                    self.enemies.add(SentinelDrone(pos[0], pos[1], gs.PLAYER_DEFAULT_BULLET_SIZE, 
+                                                 self.asset_manager, "sentinel_drone_sprite_key", 
+                                                 'enemy_shoot', self.game_controller.player))
+        elif level >= 4:
+            # Spawn only Sentinel drones for mid levels
             for _ in range(num_enemies):
                 if pos := self.game_controller._get_safe_spawn_point(TILE_SIZE * 0.6, TILE_SIZE * 0.6):
-                    self.enemies.add(SentinelDrone(pos[0], pos[1], gs.PLAYER_DEFAULT_BULLET_SIZE, self.asset_manager, "sentinel_drone_sprite_key", 'enemy_shoot', self.game_controller.player))
+                    self.enemies.add(SentinelDrone(pos[0], pos[1], gs.PLAYER_DEFAULT_BULLET_SIZE, 
+                                                 self.asset_manager, "sentinel_drone_sprite_key", 
+                                                 'enemy_shoot', self.game_controller.player))
         else:
+            # Spawn regular enemies for early levels
             for _ in range(num_enemies):
                 if pos := self.game_controller._get_safe_spawn_point(TILE_SIZE * 0.7, TILE_SIZE * 0.7):
-                    self.enemies.add(Enemy(pos[0], pos[1], gs.PLAYER_DEFAULT_BULLET_SIZE, self.asset_manager, "regular_enemy_sprite_key", 'enemy_shoot', self.game_controller.player))
+                    self.enemies.add(Enemy(pos[0], pos[1], gs.PLAYER_DEFAULT_BULLET_SIZE, 
+                                         self.asset_manager, "regular_enemy_sprite_key", 
+                                         'enemy_shoot', self.game_controller.player))
 
     def spawn_enemy_for_defense(self, enemy_type_key, spawn_position_grid, path_to_core):
         config = self.defense_enemy_configs.get(enemy_type_key)
