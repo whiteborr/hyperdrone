@@ -348,14 +348,9 @@ class UIManager:
         self.screen.blit(font_large_val.render(f"x {self.game_controller.lives}", True, gs.WHITE), (30 + self.ui_icon_size_lives[0] + 10, panel_y + 25))
         score_label = font_ui.render("Score:", True, gs.CYAN)
         self.screen.blit(score_label, (30, panel_y + 65))
-        self.screen.blit(font_large_val.render(f"{self.game_controller.score}", True, gs.WHITE), (30 + score_label.get_width() + 10, panel_y + 65))
+        self.screen.blit(font_large_val.render(f"{self.game_controller.level_manager.score}", True, gs.WHITE), (30 + score_label.get_width() + 10, panel_y + 65))
         
-        hb_width, hb_height, hb_x, hb_y = 300, 20, gs.WIDTH / 2 - 150, panel_y + 25
-        health_ratio = player.health / player.max_health if player.max_health > 0 else 0
-        health_color = gs.GREEN if health_ratio > 0.6 else gs.YELLOW if health_ratio > 0.3 else gs.RED
-        pygame.draw.rect(self.screen, gs.DARK_RED, (hb_x, hb_y, hb_width, hb_height))
-        if health_ratio > 0: pygame.draw.rect(self.screen, health_color, (hb_x, hb_y, hb_width * health_ratio, hb_height))
-        pygame.draw.rect(self.screen, gs.WHITE, (hb_x, hb_y, hb_width, hb_height), 2)
+        # Health bar removed from HUD
         
         wpn_x, wpn_y = gs.WIDTH * 0.25, panel_y + 20
         wpn_mode, wpn_name = player.current_weapon_mode, gs.WEAPON_MODE_NAMES.get(player.current_weapon_mode, "N/A")
@@ -376,15 +371,18 @@ class UIManager:
                 pygame.draw.rect(self.screen, gs.WHITE, (text_x, cooldown_bar_y, 150, 10), 1)
 
         # Position rings and fragments at the right side of the screen
-        rings_x, frags_x = gs.WIDTH - 150, gs.WIDTH - 150
-        rings_y, frags_y = panel_y + 20, panel_y + 65
+        rings_x = gs.WIDTH - gs.HUD_RING_ICON_AREA_X_OFFSET
+        rings_y = panel_y + gs.HUD_RING_ICON_AREA_Y_OFFSET
+        frags_x = gs.WIDTH - 150
+        frags_y = panel_y + 65
+        
         ring_icon, ring_empty = self.ui_asset_surfaces.get("ring_icon"), self.ui_asset_surfaces.get("ring_icon_empty")
         if ring_icon and ring_empty:
-            for i in range(self.game_controller.total_rings_per_level): 
+            for i in range(self.game_controller.level_manager.total_rings_per_level): 
                 # Show filled icon only for rings that have completed their animation
-                show_filled = i < self.game_controller.displayed_collected_rings_count
-                self.screen.blit(ring_icon if show_filled else ring_empty, 
-                               (rings_x + i * (self.ui_icon_size_rings[0] + 5), rings_y))
+                show_filled = i < self.game_controller.level_manager.displayed_collected_rings_count
+                icon_x = rings_x + i * (gs.HUD_RING_ICON_SIZE + gs.HUD_RING_ICON_SPACING)
+                self.screen.blit(ring_icon if show_filled else ring_empty, (icon_x, rings_y))
         collected, required = self.drone_system.get_collected_fragments_ids(), sorted([d['id'] for d in gs.CORE_FRAGMENT_DETAILS.values() if d.get('required_for_vault')])
         for i, frag_id in enumerate(required):
             icon = self.ui_asset_surfaces["core_fragment_icons"].get(frag_id) if frag_id in collected else self.ui_asset_surfaces["core_fragment_empty_icon"]

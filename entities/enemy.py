@@ -114,7 +114,27 @@ class Enemy(pygame.sprite.Sprite):
 
         if self.stuck_timer > self.STUCK_TIME_THRESHOLD_MS:
             logger.warning(f"Enemy {id(self)} detected as stuck. Attempting to unstick.")
-            # Try to get walkable tiles from maze
+            
+            # Try to find a path along the wall using A* pathfinding
+            if maze and hasattr(maze, 'grid'):
+                # Get current position in grid coordinates
+                current_grid_pos = self._pixel_to_grid(self.x, self.y, game_area_x_offset)
+                
+                # Find a target position along the wall
+                wall_follow_target = self._find_wall_follow_target(maze, current_grid_pos, game_area_x_offset)
+                
+                if wall_follow_target:
+                    # Convert target back to pixel coordinates
+                    target_pixel = self._grid_to_pixel_center(wall_follow_target[0], wall_follow_target[1], game_area_x_offset)
+                    
+                    # Force a new path calculation to the wall-following target
+                    self.path = []
+                    self.last_path_recalc_time = 0
+                    self._update_ai_with_astar(target_pixel, maze, current_time_ms, game_area_x_offset)
+                    self.stuck_timer = 0
+                    return True
+            
+            # Fallback: try to get walkable tiles from maze
             walkable_tiles = []
             if hasattr(maze, 'get_walkable_tiles_abs'):
                 walkable_tiles = maze.get_walkable_tiles_abs()
@@ -123,22 +143,87 @@ class Enemy(pygame.sprite.Sprite):
                 
             if walkable_tiles:
                 # Find tiles that are not too close to current position
-                viable_tiles = [p for p in walkable_tiles if gs.TILE_SIZE * 3 < math.hypot(p[0] - self.x, p[1] - self.y) < gs.TILE_SIZE * 8]
+                viable_tiles = [p for p in walkable_tiles if gs.TILE_SIZE * 3 < math.hypot(p[0] - self.x, p[1] - self.y) < gs.TILE_SIZE * 12]
                 if viable_tiles:
                     unstick_target = random.choice(viable_tiles)
                     # Force a new path calculation
                     self.path = []
                     self.last_path_recalc_time = 0
                     self._update_ai_with_astar(unstick_target, maze, current_time_ms, game_area_x_offset)
-                else:
-                    # If no viable tiles found, try a random direction
-                    angle = random.uniform(0, 2 * math.pi)
-                    self.x += math.cos(angle) * gs.TILE_SIZE
-                    self.y += math.sin(angle) * gs.TILE_SIZE
+                    self.stuck_timer = 0
+                    return True
             
+            # Last resort: move in a random direction
+            angle = random.uniform(0, 2 * math.pi)
+            self.x += math.cos(angle) * gs.TILE_SIZE * 2
+            self.y += math.sin(angle) * gs.TILE_SIZE * 2
+            self.rect.center = (self.x, self.y)
+            self.collision_rect.center = self.rect.center
             self.stuck_timer = 0
             return True
         return False
+        
+    def _find_wall_follow_target(self, maze, current_grid_pos, game_area_x_offset):
+        """Find a target position along a wall to follow using A*"""
+        if not maze or not hasattr(maze, 'grid') or not current_grid_pos:
+            return None
+            
+        # Check if we're near a wall
+        directions = [(0, -1), (1, -1), (1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0), (-1, -1)]
+        wall_directions = []
+        
+        for dx, dy in directions:
+            check_pos = (current_grid_pos[0] + dx, current_grid_pos[1] + dy)
+            if 0 <= check_pos[0] < maze.actual_maze_rows and 0 <= check_pos[1] < maze.actual_maze_cols:
+                if maze.grid[check_pos[0]][check_pos[1]] == 1:  # Wall
+                    wall_directions.append((dx, dy))
+        
+        if not wall_directions:
+            return None  # No walls nearby
+            
+        # Find a path that follows along the wall
+        # Look for a walkable cell that's 2-3 cells away along the wall
+        for wall_dir in wall_directions:
+            # Get perpendicular directions to the wall
+            if wall_dir[0] == 0:  # Vertical wall
+                perp_dirs = [(1, 0), (-1, 0)]
+            elif wall_dir[1] == 0:  # Horizontal wall
+                perp_dirs = [(0, 1), (0, -1)]
+            else:  # Diagonal wall
+                perp_dirs = [(wall_dir[1], -wall_dir[0]), (-wall_dir[1], wall_dir[0])]
+                
+            # Try both perpendicular directions
+            for perp_dir in perp_dirs:
+                # Move along the wall
+                for dist in range(3, 8):  # Try different distances
+                    target_pos = (
+                        current_grid_pos[0] + perp_dir[0] * dist,
+                        current_grid_pos[1] + perp_dir[1] * dist
+                    )
+                    
+                    # Check if this is a valid walkable position
+                    if 0 <= target_pos[0] < maze.actual_maze_rows and 0 <= target_pos[1] < maze.actual_maze_cols:
+                        if maze.grid[target_pos[0]][target_pos[1]] == 0:  # Walkable
+                            # Check if there's a valid path to this position
+                            path = a_star_search(
+                                maze.grid, 
+                                current_grid_pos, 
+                                target_pos, 
+                                maze.actual_maze_rows, 
+                                maze.actual_maze_cols
+                            )
+                            if path and len(path) > 1:
+                                return target_pos
+        
+        # If no good wall-following path found, try a random walkable cell
+        for _ in range(10):  # Try up to 10 random positions
+            rand_row = random.randint(max(0, current_grid_pos[0] - 5), min(maze.actual_maze_rows - 1, current_grid_pos[0] + 5))
+            rand_col = random.randint(max(0, current_grid_pos[1] - 5), min(maze.actual_maze_cols - 1, current_grid_pos[1] + 5))
+            
+            if maze.grid[rand_row][rand_col] == 0:  # Walkable
+                return (rand_row, rand_col)
+                
+        return None
 
     def _update_ai_with_astar(self, target_pos, maze, current_time_ms, game_area_x_offset):
         if not target_pos or not maze: self.path = []; return

@@ -193,7 +193,7 @@ class CombatController:
                             damage_to_corner = gs.get_game_setting("LIGHTNING_DAMAGE", 15)
                         
                         if self.maze_guardian.damage_corner(corner['id'], damage_to_corner):
-                            self.game_controller.score += 250
+                            self.game_controller.level_manager.add_score(250)
                             self.game_controller.drone_system.add_player_cores(25)
                         
                         hit_a_corner = True
@@ -221,7 +221,7 @@ class CombatController:
                         enemy.take_damage(damage_to_enemy)
 
                     if not enemy.alive:
-                        self.game_controller.score += 50 
+                        self.game_controller.level_manager.add_score(50)
                         self.game_controller.drone_system.add_player_cores(10) 
                         self.game_controller._create_enemy_explosion(enemy.rect.centerx, enemy.rect.centery) 
                         self.game_controller.check_for_all_enemies_killed()
@@ -292,7 +292,7 @@ class CombatController:
                     self.player.take_damage(34, sound_key_on_hit='crash') 
                     enemy.take_damage(50) 
                     if not enemy.alive: 
-                         self.game_controller.score += 10 
+                         self.game_controller.level_manager.add_score(10)
                          self.game_controller._create_enemy_explosion(enemy.rect.centerx, enemy.rect.centery)
                          self.game_controller.check_for_all_enemies_killed()
 
@@ -333,7 +333,7 @@ class CombatController:
                 item.collected = True 
                 item.kill() 
                 self.game_controller.play_sound('weapon_upgrade_collect') 
-                self.game_controller.score += 25
+                self.game_controller.level_manager.add_score(25)
 
     def _update_power_ups(self, current_time_ms):
         for p_up in list(self.power_ups_group): 
@@ -375,7 +375,7 @@ class CombatController:
 
     def _handle_maze_guardian_defeated(self):
         if self.maze_guardian_defeat_processed: return
-        self.game_controller.score += 5000; self.game_controller.drone_system.add_player_cores(1500)
+        self.game_controller.level_manager.add_score(5000); self.game_controller.drone_system.add_player_cores(1500)
         self.game_controller.drone_system.add_defeated_boss("MAZE_GUARDIAN")
         self.game_controller.trigger_story_beat("story_beat_SB01")
         

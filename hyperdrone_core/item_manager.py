@@ -175,7 +175,7 @@ class ItemManager:
         
         # Calculate how many rings we still need to spawn
         rings_to_spawn = self.max_rings_per_level - self.spawned_rings_count
-        logger.info(f"Attempting to spawn {rings_to_spawn} rings for level {self.game_controller.level}")
+        logger.info(f"Attempting to spawn {rings_to_spawn} rings for level {self.game_controller.level_manager.level}")
         
         # Try to spawn all remaining rings
         spawned = 0
@@ -201,4 +201,4 @@ class ItemManager:
                 spawned += 1
                 logger.debug(f"Spawned ring at {spawn_pos}, total: {self.spawned_rings_count}")
                 
-        logger.info(f"Successfully spawned {spawned} rings for level {self.game_controller.level}")
+        logger.info(f"Successfully spawned {spawned} rings for level {self.game_controller.level_manager.level}")

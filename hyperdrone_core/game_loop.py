@@ -15,6 +15,7 @@ from . import leaderboard
 from .combat_controller import CombatController
 from .puzzle_controller import PuzzleController
 from .ui_flow_controller import UIFlowController
+from .level_manager import LevelManager
 from ui import UIManager
 from .asset_manager import AssetManager
 
@@ -64,6 +65,10 @@ class GameController:
         self.player = None
         self.maze = None
         self.camera = None
+        
+        # Add score attribute to fix game over restart
+        self.score = 0
+        self.level = 1
 
         # Initialize sprite groups first
         self.collectible_rings_group = pygame.sprite.Group()
@@ -87,30 +92,17 @@ class GameController:
         self.ui_flow_controller.set_dependencies(self.scene_manager, self.ui_manager, self.drone_system)
         
         # Game state variables
-        self.score = 0
-        self.level = 1
         self.lives = gs.get_game_setting("PLAYER_LIVES")
         self.paused = False
         self.is_build_phase = False
         
-        # Ring collection variables
-        self.collected_rings_count = 0
-        self.displayed_collected_rings_count = 0
-        self.total_rings_per_level = 5
-        self.animating_rings_to_hud = []
-        # Position rings at the right side of the screen to match UI
-        self.ring_ui_target_pos = (gs.get_game_setting("WIDTH") - 150, 
-                                  gs.get_game_setting("HEIGHT") - gs.get_game_setting("BOTTOM_PANEL_HEIGHT") + 20)
+        # Create level manager
+        self.level_manager = LevelManager(self)
         
         # Fragment collection variables
         self.hud_displayed_fragments = set()
         self.animating_fragments_to_hud = []
         self.fragment_ui_target_positions = {}
-        
-        # Level state variables
-        self.all_enemies_killed_this_level = False
-        self.level_cleared_pending_animation = False
-        self.level_clear_fragment_spawned_this_level = False
         
         # Timer variables
         self.level_timer_start_ticks = 0
@@ -180,19 +172,12 @@ class GameController:
         self.architect_vault_message_timer = 0
         self.architect_vault_failure_reason = ""
         
-        self.collected_rings_count = 0
-        self.displayed_collected_rings_count = 0
-        self.total_rings_per_level = 5
-        self.animating_rings_to_hud = []
-        self.ring_ui_target_pos = (gs.get_game_setting("WIDTH") - 150, 
-                                  gs.get_game_setting("HEIGHT") - gs.get_game_setting("BOTTOM_PANEL_HEIGHT") + 20)
+        # Reset level manager
+        self.level_manager.reset()
+        
         self.hud_displayed_fragments = set()
         self.animating_fragments_to_hud = []
         self.fragment_ui_target_positions = {}
-
-        self.all_enemies_killed_this_level = False
-        self.level_cleared_pending_animation = False
-        self.level_clear_fragment_spawned_this_level = False
         
         self.story_message = ""
         self.story_message_active = False
@@ -354,8 +339,7 @@ class GameController:
     def initialize_specific_game_mode(self, mode_type, old_state, **kwargs):
         self.combat_controller.reset_combat_state()
         self.puzzle_controller.reset_puzzles_state()
-        self.level = 1
-        self.score = 0
+        self.level_manager.reset()
         self.lives = gs.get_game_setting("PLAYER_LIVES")
         
         # Reset item manager for the new level
@@ -380,7 +364,7 @@ class GameController:
             sprite_key = f"drone_{drone_id}_ingame_sprite"
             self.player = PlayerDrone(spawn_x, spawn_y, drone_id, drone_stats, self.asset_manager, sprite_key, 'crash', self.drone_system)
             self.combat_controller.set_active_entities(player=self.player, maze=self.maze, power_ups_group=self.power_ups_group)
-            self.combat_controller.enemy_manager.spawn_enemies_for_level(self.level)
+            self.combat_controller.enemy_manager.spawn_enemies_for_level(self.level_manager.level)
             self.puzzle_controller.set_active_entities(player=self.player, drone_system=self.drone_system, scene_manager=self.scene_manager)
 
     def _update_standard_playing_state(self, current_time_ms, delta_time_ms):
@@ -424,33 +408,9 @@ class GameController:
             for turret in self.turrets_group:
                 turret.draw(self.screen, self.camera)
                 
-        # Draw animating rings
-        current_time = pygame.time.get_ticks()
+        # Draw animating rings using level manager
         ring_icon = self.asset_manager.get_image("ring_ui_icon")
-        
-        # Process each animating ring
-        for i in range(len(self.animating_rings_to_hud) - 1, -1, -1):
-            ring_data = self.animating_rings_to_hud[i]
-            elapsed = current_time - ring_data['start_time']
-            progress = min(1.0, elapsed / ring_data['duration'])
-            
-            if progress >= 1.0:
-                # Animation complete
-                self.displayed_collected_rings_count += 1
-                self.animating_rings_to_hud.pop(i)
-                continue
-                
-            # Calculate current position using easing
-            ease_progress = 1 - (1 - progress) ** 3  # Cubic ease out
-            x = ring_data['start_pos'][0] + (self.ring_ui_target_pos[0] - ring_data['start_pos'][0]) * ease_progress
-            y = ring_data['start_pos'][1] + (self.ring_ui_target_pos[1] - ring_data['start_pos'][1]) * ease_progress
-            
-            # Draw the ring icon
-            if ring_icon:
-                icon_size = int(gs.TILE_SIZE * 0.3 * (1 + 0.5 * (1 - progress)))  # Shrink as it moves
-                scaled_icon = pygame.transform.smoothscale(ring_icon, (icon_size, icon_size))
-                icon_rect = scaled_icon.get_rect(center=(x, y))
-                self.screen.blit(scaled_icon, icon_rect)
+        self.level_manager.draw_ring_animations(self.screen, ring_icon)
 
     def quit_game(self):
         if self.drone_system: self.drone_system._save_unlocks()
@@ -511,66 +471,7 @@ class GameController:
     def check_for_all_enemies_killed(self): pass
     def _check_level_clear_condition(self):
         """Check if the level has been cleared and progress to the next level if so"""
-        # Check if all rings are collected
-        if self.collected_rings_count >= self.total_rings_per_level:
-            # Stop the player drone when all rings are collected
-            if self.player and hasattr(self.player, 'is_cruising'):
-                self.player.is_cruising = False
-                
-            # Wait for all ring animations to complete before progressing
-            if len(self.animating_rings_to_hud) > 0:
-                return False
-                
-            # Check if all enemies are defeated
-            if self.combat_controller.enemy_manager.get_active_enemies_count() == 0:
-                # Store current weapon mode before creating new player
-                current_weapon_mode = self.player.current_weapon_mode
-                
-                # Progress to the next level
-                self.level += 1
-                self.score += 100  # Bonus for clearing the level
-                
-                # Reset for the next level
-                self.collected_rings_count = 0
-                self.displayed_collected_rings_count = 0
-                self.animating_rings_to_hud = []
-                
-                # Clear all items
-                if hasattr(self, 'item_manager'):
-                    self.item_manager.clear_all_items()
-                
-                # Create a new maze
-                self.maze = Maze()
-                
-                # Spawn the player at a safe location
-                spawn_x, spawn_y = self._get_safe_spawn_point(gs.TILE_SIZE * 0.7, gs.TILE_SIZE * 0.7)
-                drone_id = self.drone_system.get_selected_drone_id()
-                drone_stats = self.drone_system.get_drone_stats(drone_id)
-                sprite_key = f"drone_{drone_id}_ingame_sprite"
-                self.player = PlayerDrone(spawn_x, spawn_y, drone_id, drone_stats, 
-                                         self.asset_manager, sprite_key, 'crash', 
-                                         self.drone_system)
-                                         
-                # Restore weapon mode from previous level
-                while self.player.current_weapon_mode != current_weapon_mode:
-                    self.player.cycle_weapon_state()
-                
-                # Set up the new level
-                self.combat_controller.set_active_entities(player=self.player, maze=self.maze, power_ups_group=self.power_ups_group)
-                self.combat_controller.enemy_manager.spawn_enemies_for_level(self.level)
-                
-                # Spawn rings for the new level
-                if hasattr(self, 'item_manager'):
-                    self.item_manager.reset_for_level()
-                
-                # Display a message
-                self.set_story_message(f"Level {self.level} - Collect all rings!", 3000)
-                
-                # Play a sound
-                self.play_sound('level_up')
-                
-                return True
-        return False
+        return self.level_manager.check_level_clear_condition()
     def _attempt_level_clear_fragment_spawn(self): return False
     def _handle_collectible_collisions(self):
         """Handle collisions between player and collectible items"""
@@ -580,12 +481,8 @@ class GameController:
         # Check for ring collisions
         for ring in pygame.sprite.spritecollide(self.player, self.collectible_rings_group, False):
             ring.collected = True
-            self.collected_rings_count += 1
+            self.level_manager.collect_ring(ring.rect.center)
             self.play_sound('collect_ring')
-            self.score += 10
-            
-            # Create animation for ring collection
-            self._animate_ring_to_hud(ring.rect.center)
             
         # Check for powerup collisions
         for powerup in pygame.sprite.spritecollide(self.player, self.power_ups_group, False):
@@ -602,28 +499,7 @@ class GameController:
                 powerup.collected = True
                 self.play_sound('collect_ring')
                 
-    def _animate_ring_to_hud(self, start_pos):
-        """Create an animation for a collected ring moving to the HUD"""
-        # Calculate the exact position of the collected ring in the HUD
-        collected_count = self.collected_rings_count - 1  # -1 because we already incremented the count
-        
-        # Use the exact same calculation as in the UI
-        rings_x = gs.get_game_setting("WIDTH") - 150
-        rings_y = gs.get_game_setting("HEIGHT") - gs.get_game_setting("BOTTOM_PANEL_HEIGHT") + 20
-        icon_size = 20  # Same as ui_icon_size_rings in UI
-        spacing = 5
-        
-        # Calculate the center of the target icon
-        target_x = rings_x + collected_count * (icon_size + spacing) + icon_size // 2
-        target_y = rings_y + icon_size // 2
-        
-        self.animating_rings_to_hud.append({
-            'pos': list(start_pos),
-            'start_time': pygame.time.get_ticks(),
-            'duration': 1000,  # 1 second animation
-            'start_pos': start_pos,
-            'target_pos': (target_x, target_y)
-        })
+# Method removed - now handled by LevelManager
     def _handle_player_death_or_life_loss(self, reason=""):
         """Handle player death and respawn if lives remain."""
         self._create_explosion(self.player.x, self.player.y, 6, 'crash')

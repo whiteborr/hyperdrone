@@ -152,7 +152,9 @@ class SpeedBoostItem(Collectible):
         return False
 
     def apply_effect(self, player_drone):
-        if hasattr(player_drone, 'arm_speed_boost'): player_drone.arm_speed_boost(self.effect_duration_ms, self.speed_multiplier)
+        if hasattr(player_drone, 'arm_speed_boost'): 
+            player_drone.arm_speed_boost(self.effect_duration_ms, self.speed_multiplier)
+            # Don't auto-activate - wait for UP key press
 
 class CoreFragmentItem(Collectible):
     def __init__(self, x, y, fragment_id, fragment_config_details, *, asset_manager):

@@ -19,6 +19,8 @@ def _ensure_data_dir_exists(): #
 
 def load_scores(): #
     """Loads scores from the leaderboard file."""
+    from hyperdrone_core.constants import KEY_LEADERBOARD_NAME, KEY_LEADERBOARD_SCORE, KEY_LEADERBOARD_LEVEL
+    
     if not _ensure_data_dir_exists(): #
         return [] #
 
@@ -38,7 +40,7 @@ def load_scores(): #
                 if not isinstance(entry, dict): #
                     print(f"Leaderboard: Invalid entry found in '{current_leaderboard_path}'. Resetting.") #
                     return [] #
-            scores.sort(key=lambda x: (-int(x.get('score', 0)), -int(x.get('level', 0)), str(x.get('name', 'ZZZ')))) #
+            scores.sort(key=lambda x: (-int(x.get(KEY_LEADERBOARD_SCORE, 0)), -int(x.get(KEY_LEADERBOARD_LEVEL, 0)), str(x.get(KEY_LEADERBOARD_NAME, 'ZZZ')))) #
             return scores #
     except (IOError, json.JSONDecodeError) as e: #
         print(f"Leaderboard: Error loading or parsing '{current_leaderboard_path}': {e}. Returning empty list.") #
@@ -69,6 +71,8 @@ def add_score(name, score, level): #
     """
     Adds a new score (and level) to the leaderboard if it qualifies.
     """
+    from hyperdrone_core.constants import KEY_LEADERBOARD_NAME, KEY_LEADERBOARD_SCORE, KEY_LEADERBOARD_LEVEL
+    
     if not name or not isinstance(name, str) or len(name.strip()) == 0: #
         print("Leaderboard: Invalid name provided for score. Not adding.") #
         return False #
@@ -81,15 +85,19 @@ def add_score(name, score, level): #
         return False #
 
     scores = load_scores() #
-    new_score_entry = {'name': name.strip().upper()[:6], 'score': current_score, 'level': current_level} #
+    new_score_entry = {
+        KEY_LEADERBOARD_NAME: name.strip().upper()[:6], 
+        KEY_LEADERBOARD_SCORE: current_score, 
+        KEY_LEADERBOARD_LEVEL: current_level
+    } #
 
     should_add = False #
     # Use gs.get_game_setting for LEADERBOARD_MAX_ENTRIES
     if len(scores) < gs.get_game_setting("LEADERBOARD_MAX_ENTRIES"): #
         should_add = True #
     else: #
-        lowest_on_board_score = int(scores[-1].get('score', 0)) #
-        lowest_on_board_level = int(scores[-1].get('level', 0)) #
+        lowest_on_board_score = int(scores[-1].get(KEY_LEADERBOARD_SCORE, 0)) #
+        lowest_on_board_level = int(scores[-1].get(KEY_LEADERBOARD_LEVEL, 0)) #
 
         if current_score > lowest_on_board_score: #
             should_add = True #
@@ -98,14 +106,14 @@ def add_score(name, score, level): #
 
     if should_add: #
         scores.append(new_score_entry) #
-        scores.sort(key=lambda x: (-int(x.get('score', 0)), -int(x.get('level', 0)), str(x.get('name', 'ZZZ')))) #
+        scores.sort(key=lambda x: (-int(x.get(KEY_LEADERBOARD_SCORE, 0)), -int(x.get(KEY_LEADERBOARD_LEVEL, 0)), str(x.get(KEY_LEADERBOARD_NAME, 'ZZZ')))) #
         # Use gs.get_game_setting for LEADERBOARD_MAX_ENTRIES
         scores = scores[:gs.get_game_setting("LEADERBOARD_MAX_ENTRIES")] #
         save_scores(scores) #
-        print(f"Leaderboard: Score added for {new_score_entry['name']}: Score {new_score_entry['score']}, Level {new_score_entry['level']}") #
+        print(f"Leaderboard: Score added for {new_score_entry[KEY_LEADERBOARD_NAME]}: Score {new_score_entry[KEY_LEADERBOARD_SCORE]}, Level {new_score_entry[KEY_LEADERBOARD_LEVEL]}") #
         return True #
 
-    print(f"Leaderboard: Score for {new_score_entry['name']} (Score: {new_score_entry['score']}, Level: {new_score_entry['level']}) did not qualify.") #
+    print(f"Leaderboard: Score for {new_score_entry[KEY_LEADERBOARD_NAME]} (Score: {new_score_entry[KEY_LEADERBOARD_SCORE]}, Level: {new_score_entry[KEY_LEADERBOARD_LEVEL]}) did not qualify.") #
     return False #
 
 def get_top_scores(): #
@@ -116,6 +124,8 @@ def is_high_score(score, level): #
     """
     Checks if a score and level are high enough to be on the leaderboard.
     """
+    from hyperdrone_core.constants import KEY_LEADERBOARD_SCORE, KEY_LEADERBOARD_LEVEL
+    
     try: #
         check_score = int(score) #
         check_level = int(level) #
@@ -130,8 +140,8 @@ def is_high_score(score, level): #
     if not scores: #
         return True #
 
-    lowest_on_board_score = int(scores[-1].get('score', 0)) #
-    lowest_on_board_level = int(scores[-1].get('level', 0)) #
+    lowest_on_board_score = int(scores[-1].get(KEY_LEADERBOARD_SCORE, 0)) #
+    lowest_on_board_level = int(scores[-1].get(KEY_LEADERBOARD_LEVEL, 0)) #
 
     if check_score > lowest_on_board_score: #
         return True #

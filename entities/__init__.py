@@ -1,9 +1,10 @@
 # entities/__init__.py
 
 from .base_drone import BaseDrone
-from .player import PlayerDrone # CORRECTED: Import PlayerDrone directly
+from .player import PlayerDrone
 from .enemy import Enemy, SentinelDrone, DefenseDrone
 from .bullet import Bullet, Missile, LightningZap
+from .powerup_manager import PowerUpManager # <-- ADD THIS IMPORT
 from .collectibles import (
     Ring, WeaponUpgradeItem, ShieldItem, SpeedBoostItem, 
     CoreFragmentItem, VaultLogItem, GlyphTabletItem, AncientAlienTerminal, ArchitectEchoItem
@@ -13,8 +14,8 @@ from .maze_guardian import MazeGuardian
 from .escape_zone import EscapeZone
 from .core_reactor import CoreReactor
 from .turret import Turret
-from .maze import Maze # Chapter 1 Maze
-from .maze_chapter2 import MazeChapter2 # Chapter 2 Maze
+from .maze import Maze
+from .maze_chapter2 import MazeChapter2
 
 __all__ = [
     "AncientAlienTerminal",
@@ -23,6 +24,7 @@ __all__ = [
     "Bullet",
     "CoreFragmentItem",
     "CoreReactor",
+    "DefenseDrone",
     "Enemy",
     "EscapeZone",
     "GlyphTabletItem",
@@ -32,7 +34,8 @@ __all__ = [
     "MazeGuardian",
     "Missile",
     "Particle",
-    "PlayerDrone", # The class PlayerDrone is now directly available
+    "PlayerDrone",
+    "PowerUpManager", 
     "Ring",
     "SentinelDrone",
     "ShieldItem",

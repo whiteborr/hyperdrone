@@ -40,15 +40,17 @@ class DroneSystem:
 
     def _load_all_lore_entries(self):
         """Loads all possible lore entries from the JSON file and converts the list to a dictionary."""
+        from hyperdrone_core.constants import KEY_LORE_ENTRIES, KEY_LORE_ID
+        
         if not os.path.exists(self.LORE_FILE):
             logger.error(f"Lore file not found at '{self.LORE_FILE}'. No lore will be available.")
             return {}
         try:
             with open(self.LORE_FILE, 'r', encoding='utf-8') as f:
-                lore_data_list = json.load(f).get("entries", [])
+                lore_data_list = json.load(f).get(KEY_LORE_ENTRIES, [])
                 
                 # Convert the loaded list into a dictionary, keyed by the 'id' field.
-                lore_data_dict = {entry['id']: entry for entry in lore_data_list if 'id' in entry}
+                lore_data_dict = {entry[KEY_LORE_ID]: entry for entry in lore_data_list if KEY_LORE_ID in entry}
                 
                 logger.info(f"Successfully loaded and processed {len(lore_data_dict)} lore entries.")
                 return lore_data_dict
@@ -58,19 +60,26 @@ class DroneSystem:
 
     def _load_unlocks(self):
         """Loads player progress from the save file."""
+        from hyperdrone_core.constants import (
+            KEY_UNLOCKED_DRONES, KEY_SELECTED_DRONE_ID, KEY_PLAYER_CORES,
+            KEY_UNLOCKED_LORE_IDS, KEY_COLLECTED_CORE_FRAGMENTS,
+            KEY_ARCHITECT_VAULT_COMPLETED, KEY_COLLECTED_GLYPH_TABLETS,
+            KEY_SOLVED_PUZZLE_TERMINALS, KEY_DEFEATED_BOSSES
+        )
+        
         if os.path.exists(self.SAVE_FILE):
             try:
                 with open(self.SAVE_FILE, 'r') as f:
                     data = json.load(f)
-                    self.unlocked_drones.update(data.get("unlocked_drones", ["DRONE"]))
-                    self.selected_drone_id = data.get("selected_drone_id", "DRONE")
-                    self.player_cores = data.get("player_cores", 0)
-                    self.unlocked_lore_ids.update(data.get("unlocked_lore_ids", []))
-                    self.collected_core_fragments.update(data.get("collected_core_fragments", []))
-                    self.architect_vault_completed = data.get("architect_vault_completed", False)
-                    self.collected_glyph_tablets.update(data.get("collected_glyph_tablets", []))
-                    self.solved_puzzle_terminals.update(data.get("solved_puzzle_terminals", []))
-                    self.defeated_bosses.update(data.get("defeated_bosses", []))
+                    self.unlocked_drones.update(data.get(KEY_UNLOCKED_DRONES, ["DRONE"]))
+                    self.selected_drone_id = data.get(KEY_SELECTED_DRONE_ID, "DRONE")
+                    self.player_cores = data.get(KEY_PLAYER_CORES, 0)
+                    self.unlocked_lore_ids.update(data.get(KEY_UNLOCKED_LORE_IDS, []))
+                    self.collected_core_fragments.update(data.get(KEY_COLLECTED_CORE_FRAGMENTS, []))
+                    self.architect_vault_completed = data.get(KEY_ARCHITECT_VAULT_COMPLETED, False)
+                    self.collected_glyph_tablets.update(data.get(KEY_COLLECTED_GLYPH_TABLETS, []))
+                    self.solved_puzzle_terminals.update(data.get(KEY_SOLVED_PUZZLE_TERMINALS, []))
+                    self.defeated_bosses.update(data.get(KEY_DEFEATED_BOSSES, []))
             except (IOError, json.JSONDecodeError) as e:
                 logger.error(f"Error loading save file '{self.SAVE_FILE}': {e}")
         else:
@@ -79,16 +88,23 @@ class DroneSystem:
 
     def _save_unlocks(self):
         """Saves current player progress to the save file."""
+        from hyperdrone_core.constants import (
+            KEY_UNLOCKED_DRONES, KEY_SELECTED_DRONE_ID, KEY_PLAYER_CORES,
+            KEY_UNLOCKED_LORE_IDS, KEY_COLLECTED_CORE_FRAGMENTS,
+            KEY_ARCHITECT_VAULT_COMPLETED, KEY_COLLECTED_GLYPH_TABLETS,
+            KEY_SOLVED_PUZZLE_TERMINALS, KEY_DEFEATED_BOSSES
+        )
+        
         data = {
-            "unlocked_drones": list(self.unlocked_drones),
-            "selected_drone_id": self.selected_drone_id,
-            "player_cores": self.player_cores,
-            "unlocked_lore_ids": list(self.unlocked_lore_ids),
-            "collected_core_fragments": list(self.collected_core_fragments),
-            "architect_vault_completed": self.architect_vault_completed,
-            "collected_glyph_tablets": list(self.collected_glyph_tablets),
-            "solved_puzzle_terminals": list(self.solved_puzzle_terminals),
-            "defeated_bosses": list(self.defeated_bosses)
+            KEY_UNLOCKED_DRONES: list(self.unlocked_drones),
+            KEY_SELECTED_DRONE_ID: self.selected_drone_id,
+            KEY_PLAYER_CORES: self.player_cores,
+            KEY_UNLOCKED_LORE_IDS: list(self.unlocked_lore_ids),
+            KEY_COLLECTED_CORE_FRAGMENTS: list(self.collected_core_fragments),
+            KEY_ARCHITECT_VAULT_COMPLETED: self.architect_vault_completed,
+            KEY_COLLECTED_GLYPH_TABLETS: list(self.collected_glyph_tablets),
+            KEY_SOLVED_PUZZLE_TERMINALS: list(self.solved_puzzle_terminals),
+            KEY_DEFEATED_BOSSES: list(self.defeated_bosses)
         }
         try:
             os.makedirs(os.path.dirname(self.SAVE_FILE), exist_ok=True)
@@ -119,11 +135,13 @@ class DroneSystem:
         return self.drones.get(drone_id, self.drones["DRONE"])
 
     def get_drone_stats(self, drone_id, is_in_architect_vault=False):
+        from hyperdrone_core.constants import KEY_BASE_STATS, KEY_VAULT_STATS
+        
         config = self.get_drone_config(drone_id)
         # Use a more robust check for 'base_stats'
-        stats_source = config.get("base_stats", {})
-        if is_in_architect_vault and "vault_stats" in config:
-            stats_source = config.get("vault_stats")
+        stats_source = config.get(KEY_BASE_STATS, {})
+        if is_in_architect_vault and KEY_VAULT_STATS in config:
+            stats_source = config.get(KEY_VAULT_STATS)
         return stats_source
 
     def set_selected_drone(self, drone_id):
@@ -134,13 +152,15 @@ class DroneSystem:
         return False
 
     def unlock_drone(self, drone_id):
+        from hyperdrone_core.constants import KEY_UNLOCK_CONDITION, KEY_UNLOCK_TYPE, KEY_UNLOCK_VALUE
+        
         if drone_id in self.unlocked_drones:
             return True
         
         config = self.get_drone_config(drone_id)
-        unlock_condition = config.get("unlock_condition", {})
-        unlock_type = unlock_condition.get("type")
-        unlock_value = unlock_condition.get("value")
+        unlock_condition = config.get(KEY_UNLOCK_CONDITION, {})
+        unlock_type = unlock_condition.get(KEY_UNLOCK_TYPE)
+        unlock_value = unlock_condition.get(KEY_UNLOCK_VALUE)
 
         if unlock_type == "cores":
             if self.player_cores >= unlock_value:
@@ -187,10 +207,12 @@ class DroneSystem:
         
     def check_and_unlock_lore_entries(self, event_trigger, **kwargs):
         """Checks conditions for all lore entries and unlocks them if criteria are met."""
+        from hyperdrone_core.constants import KEY_LORE_UNLOCKED_BY
+        
         unlocked_ids_this_check = []
         for lore_id, entry in self.all_lore_entries.items():
             if lore_id not in self.unlocked_lore_ids:
-                if entry.get("unlocked_by") == event_trigger:
+                if entry.get(KEY_LORE_UNLOCKED_BY) == event_trigger:
                     self.unlock_lore_entry_by_id(lore_id)
                     unlocked_ids_this_check.append(lore_id)
         return unlocked_ids_this_check
@@ -203,14 +225,16 @@ class DroneSystem:
 
     def get_unlocked_lore_categories(self):
         """Gets a sorted list of unique categories from all unlocked lore entries."""
+        from hyperdrone_core.constants import KEY_LORE_CATEGORY
+        
         if not self.unlocked_lore_ids:
             return []
         
         categories = set()
         for lore_id in self.unlocked_lore_ids:
             entry = self.all_lore_entries.get(lore_id)
-            if entry and "category" in entry:
-                categories.add(entry["category"])
+            if entry and KEY_LORE_CATEGORY in entry:
+                categories.add(entry[KEY_LORE_CATEGORY])
         
         preferred_order = ["Story", "Architect's Echoes", "Drones", "Alien Tech", "Alien Races", "Locations", "Story Beats"]
         
@@ -220,14 +244,16 @@ class DroneSystem:
 
     def get_unlocked_lore_entries_by_category(self, category_name):
         """Gets a list of all unlocked lore entries within a specific category."""
+        from hyperdrone_core.constants import KEY_LORE_CATEGORY, KEY_LORE_SEQUENCE
+        
         entries = []
         for lore_id in self.unlocked_lore_ids:
             entry = self.all_lore_entries.get(lore_id)
-            if entry and entry.get("category") == category_name:
+            if entry and entry.get(KEY_LORE_CATEGORY) == category_name:
                 entries.append(entry)
         
         # Ensure a 'sequence' key exists for sorting, default to 0 if not present
-        entries.sort(key=lambda x: x.get('sequence', 0))
+        entries.sort(key=lambda x: x.get(KEY_LORE_SEQUENCE, 0))
         return entries
         
     def collect_core_fragment(self, fragment_id):
@@ -245,9 +271,12 @@ class DroneSystem:
 
     def are_all_core_fragments_collected(self):
         """Checks if all fragments *required for the vault* are collected."""
-        required_fragments = {details['id'] for _, details in gs.CORE_FRAGMENT_DETAILS.items() if details and details.get('required_for_vault')}
+        from hyperdrone_core.constants import KEY_FRAGMENT_ID, KEY_FRAGMENT_REQUIRED_FOR_VAULT
+        
+        required_fragments = {details[KEY_FRAGMENT_ID] for _, details in gs.CORE_FRAGMENT_DETAILS.items() 
+                             if details and details.get(KEY_FRAGMENT_REQUIRED_FOR_VAULT)}
         if not required_fragments:
-            logger.warning("No fragments marked as 'required_for_vault'. Vault may be permanently locked.")
+            logger.warning(f"No fragments marked as '{KEY_FRAGMENT_REQUIRED_FOR_VAULT}'. Vault may be permanently locked.")
             return False
         return required_fragments.issubset(self.collected_core_fragments)
         

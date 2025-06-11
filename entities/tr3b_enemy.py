@@ -64,13 +64,16 @@ class TR3BEnemy(Enemy):
             if self.dash_duration <= 0:
                 self.is_dashing = False
         
-        # If we're stuck, force a new patrol point
-        is_stuck = self._handle_stuck_logic(current_time_ms, delta_time_ms, maze, game_area_x_offset)
+        # If we're stuck, try more aggressive unsticking
+        is_stuck = super()._handle_stuck_logic(current_time_ms, delta_time_ms, maze, game_area_x_offset)
         if is_stuck:
+            # Always try wall following, even if it failed before
+            self._try_wall_following(maze, game_area_x_offset)
+            # Reset path and patrol point regardless
             self.path = []
             self.current_patrol_point = None
             self.patrol_point_reached = True
-            self.patrol_wait_time = self.patrol_wait_duration  # Force immediate new point selection
+            self.patrol_wait_time = 0  # Force immediate new point selection
         
         target_pos, current_speed, can_shoot = None, self.speed, False
         
@@ -239,3 +242,63 @@ class TR3BEnemy(Enemy):
                                       game_play_area_height))
         self.x, self.y = self.rect.centerx, self.rect.centery
         self.collision_rect.center = self.rect.center
+        
+    def update(self, primary_target_pos_pixels, maze, current_time_ms, delta_time_ms, game_area_x_offset=0, is_defense_mode=False):
+        if not self.alive:
+            self.bullets.update(maze, game_area_x_offset)
+            if not self.bullets:
+                self.kill()
+            return
+
+        # Handle dash cooldown and duration
+        if self.dash_cooldown > 0:
+            self.dash_cooldown -= delta_time_ms
+        
+        if self.is_dashing:
+            self.dash_duration -= delta_time_ms
+            if self.dash_duration <= 0:
+                self.is_dashing = False
+        
+        # Use the base enemy unstick logic directly - we've improved it there
+        is_stuck = super()._handle_stuck_logic(current_time_ms, delta_time_ms, maze, game_area_x_offset)
+        if is_stuck:
+            # Reset patrol point to force new path selection
+            self.path = []
+            self.current_patrol_point = None
+            self.patrol_point_reached = True
+            self.patrol_wait_time = 0
+        
+        target_pos, current_speed, can_shoot = None, self.speed, False
+        
+        # Handle targeting and aggro
+        if self.player_ref and self.player_ref.alive:
+            player_dist = math.hypot(self.x - self.player_ref.x, self.y - self.player_ref.y)
+            
+            # Determine if we can shoot based on distance
+            if player_dist < self.aggro_radius:
+                can_shoot = True
+                
+                # Chance to dash toward or away from player when in aggro range
+                if not self.is_dashing and self.dash_cooldown <= 0 and random.random() < 0.01:
+                    self._initiate_dash(self.player_ref.rect.center, player_dist)
+        
+        # Handle movement
+        if self.is_dashing:
+            self._move_during_dash(maze, game_area_x_offset)
+        else:
+            # Patrol behavior
+            self._patrol_movement(maze, current_time_ms, game_area_x_offset)
+        
+        # Update sprite rotation and position
+        self.image = pygame.transform.rotate(self.original_image, -self.angle)
+        self.rect = self.image.get_rect(center=(int(self.x), int(self.y)))
+        self.collision_rect.center = self.rect.center
+        
+        # Update bullets
+        self.bullets.update(maze, game_area_x_offset)
+        
+        # Handle shooting
+        if can_shoot and (current_time_ms - self.last_shot_time > self.shoot_cooldown):
+            dx, dy = self.player_ref.rect.centerx - self.x, self.player_ref.rect.centery - self.y
+            self.shoot(math.degrees(math.atan2(dy, dx)), maze)
+            self.last_shot_time = current_time_ms
