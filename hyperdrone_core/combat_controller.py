@@ -27,6 +27,9 @@ class CombatController:
     def __init__(self, game_controller_ref, asset_manager):
         self.game_controller = game_controller_ref
         self.asset_manager = asset_manager
+        # Set reference to game_controller in asset_manager for enemy explosions
+        self.asset_manager.game_controller = game_controller_ref
+        
         self.player = None 
         self.maze = None   
         
@@ -110,6 +113,8 @@ class CombatController:
         if not self.player and current_game_state != GAME_STATE_MAZE_DEFENSE : 
             return
         if self.player and not self.player.alive and current_game_state != GAME_STATE_MAZE_DEFENSE: 
+            # Call player death handler when player is not alive
+            self.game_controller._handle_player_death_or_life_loss("Drone Destroyed!")
             if current_game_state == GAME_STATE_MAZE_DEFENSE:
                 self._handle_enemy_projectile_collisions(current_game_state)
             return
@@ -153,7 +158,7 @@ class CombatController:
                             damage_to_enemy = projectile.damage 
                         enemy.take_damage(damage_to_enemy)
                         if not enemy.alive:
-                            self.game_controller._create_explosion(enemy.rect.centerx, enemy.rect.centery, specific_sound_key='enemy_shoot')
+                            self.game_controller._create_enemy_explosion(enemy.rect.centerx, enemy.rect.centery)
                         
                         if isinstance(projectile, LightningZap):
                            pass
@@ -218,7 +223,7 @@ class CombatController:
                     if not enemy.alive:
                         self.game_controller.score += 50 
                         self.game_controller.drone_system.add_player_cores(10) 
-                        self.game_controller._create_explosion(enemy.rect.centerx, enemy.rect.centery, specific_sound_key='enemy_shoot') 
+                        self.game_controller._create_enemy_explosion(enemy.rect.centerx, enemy.rect.centery) 
                         self.game_controller.check_for_all_enemies_killed()
                     
                     if isinstance(projectile, LightningZap):
@@ -288,7 +293,7 @@ class CombatController:
                     enemy.take_damage(50) 
                     if not enemy.alive: 
                          self.game_controller.score += 10 
-                         self.game_controller._create_explosion(enemy.rect.centerx, enemy.rect.centery, specific_sound_key='crash')
+                         self.game_controller._create_enemy_explosion(enemy.rect.centerx, enemy.rect.centery)
                          self.game_controller.check_for_all_enemies_killed()
 
                     if not self.player.alive: 
@@ -310,7 +315,7 @@ class CombatController:
             for enemy in enemies_hitting_reactor:
                 contact_dmg = getattr(enemy, 'contact_damage', 25) 
                 self.core_reactor.take_damage(contact_dmg, self.game_controller) 
-                self.game_controller._create_explosion(enemy.rect.centerx, enemy.rect.centery, specific_sound_key='crash')
+                self.game_controller._create_enemy_explosion(enemy.rect.centerx, enemy.rect.centery)
                 if not self.core_reactor.alive:
                     self.game_controller.scene_manager.set_game_state(gs.GAME_STATE_GAME_OVER) 
                     return

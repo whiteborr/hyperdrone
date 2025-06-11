@@ -183,8 +183,26 @@ class Enemy(pygame.sprite.Sprite):
             self.asset_manager.get_sound(self.shoot_sound_key).play()
 
     def take_damage(self, amount):
-        if self.alive: self.health -= amount
-        if self.health <= 0: self.health = 0; self.alive = False
+        if self.alive: 
+            self.health -= amount
+            # Create small hit effect
+            if hasattr(self, 'rect') and self.rect:
+                if random.random() < 0.3:  # 30% chance for spark on hit
+                    x, y = self.rect.center
+                    if hasattr(self.asset_manager, 'game_controller') and self.asset_manager.game_controller:
+                        self.asset_manager.game_controller._create_explosion(x, y, 3, None)
+            
+            if self.health <= 0: 
+                self.health = 0
+                self.alive = False
+                # Create explosion effect when enemy dies
+                if hasattr(self, 'rect') and self.rect:
+                    x, y = self.rect.center
+                    if hasattr(self.asset_manager, 'game_controller') and self.asset_manager.game_controller:
+                        # Create a larger explosion with more particles
+                        self.asset_manager.game_controller._create_explosion(x, y, 40, 'enemy_shoot')
+                        # Add a second explosion with different colors for more visual impact
+                        self.asset_manager.game_controller._create_enemy_explosion(x, y)
 
     def draw(self, surface, camera=None):
         if self.alive and self.image:

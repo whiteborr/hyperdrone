@@ -279,6 +279,53 @@ LEADERBOARD_MAX_ENTRIES = 10
 UI_FONT_PATH_EMOJI = "assets/fonts/seguiemj.ttf" 
 
 # ==========================
+# Asset Path Definitions
+# ==========================
+# Asset dictionary for more efficient access
+ASSET_PATHS = {
+    # Sound paths
+    "COLLECT_RING_SOUND": "sounds/collect_ring.wav",
+    "WEAPON_UPGRADE_COLLECT_SOUND": "sounds/weapon_upgrade_collect.wav",
+    "COLLECT_FRAGMENT_SOUND": "sounds/collect_fragment.wav",
+    "SHOOT_SOUND": "sounds/shoot.wav",
+    "ENEMY_SHOOT_SOUND": "sounds/enemy_shoot.wav",
+    "CRASH_SOUND": "sounds/crash.wav",
+    "LEVEL_UP_SOUND": "sounds/level_up.wav",
+    "UI_SELECT_SOUND": "sounds/ui_select.wav",
+    "UI_CONFIRM_SOUND": "sounds/ui_confirm.wav",
+    "MISSILE_LAUNCH_SOUND": "sounds/missile_launch.wav",
+    "PROTOTYPE_DRONE_EXPLODE_SOUND": "sounds/prototype_drone_explode.wav",
+    
+    # Music paths
+    "MENU_THEME_MUSIC": "sounds/menu_music.wav",
+    "GAMEPLAY_THEME_MUSIC": "sounds/gameplay_music.wav",
+    "DEFENSE_THEME_MUSIC": "sounds/defense_mode_music.wav",
+    
+    # Image paths
+    "RING_UI_ICON": "images/collectibles/ring_ui_icon.png",
+    "RING_UI_ICON_EMPTY": "images/collectibles/ring_ui_icon_empty.png",
+    "MENU_LOGO": "images/ui/menu_logo_hyperdrone.png",
+    "CORE_FRAGMENT_EMPTY_ICON": "images/collectibles/fragment_ui_icon_empty.png",
+    "REACTOR_HUD_ICON": "images/level_elements/reactor_icon.png",
+    "CORE_REACTOR_IMAGE": "images/level_elements/core_reactor.png",
+    "SHIELD_POWERUP_ICON": "images/powerups/shield_icon.png",
+    "SPEED_BOOST_POWERUP_ICON": "images/powerups/speed_icon.png",
+    "WEAPON_UPGRADE_POWERUP_ICON": "images/powerups/weapon_icon.png",
+    "DEFENSE_DRONE_1_SPRITE": "images/enemies/defense_drone_1.png",
+    "DEFENSE_DRONE_2_SPRITE": "images/enemies/defense_drone_2.png",
+    "DEFENSE_DRONE_3_SPRITE": "images/enemies/defense_drone_3.png",
+    "DEFENSE_DRONE_4_SPRITE": "images/enemies/defense_drone_4.png",
+    "DEFENSE_DRONE_5_SPRITE": "images/enemies/defense_drone_5.png",
+    "LORE_SCENE_1": "images/lore/scene1.png",
+    "LORE_SCENE_2": "images/lore/scene2.png",
+    "LORE_SCENE_3": "images/lore/scene3.png",
+    "LORE_SCENE_4": "images/lore/scene4.png",
+    
+    # Font paths
+    "UI_TEXT_FONT": "fonts/neuropol.otf"
+}
+
+# ==========================
 # Game State Definitions
 # ==========================
 GAME_STATE_MAIN_MENU = "main_menu"

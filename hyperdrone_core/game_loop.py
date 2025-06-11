@@ -83,11 +83,86 @@ class GameController:
         self.reactor_group = pygame.sprite.GroupSingle()
         self.turrets_group = pygame.sprite.Group()
         
+        # Game state variables
         self.score = 0
         self.level = 1
         self.lives = gs.get_game_setting("PLAYER_LIVES")
         self.paused = False
         self.is_build_phase = False
+        
+        # Ring collection variables
+        self.collected_rings_count = 0
+        self.displayed_collected_rings_count = 0
+        self.total_rings_per_level = 5
+        self.animating_rings_to_hud = []
+        self.ring_ui_target_pos = (gs.get_game_setting("WIDTH") - 50, gs.get_game_setting("HEIGHT") - gs.get_game_setting("BOTTOM_PANEL_HEIGHT") + 50)
+        
+        # Fragment collection variables
+        self.hud_displayed_fragments = set()
+        self.animating_fragments_to_hud = []
+        self.fragment_ui_target_positions = {}
+        
+        # Level state variables
+        self.all_enemies_killed_this_level = False
+        self.level_cleared_pending_animation = False
+        self.level_clear_fragment_spawned_this_level = False
+        
+        # Timer variables
+        self.level_timer_start_ticks = 0
+        self.level_time_remaining_ms = gs.get_game_setting("LEVEL_TIMER_DURATION")
+        self.bonus_level_timer_start = 0
+        self.bonus_level_duration_ms = gs.get_game_setting("BONUS_LEVEL_DURATION_MS")
+        self.bonus_level_start_display_end_time = 0
+        self.architect_vault_current_phase = None
+        self.architect_vault_phase_timer_start = 0
+        self.architect_vault_message = ""
+        self.architect_vault_message_timer = 0
+        self.architect_vault_failure_reason = ""
+        
+        # Initialize story message attributes
+        self.story_message = ""
+        self.story_message_active = False
+        self.story_message_end_time = 0
+        self.STORY_MESSAGE_DURATION = 5000
+        self.triggered_story_beats = set()
+        
+        # UI and intro screen variables
+        self.current_intro_image_asset_key = None
+        self.intro_screen_text_surfaces_current = []
+        self.intro_font_key = "codex_category_font"
+        
+    def _create_explosion(self, x, y, num_particles=6, specific_sound_key='prototype_drone_explode'):
+        # Richer color range including whites and brighter tones for flash effect
+        colors = [gs.WHITE, gs.YELLOW, gs.ORANGE, gs.RED]
+        
+        # Create a tiny bright flash at the center
+        self.explosion_particles_group.add(
+            Particle(x, y, [gs.WHITE, gs.YELLOW], 
+                    min_speed=0.01, max_speed=0.05, 
+                    min_size=0.01, max_size=0.05, 
+                    gravity=0, shrink_rate=0.2, 
+                    lifetime_frames=4)
+        )
+        
+        # Create the main explosion particles - fewer and much smaller
+        for _ in range(num_particles):
+            # Calculate random angle for directional explosion
+            angle = random.uniform(0, 360)
+            speed = random.uniform(0.05, 0.2)  # Extremely low speed
+            size = random.uniform(0.01, 0.05)  # Extremely small particles
+            lifetime = random.randint(5, 10)   # Very short lifetime
+            
+            self.explosion_particles_group.add(
+                Particle(x, y, colors, 
+                        min_speed=speed*0.8, max_speed=speed, 
+                        min_size=size*0.8, max_size=size, 
+                        gravity=0.001, shrink_rate=0.05, 
+                        lifetime_frames=lifetime,
+                        base_angle_deg=angle, spread_angle_deg=5)
+            )
+            
+        if specific_sound_key:
+            self.play_sound(specific_sound_key)
         
         self.level_timer_start_ticks = 0
         self.level_time_remaining_ms = gs.get_game_setting("LEVEL_TIMER_DURATION")
@@ -137,53 +212,54 @@ class GameController:
     def _preload_all_assets(self):
         asset_manifest = {
             "images": {
-                "ring_ui_icon": {"path": "images/collectibles/ring_ui_icon.png"},
-                "ring_ui_icon_empty": {"path": "images/collectibles/ring_ui_icon_empty.png"},
-                "menu_logo_hyperdrone": {"path": "images/ui/menu_logo_hyperdrone.png"},
-                "core_fragment_empty_icon": {"path": "images/collectibles/fragment_ui_icon_empty.png"},
-                "reactor_hud_icon_key": {"path": "images/level_elements/reactor_icon.png"},
-                "core_reactor_image": {"path": "images/level_elements/core_reactor.png", "alpha": True},
-                "shield_powerup_icon": {"path": "images/powerups/shield_icon.png"},
-                "speed_boost_powerup_icon": {"path": "images/powerups/speed_icon.png"},
-                "weapon_upgrade_powerup_icon": {"path": "images/powerups/weapon_icon.png"},
-                "regular_enemy_sprite_key": {"path": gs.REGULAR_ENEMY_SPRITE_PATH.replace("assets/", ""), "alpha": True},
-                "prototype_drone_sprite_key": {"path": gs.PROTOTYPE_DRONE_SPRITE_PATH.replace("assets/", ""), "alpha": True},
-                "sentinel_drone_sprite_key": {"path": gs.SENTINEL_DRONE_SPRITE_PATH.replace("assets/", ""), "alpha": True},
-                "maze_guardian_sprite_key": {"path": gs.MAZE_GUARDIAN_SPRITE_PATH.replace("assets/", ""), "alpha": True},
-                "defense_drone_1_sprite_key": {"path": "images/enemies/defense_drone_1.png", "alpha": True},
-                "defense_drone_2_sprite_key": {"path": "images/enemies/defense_drone_2.png", "alpha": True},
-                "defense_drone_3_sprite_key": {"path": "images/enemies/defense_drone_3.png", "alpha": True},
-                "defense_drone_4_sprite_key": {"path": "images/enemies/defense_drone_4.png", "alpha": True},
-                "defense_drone_5_sprite_key": {"path": "images/enemies/defense_drone_5.png", "alpha": True},
-                "images/lore/scene1.png": {"path": "images/lore/scene1.png", "alpha": True},
-                "images/lore/scene2.png": {"path": "images/lore/scene2.png", "alpha": True},
-                "images/lore/scene3.png": {"path": "images/lore/scene3.png", "alpha": True},
-                "images/lore/scene4.png": {"path": "images/lore/scene4.png", "alpha": True},
+                "ring_ui_icon": {"path": gs.ASSET_PATHS["RING_UI_ICON"]},
+                "ring_ui_icon_empty": {"path": gs.ASSET_PATHS["RING_UI_ICON_EMPTY"]},
+                "menu_logo_hyperdrone": {"path": gs.ASSET_PATHS["MENU_LOGO"]},
+                "core_fragment_empty_icon": {"path": gs.ASSET_PATHS["CORE_FRAGMENT_EMPTY_ICON"]},
+                "reactor_hud_icon_key": {"path": gs.ASSET_PATHS["REACTOR_HUD_ICON"]},
+                "core_reactor_image": {"path": gs.ASSET_PATHS["CORE_REACTOR_IMAGE"], "alpha": True},
+                "shield_powerup_icon": {"path": gs.ASSET_PATHS["SHIELD_POWERUP_ICON"]},
+                "speed_boost_powerup_icon": {"path": gs.ASSET_PATHS["SPEED_BOOST_POWERUP_ICON"]},
+                "weapon_upgrade_powerup_icon": {"path": gs.ASSET_PATHS["WEAPON_UPGRADE_POWERUP_ICON"]},
+                "regular_enemy_sprite_key": {"path": gs.REGULAR_ENEMY_SPRITE_PATH, "alpha": True},
+                "prototype_drone_sprite_key": {"path": gs.PROTOTYPE_DRONE_SPRITE_PATH, "alpha": True},
+                "sentinel_drone_sprite_key": {"path": gs.SENTINEL_DRONE_SPRITE_PATH, "alpha": True},
+                "maze_guardian_sprite_key": {"path": gs.MAZE_GUARDIAN_SPRITE_PATH, "alpha": True},
+                "defense_drone_1_sprite_key": {"path": gs.ASSET_PATHS["DEFENSE_DRONE_1_SPRITE"], "alpha": True},
+                "defense_drone_2_sprite_key": {"path": gs.ASSET_PATHS["DEFENSE_DRONE_2_SPRITE"], "alpha": True},
+                "defense_drone_3_sprite_key": {"path": gs.ASSET_PATHS["DEFENSE_DRONE_3_SPRITE"], "alpha": True},
+                "defense_drone_4_sprite_key": {"path": gs.ASSET_PATHS["DEFENSE_DRONE_4_SPRITE"], "alpha": True},
+                "defense_drone_5_sprite_key": {"path": gs.ASSET_PATHS["DEFENSE_DRONE_5_SPRITE"], "alpha": True},
+                "images/lore/scene1.png": {"path": gs.ASSET_PATHS["LORE_SCENE_1"], "alpha": True},
+                "images/lore/scene2.png": {"path": gs.ASSET_PATHS["LORE_SCENE_2"], "alpha": True},
+                "images/lore/scene3.png": {"path": gs.ASSET_PATHS["LORE_SCENE_3"], "alpha": True},
+                "images/lore/scene4.png": {"path": gs.ASSET_PATHS["LORE_SCENE_4"], "alpha": True},
             },
             "sounds": {
-                'collect_ring': "sounds/collect_ring.wav",
-                'weapon_upgrade_collect': "sounds/weapon_upgrade_collect.wav",
-                'collect_fragment': "sounds/collect_fragment.wav",
-                'shoot': "sounds/shoot.wav",
-                'enemy_shoot': "sounds/enemy_shoot.wav",
-                'crash': "sounds/crash.wav",
-                'level_up': "sounds/level_up.wav",
-                'ui_select': "sounds/ui_select.wav",
-                'ui_confirm': "sounds/ui_confirm.wav",
-                'missile_launch': "sounds/missile_launch.wav",
+                'collect_ring': gs.ASSET_PATHS["COLLECT_RING_SOUND"],
+                'weapon_upgrade_collect': gs.ASSET_PATHS["WEAPON_UPGRADE_COLLECT_SOUND"],
+                'collect_fragment': gs.ASSET_PATHS["COLLECT_FRAGMENT_SOUND"],
+                'shoot': gs.ASSET_PATHS["SHOOT_SOUND"],
+                'enemy_shoot': gs.ASSET_PATHS["ENEMY_SHOOT_SOUND"],
+                'crash': gs.ASSET_PATHS["CRASH_SOUND"],
+                'level_up': gs.ASSET_PATHS["LEVEL_UP_SOUND"],
+                'ui_select': gs.ASSET_PATHS["UI_SELECT_SOUND"],
+                'ui_confirm': gs.ASSET_PATHS["UI_CONFIRM_SOUND"],
+                'missile_launch': gs.ASSET_PATHS["MISSILE_LAUNCH_SOUND"],
+                'prototype_drone_explode': gs.ASSET_PATHS["PROTOTYPE_DRONE_EXPLODE_SOUND"],
             },
             "fonts": {
-                "ui_text": {"path": "fonts/neuropol.otf", "sizes": [28, 24, 20, 16, 32]},
-                "ui_values": {"path": "fonts/neuropol.otf", "sizes": [30]},
-                "small_text": {"path": "fonts/neuropol.otf", "sizes": [24]},
-                "medium_text": {"path": "fonts/neuropol.otf", "sizes": [48, 36]},
-                "large_text": {"path": "fonts/neuropol.otf", "sizes": [74, 52, 48]},
-                "title_text": {"path": "fonts/neuropol.otf", "sizes": [90]},
+                "ui_text": {"path": gs.ASSET_PATHS["UI_TEXT_FONT"], "sizes": [28, 24, 20, 16, 32]},
+                "ui_values": {"path": gs.ASSET_PATHS["UI_TEXT_FONT"], "sizes": [30]},
+                "small_text": {"path": gs.ASSET_PATHS["UI_TEXT_FONT"], "sizes": [24]},
+                "medium_text": {"path": gs.ASSET_PATHS["UI_TEXT_FONT"], "sizes": [48, 36]},
+                "large_text": {"path": gs.ASSET_PATHS["UI_TEXT_FONT"], "sizes": [74, 52, 48]},
+                "title_text": {"path": gs.ASSET_PATHS["UI_TEXT_FONT"], "sizes": [90]},
             },
             "music": {
-                "menu_theme": "sounds/menu_music.wav",
-                "gameplay_theme": "sounds/gameplay_music.wav",
-                "defense_theme": "sounds/defense_mode_music.wav"
+                "menu_theme": gs.ASSET_PATHS["MENU_THEME_MUSIC"],
+                "gameplay_theme": gs.ASSET_PATHS["GAMEPLAY_THEME_MUSIC"],
+                "defense_theme": gs.ASSET_PATHS["DEFENSE_THEME_MUSIC"]
             }
         }
         
@@ -252,10 +328,69 @@ class GameController:
 
     def _create_explosion(self, x, y, num_particles=20, specific_sound_key=None):
         """Creates a particle explosion at a given coordinate."""
+        # Create explosion particles with varied colors and sizes
+        colors = [gs.ORANGE, gs.YELLOW, gs.RED]
+        
+        # Create a bright flash at the center
+        self.explosion_particles_group.add(
+            Particle(x, y, [gs.WHITE, gs.YELLOW], 
+                    min_speed=0.5, max_speed=1.0, 
+                    min_size=5.0, max_size=8.0, 
+                    gravity=0, shrink_rate=0.2, 
+                    lifetime_frames=12)
+        )
+        
+        # Create the main explosion particles
         for _ in range(num_particles):
-            self.explosion_particles_group.add(Particle(x, y, [gs.ORANGE, gs.YELLOW, gs.RED], 1, 4, 2, 8, gravity=0.1, shrink_rate=0.2, lifetime_frames=30))
+            # Calculate random angle for directional explosion
+            angle = random.uniform(0, 360)
+            speed = random.uniform(2.0, 4.0)
+            size = random.uniform(2.0, 4.0)
+            lifetime = random.randint(20, 30)
+            
+            self.explosion_particles_group.add(
+                Particle(x, y, colors, 
+                        min_speed=speed*0.8, max_speed=speed, 
+                        min_size=size*0.8, max_size=size, 
+                        gravity=0.02, shrink_rate=0.08, 
+                        lifetime_frames=lifetime,
+                        base_angle_deg=angle, spread_angle_deg=20)
+            )
         if specific_sound_key:
             self.play_sound(specific_sound_key)
+            
+    def _create_enemy_explosion(self, x, y):
+        """Creates an explosion specifically for enemy deaths."""
+        # Create a bright flash at the center
+        flash_size = random.uniform(3.0, 5.0)
+        self.explosion_particles_group.add(
+            Particle(x, y, [gs.WHITE, gs.YELLOW], 
+                     min_speed=0.5, max_speed=1.0, 
+                     min_size=flash_size*0.8, max_size=flash_size, 
+                     gravity=0, shrink_rate=0.2, 
+                     lifetime_frames=10)
+        )
+        
+        # Create outward expanding particles
+        colors = [gs.RED, gs.ORANGE, gs.YELLOW]
+        for _ in range(15):
+            angle = random.uniform(0, 360)
+            distance = random.uniform(2.0, 4.0)
+            px = x + math.cos(math.radians(angle)) * distance
+            py = y + math.sin(math.radians(angle)) * distance
+            
+            size = random.uniform(1.5, 3.0)
+            speed = random.uniform(1.5, 3.0)
+            lifetime = random.randint(15, 25)
+            
+            self.explosion_particles_group.add(
+                Particle(px, py, colors, 
+                         min_speed=speed*0.8, max_speed=speed, 
+                         min_size=size*0.8, max_size=size, 
+                         gravity=0.01, shrink_rate=0.08, 
+                         lifetime_frames=lifetime,
+                         base_angle_deg=angle, spread_angle_deg=15)
+            )
 
     def handle_scene_transition(self, new_state, old_state, **kwargs):
         self.paused = False
@@ -316,6 +451,8 @@ class GameController:
         if self.maze:
             self.maze.draw(self.screen, self.camera)
         
+        # Update and draw explosion particles
+        self.explosion_particles_group.update()
         self.explosion_particles_group.draw(self.screen) 
 
         if self.player:
@@ -388,4 +525,29 @@ class GameController:
     def _check_level_clear_condition(self): pass
     def _attempt_level_clear_fragment_spawn(self): return False
     def _handle_collectible_collisions(self): pass
-    def _handle_player_death_or_life_loss(self, reason=""): pass
+    def _handle_player_death_or_life_loss(self, reason=""):
+        """Handle player death and respawn if lives remain."""
+        self._create_explosion(self.player.x, self.player.y, 6, 'crash')
+        self.lives -= 1
+        
+        if self.lives > 0:
+            # Respawn player
+            spawn_x, spawn_y = self._get_safe_spawn_point(gs.TILE_SIZE * 0.7, gs.TILE_SIZE * 0.7)
+            drone_id = self.drone_system.get_selected_drone_id()
+            drone_stats = self.drone_system.get_drone_stats(drone_id)
+            sprite_key = f"drone_{drone_id}_ingame_sprite"
+            
+            self.player = PlayerDrone(spawn_x, spawn_y, drone_id, drone_stats, 
+                                     self.asset_manager, sprite_key, 'crash', 
+                                     self.drone_system)
+            
+            self.combat_controller.set_active_entities(
+                player=self.player, 
+                maze=self.maze, 
+                power_ups_group=self.power_ups_group
+            )
+            
+            self.set_story_message(f"Lives remaining: {self.lives}", 2000)
+        else:
+            # Game over
+            self.scene_manager.set_game_state(gs.GAME_STATE_GAME_OVER)

@@ -131,10 +131,11 @@ class PlayerDrone(BaseDrone):
                                    gs.PLAYER_BULLET_COLOR, 15, max_bounces=gs.BOUNCING_BULLET_MAX_BOUNCES)
                 self.bullets_group.add(new_bullet)
             elif self.current_weapon_mode == gs.WEAPON_MODE_PIERCE:
-                # Create piercing bullet
+                # Create piercing bullet that can pass through walls
                 new_bullet = Bullet(spawn_x, spawn_y, self.angle, gs.PLAYER_BULLET_SPEED, 
                                    gs.PLAYER_BULLET_LIFETIME, self.bullet_size, 
-                                   gs.PLAYER_BULLET_COLOR, 15, max_pierces=gs.PIERCING_BULLET_MAX_PIERCES)
+                                   gs.PLAYER_BULLET_COLOR, 15, max_pierces=gs.PIERCING_BULLET_MAX_PIERCES,
+                                   can_pierce_walls=True)
                 self.bullets_group.add(new_bullet)
             elif self.current_weapon_mode == gs.WEAPON_MODE_HEATSEEKER or self.current_weapon_mode == gs.WEAPON_MODE_HEATSEEKER_PLUS_BULLETS:
                 # Create heatseeker missile
@@ -151,8 +152,24 @@ class PlayerDrone(BaseDrone):
                                        gs.PLAYER_BULLET_COLOR, 15)
                     self.bullets_group.add(new_bullet)
             elif self.current_weapon_mode == gs.WEAPON_MODE_LIGHTNING:
-                # Lightning weapon logic would go here
-                pass
+                # Create lightning zap
+                closest_enemy = None
+                min_distance = float('inf')
+                
+                if enemies_group:
+                    for enemy in enemies_group:
+                        if enemy.alive:
+                            dx = enemy.rect.centerx - self.rect.centerx
+                            dy = enemy.rect.centery - self.rect.centery
+                            distance = math.sqrt(dx*dx + dy*dy)
+                            if distance < min_distance and distance < gs.LIGHTNING_ZAP_RANGE:
+                                min_distance = distance
+                                closest_enemy = enemy
+                
+                lightning_damage = gs.get_game_setting("LIGHTNING_DAMAGE", 15)
+                lightning_lifetime = gs.get_game_setting("LIGHTNING_LIFETIME", 30)
+                new_zap = LightningZap(self, closest_enemy, lightning_damage, lightning_lifetime, maze)
+                self.lightning_zaps_group.add(new_zap)
             else:
                 # Default single bullet
                 new_bullet = Bullet(spawn_x, spawn_y, self.angle, gs.PLAYER_BULLET_SPEED, 

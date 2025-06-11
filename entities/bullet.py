@@ -242,11 +242,53 @@ class LightningZap(pygame.sprite.Sprite):
         super().kill(); self.alive = False 
 
     def _draw_lightning_bolt(self, surface, p1, p2, color, alpha):
-        pass
+        # Generate lightning bolt points
+        points = [p1]
+        dx, dy = p2[0] - p1[0], p2[1] - p1[1]
+        dist = math.sqrt(dx*dx + dy*dy)
+        
+        if dist < 10:  # Too short for a lightning bolt
+            pygame.draw.line(surface, (*color[:3], alpha), p1, p2, 2)
+            return
+            
+        # Calculate perpendicular direction for offsets
+        nx, ny = -dy/dist, dx/dist
+        
+        # Number of segments
+        segments = gs.get_game_setting("LIGHTNING_SEGMENTS", 12)
+        segment_length = dist / segments
+        
+        # Generate zigzag points
+        current = p1
+        for i in range(1, segments):
+            # Calculate position along the line
+            percent = i / segments
+            mid_x = p1[0] + dx * percent
+            mid_y = p1[1] + dy * percent
+            
+            # Add random offset perpendicular to the line
+            max_offset = gs.get_game_setting("LIGHTNING_MAX_OFFSET", 18)
+            offset = random.uniform(-max_offset, max_offset)
+            mid_x += nx * offset
+            mid_y += ny * offset
+            
+            points.append((mid_x, mid_y))
+            
+        points.append(p2)
+        
+        # Draw the main lightning bolt
+        thickness = gs.get_game_setting("LIGHTNING_BASE_THICKNESS", 5)
+        if len(points) > 1:
+            pygame.draw.lines(surface, (*color[:3], alpha), False, points, thickness)
+            
+        # Draw the inner core (brighter)
+        core_thickness = int(thickness * gs.get_game_setting("LIGHTNING_CORE_THICKNESS_RATIO", 0.4))
+        if core_thickness > 0:
+            core_color = gs.get_game_setting("LIGHTNING_CORE_COLOR", (255, 255, 255))
+            pygame.draw.lines(surface, (*core_color[:3], alpha), False, points, core_thickness)
 
     def draw(self, surface, camera=None):
         if self.alive:
             alpha = int(255 * (1.0 - (self.frames_existed / self.lifetime_frames)))
             if alpha > 5:
-                # Basic line for now, can be replaced with complex drawing
-                pygame.draw.line(surface, (*self.color[:3], alpha), self.current_start_pos, self.current_target_pos, 3)
+                self._draw_lightning_bolt(surface, self.current_start_pos, self.current_target_pos, self.color, alpha)
