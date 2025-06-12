@@ -5,13 +5,11 @@ import random
 
 import pygame
 
-import game_settings as gs
-from game_settings import (
+from constants import (
     GOLD, PURPLE, BLUE, LIGHT_BLUE, GREEN, DARK_PURPLE, CYAN, WHITE,
-    POWERUP_TYPES, TILE_SIZE, POWERUP_SIZE, CORE_FRAGMENT_VISUAL_SIZE,
-    WEAPON_UPGRADE_ITEM_LIFETIME, POWERUP_ITEM_LIFETIME,
     ARCHITECT_VAULT_WALL_COLOR
 )
+from settings_manager import get_setting, get_asset_path
 
 class Collectible(pygame.sprite.Sprite):
     """Base class for collectible items with a pulsing shine effect, bobbing, and icon spin."""
@@ -72,7 +70,7 @@ class Collectible(pygame.sprite.Sprite):
             pygame.draw.rect(self.image, self.current_color, temp_rect_info, self.thickness, border_radius=3)
         if self.icon_surface:
             if self.original_icon_surface and self.icon_rotation_speed > 0: 
-                self.icon_angle = (self.icon_angle + self.icon_rotation_speed * (gs.get_game_setting("FPS", 60)/60.0)) % 360
+                self.icon_angle = (self.icon_angle + self.icon_rotation_speed * (get_setting("display", "FPS", 60)/60.0)) % 360
                 rot_icon = pygame.transform.rotate(self.original_icon_surface, self.icon_angle)
                 self.image.blit(rot_icon, rot_icon.get_rect(center=(center, center)))
             else: self.image.blit(self.icon_surface, self.icon_surface.get_rect(center=(center,center)))
@@ -102,7 +100,8 @@ class Collectible(pygame.sprite.Sprite):
 
 class Ring(Collectible):
     def __init__(self, x, y):
-        super().__init__(x, y, base_color=GOLD, size=TILE_SIZE // 4, thickness=3)
+        tile_size = get_setting("gameplay", "TILE_SIZE", 80)
+        super().__init__(x, y, base_color=GOLD, size=tile_size // 4, thickness=3)
 
     def update(self):
         if self.collected: self.kill(); return True
@@ -110,14 +109,18 @@ class Ring(Collectible):
 
 class WeaponUpgradeItem(Collectible):
     def __init__(self, x, y, *, asset_manager):
-        details = POWERUP_TYPES.get("weapon_upgrade", {})
+        powerup_types = {
+            "weapon_upgrade": {"weight": 0.4, "duration": 0, "color": BLUE}
+        }
+        powerup_size = get_setting("powerups", "POWERUP_SIZE", 26)
         icon_asset_key = "weapon_upgrade_powerup_icon"
         loaded_original_icon = asset_manager.get_image(icon_asset_key)
-        super().__init__(x, y, base_color=details.get("color", BLUE), size=POWERUP_SIZE, thickness=4, original_icon_surface=loaded_original_icon)
+        super().__init__(x, y, base_color=BLUE, size=powerup_size, thickness=4, original_icon_surface=loaded_original_icon)
         self.creation_time = pygame.time.get_ticks()
 
     def update(self):
-        if self.update_collectible_state(item_lifetime_ms=WEAPON_UPGRADE_ITEM_LIFETIME): self.kill(); return True
+        weapon_upgrade_lifetime = get_setting("powerups", "WEAPON_UPGRADE_ITEM_LIFETIME", 15000)
+        if self.update_collectible_state(item_lifetime_ms=weapon_upgrade_lifetime): self.kill(); return True
         return False
 
     def apply_effect(self, player_drone):
@@ -125,14 +128,15 @@ class WeaponUpgradeItem(Collectible):
 
 class ShieldItem(Collectible):
     def __init__(self, x, y, *, asset_manager):
-        details = POWERUP_TYPES.get("shield", {})
+        powerup_size = get_setting("powerups", "POWERUP_SIZE", 26)
         loaded_original_icon = asset_manager.get_image("shield_powerup_icon")
-        super().__init__(x, y, base_color=details.get("color", LIGHT_BLUE), size=POWERUP_SIZE, thickness=4, original_icon_surface=loaded_original_icon)
+        super().__init__(x, y, base_color=LIGHT_BLUE, size=powerup_size, thickness=4, original_icon_surface=loaded_original_icon)
         self.creation_time = pygame.time.get_ticks()
-        self.effect_duration_ms = details.get("duration", 10000)
+        self.effect_duration_ms = get_setting("powerups", "SHIELD_POWERUP_DURATION", 10000)
 
     def update(self):
-        if self.update_collectible_state(item_lifetime_ms=POWERUP_ITEM_LIFETIME): self.kill(); return True
+        powerup_lifetime = get_setting("powerups", "POWERUP_ITEM_LIFETIME", 12000)
+        if self.update_collectible_state(item_lifetime_ms=powerup_lifetime): self.kill(); return True
         return False
 
     def apply_effect(self, player_drone):
@@ -140,15 +144,16 @@ class ShieldItem(Collectible):
 
 class SpeedBoostItem(Collectible):
     def __init__(self, x, y, *, asset_manager):
-        details = POWERUP_TYPES.get("speed_boost", {})
+        powerup_size = get_setting("powerups", "POWERUP_SIZE", 26)
         loaded_original_icon = asset_manager.get_image("speed_boost_powerup_icon")
-        super().__init__(x, y, base_color=details.get("color", GREEN), size=POWERUP_SIZE, thickness=4, original_icon_surface=loaded_original_icon)
+        super().__init__(x, y, base_color=GREEN, size=powerup_size, thickness=4, original_icon_surface=loaded_original_icon)
         self.creation_time = pygame.time.get_ticks()
-        self.effect_duration_ms = details.get("duration", 7000)
-        self.speed_multiplier = details.get("multiplier", 1.5)
+        self.effect_duration_ms = get_setting("powerups", "SPEED_BOOST_POWERUP_DURATION", 7000)
+        self.speed_multiplier = 1.5  # Could be moved to settings if needed
 
     def update(self):
-        if self.update_collectible_state(item_lifetime_ms=POWERUP_ITEM_LIFETIME): self.kill(); return True
+        powerup_lifetime = get_setting("powerups", "POWERUP_ITEM_LIFETIME", 12000)
+        if self.update_collectible_state(item_lifetime_ms=powerup_lifetime): self.kill(); return True
         return False
 
     def apply_effect(self, player_drone):

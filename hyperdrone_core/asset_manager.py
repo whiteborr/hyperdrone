@@ -2,6 +2,7 @@
 import pygame
 import os
 import logging
+from settings_manager import get_asset_path, get_setting
 
 logger = logging.getLogger(__name__)
 
@@ -200,65 +201,67 @@ class AssetManager:
         
     def preload_game_assets(self):
         """Preloads all game assets needed for HYPERDRONE."""
-        import game_settings as gs
+        # Import locally to avoid circular imports
         from drone_management.drone_configs import DRONE_DATA
+        import game_settings as gs  # Still needed for some values during transition
         
         asset_manifest = {
             "images": {
-                "ring_ui_icon": {"path": gs.ASSET_PATHS["RING_UI_ICON"]},
-                "ring_ui_icon_empty": {"path": gs.ASSET_PATHS["RING_UI_ICON_EMPTY"]},
-                "menu_logo_hyperdrone": {"path": gs.ASSET_PATHS["MENU_LOGO"]},
-                "core_fragment_empty_icon": {"path": gs.ASSET_PATHS["CORE_FRAGMENT_EMPTY_ICON"]},
-                "reactor_hud_icon_key": {"path": gs.ASSET_PATHS["REACTOR_HUD_ICON"]},
-                "core_reactor_image": {"path": gs.ASSET_PATHS["CORE_REACTOR_IMAGE"], "alpha": True},
-                "shield_powerup_icon": {"path": gs.ASSET_PATHS["SHIELD_POWERUP_ICON"]},
-                "speed_boost_powerup_icon": {"path": gs.ASSET_PATHS["SPEED_BOOST_POWERUP_ICON"]},
-                "weapon_upgrade_powerup_icon": {"path": gs.ASSET_PATHS["WEAPON_UPGRADE_POWERUP_ICON"]},
-                "regular_enemy_sprite_key": {"path": gs.REGULAR_ENEMY_SPRITE_PATH, "alpha": True},
-                "prototype_drone_sprite_key": {"path": gs.PROTOTYPE_DRONE_SPRITE_PATH, "alpha": True},
-                "sentinel_drone_sprite_key": {"path": gs.SENTINEL_DRONE_SPRITE_PATH, "alpha": True},
-                "maze_guardian_sprite_key": {"path": gs.MAZE_GUARDIAN_SPRITE_PATH, "alpha": True},
-                "defense_drone_1_sprite_key": {"path": gs.ASSET_PATHS["DEFENSE_DRONE_1_SPRITE"], "alpha": True},
-                "defense_drone_2_sprite_key": {"path": gs.ASSET_PATHS["DEFENSE_DRONE_2_SPRITE"], "alpha": True},
-                "defense_drone_3_sprite_key": {"path": gs.ASSET_PATHS["DEFENSE_DRONE_3_SPRITE"], "alpha": True},
-                "defense_drone_4_sprite_key": {"path": gs.ASSET_PATHS["DEFENSE_DRONE_4_SPRITE"], "alpha": True},
-                "defense_drone_5_sprite_key": {"path": gs.ASSET_PATHS["DEFENSE_DRONE_5_SPRITE"], "alpha": True},
-                "images/lore/scene1.png": {"path": gs.ASSET_PATHS["LORE_SCENE_1"], "alpha": True},
-                "images/lore/scene2.png": {"path": gs.ASSET_PATHS["LORE_SCENE_2"], "alpha": True},
-                "images/lore/scene3.png": {"path": gs.ASSET_PATHS["LORE_SCENE_3"], "alpha": True},
-                "images/lore/scene4.png": {"path": gs.ASSET_PATHS["LORE_SCENE_4"], "alpha": True},
+                "ring_ui_icon": {"path": get_asset_path("images", "RING_UI_ICON")},
+                "ring_ui_icon_empty": {"path": get_asset_path("images", "RING_UI_ICON_EMPTY")},
+                "menu_logo_hyperdrone": {"path": get_asset_path("images", "MENU_LOGO")},
+                "core_fragment_empty_icon": {"path": get_asset_path("images", "CORE_FRAGMENT_EMPTY_ICON")},
+                "reactor_hud_icon_key": {"path": get_asset_path("images", "REACTOR_HUD_ICON")},
+                "core_reactor_image": {"path": get_asset_path("images", "CORE_REACTOR_IMAGE"), "alpha": True},
+                "shield_powerup_icon": {"path": get_asset_path("images", "SHIELD_POWERUP_ICON")},
+                "speed_boost_powerup_icon": {"path": get_asset_path("images", "SPEED_BOOST_POWERUP_ICON")},
+                "weapon_upgrade_powerup_icon": {"path": get_asset_path("images", "WEAPON_UPGRADE_POWERUP_ICON")},
+                "regular_enemy_sprite_key": {"path": get_asset_path("sprites", "REGULAR_ENEMY_SPRITE_PATH"), "alpha": True},
+                "prototype_drone_sprite_key": {"path": get_asset_path("sprites", "PROTOTYPE_DRONE_SPRITE_PATH"), "alpha": True},
+                "sentinel_drone_sprite_key": {"path": get_asset_path("sprites", "SENTINEL_DRONE_SPRITE_PATH"), "alpha": True},
+                "maze_guardian_sprite_key": {"path": get_asset_path("sprites", "MAZE_GUARDIAN_SPRITE_PATH"), "alpha": True},
+                "defense_drone_1_sprite_key": {"path": get_asset_path("images", "DEFENSE_DRONE_1_SPRITE"), "alpha": True},
+                "defense_drone_2_sprite_key": {"path": get_asset_path("images", "DEFENSE_DRONE_2_SPRITE"), "alpha": True},
+                "defense_drone_3_sprite_key": {"path": get_asset_path("images", "DEFENSE_DRONE_3_SPRITE"), "alpha": True},
+                "defense_drone_4_sprite_key": {"path": get_asset_path("images", "DEFENSE_DRONE_4_SPRITE"), "alpha": True},
+                "defense_drone_5_sprite_key": {"path": get_asset_path("images", "DEFENSE_DRONE_5_SPRITE"), "alpha": True},
+                "images/lore/scene1.png": {"path": get_asset_path("images", "LORE_SCENE_1"), "alpha": True},
+                "images/lore/scene2.png": {"path": get_asset_path("images", "LORE_SCENE_2"), "alpha": True},
+                "images/lore/scene3.png": {"path": get_asset_path("images", "LORE_SCENE_3"), "alpha": True},
+                "images/lore/scene4.png": {"path": get_asset_path("images", "LORE_SCENE_4"), "alpha": True},
             },
             "sounds": {
-                'collect_ring': gs.ASSET_PATHS["COLLECT_RING_SOUND"],
-                'weapon_upgrade_collect': gs.ASSET_PATHS["WEAPON_UPGRADE_COLLECT_SOUND"],
-                'collect_fragment': gs.ASSET_PATHS["COLLECT_FRAGMENT_SOUND"],
-                'shoot': gs.ASSET_PATHS["SHOOT_SOUND"],
-                'enemy_shoot': gs.ASSET_PATHS["ENEMY_SHOOT_SOUND"],
-                'crash': gs.ASSET_PATHS["CRASH_SOUND"],
-                'level_up': gs.ASSET_PATHS["LEVEL_UP_SOUND"],
-                'ui_select': gs.ASSET_PATHS["UI_SELECT_SOUND"],
-                'ui_confirm': gs.ASSET_PATHS["UI_CONFIRM_SOUND"],
-                'missile_launch': gs.ASSET_PATHS["MISSILE_LAUNCH_SOUND"],
-                'prototype_drone_explode': gs.ASSET_PATHS["PROTOTYPE_DRONE_EXPLODE_SOUND"],
+                'collect_ring': get_asset_path("sounds", "COLLECT_RING_SOUND"),
+                'weapon_upgrade_collect': get_asset_path("sounds", "WEAPON_UPGRADE_COLLECT_SOUND"),
+                'collect_fragment': get_asset_path("sounds", "COLLECT_FRAGMENT_SOUND"),
+                'shoot': get_asset_path("sounds", "SHOOT_SOUND"),
+                'enemy_shoot': get_asset_path("sounds", "ENEMY_SHOOT_SOUND"),
+                'crash': get_asset_path("sounds", "CRASH_SOUND"),
+                'level_up': get_asset_path("sounds", "LEVEL_UP_SOUND"),
+                'ui_select': get_asset_path("sounds", "UI_SELECT_SOUND"),
+                'ui_confirm': get_asset_path("sounds", "UI_CONFIRM_SOUND"),
+                'missile_launch': get_asset_path("sounds", "MISSILE_LAUNCH_SOUND"),
+                'prototype_drone_explode': get_asset_path("sounds", "PROTOTYPE_DRONE_EXPLODE_SOUND"),
             },
             "fonts": {
-                "ui_text": {"path": gs.ASSET_PATHS["UI_TEXT_FONT"], "sizes": [28, 24, 20, 16, 32]},
-                "ui_values": {"path": gs.ASSET_PATHS["UI_TEXT_FONT"], "sizes": [30]},
-                "small_text": {"path": gs.ASSET_PATHS["UI_TEXT_FONT"], "sizes": [24]},
-                "medium_text": {"path": gs.ASSET_PATHS["UI_TEXT_FONT"], "sizes": [48, 36]},
-                "large_text": {"path": gs.ASSET_PATHS["UI_TEXT_FONT"], "sizes": [74, 52, 48]},
-                "title_text": {"path": gs.ASSET_PATHS["UI_TEXT_FONT"], "sizes": [90]},
+                "ui_text": {"path": get_asset_path("fonts", "UI_TEXT_FONT"), "sizes": [28, 24, 20, 16, 32]},
+                "ui_values": {"path": get_asset_path("fonts", "UI_TEXT_FONT"), "sizes": [30]},
+                "small_text": {"path": get_asset_path("fonts", "UI_TEXT_FONT"), "sizes": [24]},
+                "medium_text": {"path": get_asset_path("fonts", "UI_TEXT_FONT"), "sizes": [48, 36]},
+                "large_text": {"path": get_asset_path("fonts", "UI_TEXT_FONT"), "sizes": [74, 52, 48]},
+                "title_text": {"path": get_asset_path("fonts", "UI_TEXT_FONT"), "sizes": [90]},
             },
             "music": {
-                "menu_theme": gs.ASSET_PATHS["MENU_THEME_MUSIC"],
-                "gameplay_theme": gs.ASSET_PATHS["GAMEPLAY_THEME_MUSIC"],
-                "defense_theme": gs.ASSET_PATHS["DEFENSE_THEME_MUSIC"]
+                "menu_theme": get_asset_path("music", "MENU_THEME_MUSIC"),
+                "gameplay_theme": get_asset_path("music", "GAMEPLAY_THEME_MUSIC"),
+                "defense_theme": get_asset_path("music", "DEFENSE_THEME_MUSIC")
             }
         }
         
         # Add core fragment icons
-        if gs.CORE_FRAGMENT_DETAILS:
-            for _, details in gs.CORE_FRAGMENT_DETAILS.items():
+        core_fragments = gs.CORE_FRAGMENT_DETAILS  # Still using gs during transition
+        if core_fragments:
+            for _, details in core_fragments.items():
                 if details and "id" in details and "icon_filename" in details:
                     asset_manifest["images"][f"fragment_{details['id']}_icon"] = {"path": details['icon_filename']}
 
@@ -275,8 +278,15 @@ class AssetManager:
                     "alpha": True
                 }
 
-        # Add weapon mode icons
-        for weapon_path in gs.WEAPON_MODE_ICONS.values():
+        # Add weapon mode icons - still using gs.WEAPON_MODE_ICONS during transition
+        # This will be updated in future refactoring to use settings_manager directly
+        from settings_manager import settings_manager
+        weapon_icons = settings_manager.get_weapon_icon_paths()
+        if not weapon_icons:  # Fallback to game_settings during transition
+            import game_settings as gs
+            weapon_icons = gs.WEAPON_MODE_ICONS
+            
+        for weapon_path in weapon_icons.values():
             if weapon_path and isinstance(weapon_path, str):
                 asset_key = weapon_path.replace("assets/", "").replace("\\", "/")
                 asset_manifest["images"][asset_key] = {"path": asset_key, "alpha": True}

@@ -5,14 +5,16 @@ paths to its sprite and icon, base statistics, an unlock condition,
 and a descriptive text.
 """
 import logging
-import game_settings as gs
-from game_settings import (
-    PLAYER_MAX_HEALTH, PLAYER_SPEED, ROTATION_SPEED,
-    ARCHITECT_REWARD_BLUEPRINT_ID
-)
+from constants import ARCHITECT_REWARD_BLUEPRINT_ID
+from settings_manager import get_setting
 
 # Configure logger
 logger = logging.getLogger(__name__)
+
+# Get player settings
+PLAYER_MAX_HEALTH = get_setting("gameplay", "PLAYER_MAX_HEALTH", 100)
+PLAYER_SPEED = get_setting("gameplay", "PLAYER_SPEED", 3)
+ROTATION_SPEED = get_setting("gameplay", "ROTATION_SPEED", 5)
 
 # Main dictionary holding all drone configurations
 DRONE_DATA = {

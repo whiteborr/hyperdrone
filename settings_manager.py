@@ -120,6 +120,12 @@ class SettingsManager:
         if "weapon_icons" in self.asset_manifest and str(weapon_mode) in self.asset_manifest["weapon_icons"]:
             return self.asset_manifest["weapon_icons"][str(weapon_mode)]
         return None
+        
+    def get_weapon_icon_paths(self):
+        """Get all weapon icon paths as a dictionary"""
+        if "weapon_icons" in self.asset_manifest:
+            return self.asset_manifest["weapon_icons"]
+        return {}
 
 # Create a global instance for easy access
 settings_manager = SettingsManager()

@@ -24,7 +24,8 @@ from entities import MazeGuardian, SentinelDrone, EscapeZone, Maze, MazeChapter2
 from entities.collectibles import Ring as CollectibleRing, WeaponUpgradeItem, ShieldItem, SpeedBoostItem
 from entities.collectibles import CoreFragmentItem, VaultLogItem, GlyphTabletItem, AncientAlienTerminal, ArchitectEchoItem
 from drone_management import DroneSystem, DRONE_DATA
-import game_settings as gs
+from settings_manager import get_setting, set_setting, save_settings
+import game_settings as gs  # Keep for compatibility during transition
 from hyperdrone_core.camera import Camera
 
 logger_gc = logging.getLogger(__name__)
@@ -34,7 +35,7 @@ class GameController:
         pygame.init()
         pygame.mixer.init()
         
-        # Add reference to game_settings module for state classes to use
+        # Add reference to game_settings module for state classes to use during transition
         self.gs = gs
 
         try:
@@ -42,14 +43,15 @@ class GameController:
             detected_width, detected_height = info.current_w, info.current_h
             final_width = max(1920, detected_width)
             final_height = max(1080, detected_height)
-            gs.set_game_setting("WIDTH", final_width)
-            gs.set_game_setting("HEIGHT", final_height)
+            set_setting("display", "WIDTH", final_width)
+            set_setting("display", "HEIGHT", final_height)
             logger_gc.info(f"Screen resolution set to: {final_width}x{final_height}")
         except pygame.error as e:
             logger_gc.error(f"Could not detect screen size: {e}. Using default 1920x1080.")
 
-        self.screen_flags = pygame.FULLSCREEN if gs.get_game_setting("FULLSCREEN_MODE") else 0
-        self.screen = pygame.display.set_mode((gs.get_game_setting("WIDTH"), gs.get_game_setting("HEIGHT")), self.screen_flags)
+        self.screen_flags = pygame.FULLSCREEN if get_setting("display", "FULLSCREEN_MODE", False) else 0
+        self.screen = pygame.display.set_mode((get_setting("display", "WIDTH", 1920), 
+                                              get_setting("display", "HEIGHT", 1080)), self.screen_flags)
         pygame.display.set_caption("HYPERDRONE")
 
         self.asset_manager = AssetManager(base_asset_folder_name="assets")
@@ -104,7 +106,7 @@ class GameController:
         self.event_manager = EventManager(self, self.state_manager, self.combat_controller, self.puzzle_controller, self.ui_flow_controller)
         
         # Game state variables
-        self.lives = gs.get_game_setting("PLAYER_LIVES")
+        self.lives = get_setting("gameplay", "PLAYER_LIVES", 3)
         self.paused = False
         self.is_build_phase = False
         
@@ -118,9 +120,9 @@ class GameController:
         
         # Timer variables
         self.level_timer_start_ticks = 0
-        self.level_time_remaining_ms = gs.get_game_setting("LEVEL_TIMER_DURATION")
+        self.level_time_remaining_ms = get_setting("progression", "LEVEL_TIMER_DURATION", 120000)
         self.bonus_level_timer_start = 0
-        self.bonus_level_duration_ms = gs.get_game_setting("BONUS_LEVEL_DURATION_MS")
+        self.bonus_level_duration_ms = get_setting("progression", "BONUS_LEVEL_DURATION_MS", 60000)
         self.bonus_level_start_display_end_time = 0
         self.architect_vault_current_phase = None
         self.architect_vault_phase_timer_start = 0
@@ -155,7 +157,7 @@ class GameController:
     
     def run(self):
         while True:
-            delta_time_ms = self.clock.tick(gs.get_game_setting("FPS", 60))
+            delta_time_ms = self.clock.tick(get_setting("display", "FPS", 60))
             
             # Process events
             events = pygame.event.get()
@@ -240,7 +242,7 @@ class GameController:
         sound = self.asset_manager.get_sound(key)
         if sound:
             try:
-                sound.set_volume(vol * gs.get_game_setting("SFX_VOLUME_MULTIPLIER", 0.7))
+                sound.set_volume(vol * get_setting("display", "SFX_VOLUME_MULTIPLIER", 0.7))
                 sound.play()
             except Exception as e:
                 logger_gc.error(f"Error playing sound '{key}': {e}")
@@ -275,7 +277,6 @@ class GameController:
     def _get_settings_menu_items_data_structure(self):
         """Return the settings menu items data structure"""
         from constants import WEAPON_MODE_NAMES
-        import game_settings as gs
         
         # Define weapon modes sequence
         weapon_modes = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]  # WEAPON_MODE_DEFAULT through WEAPON_MODE_LIGHTNING
@@ -304,18 +305,21 @@ class GameController:
     def _get_safe_spawn_point(self, width, height):
         """Get a safe spawn point for the player that doesn't collide with walls"""
         # Default spawn point in the center of the screen
-        spawn_x = self.gs.WIDTH // 2
-        spawn_y = self.gs.HEIGHT // 2
+        width = get_setting("display", "WIDTH", 1920)
+        height = get_setting("display", "HEIGHT", 1080)
+        spawn_x = width // 2
+        spawn_y = height // 2
         
         # If maze exists, find a safe spawn point
         if hasattr(self, 'maze') and self.maze:
+            tile_size = get_setting("gameplay", "TILE_SIZE", 80)
             # Try to find an empty cell
             for r in range(1, self.maze.actual_maze_rows - 1):
                 for c in range(1, self.maze.actual_maze_cols - 1):
                     if self.maze.grid[r][c] == 0:  # 0 means empty path
                         # Convert maze coordinates to screen coordinates
-                        spawn_x = c * self.gs.TILE_SIZE + self.gs.TILE_SIZE // 2
-                        spawn_y = r * self.gs.TILE_SIZE + self.gs.TILE_SIZE // 2
+                        spawn_x = c * tile_size + tile_size // 2
+                        spawn_y = r * tile_size + tile_size // 2
                         return spawn_x, spawn_y
         
         return spawn_x, spawn_y
@@ -328,7 +332,8 @@ class GameController:
             else:
                 # Respawn player
                 self.set_story_message(f"{message} Lives remaining: {self.lives}", 3000)
-                spawn_x, spawn_y = self._get_safe_spawn_point(self.gs.TILE_SIZE * 0.7, self.gs.TILE_SIZE * 0.7)
+                tile_size = get_setting("gameplay", "TILE_SIZE", 80)
+                spawn_x, spawn_y = self._get_safe_spawn_point(tile_size * 0.7, tile_size * 0.7)
                 drone_id = self.drone_system.get_selected_drone_id()
                 drone_stats = self.drone_system.get_drone_stats(drone_id)
                 sprite_key = f"drone_{drone_id}_ingame_sprite"
