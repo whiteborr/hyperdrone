@@ -140,14 +140,18 @@ class UIManager:
         lines.append(current_line.strip()); return lines
 
     def draw_current_scene_ui(self):
-        current_state = self.scene_manager.get_current_state()
+        # Use state_manager instead of scene_manager
+        if not hasattr(self, 'state_manager') or self.state_manager is None:
+            return
+            
+        current_state = self.state_manager.get_current_state_id() if self.state_manager else None
         ui_flow_ctrl = self.game_controller.ui_flow_controller 
         
         is_menu_like_state = current_state in [
-            gs.GAME_STATE_MAIN_MENU, gs.GAME_STATE_DRONE_SELECT, gs.GAME_STATE_SETTINGS,
-            gs.GAME_STATE_LEADERBOARD, gs.GAME_STATE_CODEX,
-            gs.GAME_STATE_ARCHITECT_VAULT_SUCCESS, gs.GAME_STATE_ARCHITECT_VAULT_FAILURE,
-            gs.GAME_STATE_GAME_OVER, gs.GAME_STATE_ENTER_NAME
+            "MainMenuState", "DroneSelectState", "SettingsState",
+            "LeaderboardState", "CodexState",
+            "ArchitectVaultSuccessState", "ArchitectVaultFailureState",
+            "GameOverState", "EnterNameState"
         ]
         
         if is_menu_like_state: 
@@ -157,37 +161,37 @@ class UIManager:
                     pygame.draw.circle(self.screen, gs.WHITE, (int(star_params[0]), int(star_params[1])), star_params[3])
 
         state_draw_map = {
-            gs.GAME_STATE_MAIN_MENU: self.draw_main_menu,
-            gs.GAME_STATE_DRONE_SELECT: self.draw_drone_select_menu,
-            gs.GAME_STATE_SETTINGS: self.draw_settings_menu,
-            gs.GAME_STATE_LEADERBOARD: self.draw_leaderboard_overlay,
-            gs.GAME_STATE_CODEX: self.draw_codex_screen,
-            gs.GAME_STATE_GAME_OVER: self.draw_game_over_overlay,
-            gs.GAME_STATE_ENTER_NAME: self.draw_enter_name_overlay,
-            gs.GAME_STATE_GAME_INTRO_SCROLL: self.draw_game_intro_scroll,
-            gs.GAME_STATE_ARCHITECT_VAULT_SUCCESS: self.draw_architect_vault_success_overlay,
-            gs.GAME_STATE_ARCHITECT_VAULT_FAILURE: self.draw_architect_vault_failure_overlay
+            "MainMenuState": self.draw_main_menu,
+            "DroneSelectState": self.draw_drone_select_menu,
+            "SettingsState": self.draw_settings_menu,
+            "LeaderboardState": self.draw_leaderboard_overlay,
+            "CodexState": self.draw_codex_screen,
+            "GameOverState": self.draw_game_over_overlay,
+            "EnterNameState": self.draw_enter_name_overlay,
+            "GameIntroScrollState": self.draw_game_intro_scroll,
+            "ArchitectVaultSuccessState": self.draw_architect_vault_success_overlay,
+            "ArchitectVaultFailureState": self.draw_architect_vault_failure_overlay
         }
 
         if current_state in state_draw_map:
             state_draw_map[current_state]()
         
-        elif current_state.startswith("architect_vault"):
+        elif current_state and current_state.startswith("ArchitectVault"):
             self.draw_architect_vault_hud_elements()
             if self.game_controller.paused: self.draw_pause_overlay()
         
-        elif current_state in [gs.GAME_STATE_PLAYING, gs.GAME_STATE_BONUS_LEVEL_PLAYING]:
+        elif current_state in ["PlayingState", "BonusLevelPlayingState"]:
             self.draw_gameplay_hud()
             if self.game_controller.paused: self.draw_pause_overlay()
         
-        elif current_state == gs.GAME_STATE_MAZE_DEFENSE: 
+        elif current_state == "MazeDefenseState": 
             self.draw_maze_defense_hud()
             if self.game_controller.paused: self.draw_pause_overlay()
             if self.build_menu and self.build_menu.is_active and \
                hasattr(self.game_controller, 'is_build_phase') and self.game_controller.is_build_phase:
                 self.build_menu.draw(self.screen)
         
-        elif current_state == gs.GAME_STATE_RING_PUZZLE:
+        elif current_state == "RingPuzzleState":
             if not (self.game_controller.puzzle_controller and self.game_controller.puzzle_controller.ring_puzzle_active_flag):
                 self.screen.fill(gs.DARK_GREY)
                 fallback_surf = self._render_text_safe("Loading Puzzle...", "medium_text", gs.WHITE, fallback_size=48)
@@ -384,8 +388,8 @@ class UIManager:
         frags_y = panel_y + 65
         
         # Only display rings in regular Maze levels (not in MazeChapter2)
-        current_game_state = self.scene_manager.get_current_state()
-        if current_game_state == gs.GAME_STATE_PLAYING:
+        current_game_state = self.state_manager.get_current_state_id() if self.state_manager else None
+        if current_game_state == "PlayingState":
             ring_icon, ring_empty = self.ui_asset_surfaces.get("ring_icon"), self.ui_asset_surfaces.get("ring_icon_empty")
             if ring_icon and ring_empty:
                 for i in range(self.game_controller.level_manager.total_rings_per_level): 

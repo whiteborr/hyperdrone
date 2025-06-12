@@ -269,3 +269,6 @@ class LevelManager:
         self.game_controller.play_sound('level_up')
         
         return True
+    def create_maze(self):
+        """Create a new maze for the current level"""
+        return Maze()

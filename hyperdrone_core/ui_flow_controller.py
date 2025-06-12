@@ -123,8 +123,6 @@ class UIFlowController:
 
     def initialize_main_menu(self):
         self.selected_menu_option = 0
-        if self.game_controller and self.game_controller.player:
-            self.game_controller.player = None
         if self.game_controller and hasattr(self.game_controller, 'combat_controller'):
             self.game_controller.combat_controller.reset_combat_state()
 
@@ -195,12 +193,12 @@ class UIFlowController:
             selected_action = self.menu_options[self.selected_menu_option]
             logger.info(f"Main menu action selected: {selected_action}")
             self.game_controller.play_sound('ui_confirm')
-            if selected_action == "Start Game": self.scene_manager.set_game_state(gs.GAME_STATE_GAME_INTRO_SCROLL)
-            elif selected_action == "Maze Defense": self.scene_manager.set_game_state(gs.GAME_STATE_MAZE_DEFENSE)
-            elif selected_action == "Select Drone": self.scene_manager.set_game_state(gs.GAME_STATE_DRONE_SELECT)
-            elif selected_action == "Settings": self.scene_manager.set_game_state(gs.GAME_STATE_SETTINGS)
-            elif selected_action == "Leaderboard": self.scene_manager.set_game_state(gs.GAME_STATE_LEADERBOARD)
-            elif selected_action == "Codex": self.scene_manager.set_game_state(gs.GAME_STATE_CODEX)
+            if selected_action == "Start Game": self.scene_manager.set_state(gs.GAME_STATE_GAME_INTRO_SCROLL)
+            elif selected_action == "Maze Defense": self.scene_manager.set_state(gs.GAME_STATE_MAZE_DEFENSE)
+            elif selected_action == "Select Drone": self.scene_manager.set_state(gs.GAME_STATE_DRONE_SELECT)
+            elif selected_action == "Settings": self.scene_manager.set_state(gs.GAME_STATE_SETTINGS)
+            elif selected_action == "Leaderboard": self.scene_manager.set_state(gs.GAME_STATE_LEADERBOARD)
+            elif selected_action == "Codex": self.scene_manager.set_state(gs.GAME_STATE_CODEX)
             elif selected_action == "Quit": self.game_controller.quit_game()
             return True
         return False
@@ -223,7 +221,7 @@ class UIFlowController:
                 self.drone_system.set_selected_drone(selected_id)
                 self.game_controller.play_sound('ui_confirm')
                 if hasattr(self.ui_manager, 'update_player_life_icon_surface'): self.ui_manager.update_player_life_icon_surface()
-                self.scene_manager.set_game_state(gs.GAME_STATE_MAIN_MENU)
+                self.scene_manager.set_state(gs.GAME_STATE_MAIN_MENU)
             else:
                 if self.drone_system.unlock_drone(selected_id):
                     self.game_controller.play_sound('lore_unlock')
@@ -276,7 +274,7 @@ class UIFlowController:
 
     def _handle_leaderboard_input(self, key):
         if key == pygame.K_RETURN or key == pygame.K_q or key == pygame.K_ESCAPE:
-            self.scene_manager.set_game_state(gs.GAME_STATE_MAIN_MENU)
+            self.scene_manager.set_state(gs.GAME_STATE_MAIN_MENU)
             return True
         return False
 
@@ -311,7 +309,7 @@ class UIFlowController:
         if key == pygame.K_RETURN:
             if len(self.player_name_input_cache) > 0:
                 leaderboard.add_score(self.player_name_input_cache, self.game_controller.score, self.game_controller.level)
-                self.scene_manager.set_game_state(gs.GAME_STATE_LEADERBOARD)
+                self.scene_manager.set_state(gs.GAME_STATE_LEADERBOARD)
             return True
         elif key == pygame.K_BACKSPACE:
             self.player_name_input_cache = self.player_name_input_cache[:-1]
@@ -328,17 +326,17 @@ class UIFlowController:
     def _handle_game_over_input(self, key):
         score_is_high = leaderboard.is_high_score(self.game_controller.score, self.game_controller.level)
         if score_is_high and not gs.SETTINGS_MODIFIED:
-            self.scene_manager.set_game_state(gs.GAME_STATE_ENTER_NAME)
+            self.scene_manager.set_state(gs.GAME_STATE_ENTER_NAME)
         else:
-            if key == pygame.K_r: self.scene_manager.set_game_state(gs.GAME_STATE_PLAYING, action="restart")
-            elif key == pygame.K_l: self.scene_manager.set_game_state(gs.GAME_STATE_LEADERBOARD)
-            elif key == pygame.K_m: self.scene_manager.set_game_state(gs.GAME_STATE_MAIN_MENU)
+            if key == pygame.K_r: self.scene_manager.set_state(gs.GAME_STATE_PLAYING, action="restart")
+            elif key == pygame.K_l: self.scene_manager.set_state(gs.GAME_STATE_LEADERBOARD)
+            elif key == pygame.K_m: self.scene_manager.set_state(gs.GAME_STATE_MAIN_MENU)
             elif key == pygame.K_q: self.game_controller.quit_game()
         return True
 
     def _handle_vault_result_input(self, key):
         if key == pygame.K_RETURN or key == pygame.K_m or key == pygame.K_SPACE:
-            self.scene_manager.set_game_state(gs.GAME_STATE_MAIN_MENU)
+            self.scene_manager.set_state(gs.GAME_STATE_MAIN_MENU)
             return True
         return False
         
@@ -351,6 +349,17 @@ class UIFlowController:
                 self.intro_screen_start_time = pygame.time.get_ticks()
             return True
         elif key == pygame.K_ESCAPE:
-            self.scene_manager.set_game_state(gs.GAME_STATE_MAIN_MENU)
+            self.scene_manager.set_state(gs.GAME_STATE_MAIN_MENU)
             return True
         return False
+    def advance_intro_screen(self):
+        """Advance to the next intro screen."""
+        if self.current_intro_screen_index >= len(self.intro_screens_data) - 1:
+            self.intro_sequence_finished = True
+        else:
+            self.current_intro_screen_index += 1
+            self.intro_screen_start_time = pygame.time.get_ticks()
+            
+    def skip_intro(self):
+        """Skip the intro sequence."""
+        self.intro_sequence_finished = True

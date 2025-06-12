@@ -1,0 +1,98 @@
+{
+  "sounds": {
+    "COLLECT_RING_SOUND": "sounds/collect_ring.wav",
+    "WEAPON_UPGRADE_COLLECT_SOUND": "sounds/weapon_upgrade_collect.wav",
+    "COLLECT_FRAGMENT_SOUND": "sounds/collect_fragment.wav",
+    "SHOOT_SOUND": "sounds/shoot.wav",
+    "ENEMY_SHOOT_SOUND": "sounds/enemy_shoot.wav",
+    "CRASH_SOUND": "sounds/crash.wav",
+    "LEVEL_UP_SOUND": "sounds/level_up.wav",
+    "UI_SELECT_SOUND": "sounds/ui_select.wav",
+    "UI_CONFIRM_SOUND": "sounds/ui_confirm.wav",
+    "MISSILE_LAUNCH_SOUND": "sounds/missile_launch.wav",
+    "PROTOTYPE_DRONE_EXPLODE_SOUND": "sounds/prototype_drone_explode.wav"
+  },
+  "music": {
+    "MENU_THEME_MUSIC": "sounds/menu_music.wav",
+    "GAMEPLAY_THEME_MUSIC": "sounds/gameplay_music.wav",
+    "DEFENSE_THEME_MUSIC": "sounds/defense_mode_music.wav"
+  },
+  "images": {
+    "RING_UI_ICON": "images/collectibles/ring_ui_icon.png",
+    "RING_UI_ICON_EMPTY": "images/collectibles/ring_ui_icon_empty.png",
+    "MENU_LOGO": "images/ui/menu_logo_hyperdrone.png",
+    "CORE_FRAGMENT_EMPTY_ICON": "images/collectibles/fragment_ui_icon_empty.png",
+    "REACTOR_HUD_ICON": "images/level_elements/reactor_icon.png",
+    "CORE_REACTOR_IMAGE": "images/level_elements/core_reactor.png",
+    "SHIELD_POWERUP_ICON": "images/powerups/shield_icon.png",
+    "SPEED_BOOST_POWERUP_ICON": "images/powerups/speed_icon.png",
+    "WEAPON_UPGRADE_POWERUP_ICON": "images/powerups/weapon_icon.png",
+    "DEFENSE_DRONE_1_SPRITE": "images/enemies/defense_drone_1.png",
+    "DEFENSE_DRONE_2_SPRITE": "images/enemies/defense_drone_2.png",
+    "DEFENSE_DRONE_3_SPRITE": "images/enemies/defense_drone_3.png",
+    "DEFENSE_DRONE_4_SPRITE": "images/enemies/defense_drone_4.png",
+    "DEFENSE_DRONE_5_SPRITE": "images/enemies/defense_drone_5.png",
+    "LORE_SCENE_1": "images/lore/scene1.png",
+    "LORE_SCENE_2": "images/lore/scene2.png",
+    "LORE_SCENE_3": "images/lore/scene3.png",
+    "LORE_SCENE_4": "images/lore/scene4.png"
+  },
+  "fonts": {
+    "UI_TEXT_FONT": "fonts/neuropol.otf"
+  },
+  "sprites": {
+    "REGULAR_ENEMY_SPRITE_PATH": "images/enemies/TR-3B_enemy.png",
+    "PROTOTYPE_DRONE_SPRITE_PATH": "images/enemies/prototype_enemy.png",
+    "MAZE_GUARDIAN_SPRITE_PATH": "images/enemies/maze_guardian.png",
+    "SENTINEL_DRONE_SPRITE_PATH": "images/enemies/sentinel_drone.png"
+  },
+  "weapon_icons": {
+    "0": "images/drones/drone_default.png",
+    "1": "images/drones/drone_tri_shot.png",
+    "2": "images/drones/drone_rapid_single.png",
+    "3": "images/drones/drone_rapid_tri_shot.png",
+    "4": "images/drones/drone_big_shot.png",
+    "5": "images/drones/drone_bounce.png",
+    "6": "images/drones/drone_pierce.png",
+    "7": "images/drones/drone_heatseeker.png",
+    "8": "images/drones/drone_heatseeker_plus_bullets.png",
+    "9": "images/drones/drone_lightning.png"
+  },
+  "core_fragments": {
+    "fragment_alpha": {
+      "id": "cf_alpha",
+      "name": "Alpha Core Fragment",
+      "icon_filename": "images/collectibles/core_fragment_alpha.png",
+      "description": "Pulses with unstable energy.",
+      "spawn_info": {"level": 3},
+      "buff": {"type": "speed", "value": 1.05},
+      "required_for_vault": true
+    },
+    "fragment_beta": {
+      "id": "cf_beta",
+      "name": "Beta Core Fragment",
+      "icon_filename": "images/collectibles/core_fragment_beta.png",
+      "description": "Hums with alien resonance.",
+      "spawn_info": {"level": 6},
+      "buff": {"type": "bullet_damage_multiplier", "value": 1.05},
+      "required_for_vault": true
+    },
+    "fragment_gamma": {
+      "id": "cf_gamma",
+      "name": "Gamma Core Fragment",
+      "icon_filename": "images/collectibles/core_fragment_gamma.png",
+      "description": "A critical processing unit.",
+      "spawn_info": {"level": 9},
+      "buff_alt": {"type": "damage_reduction", "value": 0.05},
+      "required_for_vault": true
+    },
+    "fragment_vault_core": {
+      "id": "vault_core",
+      "name": "Vault Core",
+      "icon_filename": "images/collectibles/vault_core_icon.png",
+      "description": "Heart of the Vault defenses.",
+      "display_color": [255, 215, 0],
+      "reward_level": "architect_vault_boss"
+    }
+  }
+}

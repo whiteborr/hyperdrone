@@ -91,13 +91,15 @@ class GameController:
         self.event_manager = EventManager(self, self.scene_manager, self.combat_controller, self.puzzle_controller, self.ui_flow_controller)
         self.ui_flow_controller.set_dependencies(self.scene_manager, self.ui_manager, self.drone_system)
         
+        # Initialize game state variables
+        self._reset_game_state()
+        
+    def _reset_game_state(self):
+        """Reset all game state variables to their initial values."""
         # Game state variables
         self.lives = gs.get_game_setting("PLAYER_LIVES")
         self.paused = False
         self.is_build_phase = False
-        
-        # Create level manager
-        self.level_manager = LevelManager(self)
         
         # Fragment collection variables
         self.hud_displayed_fragments = set()
@@ -128,6 +130,16 @@ class GameController:
         self.intro_screen_text_surfaces_current = []
         self.intro_font_key = "codex_category_font"
         
+        # Initialize drone system lore if available
+        if self.drone_system:
+            self.drone_system.unlock_lore_entry_by_id("architect_legacy_intro")
+            self.drone_system.check_and_unlock_lore_entries(event_trigger="game_start")
+            
+        # Initialize UI flow controller data if available
+        if self.ui_flow_controller:
+            self.ui_flow_controller.settings_items_data = self._get_settings_menu_items_data_structure()
+            self.ui_flow_controller.intro_screens_data = self._load_intro_data_from_json_internal()
+    
     def _create_explosion(self, x, y, num_particles=6, specific_sound_key='prototype_drone_explode'):
         # Richer color range including whites and brighter tones for flash effect
         colors = [gs.WHITE, gs.YELLOW, gs.ORANGE, gs.RED]
@@ -161,41 +173,10 @@ class GameController:
         if specific_sound_key:
             self.play_sound(specific_sound_key)
         
-        self.level_timer_start_ticks = 0
-        self.level_time_remaining_ms = gs.get_game_setting("LEVEL_TIMER_DURATION")
-        self.bonus_level_timer_start = 0
-        self.bonus_level_duration_ms = gs.get_game_setting("BONUS_LEVEL_DURATION_MS")
-        self.bonus_level_start_display_end_time = 0
-        self.architect_vault_current_phase = None
-        self.architect_vault_phase_timer_start = 0
-        self.architect_vault_message = ""
-        self.architect_vault_message_timer = 0
-        self.architect_vault_failure_reason = ""
+        self._reset_game_state()
         
         # Reset level manager
         self.level_manager.reset()
-        
-        self.hud_displayed_fragments = set()
-        self.animating_fragments_to_hud = []
-        self.fragment_ui_target_positions = {}
-        
-        self.story_message = ""
-        self.story_message_active = False
-        self.story_message_end_time = 0
-        self.STORY_MESSAGE_DURATION = 5000
-        self.triggered_story_beats = set()
-
-        self.current_intro_image_asset_key = None
-        self.intro_screen_text_surfaces_current = []
-        self.intro_font_key = "codex_category_font"
-
-        if self.drone_system:
-            self.drone_system.unlock_lore_entry_by_id("architect_legacy_intro")
-            self.drone_system.check_and_unlock_lore_entries(event_trigger="game_start")
-            
-        if self.ui_flow_controller:
-            self.ui_flow_controller.settings_items_data = self._get_settings_menu_items_data_structure()
-            self.ui_flow_controller.intro_screens_data = self._load_intro_data_from_json_internal()
 
         self.scene_manager.set_game_state(gs.GAME_STATE_MAIN_MENU)
         logger_gc.info("GameController initialized successfully.")
@@ -335,12 +316,17 @@ class GameController:
             self.initialize_specific_game_mode(gs.GAME_STATE_PLAYING, old_state, **kwargs)
         elif new_state == gs.GAME_STATE_MAZE_DEFENSE:
             self.initialize_specific_game_mode(gs.GAME_STATE_MAZE_DEFENSE, old_state, **kwargs)
+        elif new_state == gs.GAME_STATE_GAME_OVER and old_state == gs.GAME_STATE_PLAYING:
+            # Reset game state when transitioning from playing to game over
+            self._reset_game_state()
 
     def initialize_specific_game_mode(self, mode_type, old_state, **kwargs):
         self.combat_controller.reset_combat_state()
         self.puzzle_controller.reset_puzzles_state()
         self.level_manager.reset()
-        self.lives = gs.get_game_setting("PLAYER_LIVES")
+        
+        # Reset game state variables
+        self._reset_game_state()
         
         # Reset item manager for the new level
         if hasattr(self, 'item_manager'):

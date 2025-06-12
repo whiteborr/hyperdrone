@@ -1,314 +1,27 @@
-import pygame
+# game_settings.py
+# This is a compatibility layer for the refactored settings system
+# It allows existing code to continue working without major changes
 
-# ==========================
-# General Display Settings
-# ==========================
-WIDTH = 1920
-HEIGHT = 1080
-FPS = 60
-FULLSCREEN_MODE = True 
-MUSIC_VOLUME_MULTIPLIER = 0.5 
-SFX_VOLUME_MULTIPLIER = 0.7   
+import logging
+from constants import *
+from settings_manager import settings_manager, get_setting, set_setting, save_settings
 
-# ==========================
-# UI & Layout Settings
-# ==========================
-BOTTOM_PANEL_HEIGHT = 120 
-# GAME_PLAY_AREA_HEIGHT is now calculated dynamically where needed
-# e.g., in Maze.__init__ as height - BOTTOM_PANEL_HEIGHT
+logger = logging.getLogger(__name__)
 
-# HUD Element Layout Constants
-HUD_RING_ICON_AREA_X_OFFSET = 150
-HUD_RING_ICON_AREA_Y_OFFSET = 20
-HUD_RING_ICON_SIZE = 20
-HUD_RING_ICON_SPACING = 5
+# Re-export constants
+# Colors are already imported from constants.py
+# Game states are already imported from constants.py
+# Weapon modes are already imported from constants.py
 
-# ==========================
-# Tile & Maze Settings
-# ==========================
-TILE_SIZE = 80            
-# MAZE_ROWS is now calculated dynamically in the Maze classes
+# Additional color definitions
+ELECTRIC_BLUE = (0, 128, 255)
 
-# ==========================
-# Color Definitions
-# ==========================
-BLACK = (0, 0, 0)
-WHITE = (255, 255, 255)
-RED = (255, 0, 0)
-DARK_RED = (100, 0, 0)
-GREEN = (0, 255, 0)
-BLUE = (0, 100, 255) 
-CYAN = (0, 255, 255)
-LIGHT_BLUE = (173, 216, 230) 
-YELLOW = (255, 255, 0)
-GOLD = (255, 215, 0) 
-ORANGE = (255, 165, 0)
-PURPLE = (128, 0, 128)
-DARK_PURPLE = (40, 0, 70)
-MAGENTA = (255, 0, 255) 
-PINK = (255, 192, 203)
-GREY = (100, 100, 100)
-DARK_GREY = (50, 50, 50)
-ELECTRIC_BLUE = (0, 128, 255) 
-ESCAPE_ZONE_COLOR = (0, 255, 120)
+# Puzzle settings
+TOTAL_CORE_FRAGMENTS_NEEDED = get_setting("gameplay", "TOTAL_CORE_FRAGMENTS_NEEDED", 3)
+RING_PUZZLE_CORE_REWARD = get_setting("gameplay", "RING_PUZZLE_CORE_REWARD", 750)
 
-FLAME_COLORS = [(255, 100, 0), (255, 165, 0), (255, 215, 0), (255, 255, 100)]
-
-ARCHITECT_VAULT_BG_COLOR = (20, 0, 30)
-ARCHITECT_VAULT_WALL_COLOR = (150, 120, 200)
-ARCHITECT_VAULT_ACCENT_COLOR = GOLD
-
-# ==========================
-# Player Drone Base Settings
-# ==========================
-PLAYER_MAX_HEALTH = 100
-PLAYER_SPEED = 3
-PLAYER_LIVES = 3
-ROTATION_SPEED = 5
-PLAYER_INVINCIBILITY = False 
-
-PLAYER_DEFAULT_BULLET_SIZE = 4
-PLAYER_BIG_BULLET_SIZE = PLAYER_DEFAULT_BULLET_SIZE * 3
-PLAYER_BULLET_COLOR = GOLD
-PLAYER_BULLET_SPEED = 7
-PLAYER_BULLET_LIFETIME = 200 
-
-PLAYER_BASE_SHOOT_COOLDOWN = 500 
-PLAYER_RAPID_FIRE_COOLDOWN = 150 
-
-BOUNCING_BULLET_MAX_BOUNCES = 2
-PIERCING_BULLET_MAX_PIERCES = 1
-
-MISSILE_COLOR = MAGENTA
-MISSILE_SPEED = PLAYER_BULLET_SPEED * 0.8
-MISSILE_LIFETIME = PLAYER_BULLET_LIFETIME * 2 
-MISSILE_SIZE = 8 
-MISSILE_TURN_RATE = 8
-MISSILE_COOLDOWN = 3000 
-MISSILE_DAMAGE = 50
-
-LIGHTNING_COLOR = ELECTRIC_BLUE
-LIGHTNING_DAMAGE = 15
-LIGHTNING_LIFETIME = 30
-LIGHTNING_COOLDOWN = 750 
-LIGHTNING_ZAP_RANGE = 250 
-LIGHTNING_BASE_THICKNESS = 5
-LIGHTNING_CORE_THICKNESS_RATIO = 0.4
-LIGHTNING_SEGMENTS = 12
-LIGHTNING_MAX_OFFSET = 18
-LIGHTNING_CORE_OFFSET_RATIO = 0.3
-LIGHTNING_CORE_COLOR = WHITE
-LIGHTNING_BRANCH_CHANCE = 0.25
-LIGHTNING_BRANCH_MAX_SEGMENTS = 5
-LIGHTNING_BRANCH_MAX_OFFSET = 10
-LIGHTNING_BRANCH_THICKNESS_RATIO = 0.5
-LIGHTNING_WALL_CRAWL_MIN_TENDRILS = 1
-LIGHTNING_WALL_CRAWL_MAX_TENDRILS = 4
-LIGHTNING_WALL_CRAWL_MAX_LENGTH = TILE_SIZE * 1.0 
-LIGHTNING_WALL_CRAWL_THICKNESS_RATIO = 0.6 
-LIGHTNING_WALL_CRAWL_SEGMENTS = 4 
-LIGHTNING_WALL_CRAWL_OFFSET_RATIO = 0.4 
-
-# ==========================
-# Player Weapon Modes
-# ==========================
-WEAPON_MODE_DEFAULT = 0
-WEAPON_MODE_TRI_SHOT = 1
-WEAPON_MODE_RAPID_SINGLE = 2
-WEAPON_MODE_RAPID_TRI = 3
-WEAPON_MODE_BIG_SHOT = 4
-WEAPON_MODE_BOUNCE = 5
-WEAPON_MODE_PIERCE = 6
-WEAPON_MODE_HEATSEEKER = 7
-WEAPON_MODE_HEATSEEKER_PLUS_BULLETS = 8
-WEAPON_MODE_LIGHTNING = 9
-
-INITIAL_WEAPON_MODE = WEAPON_MODE_DEFAULT
-WEAPON_MODES_SEQUENCE = [
-    WEAPON_MODE_DEFAULT, WEAPON_MODE_TRI_SHOT, WEAPON_MODE_RAPID_SINGLE,
-    WEAPON_MODE_RAPID_TRI, WEAPON_MODE_BIG_SHOT, WEAPON_MODE_BOUNCE,
-    WEAPON_MODE_PIERCE, WEAPON_MODE_HEATSEEKER, WEAPON_MODE_HEATSEEKER_PLUS_BULLETS,
-    WEAPON_MODE_LIGHTNING
-]
-WEAPON_MODE_NAMES = {
-    WEAPON_MODE_DEFAULT: "Single Shot", WEAPON_MODE_TRI_SHOT: "Tri-Shot",
-    WEAPON_MODE_RAPID_SINGLE: "Rapid Single", WEAPON_MODE_RAPID_TRI: "Rapid Tri-Shot",
-    WEAPON_MODE_BIG_SHOT: "Big Shot", WEAPON_MODE_BOUNCE: "Bounce Shot",
-    WEAPON_MODE_PIERCE: "Pierce Shot", WEAPON_MODE_HEATSEEKER: "Heatseeker",
-    WEAPON_MODE_HEATSEEKER_PLUS_BULLETS: "Seeker + Rapid", WEAPON_MODE_LIGHTNING: "Chain Lightning"
-}
-WEAPON_MODE_ICONS = { 
-    WEAPON_MODE_DEFAULT: "assets/images/drones/drone_default.png", 
-    WEAPON_MODE_TRI_SHOT: "assets/images/drones/drone_tri_shot.png",
-    WEAPON_MODE_RAPID_SINGLE: "assets/images/drones/drone_rapid_single.png", 
-    WEAPON_MODE_RAPID_TRI: "assets/images/drones/drone_rapid_tri_shot.png", 
-    WEAPON_MODE_BIG_SHOT: "assets/images/drones/drone_big_shot.png",
-    WEAPON_MODE_BOUNCE: "assets/images/drones/drone_bounce.png",
-    WEAPON_MODE_PIERCE: "assets/images/drones/drone_pierce.png", 
-    WEAPON_MODE_HEATSEEKER: "assets/images/drones/drone_heatseeker.png",
-    WEAPON_MODE_HEATSEEKER_PLUS_BULLETS: "assets/images/drones/drone_heatseeker_plus_bullets.png", 
-    WEAPON_MODE_LIGHTNING: "assets/images/drones/drone_lightning.png",
-}
-
-# ==========================
-# Player Abilities Settings
-# ==========================
-PHANTOM_CLOAK_DURATION_MS = 5000
-PHANTOM_CLOAK_COOLDOWN_MS = 15000
-PHANTOM_CLOAK_ALPHA_SETTING = 70 
-
-# ==========================
-# Player Thrust Particle Settings
-# ==========================
-THRUST_PARTICLE_SPREAD_ANGLE = 45 
-THRUST_PARTICLE_LIFETIME_BLAST = 25 
-THRUST_PARTICLE_START_SIZE_BLAST_MIN = 5
-THRUST_PARTICLE_START_SIZE_BLAST_MAX = 10
-THRUST_PARTICLE_SPEED_MIN_BLAST = 1.5
-THRUST_PARTICLE_SPEED_MAX_BLAST = 3.0
-THRUST_PARTICLE_SHRINK_RATE_BLAST = 0.15 
-
-# ==========================
-# Enemy Base Settings
-# ==========================
-ENEMY_SPEED = 1.5
-ENEMY_HEALTH = 100
-ENEMY_COLOR = RED 
-REGULAR_ENEMY_SPRITE_PATH = "images/enemies/TR-3B_enemy.png"
-ENEMY_BULLET_SPEED = 5
-ENEMY_BULLET_COOLDOWN = 1500 
-ENEMY_BULLET_LIFETIME = 75 
-ENEMY_BULLET_COLOR = ORANGE
-ENEMY_BULLET_DAMAGE = 10
-
-PROTOTYPE_DRONE_HEALTH = 150
-PROTOTYPE_DRONE_SPEED = 2.0
-PROTOTYPE_DRONE_COLOR = MAGENTA 
-PROTOTYPE_DRONE_SHOOT_COOLDOWN = 1200
-PROTOTYPE_DRONE_BULLET_SPEED = 6
-PROTOTYPE_DRONE_SPRITE_PATH = "images/enemies/prototype_enemy.png"
-
-# ==========================
-# MAZE_GUARDIAN Boss Settings
-# ==========================
-MAZE_GUARDIAN_HEALTH = 5000
-MAZE_GUARDIAN_SPEED = 1.0
-MAZE_GUARDIAN_COLOR = (80, 0, 120) 
-MAZE_GUARDIAN_SPRITE_PATH = "images/enemies/maze_guardian.png"
-MAZE_GUARDIAN_BULLET_SPEED = 6
-MAZE_GUARDIAN_BULLET_LIFETIME = 80
-MAZE_GUARDIAN_BULLET_COLOR = RED
-MAZE_GUARDIAN_BULLET_DAMAGE = 15
-MAZE_GUARDIAN_LASER_DAMAGE = 20
-MAZE_GUARDIAN_LASER_COOLDOWN = 5000 
-MAZE_GUARDIAN_LASER_SWEEP_ARC = 90 
-MAZE_GUARDIAN_SHIELD_DURATION_MS = 6000
-MAZE_GUARDIAN_SHIELD_COOLDOWN_MS = 10000
-MAZE_GUARDIAN_ARENA_SHIFT_INTERVAL_MS = 3000
-MAZE_GUARDIAN_ARENA_SHIFT_DURATION_MS = 1000
-MAZE_GUARDIAN_MINION_SPAWN_COOLDOWN_MS = 7000
-
-SENTINEL_DRONE_HEALTH = 75
-SENTINEL_DRONE_SPEED = 3.0
-SENTINEL_DRONE_SPRITE_PATH = "images/enemies/sentinel_drone.png"
-
-# ==========================
-# Power-up & Collectible Settings
-# ==========================
-POWERUP_SIZE = TILE_SIZE // 3
-POWERUP_SPAWN_CHANCE = 0.05 
-MAX_POWERUPS_ON_SCREEN = 2
-WEAPON_UPGRADE_ITEM_LIFETIME = 15000 
-POWERUP_ITEM_LIFETIME = 12000 
-
-POWERUP_TYPES = {
-    "shield": {"color": LIGHT_BLUE, "image_filename": "images/powerups/shield_icon.png", "duration": 10000},
-    "speed_boost": {"color": GREEN, "image_filename": "images/powerups/speed_icon.png", "duration": 7000, "multiplier": 1.8},
-    "weapon_upgrade": {"color": BLUE, "image_filename": "images/powerups/weapon_icon.png"}
-}
-SHIELD_POWERUP_DURATION = POWERUP_TYPES["shield"]["duration"]
-SPEED_BOOST_POWERUP_DURATION = POWERUP_TYPES["speed_boost"]["duration"]
-
-# ==========================
-# Core Fragment & Architect's Vault Settings
-# ==========================
-TOTAL_CORE_FRAGMENTS_NEEDED = 3 
-CORE_FRAGMENT_VISUAL_SIZE = TILE_SIZE // 2.5
-
-CORE_FRAGMENT_DETAILS = { 
-    "fragment_alpha": {"id": "cf_alpha", "name": "Alpha Core Fragment", "icon_filename": "images/collectibles/core_fragment_alpha.png", "description": "Pulses with unstable energy.", "spawn_info": {"level": 3}, "buff": {"type": "speed", "value": 1.05}, "required_for_vault": True},
-    "fragment_beta": {"id": "cf_beta", "name": "Beta Core Fragment", "icon_filename": "images/collectibles/core_fragment_beta.png", "description": "Hums with alien resonance.", "spawn_info": {"level": 6}, "buff": {"type": "bullet_damage_multiplier", "value": 1.05}, "required_for_vault": True},
-    "fragment_gamma": {"id": "cf_gamma", "name": "Gamma Core Fragment", "icon_filename": "images/collectibles/core_fragment_gamma.png", "description": "A critical processing unit.", "spawn_info": {"level": 9}, "buff_alt": {"type": "damage_reduction", "value": 0.05}, "required_for_vault": True},
-    "fragment_vault_core": {"id": "vault_core", "name": "Vault Core", "icon_filename": "images/collectibles/vault_core_icon.png", "description": "Heart of the Vault defenses.", "display_color": GOLD, "reward_level": "architect_vault_boss"} 
-}
-
-ARCHITECT_VAULT_EXTRACTION_TIMER_MS = 90000
-ARCHITECT_VAULT_GAUNTLET_WAVES = 3
-ARCHITECT_VAULT_DRONES_PER_WAVE = [3, 4, 5] 
-
-ARCHITECT_REWARD_BLUEPRINT_ID = "DRONE_ARCHITECT_X"
-ARCHITECT_REWARD_LORE_ID = "lore_architect_origin"
-
-# ==========================
-# Maze Defense Mode Settings
-# ==========================
-DEFENSE_REACTOR_HEALTH = 1000
-DEFENSE_BUILD_PHASE_DURATION_MS = 30000 
-DEFENSE_WAVE_CLEAR_CORE_REWARD_BASE = 100 
-DEFENSE_WAVE_CLEAR_CORE_INCREMENT = 50  
-DEFENSE_DRONE_1_HEALTH = 75
-DEFENSE_DRONE_1_SPEED = 1.8
-DEFENSE_DRONE_2_HEALTH = 150
-DEFENSE_DRONE_2_SPEED = 1.2
-DEFENSE_DRONE_3_HEALTH = 50
-DEFENSE_DRONE_3_SPEED = 2.5
-DEFENSE_DRONE_4_HEALTH = 250
-DEFENSE_DRONE_4_SPEED = 1.0
-DEFENSE_DRONE_5_HEALTH = 100
-DEFENSE_DRONE_5_SPEED = 2.0
-
-TURRET_BASE_COST = 50 
-TURRET_UPGRADE_COST = 100 
-TURRET_MAX_UPGRADE_LEVEL = 3 
-MAX_TURRETS_DEFENSE_MODE = 10
-
-# ==========================
-# Game Progression & Miscellaneous
-# ==========================
-LEVEL_TIMER_DURATION = 120000  # 120 seconds
-LEVEL_TIMER_WARNING_THRESHOLD = 30000  # 30 seconds warning when 30 seconds remain
-BONUS_LEVEL_DURATION_MS = 60000 
-RING_PUZZLE_CORE_REWARD = 750 
-
-LEADERBOARD_FILE_NAME = "leaderboard.json"
-LEADERBOARD_MAX_ENTRIES = 10
-
-
-
-# ==========================
-# Asset Path Definitions
-# ==========================
-# Asset dictionary for more efficient access
+# Asset paths
 ASSET_PATHS = {
-    # Sound paths
-    "COLLECT_RING_SOUND": "sounds/collect_ring.wav",
-    "WEAPON_UPGRADE_COLLECT_SOUND": "sounds/weapon_upgrade_collect.wav",
-    "COLLECT_FRAGMENT_SOUND": "sounds/collect_fragment.wav",
-    "SHOOT_SOUND": "sounds/shoot.wav",
-    "ENEMY_SHOOT_SOUND": "sounds/enemy_shoot.wav",
-    "CRASH_SOUND": "sounds/crash.wav",
-    "LEVEL_UP_SOUND": "sounds/level_up.wav",
-    "UI_SELECT_SOUND": "sounds/ui_select.wav",
-    "UI_CONFIRM_SOUND": "sounds/ui_confirm.wav",
-    "MISSILE_LAUNCH_SOUND": "sounds/missile_launch.wav",
-    "PROTOTYPE_DRONE_EXPLODE_SOUND": "sounds/prototype_drone_explode.wav",
-    
-    # Music paths
-    "MENU_THEME_MUSIC": "sounds/menu_music.wav",
-    "GAMEPLAY_THEME_MUSIC": "sounds/gameplay_music.wav",
-    "DEFENSE_THEME_MUSIC": "sounds/defense_mode_music.wav",
-    
-    # Image paths
     "RING_UI_ICON": "images/collectibles/ring_ui_icon.png",
     "RING_UI_ICON_EMPTY": "images/collectibles/ring_ui_icon_empty.png",
     "MENU_LOGO": "images/ui/menu_logo_hyperdrone.png",
@@ -327,141 +40,218 @@ ASSET_PATHS = {
     "LORE_SCENE_2": "images/lore/scene2.png",
     "LORE_SCENE_3": "images/lore/scene3.png",
     "LORE_SCENE_4": "images/lore/scene4.png",
-    
-    # Font paths
-    "UI_TEXT_FONT": "fonts/neuropol.otf"
+    "COLLECT_RING_SOUND": "sounds/collect_ring.wav",
+    "WEAPON_UPGRADE_COLLECT_SOUND": "sounds/weapon_upgrade_collect.wav",
+    "COLLECT_FRAGMENT_SOUND": "sounds/collect_fragment.wav",
+    "SHOOT_SOUND": "sounds/shoot.wav",
+    "ENEMY_SHOOT_SOUND": "sounds/enemy_shoot.wav",
+    "CRASH_SOUND": "sounds/crash.wav",
+    "LEVEL_UP_SOUND": "sounds/level_up.wav",
+    "UI_SELECT_SOUND": "sounds/ui_select.wav",
+    "UI_CONFIRM_SOUND": "sounds/ui_confirm.wav",
+    "UI_DENIED_SOUND": "sounds/ui_denied.wav",
+    "MISSILE_LAUNCH_SOUND": "sounds/missile_launch.wav",
+    "PROTOTYPE_DRONE_EXPLODE_SOUND": "sounds/prototype_drone_explode.wav",
+    "UI_TEXT_FONT": "fonts/neuropol.otf",
+    "MENU_THEME_MUSIC": "sounds/menu_music.wav",
+    "GAMEPLAY_THEME_MUSIC": "sounds/gameplay_music.wav",
+    "DEFENSE_THEME_MUSIC": "sounds/defense_mode_music.wav"
 }
 
-# ==========================
-# Game State Definitions
-# ==========================
-GAME_STATE_MAIN_MENU = "main_menu"
-GAME_STATE_PLAYING = "playing" 
-GAME_STATE_GAME_OVER = "game_over"
-GAME_STATE_LEADERBOARD = "leaderboard_display"
-GAME_STATE_ENTER_NAME = "enter_name"
-GAME_STATE_SETTINGS = "settings_menu"
-GAME_STATE_DRONE_SELECT = "drone_select_menu"
-GAME_STATE_CODEX = "codex_screen"
-GAME_STATE_BONUS_LEVEL_START = "bonus_level_start" 
-GAME_STATE_BONUS_LEVEL_PLAYING = "bonus_level_playing"
-GAME_STATE_ARCHITECT_VAULT_INTRO = "architect_vault_intro"
-GAME_STATE_ARCHITECT_VAULT_ENTRY_PUZZLE = "architect_vault_entry_puzzle"
-GAME_STATE_ARCHITECT_VAULT_GAUNTLET = "architect_vault_gauntlet"
-GAME_STATE_ARCHITECT_VAULT_BOSS_FIGHT = "architect_vault_boss_fight" 
-GAME_STATE_ARCHITECT_VAULT_EXTRACTION = "architect_vault_extraction"
-GAME_STATE_ARCHITECT_VAULT_SUCCESS = "architect_vault_success"
-GAME_STATE_ARCHITECT_VAULT_FAILURE = "architect_vault_failure"
-GAME_STATE_RING_PUZZLE = "ring_puzzle_active"
-GAME_STATE_GAME_INTRO_SCROLL = "game_intro_scroll"
-GAME_STATE_MAZE_DEFENSE = "maze_defense_mode" 
+# HUD settings
+HUD_RING_ICON_AREA_X_OFFSET = get_setting("display", "HUD_RING_ICON_AREA_X_OFFSET", 150)
+HUD_RING_ICON_AREA_Y_OFFSET = get_setting("display", "HUD_RING_ICON_AREA_Y_OFFSET", 30)
+HUD_RING_ICON_SIZE = get_setting("display", "HUD_RING_ICON_SIZE", 24)
+HUD_RING_ICON_SPACING = get_setting("display", "HUD_RING_ICON_SPACING", 5)
+MAX_RINGS_PER_LEVEL = get_setting("gameplay", "MAX_RINGS_PER_LEVEL", 5)
 
-
-# ==============================================================================
-# Dynamic Settings Management
-# ==============================================================================
-
-DEFAULT_SETTINGS = {
-    "WIDTH": WIDTH, "HEIGHT": HEIGHT, "FPS": FPS, "FULLSCREEN_MODE": FULLSCREEN_MODE,
-    "MUSIC_VOLUME_MULTIPLIER": MUSIC_VOLUME_MULTIPLIER, "SFX_VOLUME_MULTIPLIER": SFX_VOLUME_MULTIPLIER,
-    "BOTTOM_PANEL_HEIGHT": BOTTOM_PANEL_HEIGHT, "TILE_SIZE": TILE_SIZE,
-    "PLAYER_MAX_HEALTH": PLAYER_MAX_HEALTH, "PLAYER_LIVES": PLAYER_LIVES,
-    "PLAYER_SPEED": PLAYER_SPEED, "ROTATION_SPEED": ROTATION_SPEED,
-    "PLAYER_INVINCIBILITY": PLAYER_INVINCIBILITY,
-    "PLAYER_DEFAULT_BULLET_SIZE": PLAYER_DEFAULT_BULLET_SIZE, "PLAYER_BIG_BULLET_SIZE": PLAYER_BIG_BULLET_SIZE,
-    "PLAYER_BULLET_COLOR": PLAYER_BULLET_COLOR, "PLAYER_BULLET_SPEED": PLAYER_BULLET_SPEED,
-    "PLAYER_BULLET_LIFETIME": PLAYER_BULLET_LIFETIME,
-    "PLAYER_BASE_SHOOT_COOLDOWN": PLAYER_BASE_SHOOT_COOLDOWN, "PLAYER_RAPID_FIRE_COOLDOWN": PLAYER_RAPID_FIRE_COOLDOWN,
-    "BOUNCING_BULLET_MAX_BOUNCES": BOUNCING_BULLET_MAX_BOUNCES, "PIERCING_BULLET_MAX_PIERCES": PIERCING_BULLET_MAX_PIERCES,
-    "MISSILE_COLOR": MISSILE_COLOR, "MISSILE_SPEED": MISSILE_SPEED, "MISSILE_LIFETIME": MISSILE_LIFETIME,
-    "MISSILE_SIZE": MISSILE_SIZE, "MISSILE_TURN_RATE": MISSILE_TURN_RATE, "MISSILE_COOLDOWN": MISSILE_COOLDOWN, "MISSILE_DAMAGE": MISSILE_DAMAGE,
-    "LIGHTNING_COLOR": LIGHTNING_COLOR, "LIGHTNING_DAMAGE": LIGHTNING_DAMAGE, 
-    "LIGHTNING_LIFETIME": LIGHTNING_LIFETIME,
-    "LIGHTNING_COOLDOWN": LIGHTNING_COOLDOWN, "LIGHTNING_ZAP_RANGE": LIGHTNING_ZAP_RANGE,
-    "LIGHTNING_BASE_THICKNESS": LIGHTNING_BASE_THICKNESS, "LIGHTNING_CORE_THICKNESS_RATIO": LIGHTNING_CORE_THICKNESS_RATIO,
-    "LIGHTNING_SEGMENTS": LIGHTNING_SEGMENTS, "LIGHTNING_MAX_OFFSET": LIGHTNING_MAX_OFFSET,
-    "LIGHTNING_CORE_OFFSET_RATIO": LIGHTNING_CORE_OFFSET_RATIO, "LIGHTNING_CORE_COLOR": LIGHTNING_CORE_COLOR,
-    "LIGHTNING_BRANCH_CHANCE": LIGHTNING_BRANCH_CHANCE, "LIGHTNING_BRANCH_MAX_SEGMENTS": LIGHTNING_BRANCH_MAX_SEGMENTS,
-    "LIGHTNING_BRANCH_MAX_OFFSET": LIGHTNING_BRANCH_MAX_OFFSET, "LIGHTNING_BRANCH_THICKNESS_RATIO": LIGHTNING_BRANCH_THICKNESS_RATIO,
-    "INITIAL_WEAPON_MODE": INITIAL_WEAPON_MODE,
-    "PHANTOM_CLOAK_DURATION_MS": PHANTOM_CLOAK_DURATION_MS, "PHANTOM_CLOAK_COOLDOWN_MS": PHANTOM_CLOAK_COOLDOWN_MS,
-    "PHANTOM_CLOAK_ALPHA_SETTING": PHANTOM_CLOAK_ALPHA_SETTING,
-    "THRUST_PARTICLE_SPREAD_ANGLE": THRUST_PARTICLE_SPREAD_ANGLE, "THRUST_PARTICLE_LIFETIME_BLAST": THRUST_PARTICLE_LIFETIME_BLAST,
-    "THRUST_PARTICLE_START_SIZE_BLAST_MIN": THRUST_PARTICLE_START_SIZE_BLAST_MIN, "THRUST_PARTICLE_START_SIZE_BLAST_MAX": THRUST_PARTICLE_START_SIZE_BLAST_MAX,
-    "THRUST_PARTICLE_SPEED_MIN_BLAST": THRUST_PARTICLE_SPEED_MIN_BLAST, "THRUST_PARTICLE_SPEED_MAX_BLAST": THRUST_PARTICLE_SPEED_MAX_BLAST,
-    "THRUST_PARTICLE_SHRINK_RATE_BLAST": THRUST_PARTICLE_SHRINK_RATE_BLAST,
-    "ENEMY_SPEED": ENEMY_SPEED, "ENEMY_HEALTH": ENEMY_HEALTH, "ENEMY_COLOR": ENEMY_COLOR,
-    "REGULAR_ENEMY_SPRITE_PATH" : REGULAR_ENEMY_SPRITE_PATH,
-    "ENEMY_BULLET_SPEED": ENEMY_BULLET_SPEED, "ENEMY_BULLET_COOLDOWN": ENEMY_BULLET_COOLDOWN,
-    "ENEMY_BULLET_LIFETIME": ENEMY_BULLET_LIFETIME, "ENEMY_BULLET_COLOR": ENEMY_BULLET_COLOR, "ENEMY_BULLET_DAMAGE": ENEMY_BULLET_DAMAGE,
-    "PROTOTYPE_DRONE_HEALTH": PROTOTYPE_DRONE_HEALTH, "PROTOTYPE_DRONE_SPEED": PROTOTYPE_DRONE_SPEED,
-    "PROTOTYPE_DRONE_SHOOT_COOLDOWN": PROTOTYPE_DRONE_SHOOT_COOLDOWN, "PROTOTYPE_DRONE_BULLET_SPEED": PROTOTYPE_DRONE_BULLET_SPEED,
-    "PROTOTYPE_DRONE_SPRITE_PATH": PROTOTYPE_DRONE_SPRITE_PATH,
-    "MAZE_GUARDIAN_HEALTH": MAZE_GUARDIAN_HEALTH, "MAZE_GUARDIAN_SPEED": MAZE_GUARDIAN_SPEED,
-    "MAZE_GUARDIAN_COLOR": MAZE_GUARDIAN_COLOR, "MAZE_GUARDIAN_SPRITE_PATH": MAZE_GUARDIAN_SPRITE_PATH,
-    "MAZE_GUARDIAN_BULLET_SPEED": MAZE_GUARDIAN_BULLET_SPEED, "MAZE_GUARDIAN_BULLET_LIFETIME": MAZE_GUARDIAN_BULLET_LIFETIME,
-    "MAZE_GUARDIAN_BULLET_COLOR": MAZE_GUARDIAN_BULLET_COLOR, "MAZE_GUARDIAN_BULLET_DAMAGE": MAZE_GUARDIAN_BULLET_DAMAGE,
-    "MAZE_GUARDIAN_LASER_DAMAGE": MAZE_GUARDIAN_LASER_DAMAGE, "MAZE_GUARDIAN_LASER_COOLDOWN": MAZE_GUARDIAN_LASER_COOLDOWN, 
-    "MAZE_GUARDIAN_LASER_SWEEP_ARC": MAZE_GUARDIAN_LASER_SWEEP_ARC,
-    "MAZE_GUARDIAN_SHIELD_DURATION_MS": MAZE_GUARDIAN_SHIELD_DURATION_MS, "MAZE_GUARDIAN_SHIELD_COOLDOWN_MS": MAZE_GUARDIAN_SHIELD_COOLDOWN_MS,
-    "MAZE_GUARDIAN_ARENA_SHIFT_INTERVAL_MS": MAZE_GUARDIAN_ARENA_SHIFT_INTERVAL_MS,
-    "MAZE_GUARDIAN_ARENA_SHIFT_DURATION_MS": MAZE_GUARDIAN_ARENA_SHIFT_DURATION_MS,
-    "MAZE_GUARDIAN_MINION_SPAWN_COOLDOWN_MS": MAZE_GUARDIAN_MINION_SPAWN_COOLDOWN_MS,
-    "SENTINEL_DRONE_HEALTH": SENTINEL_DRONE_HEALTH, "SENTINEL_DRONE_SPEED": SENTINEL_DRONE_SPEED,
-    "SENTINEL_DRONE_SPRITE_PATH": SENTINEL_DRONE_SPRITE_PATH,
-    "POWERUP_SPAWN_CHANCE": POWERUP_SPAWN_CHANCE, "MAX_POWERUPS_ON_SCREEN": MAX_POWERUPS_ON_SCREEN,
-    "WEAPON_UPGRADE_ITEM_LIFETIME": WEAPON_UPGRADE_ITEM_LIFETIME, "POWERUP_ITEM_LIFETIME": POWERUP_ITEM_LIFETIME,
-    "SHIELD_POWERUP_DURATION": SHIELD_POWERUP_DURATION, "SPEED_BOOST_POWERUP_DURATION": SPEED_BOOST_POWERUP_DURATION,
-    "LEVEL_TIMER_DURATION": LEVEL_TIMER_DURATION, "LEVEL_TIMER_WARNING_THRESHOLD": LEVEL_TIMER_WARNING_THRESHOLD,
-    "BONUS_LEVEL_DURATION_MS": BONUS_LEVEL_DURATION_MS,
-    "RING_PUZZLE_CORE_REWARD": RING_PUZZLE_CORE_REWARD, 
-    "ARCHITECT_VAULT_EXTRACTION_TIMER_MS": ARCHITECT_VAULT_EXTRACTION_TIMER_MS,
-    "LEADERBOARD_MAX_ENTRIES": LEADERBOARD_MAX_ENTRIES, "LEADERBOARD_FILE_NAME": LEADERBOARD_FILE_NAME,
-    "ESCAPE_ZONE_COLOR": ESCAPE_ZONE_COLOR,
-    "DEFENSE_REACTOR_HEALTH": DEFENSE_REACTOR_HEALTH,
-    "DEFENSE_BUILD_PHASE_DURATION_MS": DEFENSE_BUILD_PHASE_DURATION_MS,
-    "DEFENSE_WAVE_CLEAR_CORE_REWARD_BASE": DEFENSE_WAVE_CLEAR_CORE_REWARD_BASE,
-    "DEFENSE_WAVE_CLEAR_CORE_INCREMENT": DEFENSE_WAVE_CLEAR_CORE_INCREMENT,
-    "TURRET_BASE_COST": TURRET_BASE_COST,
-    "TURRET_UPGRADE_COST": TURRET_UPGRADE_COST,
-    "TURRET_MAX_UPGRADE_LEVEL": TURRET_MAX_UPGRADE_LEVEL,
-    "MAX_TURRETS_DEFENSE_MODE": MAX_TURRETS_DEFENSE_MODE
+# Core Fragment Details
+CORE_FRAGMENT_DETAILS = settings_manager.get_core_fragment_details() or {
+    "fragment_alpha": {
+        "id": "cf_alpha",
+        "name": "Alpha Fragment",
+        "description": "A fragment of the Architect's Vault core. Required to access the vault.",
+        "required_for_vault": True,
+        "display_color": (255, 0, 0),
+        "icon_filename": "images/collectibles/core_fragment_alpha.png"
+    },
+    "fragment_beta": {
+        "id": "cf_beta",
+        "name": "Beta Fragment",
+        "description": "A fragment of the Architect's Vault core. Required to access the vault.",
+        "required_for_vault": True,
+        "display_color": (0, 0, 255),
+        "icon_filename": "images/collectibles/core_fragment_beta.png"
+    },
+    "fragment_gamma": {
+        "id": "cf_gamma",
+        "name": "Gamma Fragment",
+        "description": "A fragment of the Architect's Vault core. Required to access the vault.",
+        "required_for_vault": True,
+        "display_color": (0, 255, 0),
+        "icon_filename": "images/collectibles/core_fragment_gamma.png"
+    },
+    "fragment_vault_core": {
+        "id": "vault_core",
+        "name": "Vault Core",
+        "description": "The complete core of the Architect's Vault. Contains immense power.",
+        "required_for_vault": False,
+        "display_color": (255, 215, 0),
+        "icon_filename": "images/collectibles/vault_core_icon.png"
+    }
 }
 
-SETTINGS_MODIFIED = False 
-_CURRENT_GAME_SETTINGS = DEFAULT_SETTINGS.copy() 
+# Weapon Mode Names and Icons
+# WEAPON_MODE_NAMES is imported from constants.py
+WEAPON_MODES_SEQUENCE = [
+    WEAPON_MODE_DEFAULT, WEAPON_MODE_TRI_SHOT, WEAPON_MODE_RAPID_SINGLE,
+    WEAPON_MODE_RAPID_TRI, WEAPON_MODE_BIG_SHOT, WEAPON_MODE_BOUNCE,
+    WEAPON_MODE_PIERCE, WEAPON_MODE_HEATSEEKER, WEAPON_MODE_HEATSEEKER_PLUS_BULLETS,
+    WEAPON_MODE_LIGHTNING
+]
 
+WEAPON_MODE_ICONS = {}
+for mode in WEAPON_MODES_SEQUENCE:
+    path = settings_manager.get_weapon_icon_path(mode)
+    if path:
+        WEAPON_MODE_ICONS[mode] = path
+
+# Compatibility layer for direct access to settings
+# This allows existing code to access settings as if they were global variables
+
+# Display settings
+WIDTH = get_setting("display", "WIDTH", 1920)
+HEIGHT = get_setting("display", "HEIGHT", 1080)
+FPS = get_setting("display", "FPS", 60)
+FULLSCREEN_MODE = get_setting("display", "FULLSCREEN_MODE", True)
+MUSIC_VOLUME_MULTIPLIER = get_setting("display", "MUSIC_VOLUME_MULTIPLIER", 0.5)
+SFX_VOLUME_MULTIPLIER = get_setting("display", "SFX_VOLUME_MULTIPLIER", 0.7)
+BOTTOM_PANEL_HEIGHT = get_setting("display", "BOTTOM_PANEL_HEIGHT", 120)
+
+# Leaderboard settings
+LEADERBOARD_FILE_NAME = get_setting("gameplay", "LEADERBOARD_FILE_NAME", "leaderboard.json")
+LEADERBOARD_MAX_ENTRIES = get_setting("gameplay", "LEADERBOARD_MAX_ENTRIES", 10)
+
+# Combat settings
+LIGHTNING_DAMAGE = get_setting("gameplay", "LIGHTNING_DAMAGE", 15)
+MAZE_GUARDIAN_HEALTH = get_setting("gameplay", "MAZE_GUARDIAN_HEALTH", 1000)
+ARCHITECT_VAULT_DRONES_PER_WAVE = get_setting("gameplay", "ARCHITECT_VAULT_DRONES_PER_WAVE", 5)
+ARCHITECT_VAULT_GAUNTLET_WAVES = get_setting("gameplay", "ARCHITECT_VAULT_GAUNTLET_WAVES", 3)
+DEFENSE_REACTOR_HEALTH = get_setting("gameplay", "DEFENSE_REACTOR_HEALTH", 1000)
+GAME_PLAY_AREA_HEIGHT = get_setting("gameplay", "GAME_PLAY_AREA_HEIGHT", HEIGHT)
+
+# Enemy sprite paths
+REGULAR_ENEMY_SPRITE_PATH = "images/enemies/prototype_enemy.png"
+PROTOTYPE_DRONE_SPRITE_PATH = "images/enemies/prototype_enemy.png"
+SENTINEL_DRONE_SPRITE_PATH = "images/enemies/sentinel_drone.png"
+MAZE_GUARDIAN_SPRITE_PATH = "images/enemies/maze_guardian.png"
+
+# Defense drone settings
+DEFENSE_DRONE_1_HEALTH = get_setting("gameplay", "DEFENSE_DRONE_1_HEALTH", 100)
+DEFENSE_DRONE_1_SPEED = get_setting("gameplay", "DEFENSE_DRONE_1_SPEED", 1.5)
+DEFENSE_DRONE_2_HEALTH = get_setting("gameplay", "DEFENSE_DRONE_2_HEALTH", 120)
+DEFENSE_DRONE_2_SPEED = get_setting("gameplay", "DEFENSE_DRONE_2_SPEED", 1.3)
+DEFENSE_DRONE_3_HEALTH = get_setting("gameplay", "DEFENSE_DRONE_3_HEALTH", 80)
+DEFENSE_DRONE_3_SPEED = get_setting("gameplay", "DEFENSE_DRONE_3_SPEED", 1.8)
+DEFENSE_DRONE_4_HEALTH = get_setting("gameplay", "DEFENSE_DRONE_4_HEALTH", 150)
+DEFENSE_DRONE_4_SPEED = get_setting("gameplay", "DEFENSE_DRONE_4_SPEED", 1.2)
+DEFENSE_DRONE_5_HEALTH = get_setting("gameplay", "DEFENSE_DRONE_5_HEALTH", 130)
+DEFENSE_DRONE_5_SPEED = get_setting("gameplay", "DEFENSE_DRONE_5_SPEED", 1.4)
+
+# Player weapon settings
+PLAYER_BULLET_SPEED = get_setting("gameplay", "PLAYER_BULLET_SPEED", 10)
+PLAYER_BULLET_LIFETIME = get_setting("gameplay", "PLAYER_BULLET_LIFETIME", 1500)
+PLAYER_DEFAULT_BULLET_SIZE = get_setting("gameplay", "PLAYER_DEFAULT_BULLET_SIZE", 6)
+PLAYER_BIG_BULLET_SIZE = get_setting("gameplay", "PLAYER_BIG_BULLET_SIZE", 12)
+PLAYER_BULLET_COLOR = get_setting("gameplay", "PLAYER_BULLET_COLOR", CYAN)
+PLAYER_BASE_SHOOT_COOLDOWN = get_setting("gameplay", "PLAYER_BASE_SHOOT_COOLDOWN", 300)
+PLAYER_RAPID_FIRE_COOLDOWN = get_setting("gameplay", "PLAYER_RAPID_FIRE_COOLDOWN", 150)
+MISSILE_COOLDOWN = get_setting("gameplay", "MISSILE_COOLDOWN", 1000)
+MISSILE_DAMAGE = get_setting("gameplay", "MISSILE_DAMAGE", 50)
+MISSILE_SPEED = get_setting("gameplay", "MISSILE_SPEED", 5)
+MISSILE_LIFETIME = get_setting("gameplay", "MISSILE_LIFETIME", 3000)
+MISSILE_COLOR = get_setting("gameplay", "MISSILE_COLOR", RED)
+MISSILE_SIZE = get_setting("gameplay", "MISSILE_SIZE", 8)
+LIGHTNING_COOLDOWN = get_setting("gameplay", "LIGHTNING_COOLDOWN", 1200)
+LIGHTNING_LIFETIME = get_setting("gameplay", "LIGHTNING_LIFETIME", 500)
+LIGHTNING_COLOR = get_setting("gameplay", "LIGHTNING_COLOR", ELECTRIC_BLUE)
+BOUNCING_BULLET_MAX_BOUNCES = get_setting("gameplay", "BOUNCING_BULLET_MAX_BOUNCES", 3)
+PIERCING_BULLET_MAX_PIERCES = get_setting("gameplay", "PIERCING_BULLET_MAX_PIERCES", 3)
+
+# Gameplay settings
+TILE_SIZE = get_setting("gameplay", "TILE_SIZE", 80)
+PLAYER_MAX_HEALTH = get_setting("gameplay", "PLAYER_MAX_HEALTH", 100)
+PLAYER_LIVES = get_setting("gameplay", "PLAYER_LIVES", 3)
+PLAYER_SPEED = get_setting("gameplay", "PLAYER_SPEED", 3)
+ROTATION_SPEED = get_setting("gameplay", "ROTATION_SPEED", 5)
+PLAYER_INVINCIBILITY = get_setting("gameplay", "PLAYER_INVINCIBILITY", False)
+INITIAL_WEAPON_MODE = get_setting("gameplay", "INITIAL_WEAPON_MODE", 0)
+
+# Power-up settings
+POWERUP_SIZE = get_setting("gameplay", "POWERUP_SIZE", 30)
+POWERUP_SPAWN_CHANCE = get_setting("gameplay", "POWERUP_SPAWN_CHANCE", 0.01)
+MAX_POWERUPS_ON_SCREEN = get_setting("gameplay", "MAX_POWERUPS_ON_SCREEN", 3)
+POWERUP_TYPES = {
+    "weapon_upgrade": {"weight": 0.4, "duration": 0},
+    "shield": {"weight": 0.3, "duration": get_setting("gameplay", "SHIELD_POWERUP_DURATION", 10000)},
+    "speed_boost": {"weight": 0.3, "duration": get_setting("gameplay", "SPEED_BOOST_POWERUP_DURATION", 5000)}
+}
+WEAPON_UPGRADE_ITEM_LIFETIME = get_setting("gameplay", "WEAPON_UPGRADE_ITEM_LIFETIME", 15000)
+POWERUP_ITEM_LIFETIME = get_setting("gameplay", "POWERUP_ITEM_LIFETIME", 10000)
+CORE_FRAGMENT_VISUAL_SIZE = get_setting("gameplay", "CORE_FRAGMENT_VISUAL_SIZE", 24)
+
+# Compatibility function to get any setting
 def get_game_setting(key, default_override=None):
-    if key in _CURRENT_GAME_SETTINGS:
-        return _CURRENT_GAME_SETTINGS[key]
-    if key in DEFAULT_SETTINGS: 
-        return DEFAULT_SETTINGS[key]
+    """
+    Get a game setting by key, searching through all categories.
+    
+    Args:
+        key: The setting key
+        default_override: Default value if setting is not found
+        
+    Returns:
+        The setting value or default if not found
+    """
+    for category in settings_manager.settings:
+        if key in settings_manager.settings[category]:
+            return settings_manager.settings[category][key]
     return default_override
 
+# Compatibility function to set any setting
 def set_game_setting(key, value):
     """
-    SIMPLIFIED: This function now only updates the central settings dictionary.
-    """
-    global SETTINGS_MODIFIED, _CURRENT_GAME_SETTINGS
-    _CURRENT_GAME_SETTINGS[key] = value
+    Set a game setting by key, updating the appropriate category.
     
-    if key in DEFAULT_SETTINGS and value != DEFAULT_SETTINGS[key]:
-        SETTINGS_MODIFIED = True
-    else:
-        SETTINGS_MODIFIED = any(
-            _CURRENT_GAME_SETTINGS.get(k) != DEFAULT_SETTINGS.get(k)
-            for k in DEFAULT_SETTINGS if k in _CURRENT_GAME_SETTINGS
-        )
+    Args:
+        key: The setting key
+        value: The value to set
+    """
+    # Find which category the key belongs to
+    for category in settings_manager.settings:
+        if key in settings_manager.settings[category]:
+            set_setting(category, key, value)
+            
+            # Update the corresponding global variable if it exists
+            if key in globals():
+                globals()[key] = value
+            return
+    
+    # If key wasn't found in any category, add it to 'gameplay' as a fallback
+    set_setting("gameplay", key, value)
+    
+    # Update the corresponding global variable if it exists
+    if key in globals():
+        globals()[key] = value
 
+# Function to reset all settings to defaults
 def reset_all_settings_to_default():
-    global SETTINGS_MODIFIED, _CURRENT_GAME_SETTINGS
-    _CURRENT_GAME_SETTINGS = DEFAULT_SETTINGS.copy()
-    SETTINGS_MODIFIED = False 
-    print("Game settings have been reset to defaults.")
-# TR-3B Enemy Settings
-TR3B_SPEED = 2.0
-TR3B_HEALTH = 150
-TR3B_BULLET_COOLDOWN = 1200
-# Item and Powerup Settings
-POWERUP_SPAWN_INTERVAL = 15000  # 15 seconds between spawn attempts
-MAX_RINGS_PER_LEVEL = 5
+    """Reset all settings to their default values."""
+    settings_manager._load_settings()  # Reload settings from file
+    
+    # Update all global variables
+    for category in settings_manager.settings:
+        for key, value in settings_manager.settings[category].items():
+            if key in globals():
+                globals()[key] = value
+    
+    logger.info("Game settings have been reset to defaults.")

@@ -4,7 +4,7 @@ import os
 import game_settings as gs
 
 DATA_DIR = "data" #
-LEADERBOARD_FULL_PATH = os.path.join(DATA_DIR, gs.LEADERBOARD_FILE_NAME) #
+LEADERBOARD_FULL_PATH = os.path.join(DATA_DIR, gs.get_game_setting("LEADERBOARD_FILE_NAME", "leaderboard.json")) #
 
 def _ensure_data_dir_exists(): #
     """Ensures the data directory exists. Creates it if not."""

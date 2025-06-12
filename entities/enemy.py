@@ -2,7 +2,6 @@
 import math
 import random
 import os
-import heapq 
 import logging
 
 import pygame
@@ -12,41 +11,13 @@ try:
 except ImportError:
     class Bullet(pygame.sprite.Sprite): pass
 
+# Import pathfinding module
+from hyperdrone_core.pathfinding import a_star_search, find_wall_follow_target, find_alternative_target
+
 # Corrected import style
 import game_settings as gs
 
 logger = logging.getLogger(__name__)
-
-class AStarNode:
-    def __init__(self, position, parent=None):
-        self.position = position; self.parent = parent; self.g_cost = 0; self.h_cost = 0; self.f_cost = 0
-    def __eq__(self, other): return self.position == other.position
-    def __lt__(self, other): return self.f_cost < other.f_cost
-    def __hash__(self): return hash(self.position)
-
-def a_star_search(maze_grid, start_pos_grid, end_pos_grid, maze_rows, maze_cols):
-    if not maze_grid or not (0 <= start_pos_grid[0] < maze_rows and 0 <= start_pos_grid[1] < maze_cols) or not (0 <= end_pos_grid[0] < maze_rows and 0 <= end_pos_grid[1] < maze_cols): return None
-    start_node = AStarNode(start_pos_grid); end_node = AStarNode(end_pos_grid)
-    open_list = []; closed_set = set(); heapq.heappush(open_list, (0, start_node))
-    g_score = { (r,c): float('inf') for r in range(maze_rows) for c in range(maze_cols) }; g_score[start_pos_grid] = 0
-    open_set_hash = {start_pos_grid}
-    while open_list:
-        _, current_node = heapq.heappop(open_list)
-        if current_node.position not in open_set_hash: continue
-        open_set_hash.remove(current_node.position)
-        if current_node.position == end_node.position:
-            path = []; temp = current_node
-            while temp: path.append(temp.position); temp = temp.parent
-            return path[::-1]
-        closed_set.add(current_node.position)
-        for new_pos_offset in [(0, -1), (0, 1), (-1, 0), (1, 0)]: 
-            node_pos = (current_node.position[0] + new_pos_offset[0], current_node.position[1] + new_pos_offset[1])
-            if not (0 <= node_pos[0] < maze_rows and 0 <= node_pos[1] < maze_cols) or maze_grid[node_pos[0]][node_pos[1]] == 1 or node_pos in closed_set: continue
-            neighbor = AStarNode(node_pos, current_node); neighbor.g_cost = current_node.g_cost + 1; neighbor.h_cost = abs(neighbor.position[0] - end_node.position[0]) + abs(neighbor.position[1] - end_node.position[1]); neighbor.f_cost = neighbor.g_cost + neighbor.h_cost
-            if not any(n[1] == neighbor and neighbor.g_cost >= n[1].g_cost for n in open_list):
-                heapq.heappush(open_list, (neighbor.f_cost, neighbor)); open_set_hash.add(neighbor.position)
-    return None
-
 
 class Enemy(pygame.sprite.Sprite):
     def __init__(self, x, y, player_bullet_size_base, asset_manager, sprite_asset_key, shoot_sound_key=None, target_player_ref=None):
@@ -69,6 +40,9 @@ class Enemy(pygame.sprite.Sprite):
         self.PATH_RECALC_INTERVAL, self.WAYPOINT_THRESHOLD = 1000, gs.TILE_SIZE * 0.3
         self.stuck_timer, self.last_pos_check = 0, (self.x, self.y)
         self.STUCK_TIME_THRESHOLD_MS, self.STUCK_MOVE_THRESHOLD = 2500, 0.5
+        self.alternative_target = None
+        self.alternative_target_timer = 0
+        self.ALTERNATIVE_TARGET_TIMEOUT = 5000  # 5 seconds before trying primary target again
 
     def _load_sprite(self):
         default_size = (int(gs.TILE_SIZE * 0.7), int(gs.TILE_SIZE * 0.7)) 
@@ -121,7 +95,12 @@ class Enemy(pygame.sprite.Sprite):
                 current_grid_pos = self._pixel_to_grid(self.x, self.y, game_area_x_offset)
                 
                 # Find a target position along the wall
-                wall_follow_target = self._find_wall_follow_target(maze, current_grid_pos, game_area_x_offset)
+                wall_follow_target = find_wall_follow_target(
+                    maze, 
+                    current_grid_pos, 
+                    maze.actual_maze_rows, 
+                    maze.actual_maze_cols
+                )
                 
                 if wall_follow_target:
                     # Convert target back to pixel coordinates
@@ -162,80 +141,79 @@ class Enemy(pygame.sprite.Sprite):
             self.stuck_timer = 0
             return True
         return False
-        
-    def _find_wall_follow_target(self, maze, current_grid_pos, game_area_x_offset):
-        """Find a target position along a wall to follow using A*"""
-        if not maze or not hasattr(maze, 'grid') or not current_grid_pos:
-            return None
-            
-        # Check if we're near a wall
-        directions = [(0, -1), (1, -1), (1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0), (-1, -1)]
-        wall_directions = []
-        
-        for dx, dy in directions:
-            check_pos = (current_grid_pos[0] + dx, current_grid_pos[1] + dy)
-            if 0 <= check_pos[0] < maze.actual_maze_rows and 0 <= check_pos[1] < maze.actual_maze_cols:
-                if maze.grid[check_pos[0]][check_pos[1]] == 1:  # Wall
-                    wall_directions.append((dx, dy))
-        
-        if not wall_directions:
-            return None  # No walls nearby
-            
-        # Find a path that follows along the wall
-        # Look for a walkable cell that's 2-3 cells away along the wall
-        for wall_dir in wall_directions:
-            # Get perpendicular directions to the wall
-            if wall_dir[0] == 0:  # Vertical wall
-                perp_dirs = [(1, 0), (-1, 0)]
-            elif wall_dir[1] == 0:  # Horizontal wall
-                perp_dirs = [(0, 1), (0, -1)]
-            else:  # Diagonal wall
-                perp_dirs = [(wall_dir[1], -wall_dir[0]), (-wall_dir[1], wall_dir[0])]
-                
-            # Try both perpendicular directions
-            for perp_dir in perp_dirs:
-                # Move along the wall
-                for dist in range(3, 8):  # Try different distances
-                    target_pos = (
-                        current_grid_pos[0] + perp_dir[0] * dist,
-                        current_grid_pos[1] + perp_dir[1] * dist
-                    )
-                    
-                    # Check if this is a valid walkable position
-                    if 0 <= target_pos[0] < maze.actual_maze_rows and 0 <= target_pos[1] < maze.actual_maze_cols:
-                        if maze.grid[target_pos[0]][target_pos[1]] == 0:  # Walkable
-                            # Check if there's a valid path to this position
-                            path = a_star_search(
-                                maze.grid, 
-                                current_grid_pos, 
-                                target_pos, 
-                                maze.actual_maze_rows, 
-                                maze.actual_maze_cols
-                            )
-                            if path and len(path) > 1:
-                                return target_pos
-        
-        # If no good wall-following path found, try a random walkable cell
-        for _ in range(10):  # Try up to 10 random positions
-            rand_row = random.randint(max(0, current_grid_pos[0] - 5), min(maze.actual_maze_rows - 1, current_grid_pos[0] + 5))
-            rand_col = random.randint(max(0, current_grid_pos[1] - 5), min(maze.actual_maze_cols - 1, current_grid_pos[1] + 5))
-            
-            if maze.grid[rand_row][rand_col] == 0:  # Walkable
-                return (rand_row, rand_col)
-                
-        return None
 
     def _update_ai_with_astar(self, target_pos, maze, current_time_ms, game_area_x_offset):
-        if not target_pos or not maze: self.path = []; return
+        if not target_pos or not maze: 
+            self.path = []
+            return
+            
+        # Check if we should use alternative target
+        if self.alternative_target and current_time_ms - self.alternative_target_timer < self.ALTERNATIVE_TARGET_TIMEOUT:
+            # Continue using alternative target
+            target_pos = self._grid_to_pixel_center(self.alternative_target[0], self.alternative_target[1], game_area_x_offset)
+        else:
+            # Reset alternative target
+            self.alternative_target = None
+            
+        # Calculate or recalculate path
         if current_time_ms - self.last_path_recalc_time > self.PATH_RECALC_INTERVAL or not self.path:
             self.last_path_recalc_time = current_time_ms
             enemy_grid, target_grid = self._pixel_to_grid(self.x, self.y, game_area_x_offset), self._pixel_to_grid(target_pos[0], target_pos[1], game_area_x_offset)
-            if not (0 <= enemy_grid[0] < maze.actual_maze_rows and 0 <= enemy_grid[1] < maze.actual_maze_cols and 0 <= target_grid[0] < maze.actual_maze_rows and 0 <= target_grid[1] < maze.actual_maze_cols):
-                self.path = []; return
-            if hasattr(maze, 'grid') and maze.grid[target_grid[0]][target_grid[1]] == 1: self.path = []; return
+            
+            # Validate grid positions
+            if not (0 <= enemy_grid[0] < maze.actual_maze_rows and 0 <= enemy_grid[1] < maze.actual_maze_cols and 
+                   0 <= target_grid[0] < maze.actual_maze_rows and 0 <= target_grid[1] < maze.actual_maze_cols):
+                self.path = []
+                return
+                
+            # Check if target is in a wall
+            if hasattr(maze, 'grid') and maze.grid[target_grid[0]][target_grid[1]] == 1:
+                self.path = []
+                return
+                
+            # Try to find path to target
             grid_path = a_star_search(maze.grid, enemy_grid, target_grid, maze.actual_maze_rows, maze.actual_maze_cols)
-            if grid_path and len(grid_path) > 1: self.path = [self._grid_to_pixel_center(r, c, game_area_x_offset) for r, c in grid_path]; self.current_path_index = 1
-            else: self.path = []
+            
+            if grid_path and len(grid_path) > 1:
+                # Path found
+                self.path = [self._grid_to_pixel_center(r, c, game_area_x_offset) for r, c in grid_path]
+                self.current_path_index = 1
+                
+                # Reset alternative target if we found a path to primary target
+                if not self.alternative_target:
+                    self.alternative_target = None
+            else:
+                # No path found, try to find alternative target
+                if not self.alternative_target:
+                    alt_target = find_alternative_target(
+                        maze, 
+                        enemy_grid, 
+                        target_grid, 
+                        maze.actual_maze_rows, 
+                        maze.actual_maze_cols
+                    )
+                    
+                    if alt_target:
+                        self.alternative_target = alt_target
+                        self.alternative_target_timer = current_time_ms
+                        
+                        # Try to find path to alternative target
+                        alt_path = a_star_search(
+                            maze.grid, 
+                            enemy_grid, 
+                            alt_target, 
+                            maze.actual_maze_rows, 
+                            maze.actual_maze_cols
+                        )
+                        
+                        if alt_path and len(alt_path) > 1:
+                            self.path = [self._grid_to_pixel_center(r, c, game_area_x_offset) for r, c in alt_path]
+                            self.current_path_index = 1
+                            return
+                
+                self.path = []
+                
+        # If no path and we have a target, at least face towards it
         if not self.path and target_pos:
             dx, dy = target_pos[0] - self.x, target_pos[1] - self.y
             if math.hypot(dx, dy) > 0: self.angle = math.degrees(math.atan2(dy, dx))
