@@ -9,7 +9,7 @@ from entities.collectibles import (
     CoreFragmentItem, VaultLogItem, GlyphTabletItem, AncientAlienTerminal,
     ArchitectEchoItem
 )
-import game_settings as gs
+from settings_manager import get_setting
 
 logger = logging.getLogger(__name__)
 
@@ -29,12 +29,12 @@ class ItemManager:
         
         # Item spawn settings
         self.last_powerup_spawn_time = 0
-        self.powerup_spawn_interval = gs.get_game_setting("POWERUP_SPAWN_INTERVAL", 15000)  # 15 seconds
-        self.powerup_spawn_chance = 0.3  # 30% chance each interval
+        self.powerup_spawn_interval = get_setting("powerups", "POWERUP_SPAWN_INTERVAL", 15000)  # 15 seconds
+        self.powerup_spawn_chance = get_setting("powerups", "POWERUP_SPAWN_CHANCE", 0.3)  # 30% chance each interval
         
         # Track spawned items
         self.spawned_rings_count = 0
-        self.max_rings_per_level = gs.get_game_setting("MAX_RINGS_PER_LEVEL", 5)
+        self.max_rings_per_level = get_setting("collectibles", "MAX_RINGS_PER_LEVEL", 5)
         
     def update(self, current_time_ms, maze):
         """Update item manager state and spawn items as needed"""
@@ -68,11 +68,12 @@ class ItemManager:
             
         # Choose a position that's not too close to existing items
         valid_positions = []
+        tile_size = get_setting("gameplay", "TILE_SIZE", 80)
         for pos in walkable_tiles:
             # Check distance from existing collectibles
             too_close = False
             for ring in self.collectible_rings_group:
-                if math.hypot(pos[0] - ring.rect.centerx, pos[1] - ring.rect.centery) < gs.TILE_SIZE * 3:
+                if math.hypot(pos[0] - ring.rect.centerx, pos[1] - ring.rect.centery) < tile_size * 3:
                     too_close = True
                     break
                     
@@ -104,11 +105,12 @@ class ItemManager:
             
         # Choose a position that's not too close to existing items
         valid_positions = []
+        tile_size = get_setting("gameplay", "TILE_SIZE", 80)
         for pos in walkable_tiles:
             # Check distance from existing powerups
             too_close = False
             for powerup in self.power_ups_group:
-                if math.hypot(pos[0] - powerup.rect.centerx, pos[1] - powerup.rect.centery) < gs.TILE_SIZE * 4:
+                if math.hypot(pos[0] - powerup.rect.centerx, pos[1] - powerup.rect.centery) < tile_size * 4:
                     too_close = True
                     break
                     
@@ -158,6 +160,7 @@ class ItemManager:
         self.glyph_tablets_group.empty()
         self.architect_echoes_group.empty()
         self.alien_terminals_group.empty()
+
     def _spawn_all_rings(self, maze):
         """Spawn all rings at once at the beginning of the level"""
         if not maze:
@@ -179,6 +182,7 @@ class ItemManager:
         
         # Try to spawn all remaining rings
         spawned = 0
+        tile_size = get_setting("gameplay", "TILE_SIZE", 80)
         for i in range(min(rings_to_spawn * 2, len(walkable_tiles))):  # Try more positions to ensure we get enough rings
             if spawned >= rings_to_spawn:
                 break
@@ -189,7 +193,7 @@ class ItemManager:
             # Check if this position is too close to existing rings
             too_close = False
             for ring in self.collectible_rings_group:
-                if math.hypot(spawn_pos[0] - ring.rect.centerx, spawn_pos[1] - ring.rect.centery) < gs.TILE_SIZE * 3:
+                if math.hypot(spawn_pos[0] - ring.rect.centerx, spawn_pos[1] - ring.rect.centery) < tile_size * 3:
                     too_close = True
                     break
                     

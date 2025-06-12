@@ -3,8 +3,8 @@ import pygame
 import sys
 import logging
 
-import game_settings as gs
-from game_settings import (
+from settings_manager import get_setting
+from constants import (
     GAME_STATE_MAIN_MENU, GAME_STATE_DRONE_SELECT, GAME_STATE_SETTINGS,
     GAME_STATE_LEADERBOARD, GAME_STATE_GAME_OVER, GAME_STATE_ENTER_NAME, GAME_STATE_CODEX,
     GAME_STATE_PLAYING, GAME_STATE_BONUS_LEVEL_PLAYING,
@@ -103,7 +103,3 @@ class EventManager:
             # In the main menu, ESC could either do nothing or quit the game.
             # Let's make it do nothing to prevent accidental quits.
             pass
-        # Continuous Input for Player Drone (standard modes)
-        is_gameplay_state_for_continuous = current_game_state in [GAME_STATE_PLAYING, GAME_STATE_BONUS_LEVEL_PLAYING] or current_game_state.startswith("architect_vault")
-        if is_gameplay_state_for_continuous and not self.game_controller.paused:
-            self.game_controller.player_actions.update_player_movement_and_actions(current_time_ms)

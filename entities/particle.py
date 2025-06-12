@@ -1,7 +1,8 @@
 import pygame
 import random
 import math
-import game_settings as gs
+from settings_manager import get_setting
+from constants import FLAME_COLORS
 
 class Particle(pygame.sprite.Sprite):
     def __init__(self, x, y, color_list, 
@@ -18,7 +19,7 @@ class Particle(pygame.sprite.Sprite):
         self.lifetime = lifetime_frames
 
         if self.blast_mode:
-            self.color = random.choice(gs.FLAME_COLORS)
+            self.color = random.choice(FLAME_COLORS)
             self.size = random.uniform(min_size, max_size)
             speed = random.uniform(min_speed, max_speed)
         else:

@@ -3,8 +3,14 @@ import pygame
 import random
 import logging
 
-# Corrected import style
-import game_settings as gs
+from settings_manager import get_setting
+from constants import (
+    WHITE, GOLD, RED,
+    GAME_STATE_MAIN_MENU, GAME_STATE_DRONE_SELECT, GAME_STATE_SETTINGS,
+    GAME_STATE_LEADERBOARD, GAME_STATE_GAME_OVER, GAME_STATE_ENTER_NAME, GAME_STATE_CODEX,
+    GAME_STATE_PLAYING, GAME_STATE_MAZE_DEFENSE, GAME_STATE_GAME_INTRO_SCROLL,
+    GAME_STATE_ARCHITECT_VAULT_SUCCESS, GAME_STATE_ARCHITECT_VAULT_FAILURE
+)
 from . import leaderboard
 
 logger = logging.getLogger(__name__)
@@ -45,7 +51,7 @@ class UIFlowController:
         self.codex_current_entry_total_lines = 0
 
         self.architect_vault_result_message = ""
-        self.architect_vault_result_message_color = gs.WHITE
+        self.architect_vault_result_message_color = WHITE
 
         self.intro_screens_data = []
         self.current_intro_screen_index = 0
@@ -66,16 +72,16 @@ class UIFlowController:
         Public method to route keyboard input to the correct handler based on game state.
         """
         state_handlers = {
-            gs.GAME_STATE_MAIN_MENU: self._handle_main_menu_input,
-            gs.GAME_STATE_DRONE_SELECT: self._handle_drone_select_input,
-            gs.GAME_STATE_SETTINGS: self._handle_settings_input,
-            gs.GAME_STATE_LEADERBOARD: self._handle_leaderboard_input,
-            gs.GAME_STATE_CODEX: self._handle_codex_input,
-            gs.GAME_STATE_ENTER_NAME: self._handle_enter_name_input,
-            gs.GAME_STATE_GAME_OVER: self._handle_game_over_input,
-            gs.GAME_STATE_ARCHITECT_VAULT_SUCCESS: self._handle_vault_result_input,
-            gs.GAME_STATE_ARCHITECT_VAULT_FAILURE: self._handle_vault_result_input,
-            gs.GAME_STATE_GAME_INTRO_SCROLL: self._handle_game_intro_input
+            GAME_STATE_MAIN_MENU: self._handle_main_menu_input,
+            GAME_STATE_DRONE_SELECT: self._handle_drone_select_input,
+            GAME_STATE_SETTINGS: self._handle_settings_input,
+            GAME_STATE_LEADERBOARD: self._handle_leaderboard_input,
+            GAME_STATE_CODEX: self._handle_codex_input,
+            GAME_STATE_ENTER_NAME: self._handle_enter_name_input,
+            GAME_STATE_GAME_OVER: self._handle_game_over_input,
+            GAME_STATE_ARCHITECT_VAULT_SUCCESS: self._handle_vault_result_input,
+            GAME_STATE_ARCHITECT_VAULT_FAILURE: self._handle_vault_result_input,
+            GAME_STATE_GAME_INTRO_SCROLL: self._handle_game_intro_input
         }
         
         handler = state_handlers.get(current_game_state)
@@ -87,19 +93,19 @@ class UIFlowController:
     def update(self, current_time_ms, delta_time_ms, current_game_state):
         """Called every frame to update UI animations or timed transitions."""
         menu_like_states = [
-            gs.GAME_STATE_MAIN_MENU,
-            gs.GAME_STATE_LEADERBOARD,
-            gs.GAME_STATE_SETTINGS,
-            gs.GAME_STATE_DRONE_SELECT,
-            gs.GAME_STATE_CODEX,
-            gs.GAME_STATE_GAME_OVER,
-            gs.GAME_STATE_ENTER_NAME
+            GAME_STATE_MAIN_MENU,
+            GAME_STATE_LEADERBOARD,
+            GAME_STATE_SETTINGS,
+            GAME_STATE_DRONE_SELECT,
+            GAME_STATE_CODEX,
+            GAME_STATE_GAME_OVER,
+            GAME_STATE_ENTER_NAME
         ]
         
         if current_game_state in menu_like_states:
             if self.menu_stars:
-                height = gs.get_game_setting("HEIGHT")
-                width = gs.get_game_setting("WIDTH")
+                height = get_setting("display", "HEIGHT", 1080)
+                width = get_setting("display", "WIDTH", 1920)
                 for star in self.menu_stars:
                     # Update star position
                     star[1] += star[2] * (delta_time_ms / 1000.0)
@@ -111,8 +117,8 @@ class UIFlowController:
     def _create_stars(self, num_stars):
         """Helper to create a list of star parameters for background effects."""
         stars = []
-        width = gs.get_game_setting("WIDTH")
-        height = gs.get_game_setting("HEIGHT")
+        width = get_setting("display", "WIDTH", 1920)
+        height = get_setting("display", "HEIGHT", 1080)
         for _ in range(num_stars):
             x = random.randint(0, width)
             y = random.randint(0, height)
@@ -155,10 +161,10 @@ class UIFlowController:
     def initialize_architect_vault_result_screen(self, success=True, failure_reason=""):
         if success:
             self.architect_vault_result_message = "VAULT CONQUERED"
-            self.architect_vault_result_message_color = gs.GOLD
+            self.architect_vault_result_message_color = GOLD
         else:
             self.architect_vault_result_message = "MISSION FAILED"
-            self.architect_vault_result_message_color = gs.RED
+            self.architect_vault_result_message_color = RED
         if hasattr(self.game_controller, 'architect_vault_failure_reason'):
             self.game_controller.architect_vault_failure_reason = failure_reason
 
@@ -193,12 +199,12 @@ class UIFlowController:
             selected_action = self.menu_options[self.selected_menu_option]
             logger.info(f"Main menu action selected: {selected_action}")
             self.game_controller.play_sound('ui_confirm')
-            if selected_action == "Start Game": self.scene_manager.set_state(gs.GAME_STATE_GAME_INTRO_SCROLL)
-            elif selected_action == "Maze Defense": self.scene_manager.set_state(gs.GAME_STATE_MAZE_DEFENSE)
-            elif selected_action == "Select Drone": self.scene_manager.set_state(gs.GAME_STATE_DRONE_SELECT)
-            elif selected_action == "Settings": self.scene_manager.set_state(gs.GAME_STATE_SETTINGS)
-            elif selected_action == "Leaderboard": self.scene_manager.set_state(gs.GAME_STATE_LEADERBOARD)
-            elif selected_action == "Codex": self.scene_manager.set_state(gs.GAME_STATE_CODEX)
+            if selected_action == "Start Game": self.scene_manager.set_state(GAME_STATE_GAME_INTRO_SCROLL)
+            elif selected_action == "Maze Defense": self.scene_manager.set_state(GAME_STATE_MAZE_DEFENSE)
+            elif selected_action == "Select Drone": self.scene_manager.set_state(GAME_STATE_DRONE_SELECT)
+            elif selected_action == "Settings": self.scene_manager.set_state(GAME_STATE_SETTINGS)
+            elif selected_action == "Leaderboard": self.scene_manager.set_state(GAME_STATE_LEADERBOARD)
+            elif selected_action == "Codex": self.scene_manager.set_state(GAME_STATE_CODEX)
             elif selected_action == "Quit": self.game_controller.quit_game()
             return True
         return False
@@ -221,7 +227,7 @@ class UIFlowController:
                 self.drone_system.set_selected_drone(selected_id)
                 self.game_controller.play_sound('ui_confirm')
                 if hasattr(self.ui_manager, 'update_player_life_icon_surface'): self.ui_manager.update_player_life_icon_surface()
-                self.scene_manager.set_state(gs.GAME_STATE_MAIN_MENU)
+                self.scene_manager.set_state(GAME_STATE_MAIN_MENU)
             else:
                 if self.drone_system.unlock_drone(selected_id):
                     self.game_controller.play_sound('lore_unlock')
@@ -245,7 +251,9 @@ class UIFlowController:
             return True
         elif key == pygame.K_RETURN and selected_item["type"] == "action":
             if item_key == "RESET_SETTINGS_ACTION":
-                gs.reset_all_settings_to_default()
+                # Reset settings to defaults
+                from settings_manager import save_settings
+                save_settings()
                 self.game_controller.play_sound('ui_confirm')
             return True
         
@@ -254,19 +262,22 @@ class UIFlowController:
         elif key == pygame.K_RIGHT or key == pygame.K_d: direction = 1
         
         if direction != 0:
-            current_val = gs.get_game_setting(item_key)
+            category = selected_item.get("category", "gameplay")
+            current_val = get_setting(category, item_key)
             if selected_item["type"] == "numeric":
                 step = selected_item.get("step", 1)
                 new_val = current_val + direction * step
                 new_val = max(selected_item["min"], min(new_val, selected_item["max"]))
-                gs.set_game_setting(item_key, new_val)
+                from settings_manager import set_setting
+                set_setting(category, item_key, new_val)
                 self.game_controller.play_sound('ui_select')
             elif selected_item["type"] == "choice":
                 choices = selected_item["choices"]
                 try:
                     current_idx = choices.index(current_val)
                     new_idx = (current_idx + direction + len(choices)) % len(choices)
-                    gs.set_game_setting(item_key, choices[new_idx])
+                    from settings_manager import set_setting
+                    set_setting(category, item_key, choices[new_idx])
                     self.game_controller.play_sound('ui_select')
                 except ValueError: pass
             return True
@@ -274,7 +285,7 @@ class UIFlowController:
 
     def _handle_leaderboard_input(self, key):
         if key == pygame.K_RETURN or key == pygame.K_q or key == pygame.K_ESCAPE:
-            self.scene_manager.set_state(gs.GAME_STATE_MAIN_MENU)
+            self.scene_manager.set_state(GAME_STATE_MAIN_MENU)
             return True
         return False
 
@@ -309,7 +320,7 @@ class UIFlowController:
         if key == pygame.K_RETURN:
             if len(self.player_name_input_cache) > 0:
                 leaderboard.add_score(self.player_name_input_cache, self.game_controller.score, self.game_controller.level)
-                self.scene_manager.set_state(gs.GAME_STATE_LEADERBOARD)
+                self.scene_manager.set_state(GAME_STATE_LEADERBOARD)
             return True
         elif key == pygame.K_BACKSPACE:
             self.player_name_input_cache = self.player_name_input_cache[:-1]
@@ -325,18 +336,19 @@ class UIFlowController:
 
     def _handle_game_over_input(self, key):
         score_is_high = leaderboard.is_high_score(self.game_controller.score, self.game_controller.level)
-        if score_is_high and not gs.SETTINGS_MODIFIED:
-            self.scene_manager.set_state(gs.GAME_STATE_ENTER_NAME)
+        settings_modified = get_setting("gameplay", "SETTINGS_MODIFIED", False)
+        if score_is_high and not settings_modified:
+            self.scene_manager.set_state(GAME_STATE_ENTER_NAME)
         else:
-            if key == pygame.K_r: self.scene_manager.set_state(gs.GAME_STATE_PLAYING, action="restart")
-            elif key == pygame.K_l: self.scene_manager.set_state(gs.GAME_STATE_LEADERBOARD)
-            elif key == pygame.K_m: self.scene_manager.set_state(gs.GAME_STATE_MAIN_MENU)
+            if key == pygame.K_r: self.scene_manager.set_state(GAME_STATE_PLAYING, action="restart")
+            elif key == pygame.K_l: self.scene_manager.set_state(GAME_STATE_LEADERBOARD)
+            elif key == pygame.K_m: self.scene_manager.set_state(GAME_STATE_MAIN_MENU)
             elif key == pygame.K_q: self.game_controller.quit_game()
         return True
 
     def _handle_vault_result_input(self, key):
         if key == pygame.K_RETURN or key == pygame.K_m or key == pygame.K_SPACE:
-            self.scene_manager.set_state(gs.GAME_STATE_MAIN_MENU)
+            self.scene_manager.set_state(GAME_STATE_MAIN_MENU)
             return True
         return False
         
@@ -349,9 +361,10 @@ class UIFlowController:
                 self.intro_screen_start_time = pygame.time.get_ticks()
             return True
         elif key == pygame.K_ESCAPE:
-            self.scene_manager.set_state(gs.GAME_STATE_MAIN_MENU)
+            self.scene_manager.set_state(GAME_STATE_MAIN_MENU)
             return True
         return False
+
     def advance_intro_screen(self):
         """Advance to the next intro screen."""
         if self.current_intro_screen_index >= len(self.intro_screens_data) - 1:

@@ -1,5 +1,6 @@
 # hyperdrone_core/camera.py
 import pygame
+from settings_manager import get_setting
 
 class Camera:
     """
@@ -10,7 +11,7 @@ class Camera:
         self.map_width = map_width_pixels
         self.map_height = map_height_pixels
         self.zoom_level = 1.0
-        self.pan_speed = 15
+        self.pan_speed = get_setting("display", "CAMERA_PAN_SPEED", 15)
 
     def apply_to_rect(self, rect):
         """Applies zoom and offset to a pygame.Rect for drawing."""
@@ -52,7 +53,9 @@ class Camera:
         mouse_pos_world_before = self.screen_to_world(mouse_pos_screen)
 
         self.zoom_level *= factor
-        self.zoom_level = max(0.4, min(self.zoom_level, 1.5)) # Clamp zoom
+        min_zoom = get_setting("display", "MIN_ZOOM_LEVEL", 0.4)
+        max_zoom = get_setting("display", "MAX_ZOOM_LEVEL", 1.5)
+        self.zoom_level = max(min_zoom, min(self.zoom_level, max_zoom)) # Clamp zoom
 
         mouse_pos_world_after = self.screen_to_world(mouse_pos_screen)
         

@@ -1,6 +1,8 @@
 # hyperdrone_core/playing_state.py
 import pygame
 from .state import State
+from settings_manager import get_setting
+from constants import *
 
 class PlayingState(State):
     """State for the main gameplay"""
@@ -12,7 +14,8 @@ class PlayingState(State):
         
         # Initialize maze and player
         self.game.maze = self.game.level_manager.create_maze()
-        spawn_x, spawn_y = self.game._get_safe_spawn_point(self.game.gs.TILE_SIZE * 0.7, self.game.gs.TILE_SIZE * 0.7)
+        tile_size = get_setting("display", "TILE_SIZE", 64)
+        spawn_x, spawn_y = self.game._get_safe_spawn_point(tile_size * 0.7, tile_size * 0.7)
         drone_id = self.game.drone_system.get_selected_drone_id()
         drone_stats = self.game.drone_system.get_drone_stats(drone_id)
         sprite_key = f"drone_{drone_id}_ingame_sprite"
@@ -46,7 +49,7 @@ class PlayingState(State):
         
         # Start level timer
         self.game.level_timer_start_ticks = pygame.time.get_ticks()
-        self.game.level_time_remaining_ms = self.game.gs.get_game_setting("LEVEL_TIMER_DURATION")
+        self.game.level_time_remaining_ms = get_setting("gameplay", "LEVEL_TIMER_DURATION", 180000)
         
         # Reset item manager
         if hasattr(self.game, 'item_manager'):
@@ -97,7 +100,7 @@ class PlayingState(State):
     
     def draw(self, surface):
         """Draw the playing state"""
-        surface.fill(self.game.gs.BLACK)
+        surface.fill(BLACK)
         
         # Draw maze
         if self.game.maze:

@@ -5,8 +5,9 @@ import pygame
 import os
 import logging
 
-# Corrected import style
-import game_settings as gs
+# Import from settings_manager for settings access
+from settings_manager import get_setting
+from constants import PLAYER_BULLET_COLOR, RED, MISSILE_COLOR, LIGHTNING_COLOR
 
 try:
     from .particle import Particle
@@ -22,7 +23,7 @@ class Bullet(pygame.sprite.Sprite):
         super().__init__()
         self.x, self.y, self.angle, self.speed = float(x), float(y), float(angle), float(speed)
         self.lifetime, self.initial_lifetime, self.size = int(lifetime), int(lifetime), max(1, int(size))
-        self.color = color if color else gs.PLAYER_BULLET_COLOR
+        self.color = color if color else PLAYER_BULLET_COLOR
         self.damage = int(damage)
         self.max_bounces, self.bounces_done = int(max_bounces), 0
         self.max_pierces, self.pierces_done = int(max_pierces), 0
@@ -39,7 +40,7 @@ class Bullet(pygame.sprite.Sprite):
         draw_radius = max(1, self.size)
         try: pygame.draw.circle(self.image, self.color, (surface_dim // 2, surface_dim // 2), draw_radius)
         except TypeError: 
-            pygame.draw.circle(self.image, gs.RED, (surface_dim // 2, surface_dim // 2), draw_radius)
+            pygame.draw.circle(self.image, RED, (surface_dim // 2, surface_dim // 2), draw_radius)
         self.rect = self.image.get_rect(center=(int(self.x), int(self.y)))
 
     def update(self, maze=None, game_area_x_offset=0):
@@ -66,8 +67,8 @@ class Bullet(pygame.sprite.Sprite):
         if self.lifetime <= 0: self.alive = False
         if self.alive:
             # Use dynamic height from settings
-            game_play_area_height = gs.get_game_setting("HEIGHT")
-            min_x_bound, max_x_bound = game_area_x_offset, gs.get_game_setting("WIDTH")
+            game_play_area_height = get_setting("display", "HEIGHT", 1080)
+            min_x_bound, max_x_bound = game_area_x_offset, get_setting("display", "WIDTH", 1920)
             min_y_bound, max_y_bound = 0, game_play_area_height
             center_x, center_y, half_size = self.rect.centerx, self.rect.centery, self.size
             if not (min_x_bound < center_x - half_size and center_x + half_size < max_x_bound and \
@@ -88,11 +89,12 @@ class Missile(pygame.sprite.Sprite):
         super().__init__()
         self.id = id(self) 
         self.x, self.y, self.angle, self.target_angle = float(x), float(y), float(initial_angle), float(initial_angle)
-        self.speed = gs.MISSILE_SPEED; self.lifetime = gs.MISSILE_LIFETIME; self.damage = damage
-        self.enemies_group = enemies_group; self.target, self.turn_rate = None, gs.MISSILE_TURN_RATE
+        self.speed = get_setting("weapons", "MISSILE_SPEED", 5); self.lifetime = get_setting("weapons", "MISSILE_LIFETIME", 3000); self.damage = damage
+        self.enemies_group = enemies_group; self.target, self.turn_rate = None, get_setting("weapons", "MISSILE_TURN_RATE", 8)
         self.alive, self.frames_existed = True, 0; self.is_sliding, self.slide_direction_attempts, self.MAX_SLIDE_ATTEMPTS = False, 0, 3
-        missile_w, missile_h = gs.MISSILE_SIZE*1.5, gs.MISSILE_SIZE*2.5; self.original_image_surface = pygame.Surface([missile_w, missile_h], pygame.SRCALPHA)
-        points = [(missile_w*0.5,0),(0,missile_h),(missile_w,missile_h)]; pygame.draw.polygon(self.original_image_surface,gs.MISSILE_COLOR,points)
+        missile_size = get_setting("weapons", "MISSILE_SIZE", 8)
+        missile_w, missile_h = missile_size*1.5, missile_size*2.5; self.original_image_surface = pygame.Surface([missile_w, missile_h], pygame.SRCALPHA)
+        points = [(missile_w*0.5,0),(0,missile_h),(missile_w,missile_h)]; pygame.draw.polygon(self.original_image_surface,MISSILE_COLOR,points)
         self.original_image = pygame.transform.rotate(self.original_image_surface,-90); self.image = self.original_image
         self.rect = self.image.get_rect(center=(int(self.x), int(self.y))); self._update_image_and_rect() 
 
@@ -111,8 +113,8 @@ class Missile(pygame.sprite.Sprite):
         return closest_enemy
         
     def _attempt_slide(self, maze, next_x_direct, next_y_direct, direct_rad_angle): 
-        collision_width = self.rect.width * 0.6 if self.rect else gs.MISSILE_SIZE
-        collision_height = self.rect.height * 0.6 if self.rect else gs.MISSILE_SIZE
+        collision_width = self.rect.width * 0.6 if self.rect else get_setting("weapons", "MISSILE_SIZE", 8)
+        collision_height = self.rect.height * 0.6 if self.rect else get_setting("weapons", "MISSILE_SIZE", 8)
         current_rad_angle = math.radians(self.angle)
         for da_deg in [30, 60, 45, 75, 90]: 
             for sign in [1, -1]: 
@@ -143,8 +145,8 @@ class Missile(pygame.sprite.Sprite):
         potential_dx,potential_dy=math.cos(effective_angle_rad)*self.speed,math.sin(effective_angle_rad)*self.speed
         next_x,next_y=self.x+potential_dx,self.y+potential_dy; collided_this_frame=False
         if maze and self.frames_existed > 1: 
-            collision_check_width = self.rect.width*0.7 if self.rect else gs.MISSILE_SIZE
-            collision_check_height = self.rect.height*0.7 if self.rect else gs.MISSILE_SIZE
+            collision_check_width = self.rect.width*0.7 if self.rect else get_setting("weapons", "MISSILE_SIZE", 8)
+            collision_check_height = self.rect.height*0.7 if self.rect else get_setting("weapons", "MISSILE_SIZE", 8)
             if maze.is_wall(next_x,next_y,collision_check_width,collision_check_height):
                 collided_this_frame=True
                 if self.slide_direction_attempts < self.MAX_SLIDE_ATTEMPTS:
@@ -156,7 +158,7 @@ class Missile(pygame.sprite.Sprite):
         if self.alive and not collided_this_frame: self.x,self.y=next_x,next_y
         self._update_image_and_rect() 
         self.lifetime-=1; out_of_bounds=True
-        if self.rect: out_of_bounds=not(game_area_x_offset-self.rect.width < self.rect.centerx < gs.get_game_setting("WIDTH")+self.rect.width and -self.rect.height < self.rect.centery < gs.get_game_setting("HEIGHT")+self.rect.height)
+        if self.rect: out_of_bounds=not(game_area_x_offset-self.rect.width < self.rect.centerx < get_setting("display", "WIDTH", 1920)+self.rect.width and -self.rect.height < self.rect.centery < get_setting("display", "HEIGHT", 1080)+self.rect.height)
         if self.lifetime<=0 or out_of_bounds: self.alive=False
         if not self.alive: self.kill()
 
@@ -182,7 +184,7 @@ class LightningZap(pygame.sprite.Sprite):
         self.lifetime_frames = int(lifetime_frames)
         self.frames_existed = 0 
         self.alive = True
-        self.color = color_override if color_override is not None else gs.LIGHTNING_COLOR
+        self.color = color_override if color_override is not None else LIGHTNING_COLOR
         self.damage_applied = False
 
         self.current_start_pos = self.player_ref.rect.center if self.player_ref and hasattr(self.player_ref, 'rect') else (0,0)
@@ -218,13 +220,14 @@ class LightningZap(pygame.sprite.Sprite):
             return self.initial_target_pos_snapshot
         start_x, start_y = self.current_start_pos 
         angle_rad = math.radians(self.player_ref.angle)
-        return (start_x + math.cos(angle_rad) * gs.LIGHTNING_ZAP_RANGE, start_y + math.sin(angle_rad) * gs.LIGHTNING_ZAP_RANGE)
+        lightning_zap_range = get_setting("weapons", "LIGHTNING_ZAP_RANGE", 250)
+        return (start_x + math.cos(angle_rad) * lightning_zap_range, start_y + math.sin(angle_rad) * lightning_zap_range)
 
     def _update_rect_for_collision(self): 
         all_x = [self.current_start_pos[0], self.current_target_pos[0]]
         all_y = [self.current_start_pos[1], self.current_target_pos[1]]
         min_x, max_x, min_y, max_y = min(all_x), max(all_x), min(all_y), max(all_y)
-        padding = gs.get_game_setting("LIGHTNING_MAX_OFFSET",18) + gs.get_game_setting("LIGHTNING_BASE_THICKNESS",5) 
+        padding = get_setting("weapons", "LIGHTNING_MAX_OFFSET", 18) + get_setting("weapons", "LIGHTNING_BASE_THICKNESS", 5) 
         self.rect = pygame.Rect(int(min_x-padding), int(min_y-padding), int(max_x-min_x+2*padding), int(max_y-min_y+2*padding))
 
     def update(self, current_time_ms): 
@@ -255,7 +258,7 @@ class LightningZap(pygame.sprite.Sprite):
         nx, ny = -dy/dist, dx/dist
         
         # Number of segments
-        segments = gs.get_game_setting("LIGHTNING_SEGMENTS", 12)
+        segments = get_setting("weapons", "LIGHTNING_SEGMENTS", 12)
         segment_length = dist / segments
         
         # Generate zigzag points
@@ -267,7 +270,7 @@ class LightningZap(pygame.sprite.Sprite):
             mid_y = p1[1] + dy * percent
             
             # Add random offset perpendicular to the line
-            max_offset = gs.get_game_setting("LIGHTNING_MAX_OFFSET", 18)
+            max_offset = get_setting("weapons", "LIGHTNING_MAX_OFFSET", 18)
             offset = random.uniform(-max_offset, max_offset)
             mid_x += nx * offset
             mid_y += ny * offset
@@ -277,14 +280,14 @@ class LightningZap(pygame.sprite.Sprite):
         points.append(p2)
         
         # Draw the main lightning bolt
-        thickness = gs.get_game_setting("LIGHTNING_BASE_THICKNESS", 5)
+        thickness = get_setting("weapons", "LIGHTNING_BASE_THICKNESS", 5)
         if len(points) > 1:
             pygame.draw.lines(surface, (*color[:3], alpha), False, points, thickness)
             
         # Draw the inner core (brighter)
-        core_thickness = int(thickness * gs.get_game_setting("LIGHTNING_CORE_THICKNESS_RATIO", 0.4))
+        core_thickness = int(thickness * get_setting("weapons", "LIGHTNING_CORE_THICKNESS_RATIO", 0.4))
         if core_thickness > 0:
-            core_color = gs.get_game_setting("LIGHTNING_CORE_COLOR", (255, 255, 255))
+            core_color = get_setting("weapons", "LIGHTNING_CORE_COLOR", (255, 255, 255))
             pygame.draw.lines(surface, (*core_color[:3], alpha), False, points, core_thickness)
 
     def draw(self, surface, camera=None):

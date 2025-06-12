@@ -2,21 +2,51 @@ import pygame
 import random
 from entities import Enemy, SentinelDrone, DefenseDrone
 from entities.tr3b_enemy import TR3BEnemy
-import game_settings as gs
-from game_settings import TILE_SIZE 
+from settings_manager import get_setting, set_setting, get_asset_path
 
 class EnemyManager:
     def __init__(self, game_controller_ref, asset_manager):
         self.game_controller = game_controller_ref
         self.asset_manager = asset_manager
         self.enemies = pygame.sprite.Group()
+        self.tile_size = get_setting("gameplay", "TILE_SIZE", 80)
 
         self.defense_enemy_configs = {
-            "defense_drone_1": { "class": DefenseDrone, "sprite_asset_key": "defense_drone_1_sprite_key", "health": gs.DEFENSE_DRONE_1_HEALTH, "speed": gs.DEFENSE_DRONE_1_SPEED, "contact_damage": 25 },
-            "defense_drone_2": { "class": DefenseDrone, "sprite_asset_key": "defense_drone_2_sprite_key", "health": gs.DEFENSE_DRONE_2_HEALTH, "speed": gs.DEFENSE_DRONE_2_SPEED, "contact_damage": 30 },
-            "defense_drone_3": { "class": DefenseDrone, "sprite_asset_key": "defense_drone_3_sprite_key", "health": gs.DEFENSE_DRONE_3_HEALTH, "speed": gs.DEFENSE_DRONE_3_SPEED, "contact_damage": 20 },
-            "defense_drone_4": { "class": DefenseDrone, "sprite_asset_key": "defense_drone_4_sprite_key", "health": gs.DEFENSE_DRONE_4_HEALTH, "speed": gs.DEFENSE_DRONE_4_SPEED, "contact_damage": 40 },
-            "defense_drone_5": { "class": DefenseDrone, "sprite_asset_key": "defense_drone_5_sprite_key", "health": gs.DEFENSE_DRONE_5_HEALTH, "speed": gs.DEFENSE_DRONE_5_SPEED, "contact_damage": 35 }
+            "defense_drone_1": { 
+                "class": DefenseDrone, 
+                "sprite_asset_key": "defense_drone_1_sprite_key", 
+                "health": get_setting("defense_mode", "DEFENSE_DRONE_1_HEALTH", 75), 
+                "speed": get_setting("defense_mode", "DEFENSE_DRONE_1_SPEED", 1.8), 
+                "contact_damage": 25 
+            },
+            "defense_drone_2": { 
+                "class": DefenseDrone, 
+                "sprite_asset_key": "defense_drone_2_sprite_key", 
+                "health": get_setting("defense_mode", "DEFENSE_DRONE_2_HEALTH", 150), 
+                "speed": get_setting("defense_mode", "DEFENSE_DRONE_2_SPEED", 1.2), 
+                "contact_damage": 30 
+            },
+            "defense_drone_3": { 
+                "class": DefenseDrone, 
+                "sprite_asset_key": "defense_drone_3_sprite_key", 
+                "health": get_setting("defense_mode", "DEFENSE_DRONE_3_HEALTH", 50), 
+                "speed": get_setting("defense_mode", "DEFENSE_DRONE_3_SPEED", 2.5), 
+                "contact_damage": 20 
+            },
+            "defense_drone_4": { 
+                "class": DefenseDrone, 
+                "sprite_asset_key": "defense_drone_4_sprite_key", 
+                "health": get_setting("defense_mode", "DEFENSE_DRONE_4_HEALTH", 250), 
+                "speed": get_setting("defense_mode", "DEFENSE_DRONE_4_SPEED", 1.0), 
+                "contact_damage": 40 
+            },
+            "defense_drone_5": { 
+                "class": DefenseDrone, 
+                "sprite_asset_key": "defense_drone_5_sprite_key", 
+                "health": get_setting("defense_mode", "DEFENSE_DRONE_5_HEALTH", 100), 
+                "speed": get_setting("defense_mode", "DEFENSE_DRONE_5_SPEED", 2.0), 
+                "contact_damage": 35 
+            }
         }
 
     def spawn_enemies_for_level(self, level):
@@ -29,30 +59,33 @@ class EnemyManager:
             sentinel_count = num_enemies - tr3b_count
             
             # Spawn TR-3B enemies
+            bullet_size = get_setting("weapons", "PLAYER_DEFAULT_BULLET_SIZE", 4)
             for _ in range(tr3b_count):
-                if pos := self.game_controller._get_safe_spawn_point(TILE_SIZE * 0.7, TILE_SIZE * 0.7):
-                    self.enemies.add(TR3BEnemy(pos[0], pos[1], gs.PLAYER_DEFAULT_BULLET_SIZE, 
+                if pos := self.game_controller._get_safe_spawn_point(self.tile_size * 0.7, self.tile_size * 0.7):
+                    self.enemies.add(TR3BEnemy(pos[0], pos[1], bullet_size, 
                                              self.asset_manager, "TR-3B_enemy_sprite_key", 
                                              'enemy_shoot', self.game_controller.player))
             
             # Spawn Sentinel drones
             for _ in range(sentinel_count):
-                if pos := self.game_controller._get_safe_spawn_point(TILE_SIZE * 0.6, TILE_SIZE * 0.6):
-                    self.enemies.add(SentinelDrone(pos[0], pos[1], gs.PLAYER_DEFAULT_BULLET_SIZE, 
+                if pos := self.game_controller._get_safe_spawn_point(self.tile_size * 0.6, self.tile_size * 0.6):
+                    self.enemies.add(SentinelDrone(pos[0], pos[1], bullet_size, 
                                                  self.asset_manager, "sentinel_drone_sprite_key", 
                                                  'enemy_shoot', self.game_controller.player))
         elif level >= 4:
             # Spawn only Sentinel drones for mid levels
+            bullet_size = get_setting("weapons", "PLAYER_DEFAULT_BULLET_SIZE", 4)
             for _ in range(num_enemies):
-                if pos := self.game_controller._get_safe_spawn_point(TILE_SIZE * 0.6, TILE_SIZE * 0.6):
-                    self.enemies.add(SentinelDrone(pos[0], pos[1], gs.PLAYER_DEFAULT_BULLET_SIZE, 
+                if pos := self.game_controller._get_safe_spawn_point(self.tile_size * 0.6, self.tile_size * 0.6):
+                    self.enemies.add(SentinelDrone(pos[0], pos[1], bullet_size, 
                                                  self.asset_manager, "sentinel_drone_sprite_key", 
                                                  'enemy_shoot', self.game_controller.player))
         else:
             # Spawn regular enemies for early levels
+            bullet_size = get_setting("weapons", "PLAYER_DEFAULT_BULLET_SIZE", 4)
             for _ in range(num_enemies):
-                if pos := self.game_controller._get_safe_spawn_point(TILE_SIZE * 0.7, TILE_SIZE * 0.7):
-                    self.enemies.add(Enemy(pos[0], pos[1], gs.PLAYER_DEFAULT_BULLET_SIZE, 
+                if pos := self.game_controller._get_safe_spawn_point(self.tile_size * 0.7, self.tile_size * 0.7):
+                    self.enemies.add(Enemy(pos[0], pos[1], bullet_size, 
                                          self.asset_manager, "regular_enemy_sprite_key", 
                                          'enemy_shoot', self.game_controller.player))
 

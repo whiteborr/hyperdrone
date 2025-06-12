@@ -5,18 +5,13 @@ import random
 import os
 import logging
 
-import game_settings as gs
-from game_settings import (
-    TILE_SIZE, WHITE, RED, GREEN, YELLOW, DARK_GREY, CYAN, GOLD, ORANGE,
-    PLAYER_BULLET_SPEED, PLAYER_BULLET_LIFETIME, PLAYER_DEFAULT_BULLET_SIZE,
-    PLAYER_BULLET_COLOR, WEAPON_MODES_SEQUENCE, WEAPON_MODE_DEFAULT,
-    WEAPON_MODE_TRI_SHOT, WEAPON_MODE_RAPID_SINGLE, WEAPON_MODE_RAPID_TRI,
+from settings_manager import get_setting
+from constants import (
+    WHITE, RED, GREEN, YELLOW, DARK_GREY, CYAN, GOLD, ORANGE,
+    WEAPON_MODE_DEFAULT, WEAPON_MODE_TRI_SHOT, WEAPON_MODE_RAPID_SINGLE, WEAPON_MODE_RAPID_TRI,
     WEAPON_MODE_BIG_SHOT, WEAPON_MODE_BOUNCE, WEAPON_MODE_PIERCE,
     WEAPON_MODE_HEATSEEKER, WEAPON_MODE_HEATSEEKER_PLUS_BULLETS,
-    WEAPON_MODE_LIGHTNING, PLAYER_BASE_SHOOT_COOLDOWN, PLAYER_RAPID_FIRE_COOLDOWN,
-    MISSILE_COOLDOWN, MISSILE_DAMAGE, MISSILE_SPEED, MISSILE_LIFETIME, MISSILE_COLOR, MISSILE_SIZE,
-    LIGHTNING_COOLDOWN, LIGHTNING_DAMAGE, LIGHTNING_LIFETIME, LIGHTNING_COLOR,
-    BOUNCING_BULLET_MAX_BOUNCES, PIERCING_BULLET_MAX_PIERCES, PLAYER_BIG_BULLET_SIZE
+    WEAPON_MODE_LIGHTNING
 )
 try:
     from .bullet import Bullet, Missile, LightningZap
@@ -32,29 +27,28 @@ if not logging.getLogger().hasHandlers():
     logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - [%(name)s] - %(message)s')
 
 
-from hyperdrone_core.constants import TURRET_ASSET_PATHS
-
+# Get turret asset keys from settings
 TURRET_ASSET_KEYS = {
-    WEAPON_MODE_DEFAULT: TURRET_ASSET_PATHS["WEAPON_MODE_DEFAULT"],
-    WEAPON_MODE_TRI_SHOT: TURRET_ASSET_PATHS["WEAPON_MODE_TRI_SHOT"],
-    WEAPON_MODE_RAPID_SINGLE: TURRET_ASSET_PATHS["WEAPON_MODE_RAPID_SINGLE"],
-    WEAPON_MODE_RAPID_TRI: TURRET_ASSET_PATHS["WEAPON_MODE_RAPID_TRI"],
-    WEAPON_MODE_BIG_SHOT: TURRET_ASSET_PATHS["WEAPON_MODE_BIG_SHOT"],
-    WEAPON_MODE_BOUNCE: TURRET_ASSET_PATHS["WEAPON_MODE_BOUNCE"],
-    WEAPON_MODE_PIERCE: TURRET_ASSET_PATHS["WEAPON_MODE_PIERCE"],
-    WEAPON_MODE_HEATSEEKER: TURRET_ASSET_PATHS["WEAPON_MODE_HEATSEEKER"],
-    WEAPON_MODE_HEATSEEKER_PLUS_BULLETS: TURRET_ASSET_PATHS["WEAPON_MODE_HEATSEEKER_PLUS_BULLETS"],
-    WEAPON_MODE_LIGHTNING: TURRET_ASSET_PATHS["WEAPON_MODE_LIGHTNING"],
+    WEAPON_MODE_DEFAULT: "turret_default",
+    WEAPON_MODE_TRI_SHOT: "turret_tri_shot",
+    WEAPON_MODE_RAPID_SINGLE: "turret_rapid_single",
+    WEAPON_MODE_RAPID_TRI: "turret_rapid_tri",
+    WEAPON_MODE_BIG_SHOT: "turret_big_shot",
+    WEAPON_MODE_BOUNCE: "turret_bounce",
+    WEAPON_MODE_PIERCE: "turret_pierce",
+    WEAPON_MODE_HEATSEEKER: "turret_heatseeker",
+    WEAPON_MODE_HEATSEEKER_PLUS_BULLETS: "turret_heatseeker_plus",
+    WEAPON_MODE_LIGHTNING: "turret_lightning",
 }
 
 class Turret(pygame.sprite.Sprite):
-    TURRET_COST = gs.get_game_setting("TURRET_BASE_COST", 50)
-    UPGRADE_COST = gs.get_game_setting("TURRET_UPGRADE_COST", 100)
-    MAX_UPGRADE_LEVEL = len(WEAPON_MODES_SEQUENCE) -1
-    MAX_TURRETS = gs.get_game_setting("MAX_TURRETS_DEFENSE_MODE", 10)
+    TURRET_COST = get_setting("gameplay", "TURRET_BASE_COST", 50)
+    UPGRADE_COST = get_setting("gameplay", "TURRET_UPGRADE_COST", 100)
+    MAX_UPGRADE_LEVEL = len(get_setting("gameplay", "WEAPON_MODES_SEQUENCE", [0, 1, 2, 3, 4, 5, 6, 7, 8, 9])) - 1
+    MAX_TURRETS = get_setting("gameplay", "MAX_TURRETS_DEFENSE_MODE", 10)
 
-    BASE_RANGE = TILE_SIZE * 3
-    SPRITE_SIZE = (int(TILE_SIZE * 0.8), int(TILE_SIZE * 0.8))
+    BASE_RANGE = get_setting("gameplay", "TILE_SIZE", 80) * 3
+    SPRITE_SIZE = (int(get_setting("gameplay", "TILE_SIZE", 80) * 0.8), int(get_setting("gameplay", "TILE_SIZE", 80) * 0.8))
 
     def __init__(self, x, y, game_controller_ref, asset_manager):
         super().__init__()
@@ -63,17 +57,18 @@ class Turret(pygame.sprite.Sprite):
         self.angle, self.target, self.upgrade_level = 0, None, 0
         self.show_range_indicator = False
         self.weapon_mode_index = 0
-        self.current_weapon_mode = WEAPON_MODES_SEQUENCE[self.weapon_mode_index]
+        weapon_modes = get_setting("gameplay", "WEAPON_MODES_SEQUENCE", [0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
+        self.current_weapon_mode = weapon_modes[self.weapon_mode_index]
         self.original_image, self.image = None, None
         self.rect = pygame.Rect(0, 0, self.SPRITE_SIZE[0], self.SPRITE_SIZE[1])
         self.rect.center = (int(self.x), int(self.y))
         self.last_shot_time = pygame.time.get_ticks()
         self.last_missile_shot_time = pygame.time.get_ticks()
         self.last_lightning_time = pygame.time.get_ticks()
-        self.current_shoot_cooldown = PLAYER_BASE_SHOOT_COOLDOWN
-        self.current_missile_cooldown = MISSILE_COOLDOWN
-        self.current_lightning_cooldown = LIGHTNING_COOLDOWN
-        self.current_bullet_size = PLAYER_DEFAULT_BULLET_SIZE
+        self.current_shoot_cooldown = get_setting("weapons", "PLAYER_BASE_SHOOT_COOLDOWN", 500)
+        self.current_missile_cooldown = get_setting("weapons", "MISSILE_COOLDOWN", 2000)
+        self.current_lightning_cooldown = get_setting("weapons", "LIGHTNING_COOLDOWN", 1000)
+        self.current_bullet_size = get_setting("weapons", "PLAYER_DEFAULT_BULLET_SIZE", 5)
         self.current_damage, self.current_range = 10, self.BASE_RANGE
         self._update_weapon_attributes()
         self.bullets = pygame.sprite.Group()
@@ -104,27 +99,36 @@ class Turret(pygame.sprite.Sprite):
         self._draw_turret()
 
     def _update_weapon_attributes(self):
-        self.current_weapon_mode = WEAPON_MODES_SEQUENCE[self.weapon_mode_index]
+        weapon_modes = get_setting("gameplay", "WEAPON_MODES_SEQUENCE", [0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
+        self.current_weapon_mode = weapon_modes[self.weapon_mode_index]
         self.current_damage = 15 + (self.upgrade_level * 5)
-        self.current_bullet_size = PLAYER_DEFAULT_BULLET_SIZE
-        self.current_shoot_cooldown = PLAYER_BASE_SHOOT_COOLDOWN / (1 + 0.1 * self.upgrade_level)
-        self.current_range = self.BASE_RANGE + (self.upgrade_level * TILE_SIZE * 0.25)
+        self.current_bullet_size = get_setting("weapons", "PLAYER_DEFAULT_BULLET_SIZE", 5)
+        player_base_cooldown = get_setting("weapons", "PLAYER_BASE_SHOOT_COOLDOWN", 500)
+        self.current_shoot_cooldown = player_base_cooldown / (1 + 0.1 * self.upgrade_level)
+        tile_size = get_setting("gameplay", "TILE_SIZE", 80)
+        self.current_range = self.BASE_RANGE + (self.upgrade_level * tile_size * 0.25)
         if self.current_weapon_mode == WEAPON_MODE_BIG_SHOT:
-            self.current_bullet_size = PLAYER_BIG_BULLET_SIZE
-            self.current_shoot_cooldown = PLAYER_BASE_SHOOT_COOLDOWN * 1.5 / (1 + 0.1 * self.upgrade_level)
+            self.current_bullet_size = get_setting("weapons", "PLAYER_BIG_BULLET_SIZE", 8)
+            self.current_shoot_cooldown = player_base_cooldown * 1.5 / (1 + 0.1 * self.upgrade_level)
             self.current_damage = 30 + (self.upgrade_level * 10)
         elif self.current_weapon_mode in [WEAPON_MODE_RAPID_SINGLE, WEAPON_MODE_RAPID_TRI]:
-            self.current_shoot_cooldown = PLAYER_RAPID_FIRE_COOLDOWN / (1 + 0.15 * self.upgrade_level)
+            rapid_fire_cooldown = get_setting("weapons", "PLAYER_RAPID_FIRE_COOLDOWN", 250)
+            self.current_shoot_cooldown = rapid_fire_cooldown / (1 + 0.15 * self.upgrade_level)
             self.current_damage = 10 + (self.upgrade_level * 3)
         elif self.current_weapon_mode in [WEAPON_MODE_HEATSEEKER, WEAPON_MODE_HEATSEEKER_PLUS_BULLETS]:
-            self.current_damage = MISSILE_DAMAGE + (self.upgrade_level * 15)
-            self.current_missile_cooldown = MISSILE_COOLDOWN / (1 + 0.1 * self.upgrade_level)
+            missile_damage = get_setting("weapons", "MISSILE_DAMAGE", 30)
+            missile_cooldown = get_setting("weapons", "MISSILE_COOLDOWN", 2000)
+            self.current_damage = missile_damage + (self.upgrade_level * 15)
+            self.current_missile_cooldown = missile_cooldown / (1 + 0.1 * self.upgrade_level)
             if self.current_weapon_mode == WEAPON_MODE_HEATSEEKER_PLUS_BULLETS:
                  self.current_damage_std_bullet = 10 + (self.upgrade_level * 3)
-                 self.current_shoot_cooldown_std_bullet = PLAYER_RAPID_FIRE_COOLDOWN / (1 + 0.15 * self.upgrade_level)
+                 rapid_fire_cooldown = get_setting("weapons", "PLAYER_RAPID_FIRE_COOLDOWN", 250)
+                 self.current_shoot_cooldown_std_bullet = rapid_fire_cooldown / (1 + 0.15 * self.upgrade_level)
         elif self.current_weapon_mode == WEAPON_MODE_LIGHTNING:
-            self.current_damage = LIGHTNING_DAMAGE + (self.upgrade_level * 7)
-            self.current_lightning_cooldown = LIGHTNING_COOLDOWN / (1 + 0.1 * self.upgrade_level)
+            lightning_damage = get_setting("weapons", "LIGHTNING_DAMAGE", 25)
+            lightning_cooldown = get_setting("weapons", "LIGHTNING_COOLDOWN", 1000)
+            self.current_damage = lightning_damage + (self.upgrade_level * 7)
+            self.current_lightning_cooldown = lightning_cooldown / (1 + 0.1 * self.upgrade_level)
         self._load_sprite_for_weapon_mode()
 
     def _draw_turret(self):
@@ -159,15 +163,29 @@ class Turret(pygame.sprite.Sprite):
             if (current_time - self.last_shot_time) > self.current_shoot_cooldown:
                 self.last_shot_time = current_time
                 angles = [-15, 0, 15] if self.current_weapon_mode in [WEAPON_MODE_TRI_SHOT, WEAPON_MODE_RAPID_TRI] else [0]
-                bounces, pierces, pierce_walls = (BOUNCING_BULLET_MAX_BOUNCES, 0, False) if self.current_weapon_mode == WEAPON_MODE_BOUNCE else (0, PIERCING_BULLET_MAX_PIERCES, True) if self.current_weapon_mode == WEAPON_MODE_PIERCE else (2,0,False)
+                bounces = get_setting("weapons", "BOUNCING_BULLET_MAX_BOUNCES", 3) if self.current_weapon_mode == WEAPON_MODE_BOUNCE else 0
+                pierces = get_setting("weapons", "PIERCING_BULLET_MAX_PIERCES", 2) if self.current_weapon_mode == WEAPON_MODE_PIERCE else 0
+                pierce_walls = True if self.current_weapon_mode == WEAPON_MODE_PIERCE else False
+                bullet_speed = get_setting("weapons", "PLAYER_BULLET_SPEED", 8)
+                bullet_lifetime = get_setting("weapons", "PLAYER_BULLET_LIFETIME", 60)
+                bullet_color = get_setting("weapons", "PLAYER_BULLET_COLOR", (0, 200, 255))
                 for angle_offset in angles:
-                    self.bullets.add(Bullet(spawn_x, spawn_y, self.angle + angle_offset, PLAYER_BULLET_SPEED, PLAYER_BULLET_LIFETIME, self.current_bullet_size, PLAYER_BULLET_COLOR, int(self.current_damage), max_bounces=bounces, max_pierces=pierces, can_pierce_walls=pierce_walls))
+                    self.bullets.add(Bullet(spawn_x, spawn_y, self.angle + angle_offset, bullet_speed, bullet_lifetime, self.current_bullet_size, bullet_color, int(self.current_damage), max_bounces=bounces, max_pierces=pierces, can_pierce_walls=pierce_walls))
         if self.current_weapon_mode in [WEAPON_MODE_HEATSEEKER, WEAPON_MODE_HEATSEEKER_PLUS_BULLETS]:
-            if (current_time - self.last_missile_shot_time) > self.current_missile_cooldown: self.last_missile_shot_time = current_time; self.missiles.add(Missile(spawn_x, spawn_y, self.angle, int(self.current_damage), enemies_group))
+            if (current_time - self.last_missile_shot_time) > self.current_missile_cooldown: 
+                self.last_missile_shot_time = current_time
+                self.missiles.add(Missile(spawn_x, spawn_y, self.angle, int(self.current_damage), enemies_group))
             if self.current_weapon_mode == WEAPON_MODE_HEATSEEKER_PLUS_BULLETS and (current_time - self.last_shot_time) > self.current_shoot_cooldown_std_bullet:
-                self.last_shot_time = current_time; self.bullets.add(Bullet(spawn_x, spawn_y, self.angle, PLAYER_BULLET_SPEED, PLAYER_BULLET_LIFETIME, PLAYER_DEFAULT_BULLET_SIZE, PLAYER_BULLET_COLOR, int(self.current_damage_std_bullet), max_bounces=2))
+                self.last_shot_time = current_time
+                bullet_speed = get_setting("weapons", "PLAYER_BULLET_SPEED", 8)
+                bullet_lifetime = get_setting("weapons", "PLAYER_BULLET_LIFETIME", 60)
+                bullet_size = get_setting("weapons", "PLAYER_DEFAULT_BULLET_SIZE", 5)
+                bullet_color = get_setting("weapons", "PLAYER_BULLET_COLOR", (0, 200, 255))
+                self.bullets.add(Bullet(spawn_x, spawn_y, self.angle, bullet_speed, bullet_lifetime, bullet_size, bullet_color, int(self.current_damage_std_bullet), max_bounces=2))
         elif self.current_weapon_mode == WEAPON_MODE_LIGHTNING and (current_time - self.last_lightning_time) > self.current_lightning_cooldown:
-            self.last_lightning_time = current_time; self.lightning_zaps.add(LightningZap(self, self.target, int(self.current_damage), LIGHTNING_LIFETIME, maze_ref, getattr(self.game_controller_ref.maze, 'game_area_x_offset', 0)))
+            self.last_lightning_time = current_time
+            lightning_lifetime = get_setting("weapons", "LIGHTNING_LIFETIME", 30)
+            self.lightning_zaps.add(LightningZap(self, self.target, int(self.current_damage), lightning_lifetime, maze_ref, getattr(self.game_controller_ref.maze, 'game_area_x_offset', 0)))
 
     def upgrade(self):
         if self.weapon_mode_index < self.MAX_UPGRADE_LEVEL:

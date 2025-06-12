@@ -1,4 +1,3 @@
-
 # 🚀 HYPERDRONE
 
 ## 📖 Overview
@@ -77,9 +76,17 @@ Points for rings and enemies.
 
 Local leaderboard in `hyperdrone_core/leaderboard.py`.
 
-### Customizable Game Settings
+### Settings Management System
 
-Adjust game parameters in `game_settings.py`.
+The game now uses a robust settings management system:
+
+- `constants.py`: Contains unchanging constants (colors, state names, etc.)
+- `data/settings.json`: Contains gameplay parameters organized by category
+- `data/asset_manifest.json`: Contains all asset paths organized by type
+- `settings_manager.py`: Handles loading and accessing settings
+- `game_settings.py`: Compatibility layer for existing code
+
+Settings are organized into categories like display, gameplay, weapons, enemies, etc., making the game highly configurable and moddable without code changes.
 
 ### UI Panel
 
@@ -111,6 +118,8 @@ Triggered by interacting with a new "Ancient Alien Terminal" entity.
 hyperdrone/
 ├── main.py
 ├── game_settings.py
+├── settings_manager.py
+├── constants.py
 ├── hyperdrone_core/
 │   ├── game_loop.py
 │   ├── scene_manager.py
@@ -137,7 +146,9 @@ hyperdrone/
 │   └── sounds/
 └── data/
     ├── leaderboard.json
-    └── drone_unlocks.json
+    ├── drone_unlocks.json
+    ├── settings.json
+    └── asset_manifest.json
 
 ## 🎮 Game Controls
 
@@ -227,3 +238,30 @@ pyinstaller --onefile --windowed --add-data "assets;assets" --add-data "data;dat
 - Visual & Audio Polish
 - UI/UX Improvements
 - Online Leaderboards
+
+## 🔧 Settings System
+
+### How to Mod the Game
+
+1. Edit `data/settings.json` to change gameplay parameters
+2. Edit `data/asset_manifest.json` to change assets
+
+No code changes required!
+
+### Settings Categories
+
+- **display**: Screen resolution, FPS, volume settings
+- **gameplay**: Player stats, game world settings
+- **weapons**: Bullet properties, weapon cooldowns
+- **enemies**: Enemy stats, attack properties
+- **bosses**: Boss stats, attack properties
+- **powerups**: Powerup properties, effects
+- **collectibles**: Collectible properties, goals
+- **progression**: Level timers, rewards, leaderboard
+
+## Recommendations for Future Development
+
+1. **Settings Documentation**: Consider creating a comprehensive settings documentation file
+2. **Settings UI**: Update the settings UI to reflect the new categorized structure
+3. **Settings Validation**: Add validation for settings values to prevent invalid configurations
+4. **Settings Presets**: Consider implementing settings presets for different difficulty levels or play styles

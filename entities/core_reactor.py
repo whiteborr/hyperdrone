@@ -3,10 +3,8 @@ import pygame
 import math
 import random
 
-import game_settings as gs
-from game_settings import (
-    TILE_SIZE, WHITE, RED, GREEN, YELLOW, DARK_GREY
-)
+from settings_manager import get_setting
+from constants import WHITE, RED, GREEN, YELLOW, DARK_GREY
 
 class CoreReactor(pygame.sprite.Sprite):
     def __init__(self, x, y, asset_manager, health=500, size_in_tiles=2):
@@ -14,7 +12,7 @@ class CoreReactor(pygame.sprite.Sprite):
         self.x, self.y = float(x), float(y)
         self.max_health, self.current_health = int(health), int(health)
         self.alive = True
-        self.size = int(TILE_SIZE * size_in_tiles)
+        self.size = int(get_setting("gameplay", "TILE_SIZE", 80) * size_in_tiles)
         self.original_image = asset_manager.get_image("core_reactor_image")
         if self.original_image:
             self.image = pygame.transform.smoothscale(self.original_image, (self.size, self.size))

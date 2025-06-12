@@ -2,7 +2,7 @@
 import math
 import pygame
 
-import game_settings as gs
+from settings_manager import get_setting
 
 class BaseDrone(pygame.sprite.Sprite):
     def __init__(self, x, y, size, speed):

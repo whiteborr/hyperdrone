@@ -4,21 +4,22 @@ import math
 import random
 import os
 
-# Corrected import style
-import game_settings as gs
+from settings_manager import get_setting
+from constants import WHITE, BLACK, RED, YELLOW, ORANGE, DARK_GREY, GREEN
 from .base_drone import BaseDrone
 from .enemy import SentinelDrone
 
 class MazeGuardian(BaseDrone):
     def __init__(self, x, y, player_ref, maze_ref, game_controller_ref, asset_manager):
-        self.visual_size = (int(gs.TILE_SIZE * 2.8), int(gs.TILE_SIZE * 2.8))
-        super().__init__(x, y, size=self.visual_size[0], speed=gs.get_game_setting("MAZE_GUARDIAN_SPEED"))
+        tile_size = get_setting("gameplay", "TILE_SIZE", 80)
+        self.visual_size = (int(tile_size * 2.8), int(tile_size * 2.8))
+        super().__init__(x, y, size=self.visual_size[0], speed=get_setting("bosses", "MAZE_GUARDIAN_SPEED", 2.0))
 
         self.player_ref = player_ref
         self.maze_ref = maze_ref
         self.game_controller_ref = game_controller_ref
         self.asset_manager = asset_manager
-        self.total_health_points = gs.get_game_setting("MAZE_GUARDIAN_HEALTH")
+        self.total_health_points = get_setting("bosses", "MAZE_GUARDIAN_HEALTH", 1000)
         self.alive = True
 
         self.original_image = None
@@ -36,11 +37,11 @@ class MazeGuardian(BaseDrone):
         self._initialize_corners()
 
         self.last_laser_time = pygame.time.get_ticks() + 3000
-        self.laser_cooldown = gs.get_game_setting("MAZE_GUARDIAN_LASER_COOLDOWN")
+        self.laser_cooldown = get_setting("bosses", "MAZE_GUARDIAN_LASER_COOLDOWN", 5000)
         self.laser_beams = pygame.sprite.Group()
 
         self.last_minion_spawn_time = pygame.time.get_ticks()
-        self.minion_spawn_cooldown = gs.get_game_setting("MAZE_GUARDIAN_MINION_SPAWN_COOLDOWN_MS")
+        self.minion_spawn_cooldown = get_setting("bosses", "MAZE_GUARDIAN_MINION_SPAWN_COOLDOWN_MS", 8000)
         
         self.target_pos = None
         self.move_timer = 0
@@ -64,8 +65,8 @@ class MazeGuardian(BaseDrone):
         
         if self.original_image is None:
             self.original_image = pygame.Surface(self.visual_size, pygame.SRCALPHA)
-            self.original_image.fill(gs.get_game_setting("MAZE_GUARDIAN_COLOR", (80,0,120)))
-            pygame.draw.rect(self.original_image, gs.WHITE, self.original_image.get_rect(), 3)
+            self.original_image.fill(get_setting("bosses", "MAZE_GUARDIAN_COLOR", (80,0,120)))
+            pygame.draw.rect(self.original_image, WHITE, self.original_image.get_rect(), 3)
         
         self.image = self.original_image.copy()
 
@@ -84,7 +85,7 @@ class MazeGuardian(BaseDrone):
             self.corners.append({
                 'id': i, 'relative_offset': offsets[i], 'rect': corner_rect.copy(),
                 'health': self.health_per_corner, 'max_health': self.health_per_corner,
-                'status': 'intact', 'color': gs.DARK_GREY
+                'status': 'intact', 'color': DARK_GREY
             })
         self._update_corner_positions()
 
@@ -102,16 +103,16 @@ class MazeGuardian(BaseDrone):
                 if self.game_controller_ref:
                     self.game_controller_ref.play_sound('boss_hit', 0.7)
                 if corner['health'] <= 0:
-                    corner['health'] = 0; corner['status'] = 'destroyed'; corner['color'] = gs.BLACK
+                    corner['health'] = 0; corner['status'] = 'destroyed'; corner['color'] = BLACK
                     if self.game_controller_ref:
                          self.game_controller_ref._create_explosion(corner['rect'].centerx, corner['rect'].centery, num_particles=30, specific_sound_key='prototype_drone_explode')
                 elif corner['status'] == 'intact':
-                    corner['status'] = 'damaged'; corner['color'] = gs.ORANGE
+                    corner['status'] = 'damaged'; corner['color'] = ORANGE
                 elif corner['status'] == 'damaged':
                     health_perc = corner['health'] / corner['max_health']
-                    if health_perc < 0.33: corner['color'] = gs.RED
-                    elif health_perc < 0.66: corner['color'] = gs.YELLOW
-                    else: corner['color'] = gs.ORANGE
+                    if health_perc < 0.33: corner['color'] = RED
+                    elif health_perc < 0.66: corner['color'] = YELLOW
+                    else: corner['color'] = ORANGE
                 return True
         return False
 
@@ -125,7 +126,8 @@ class MazeGuardian(BaseDrone):
             path_cells = maze.get_walkable_tiles_abs()
         
         if not path_cells: return self.rect.center
-        attempts, max_attempts, min_dist_from_self = 0, 10, gs.TILE_SIZE * 3
+        tile_size = get_setting("gameplay", "TILE_SIZE", 80)
+        attempts, max_attempts, min_dist_from_self = 0, 10, tile_size * 3
         while attempts < max_attempts:
             potential_target = random.choice(path_cells)
             if math.hypot(potential_target[0] - self.x, potential_target[1] - self.y) > min_dist_from_self:
@@ -148,9 +150,9 @@ class MazeGuardian(BaseDrone):
                 self.x, self.y = self.target_pos; self.target_pos = None
         
         # Clamp position to screen bounds
-        game_play_area_height = gs.get_game_setting("HEIGHT")
+        game_play_area_height = get_setting("display", "HEIGHT", 1080)
         min_x = game_area_x_offset + self.rect.width / 2
-        max_x = gs.get_game_setting("WIDTH") - self.rect.width / 2
+        max_x = get_setting("display", "WIDTH", 1920) - self.rect.width / 2
         min_y = self.rect.height / 2
         max_y = game_play_area_height - self.rect.height / 2
         self.x = max(min_x, min(self.x, max_x))
@@ -178,7 +180,7 @@ class MazeGuardian(BaseDrone):
         surface.blit(self.image, self.rect)
         for corner in self.corners:
             pygame.draw.rect(surface, corner['color'], corner['rect'])
-            border_color = gs.WHITE if corner['status'] != 'destroyed' else gs.DARK_GREY
+            border_color = WHITE if corner['status'] != 'destroyed' else DARK_GREY
             pygame.draw.rect(surface, border_color, corner['rect'], 2)
             if corner['status'] != 'destroyed' and corner['health'] < corner['max_health']:
                 bar_width = corner['rect'].width * 0.8; bar_height = 4
@@ -186,8 +188,8 @@ class MazeGuardian(BaseDrone):
                 bar_y = corner['rect'].top - bar_height - 2
                 health_perc = corner['health'] / corner['max_health']
                 filled_width = bar_width * health_perc
-                fill_c = gs.RED if health_perc < 0.33 else gs.YELLOW if health_perc < 0.66 else gs.GREEN
+                fill_c = RED if health_perc < 0.33 else YELLOW if health_perc < 0.66 else GREEN
                 pygame.draw.rect(surface, (50,50,50), (bar_x, bar_y, bar_width, bar_height))
                 if filled_width > 0: pygame.draw.rect(surface, fill_c, (bar_x, bar_y, filled_width, bar_height))
-                pygame.draw.rect(surface, gs.WHITE, (bar_x, bar_y, bar_width, bar_height), 1)
+                pygame.draw.rect(surface, WHITE, (bar_x, bar_y, bar_width, bar_height), 1)
         self.laser_beams.draw(surface)

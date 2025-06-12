@@ -1,6 +1,7 @@
 import pygame
 import random
 import math
+from hyperdrone_core.constants import FLAME_COLORS
 
 class ExhaustParticle(pygame.sprite.Sprite):
     """A specialized particle class for exhaust flames"""
@@ -17,8 +18,7 @@ class ExhaustParticle(pygame.sprite.Sprite):
         self.vy = -math.sin(self.angle_rad) * self.speed
         
         # Appearance
-        self.colors = [(255, 100, 0), (255, 165, 0), (255, 215, 0), (255, 255, 100)]
-        self.color = random.choice(self.colors)
+        self.color = random.choice(FLAME_COLORS)
         self.size = random.uniform(5, 10)
         self.initial_size = self.size
         

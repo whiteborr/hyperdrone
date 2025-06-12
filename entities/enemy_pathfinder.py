@@ -2,6 +2,7 @@ import pygame
 import logging
 from typing import List, Tuple, Optional
 from entities.path_manager import PathManager
+from hyperdrone_core.constants import RED, GREEN, BLUE
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +28,7 @@ class PathfindingEnemy(pygame.sprite.Sprite):
         # Create a simple sprite
         self.size = path_manager.tile_size // 2
         self.image = pygame.Surface((self.size, self.size))
-        self.image.fill((255, 0, 0))  # Red enemy
+        self.image.fill(RED)  # Red enemy
         self.rect = self.image.get_rect(center=(self.x, self.y))
         self.collision_rect = self.rect.inflate(-4, -4)
         
@@ -118,9 +119,9 @@ class PathfindingEnemy(pygame.sprite.Sprite):
             
         # Draw path as lines
         if len(pixel_path) > 1:
-            pygame.draw.lines(surface, (0, 255, 0), False, pixel_path, 2)
+            pygame.draw.lines(surface, GREEN, False, pixel_path, 2)
             
         # Draw current target
         if self.current_target_index < len(pixel_path):
             target = pixel_path[self.current_target_index]
-            pygame.draw.circle(surface, (0, 0, 255), target, 5)
+            pygame.draw.circle(surface, BLUE, target, 5)

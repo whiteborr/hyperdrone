@@ -1,7 +1,17 @@
 # hyperdrone_core/state_manager.py
 import pygame
 import os
-import game_settings as gs
+from settings_manager import get_setting
+from constants import (
+    GAME_STATE_PLAYING, GAME_STATE_MAZE_DEFENSE, GAME_STATE_MAIN_MENU,
+    GAME_STATE_GAME_OVER, GAME_STATE_LEADERBOARD, GAME_STATE_SETTINGS,
+    GAME_STATE_DRONE_SELECT, GAME_STATE_CODEX, GAME_STATE_ENTER_NAME,
+    GAME_STATE_GAME_INTRO_SCROLL, GAME_STATE_RING_PUZZLE,
+    GAME_STATE_BONUS_LEVEL_START, GAME_STATE_BONUS_LEVEL_PLAYING,
+    GAME_STATE_ARCHITECT_VAULT_INTRO, GAME_STATE_ARCHITECT_VAULT_ENTRY_PUZZLE,
+    GAME_STATE_ARCHITECT_VAULT_GAUNTLET, GAME_STATE_ARCHITECT_VAULT_EXTRACTION,
+    GAME_STATE_ARCHITECT_VAULT_SUCCESS, GAME_STATE_ARCHITECT_VAULT_FAILURE
+)
 from .state import State
 from .playing_state import PlayingState
 from .maze_defense_state import MazeDefenseState
@@ -76,25 +86,25 @@ class StateManager:
         
         # Map from old string constants to new state classes for backward compatibility
         self.legacy_state_mapping = {
-            gs.GAME_STATE_PLAYING: "PlayingState",
-            gs.GAME_STATE_MAZE_DEFENSE: "MazeDefenseState",
-            gs.GAME_STATE_MAIN_MENU: "MainMenuState",
-            gs.GAME_STATE_GAME_OVER: "GameOverState",
-            gs.GAME_STATE_LEADERBOARD: "LeaderboardState",
-            gs.GAME_STATE_SETTINGS: "SettingsState",
-            gs.GAME_STATE_DRONE_SELECT: "DroneSelectState",
-            gs.GAME_STATE_CODEX: "CodexState",
-            gs.GAME_STATE_ENTER_NAME: "EnterNameState",
-            gs.GAME_STATE_GAME_INTRO_SCROLL: "GameIntroScrollState",
-            gs.GAME_STATE_RING_PUZZLE: "RingPuzzleState",
-            gs.GAME_STATE_BONUS_LEVEL_START: "BonusLevelStartState",
-            gs.GAME_STATE_BONUS_LEVEL_PLAYING: "BonusLevelPlayingState",
-            gs.GAME_STATE_ARCHITECT_VAULT_INTRO: "ArchitectVaultIntroState",
-            gs.GAME_STATE_ARCHITECT_VAULT_ENTRY_PUZZLE: "ArchitectVaultEntryPuzzleState",
-            gs.GAME_STATE_ARCHITECT_VAULT_GAUNTLET: "ArchitectVaultGauntletState",
-            gs.GAME_STATE_ARCHITECT_VAULT_EXTRACTION: "ArchitectVaultExtractionState",
-            gs.GAME_STATE_ARCHITECT_VAULT_SUCCESS: "ArchitectVaultSuccessState",
-            gs.GAME_STATE_ARCHITECT_VAULT_FAILURE: "ArchitectVaultFailureState"
+            GAME_STATE_PLAYING: "PlayingState",
+            GAME_STATE_MAZE_DEFENSE: "MazeDefenseState",
+            GAME_STATE_MAIN_MENU: "MainMenuState",
+            GAME_STATE_GAME_OVER: "GameOverState",
+            GAME_STATE_LEADERBOARD: "LeaderboardState",
+            GAME_STATE_SETTINGS: "SettingsState",
+            GAME_STATE_DRONE_SELECT: "DroneSelectState",
+            GAME_STATE_CODEX: "CodexState",
+            GAME_STATE_ENTER_NAME: "EnterNameState",
+            GAME_STATE_GAME_INTRO_SCROLL: "GameIntroScrollState",
+            GAME_STATE_RING_PUZZLE: "RingPuzzleState",
+            GAME_STATE_BONUS_LEVEL_START: "BonusLevelStartState",
+            GAME_STATE_BONUS_LEVEL_PLAYING: "BonusLevelPlayingState",
+            GAME_STATE_ARCHITECT_VAULT_INTRO: "ArchitectVaultIntroState",
+            GAME_STATE_ARCHITECT_VAULT_ENTRY_PUZZLE: "ArchitectVaultEntryPuzzleState",
+            GAME_STATE_ARCHITECT_VAULT_GAUNTLET: "ArchitectVaultGauntletState",
+            GAME_STATE_ARCHITECT_VAULT_EXTRACTION: "ArchitectVaultExtractionState",
+            GAME_STATE_ARCHITECT_VAULT_SUCCESS: "ArchitectVaultSuccessState",
+            GAME_STATE_ARCHITECT_VAULT_FAILURE: "ArchitectVaultFailureState"
         }
     
     def get_current_state(self):
@@ -121,8 +131,9 @@ class StateManager:
 
         try:
             pygame.mixer.music.load(music_path)
-            volume_setting = gs.get_game_setting(volume_multiplier_key, 1.0)
-            pygame.mixer.music.set_volume(gs.get_game_setting("MUSIC_BASE_VOLUME", 0.5) * volume_setting)
+            volume_setting = get_setting("display", volume_multiplier_key, 1.0)
+            base_volume = get_setting("display", "MUSIC_BASE_VOLUME", 0.5)
+            pygame.mixer.music.set_volume(base_volume * volume_setting)
             pygame.mixer.music.play(loops=loops)
             self.current_music_context_key = music_key  # Store the key of the playing music
             print(f"StateManager: Playing music for context key '{music_key}'.")

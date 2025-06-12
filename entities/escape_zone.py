@@ -1,14 +1,14 @@
 import pygame
 import math # Added import math
-import game_settings as gs # For TILE_SIZE and potential color settings
+from settings_manager import get_setting # New settings management system
 
 class EscapeZone(pygame.sprite.Sprite):
     def __init__(self, x, y):
         super().__init__()
-        self.size = int(gs.TILE_SIZE * 1.5) # Make it a bit larger than a tile
+        self.size = int(get_setting("gameplay", "TILE_SIZE", 80) * 1.5) # Make it a bit larger than a tile
         self.image = pygame.Surface([self.size, self.size], pygame.SRCALPHA)
-        # Use get_game_setting for safety, in case ESCAPE_ZONE_COLOR is modified by user or missing
-        self.color = gs.get_game_setting("ESCAPE_ZONE_COLOR", (0, 255, 128)) # Bright green, default opaque
+        # Use get_setting for safety, in case ESCAPE_ZONE_COLOR is modified by user or missing
+        self.color = get_setting("gameplay", "ESCAPE_ZONE_COLOR", (0, 255, 128)) # Bright green, default opaque
         
         # Simple pulsing visual
         self.pulse_time = 0

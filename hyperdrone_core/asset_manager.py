@@ -203,7 +203,7 @@ class AssetManager:
         """Preloads all game assets needed for HYPERDRONE."""
         # Import locally to avoid circular imports
         from drone_management.drone_configs import DRONE_DATA
-        import game_settings as gs  # Still needed for some values during transition
+        from settings_manager import settings_manager
         
         asset_manifest = {
             "images": {
@@ -259,7 +259,7 @@ class AssetManager:
         }
         
         # Add core fragment icons
-        core_fragments = gs.CORE_FRAGMENT_DETAILS  # Still using gs during transition
+        core_fragments = settings_manager.get_core_fragment_details()
         if core_fragments:
             for _, details in core_fragments.items():
                 if details and "id" in details and "icon_filename" in details:
@@ -278,13 +278,8 @@ class AssetManager:
                     "alpha": True
                 }
 
-        # Add weapon mode icons - still using gs.WEAPON_MODE_ICONS during transition
-        # This will be updated in future refactoring to use settings_manager directly
-        from settings_manager import settings_manager
+        # Add weapon mode icons
         weapon_icons = settings_manager.get_weapon_icon_paths()
-        if not weapon_icons:  # Fallback to game_settings during transition
-            import game_settings as gs
-            weapon_icons = gs.WEAPON_MODE_ICONS
             
         for weapon_path in weapon_icons.values():
             if weapon_path and isinstance(weapon_path, str):

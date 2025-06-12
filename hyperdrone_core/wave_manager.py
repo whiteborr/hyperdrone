@@ -3,10 +3,10 @@ import random
 import math
 import logging
 
-import game_settings as gs
+from settings_manager import get_setting
 
-try: BUILD_PHASE_DEFAULT_DURATION_MS = gs.get_game_setting("DEFENSE_BUILD_PHASE_DURATION_MS", 30000)
-except (AttributeError, NameError): BUILD_PHASE_DEFAULT_DURATION_MS = 30000
+# Get build phase duration from settings
+BUILD_PHASE_DEFAULT_DURATION_MS = get_setting("defense", "DEFENSE_BUILD_PHASE_DURATION_MS", 30000)
 
 logger = logging.getLogger(__name__)
 if not logging.getLogger().hasHandlers():
@@ -103,7 +103,9 @@ class WaveManager:
             
             if self.current_group_index >= len(self.current_wave_enemy_groups) and self.game_controller.combat_controller.enemy_manager.get_active_enemies_count() == 0:
                 self.is_wave_active = False; logger.info(f"WaveManager: Wave {self.current_wave_number} Cleared!")
-                reward = gs.get_game_setting("DEFENSE_WAVE_CLEAR_CORE_REWARD_BASE", 100) + (self.current_wave_number -1) * gs.get_game_setting("DEFENSE_WAVE_CLEAR_CORE_INCREMENT", 50)
+                base_reward = get_setting("defense", "DEFENSE_WAVE_CLEAR_CORE_REWARD_BASE", 100)
+                increment = get_setting("defense", "DEFENSE_WAVE_CLEAR_CORE_INCREMENT", 50)
+                reward = base_reward + (self.current_wave_number - 1) * increment
                 self.game_controller.drone_system.add_player_cores(reward); self.game_controller.play_sound('level_up') 
                 if self.current_wave_number >= self.total_waves: self.all_waves_cleared = True 
                 self._start_build_phase_internal()

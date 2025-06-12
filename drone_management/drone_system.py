@@ -3,7 +3,7 @@ import json
 import os
 import logging
 from .drone_configs import DRONE_DATA
-import game_settings as gs
+from settings_manager import settings_manager
 
 logger = logging.getLogger(__name__)
 
@@ -273,7 +273,8 @@ class DroneSystem:
         """Checks if all fragments *required for the vault* are collected."""
         from hyperdrone_core.constants import KEY_FRAGMENT_ID, KEY_FRAGMENT_REQUIRED_FOR_VAULT
         
-        required_fragments = {details[KEY_FRAGMENT_ID] for _, details in gs.CORE_FRAGMENT_DETAILS.items() 
+        core_fragments = settings_manager.get_core_fragment_details()
+        required_fragments = {details[KEY_FRAGMENT_ID] for _, details in core_fragments.items() 
                              if details and details.get(KEY_FRAGMENT_REQUIRED_FOR_VAULT)}
         if not required_fragments:
             logger.warning(f"No fragments marked as '{KEY_FRAGMENT_REQUIRED_FOR_VAULT}'. Vault may be permanently locked.")

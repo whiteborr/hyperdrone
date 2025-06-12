@@ -2,8 +2,8 @@
 import pygame
 import random
 import logging
-
-import game_settings as gs
+from settings_manager import get_setting
+from constants import BLUE, RED, GOLD, ARCHITECT_VAULT_WALL_COLOR
 
 logger = logging.getLogger(__name__)
 
@@ -13,10 +13,10 @@ class Maze:
         self.maze_type = maze_type 
 
         # Dynamically calculate dimensions based on current game settings
-        width = gs.get_game_setting("WIDTH")
-        height = gs.get_game_setting("HEIGHT")
-        self.tile_size = gs.get_game_setting("TILE_SIZE")
-        self.bottom_panel_height = gs.get_game_setting("BOTTOM_PANEL_HEIGHT")
+        width = get_setting("display", "WIDTH", 1920)
+        height = get_setting("display", "HEIGHT", 1080)
+        self.tile_size = get_setting("gameplay", "TILE_SIZE", 80)
+        self.bottom_panel_height = get_setting("display", "BOTTOM_PANEL_HEIGHT", 120)
 
         # Calculate maze dimensions to use all available space within the border
         self.available_width = width - self.game_area_x_offset
@@ -90,10 +90,10 @@ class Maze:
         return border_lines
 
     def draw(self, surface, camera=None): 
-        wall_color = gs.ARCHITECT_VAULT_WALL_COLOR if self.maze_type == "architect_vault" else gs.BLUE
+        wall_color = ARCHITECT_VAULT_WALL_COLOR if self.maze_type == "architect_vault" else BLUE
         wall_thickness = 2
         border_thickness = 3
-        border_color = gs.RED if self.maze_type == "architect_vault" else gs.GOLD
+        border_color = RED if self.maze_type == "architect_vault" else GOLD
         
         if not self.walls: return
 

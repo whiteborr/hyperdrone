@@ -5,7 +5,7 @@ import logging
 
 logging.basicConfig(level=logging.INFO)
 
-from hyperdrone_core.game_loop_refactored import GameController
+from hyperdrone_core.game_loop import GameController
 
 if __name__ == '__main__':
     """

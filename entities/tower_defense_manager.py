@@ -1,9 +1,11 @@
 import pygame
 import logging
+import random
 from typing import List, Tuple, Dict, Optional
 from entities.path_manager import PathManager
 from entities.enemy_pathfinder import PathfindingEnemy
 from entities.turret import Turret
+from settings_manager import get_setting
 
 logger = logging.getLogger(__name__)
 
@@ -116,7 +118,6 @@ class TowerDefenseManager:
             return None
             
         # Choose a random spawn point
-        import random
         spawn_point = random.choice(self.path_manager.spawn_points)
         
         # Import the DefenseDronePathfinder class
@@ -132,15 +133,25 @@ class TowerDefenseManager:
             
             # Create appropriate defense drone with proper sprite
             if drone_number == "1":
-                enemy = DefenseDronePathfinder(spawn_point, self.path_manager, asset_manager, sprite_key, speed=1.0, health=100)
+                health = get_setting("gameplay", "DEFENSE_DRONE_1_HEALTH", 100)
+                speed = get_setting("gameplay", "DEFENSE_DRONE_1_SPEED", 1.0)
+                enemy = DefenseDronePathfinder(spawn_point, self.path_manager, asset_manager, sprite_key, speed=speed, health=health)
             elif drone_number == "2":
-                enemy = DefenseDronePathfinder(spawn_point, self.path_manager, asset_manager, sprite_key, speed=0.7, health=200)
+                health = get_setting("gameplay", "DEFENSE_DRONE_2_HEALTH", 200)
+                speed = get_setting("gameplay", "DEFENSE_DRONE_2_SPEED", 0.7)
+                enemy = DefenseDronePathfinder(spawn_point, self.path_manager, asset_manager, sprite_key, speed=speed, health=health)
             elif drone_number == "3":
-                enemy = DefenseDronePathfinder(spawn_point, self.path_manager, asset_manager, sprite_key, speed=1.5, health=80)
+                health = get_setting("gameplay", "DEFENSE_DRONE_3_HEALTH", 80)
+                speed = get_setting("gameplay", "DEFENSE_DRONE_3_SPEED", 1.5)
+                enemy = DefenseDronePathfinder(spawn_point, self.path_manager, asset_manager, sprite_key, speed=speed, health=health)
             elif drone_number == "4":
-                enemy = DefenseDronePathfinder(spawn_point, self.path_manager, asset_manager, sprite_key, speed=0.5, health=300)
+                health = get_setting("gameplay", "DEFENSE_DRONE_4_HEALTH", 300)
+                speed = get_setting("gameplay", "DEFENSE_DRONE_4_SPEED", 0.5)
+                enemy = DefenseDronePathfinder(spawn_point, self.path_manager, asset_manager, sprite_key, speed=speed, health=health)
             elif drone_number == "5":
-                enemy = DefenseDronePathfinder(spawn_point, self.path_manager, asset_manager, sprite_key, speed=1.2, health=150)
+                health = get_setting("gameplay", "DEFENSE_DRONE_5_HEALTH", 150)
+                speed = get_setting("gameplay", "DEFENSE_DRONE_5_SPEED", 1.2)
+                enemy = DefenseDronePathfinder(spawn_point, self.path_manager, asset_manager, sprite_key, speed=speed, health=health)
         else:
             # Create basic enemy types
             if enemy_type == 'basic':

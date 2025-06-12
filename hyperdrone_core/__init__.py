@@ -4,7 +4,7 @@
 from .game_loop import GameController
 
 # Import other core manager classes
-from .scene_manager import SceneManager
+from .state_manager import StateManager
 from .event_manager import EventManager
 from .player_actions import PlayerActions
 from .enemy_manager import EnemyManager
@@ -26,7 +26,7 @@ from . import leaderboard
 # Define what is available for import when using 'from hyperdrone_core import *'
 __all__ = [
     "GameController",
-    "SceneManager",
+    "StateManager",
     "EventManager",
     "PlayerActions",
     "EnemyManager",

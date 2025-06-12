@@ -9,6 +9,7 @@
     "LEVEL_UP_SOUND": "sounds/level_up.wav",
     "UI_SELECT_SOUND": "sounds/ui_select.wav",
     "UI_CONFIRM_SOUND": "sounds/ui_confirm.wav",
+    "UI_DENIED_SOUND": "sounds/ui_denied.wav",
     "MISSILE_LAUNCH_SOUND": "sounds/missile_launch.wav",
     "PROTOTYPE_DRONE_EXPLODE_SOUND": "sounds/prototype_drone_explode.wav"
   },

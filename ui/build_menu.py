@@ -1,8 +1,8 @@
 # ui/build_menu.py
 import pygame
-import game_settings as gs
-from game_settings import (
-    WHITE, BLACK, CYAN, YELLOW, GREEN, RED, DARK_GREY, GOLD, GREY, TILE_SIZE, BOTTOM_PANEL_HEIGHT
+from settings_manager import get_setting, set_setting, get_asset_path
+from hyperdrone_core.constants import (
+    WHITE, BLACK, CYAN, YELLOW, GREEN, RED, DARK_GREY, GOLD, GREY
 )
 try:
     from entities.turret import Turret 
@@ -20,7 +20,9 @@ class BuildMenu:
         self.asset_manager = asset_manager
         self.is_active = False 
         self.panel_height, self.panel_width = 90, 280
-        self.panel_rect = pygame.Rect(20, gs.HEIGHT - BOTTOM_PANEL_HEIGHT - self.panel_height - 10, self.panel_width, self.panel_height)
+        height = get_setting("display", "HEIGHT", 1080)
+        bottom_panel_height = get_setting("display", "BOTTOM_PANEL_HEIGHT", 120)
+        self.panel_rect = pygame.Rect(20, height - bottom_panel_height - self.panel_height - 10, self.panel_width, self.panel_height)
         self.selected_turret_on_map = None
         self.hover_tile_rect = None
         self.hover_tile_color = (*GREEN[:3], 100)
@@ -39,7 +41,7 @@ class BuildMenu:
         self.hover_tile_rect = None
 
     def update(self, mouse_pos, current_game_state, camera=None):
-        if not self.is_active or current_game_state != gs.GAME_STATE_MAZE_DEFENSE or not getattr(self.game_controller, 'is_build_phase', False):
+        if not self.is_active or current_game_state != "maze_defense_mode" or not getattr(self.game_controller, 'is_build_phase', False):
             self.hover_tile_rect = None; return
 
         if self.is_mouse_over_build_menu(mouse_pos):
@@ -49,10 +51,11 @@ class BuildMenu:
 
         if self.game_controller.maze:
             offset = getattr(self.game_controller.maze, 'game_area_x_offset', 0)
-            grid_col, grid_row = int((world_pos[0] - offset) / TILE_SIZE), int(world_pos[1] / TILE_SIZE)
+            tile_size = get_setting("gameplay", "TILE_SIZE", 80)
+            grid_col, grid_row = int((world_pos[0] - offset) / tile_size), int(world_pos[1] / tile_size)
 
             if 0 <= grid_row < self.game_controller.maze.actual_maze_rows and 0 <= grid_col < self.game_controller.maze.actual_maze_cols:
-                tile_world_x, tile_world_y = grid_col * TILE_SIZE + offset, grid_row * TILE_SIZE
+                tile_world_x, tile_world_y = grid_col * tile_size + offset, grid_row * tile_size
                 self.hover_tile_rect = pygame.Rect(tile_world_x, tile_world_y, TILE_SIZE, TILE_SIZE)
                 
                 is_valid = isinstance(self.game_controller.maze, MazeChapter2) and self.game_controller.maze.grid[grid_row][grid_col] == 'T'

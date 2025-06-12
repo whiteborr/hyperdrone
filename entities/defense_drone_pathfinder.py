@@ -3,6 +3,7 @@ import logging
 from typing import List, Tuple, Optional
 from entities.path_manager import PathManager
 from entities.enemy_pathfinder import PathfindingEnemy
+from hyperdrone_core.constants import RED, YELLOW, GREEN, WHITE, DARK_GREY
 
 logger = logging.getLogger(__name__)
 
@@ -79,19 +80,19 @@ class DefenseDronePathfinder(PathfindingEnemy):
         filled_width = bar_width * health_percentage
         
         # Draw background
-        pygame.draw.rect(surface, (50, 50, 50), (bar_x, bar_y, bar_width, bar_height))
+        pygame.draw.rect(surface, DARK_GREY, (bar_x, bar_y, bar_width, bar_height))
         
         # Draw filled portion
         if filled_width > 0:
             # Color based on health percentage
             if health_percentage < 0.3:
-                fill_color = (255, 0, 0)  # Red
+                fill_color = RED
             elif health_percentage < 0.6:
-                fill_color = (255, 255, 0)  # Yellow
+                fill_color = YELLOW
             else:
-                fill_color = (0, 255, 0)  # Green
+                fill_color = GREEN
                 
             pygame.draw.rect(surface, fill_color, (bar_x, bar_y, filled_width, bar_height))
             
         # Draw border
-        pygame.draw.rect(surface, (255, 255, 255), (bar_x, bar_y, bar_width, bar_height), 1)
+        pygame.draw.rect(surface, WHITE, (bar_x, bar_y, bar_width, bar_height), 1)

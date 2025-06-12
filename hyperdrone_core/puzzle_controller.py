@@ -2,10 +2,10 @@
 import pygame
 import os 
 
-import game_settings as gs
-from game_settings import (
-    GAME_STATE_RING_PUZZLE, GAME_STATE_PLAYING, GAME_STATE_MAZE_DEFENSE, GAME_STATE_ARCHITECT_VAULT_ENTRY_PUZZLE,
-    TOTAL_CORE_FRAGMENTS_NEEDED, CORE_FRAGMENT_DETAILS
+from settings_manager import get_setting, settings_manager
+from constants import (
+    GAME_STATE_RING_PUZZLE, GAME_STATE_PLAYING, GAME_STATE_MAZE_DEFENSE, 
+    GAME_STATE_ARCHITECT_VAULT_ENTRY_PUZZLE, GAME_STATE_ARCHITECT_VAULT_GAUNTLET
 )
 
 from entities import AncientAlienTerminal
@@ -33,7 +33,8 @@ class PuzzleController:
         self.ring_puzzle_solved_this_session = False
         self.last_interacted_terminal_for_ring_puzzle = None
 
-        self.architect_vault_terminals_activated = [False] * TOTAL_CORE_FRAGMENTS_NEEDED
+        total_fragments = get_setting("collectibles", "TOTAL_CORE_FRAGMENTS_NEEDED", 3)
+        self.architect_vault_terminals_activated = [False] * total_fragments
         self.architect_vault_puzzle_terminals_group = pygame.sprite.Group()
 
         print("PuzzleController initialized.")
@@ -108,11 +109,14 @@ class PuzzleController:
         ]
         
         try:
+            screen_width = get_setting("display", "WIDTH", 1920)
+            screen_height = get_setting("display", "HEIGHT", 1080)
+            
             self.current_ring_puzzle = RingPuzzle(
-                gs.get_game_setting("WIDTH"), 
-                gs.get_game_setting("HEIGHT"),
+                screen_width, 
+                screen_height,
                 ring_configs,
-                asset_manager=self.asset_manager # <<< Pass asset_manager to RingPuzzle
+                asset_manager=self.asset_manager # Pass asset_manager to RingPuzzle
             )
             self.ring_puzzle_active_flag = True
             self.ring_puzzle_solved_this_session = False
@@ -133,7 +137,8 @@ class PuzzleController:
         self.ring_puzzle_solved_this_session = True
         
         if self.drone_system:
-            self.drone_system.add_player_cores(gs.get_game_setting("RING_PUZZLE_CORE_REWARD", 750))
+            reward = get_setting("puzzles", "RING_PUZZLE_CORE_REWARD", 750)
+            self.drone_system.add_player_cores(reward)
             if self.last_interacted_terminal_for_ring_puzzle:
                 self.drone_system.mark_puzzle_terminal_as_solved(self.last_interacted_terminal_for_ring_puzzle.item_id)
 
@@ -185,7 +190,10 @@ class PuzzleController:
         fragment_ids_for_puzzle_terminals = ["cf_alpha", "cf_beta", "cf_gamma"]
         required_fragment_id = fragment_ids_for_puzzle_terminals[terminal_idx_pressed]
         
-        frag_conf = next((details for _, details in CORE_FRAGMENT_DETAILS.items() if details and details.get("id") == required_fragment_id), None)
+        # Get core fragment details from settings manager
+        core_fragments = settings_manager.get_core_fragment_details()
+        frag_conf = next((details for _, details in core_fragments.items() 
+                         if details and details.get("id") == required_fragment_id), None)
         required_fragment_name = frag_conf.get("name", "a Core Fragment") if frag_conf else "a Core Fragment"
 
         if self.drone_system and self.drone_system.has_collected_fragment(required_fragment_id):
@@ -202,7 +210,7 @@ class PuzzleController:
             if all(self.architect_vault_terminals_activated):
                 self.game_controller.set_story_message("All terminals active. Lockdown disengaged. Prepare for Gauntlet!")
                 if hasattr(self.game_controller, 'start_architect_vault_gauntlet'):
-                    self.game_controller.scene_manager.set_game_state(gs.GAME_STATE_ARCHITECT_VAULT_GAUNTLET)
+                    self.game_controller.scene_manager.set_game_state(GAME_STATE_ARCHITECT_VAULT_GAUNTLET)
         else:
             self.game_controller.set_story_message(f"Terminal {terminal_idx_pressed + 1} requires {required_fragment_name}.")
             self.game_controller.play_sound('ui_denied')
@@ -214,7 +222,8 @@ class PuzzleController:
         self.ring_puzzle_solved_this_session = False
         self.last_interacted_terminal_for_ring_puzzle = None
         
-        self.architect_vault_terminals_activated = [False] * TOTAL_CORE_FRAGMENTS_NEEDED
+        total_fragments = get_setting("collectibles", "TOTAL_CORE_FRAGMENTS_NEEDED", 3)
+        self.architect_vault_terminals_activated = [False] * total_fragments
         print("PuzzleController: All puzzle states reset.")
 
     def draw_active_puzzle(self, surface):

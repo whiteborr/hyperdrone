@@ -14,8 +14,9 @@ except ImportError:
 # Import pathfinding module
 from hyperdrone_core.pathfinding import a_star_search, find_wall_follow_target, find_alternative_target
 
-# Corrected import style
-import game_settings as gs
+# Import from settings_manager for settings access
+from settings_manager import get_setting
+from constants import GREEN, YELLOW, RED, WHITE, DARK_PURPLE
 
 logger = logging.getLogger(__name__)
 
@@ -23,21 +24,21 @@ class Enemy(pygame.sprite.Sprite):
     def __init__(self, x, y, player_bullet_size_base, asset_manager, sprite_asset_key, shoot_sound_key=None, target_player_ref=None):
         super().__init__()
         self.x, self.y, self.angle = float(x), float(y), 0.0
-        self.speed = gs.get_game_setting("ENEMY_SPEED", 1.5) 
-        self.health = gs.get_game_setting("ENEMY_HEALTH", 100); self.max_health = self.health
+        self.speed = get_setting("enemies", "ENEMY_SPEED", 1.5) 
+        self.health = get_setting("enemies", "ENEMY_HEALTH", 100); self.max_health = self.health
         self.alive = True
         self.asset_manager, self.sprite_asset_key, self.shoot_sound_key = asset_manager, sprite_asset_key, shoot_sound_key
         self.player_ref = target_player_ref
         self.contact_damage = 25
-        self.aggro_radius = gs.TILE_SIZE * 9
+        self.aggro_radius = get_setting("gameplay", "TILE_SIZE", 80) * 9
         self.original_image, self.image, self.rect, self.collision_rect = None, None, None, None
         self._load_sprite()
         self.bullets = pygame.sprite.Group() 
         self.last_shot_time = pygame.time.get_ticks() + random.randint(0, 1500) 
-        self.shoot_cooldown = gs.get_game_setting("ENEMY_BULLET_COOLDOWN", 1500)
+        self.shoot_cooldown = get_setting("enemies", "ENEMY_BULLET_COOLDOWN", 1500)
         self.enemy_bullet_size = int(player_bullet_size_base // 1.5) if player_bullet_size_base else 3
         self.path, self.current_path_index, self.last_path_recalc_time = [], 0, 0
-        self.PATH_RECALC_INTERVAL, self.WAYPOINT_THRESHOLD = 1000, gs.TILE_SIZE * 0.3
+        self.PATH_RECALC_INTERVAL, self.WAYPOINT_THRESHOLD = 1000, get_setting("gameplay", "TILE_SIZE", 80) * 0.3
         self.stuck_timer, self.last_pos_check = 0, (self.x, self.y)
         self.STUCK_TIME_THRESHOLD_MS, self.STUCK_MOVE_THRESHOLD = 2500, 0.5
         self.alternative_target = None
@@ -45,14 +46,19 @@ class Enemy(pygame.sprite.Sprite):
         self.ALTERNATIVE_TARGET_TIMEOUT = 5000  # 5 seconds before trying primary target again
 
     def _load_sprite(self):
-        default_size = (int(gs.TILE_SIZE * 0.7), int(gs.TILE_SIZE * 0.7)) 
+        tile_size = get_setting("gameplay", "TILE_SIZE", 80)
+        default_size = (int(tile_size * 0.7), int(tile_size * 0.7)) 
         self.original_image = self.asset_manager.get_image(self.sprite_asset_key, scale_to_size=default_size)
-        if self.original_image is None: self.original_image = self.asset_manager._create_fallback_surface(size=default_size, color=gs.ENEMY_COLOR) 
+        if self.original_image is None: self.original_image = self.asset_manager._create_fallback_surface(size=default_size, color=(255, 0, 0)) 
         self.image = self.original_image.copy(); self.rect = self.image.get_rect(center=(int(self.x), int(self.y)))
         self.collision_rect = self.rect.inflate(-self.rect.width * 0.2, -self.rect.height * 0.2)
 
-    def _pixel_to_grid(self, px, py, offset=0): return int(py / gs.TILE_SIZE), int((px - offset) / gs.TILE_SIZE)
-    def _grid_to_pixel_center(self, r, c, offset=0): return (c*gs.TILE_SIZE)+(gs.TILE_SIZE/2)+offset, (r*gs.TILE_SIZE)+(gs.TILE_SIZE/2)
+    def _pixel_to_grid(self, px, py, offset=0): 
+        tile_size = get_setting("gameplay", "TILE_SIZE", 80)
+        return int(py / tile_size), int((px - offset) / tile_size)
+    def _grid_to_pixel_center(self, r, c, offset=0): 
+        tile_size = get_setting("gameplay", "TILE_SIZE", 80)
+        return (c*tile_size)+(tile_size/2)+offset, (r*tile_size)+(tile_size/2)
 
     def update(self, primary_target_pos_pixels, maze, current_time_ms, delta_time_ms, game_area_x_offset=0, is_defense_mode=False):
         if not self.alive:
@@ -122,7 +128,8 @@ class Enemy(pygame.sprite.Sprite):
                 
             if walkable_tiles:
                 # Find tiles that are not too close to current position
-                viable_tiles = [p for p in walkable_tiles if gs.TILE_SIZE * 3 < math.hypot(p[0] - self.x, p[1] - self.y) < gs.TILE_SIZE * 12]
+                tile_size = get_setting("gameplay", "TILE_SIZE", 80)
+                viable_tiles = [p for p in walkable_tiles if tile_size * 3 < math.hypot(p[0] - self.x, p[1] - self.y) < tile_size * 12]
                 if viable_tiles:
                     unstick_target = random.choice(viable_tiles)
                     # Force a new path calculation
@@ -134,8 +141,9 @@ class Enemy(pygame.sprite.Sprite):
             
             # Last resort: move in a random direction
             angle = random.uniform(0, 2 * math.pi)
-            self.x += math.cos(angle) * gs.TILE_SIZE * 2
-            self.y += math.sin(angle) * gs.TILE_SIZE * 2
+            tile_size = get_setting("gameplay", "TILE_SIZE", 80)
+            self.x += math.cos(angle) * tile_size * 2
+            self.y += math.sin(angle) * tile_size * 2
             self.rect.center = (self.x, self.y)
             self.collision_rect.center = self.rect.center
             self.stuck_timer = 0
@@ -233,15 +241,15 @@ class Enemy(pygame.sprite.Sprite):
                 self.x, self.y = next_x, next_y
         
         self.rect.center = (self.x, self.y)
-        game_play_area_height = gs.get_game_setting("HEIGHT")
-        self.rect.clamp_ip(pygame.Rect(game_area_x_offset, 0, gs.get_game_setting("WIDTH") - game_area_x_offset, game_play_area_height))
+        game_play_area_height = get_setting("display", "HEIGHT", 1080)
+        self.rect.clamp_ip(pygame.Rect(game_area_x_offset, 0, get_setting("display", "WIDTH", 1920) - game_area_x_offset, game_play_area_height))
         self.x, self.y = self.rect.centerx, self.rect.centery
         if self.collision_rect: self.collision_rect.center = self.rect.center
 
     def shoot(self, direct_angle_to_target, maze): 
         if not self.alive: return
         rad_fire_angle = math.radians(direct_angle_to_target) 
-        tip_offset_distance = (self.rect.width / 2) if self.rect else (gs.TILE_SIZE * 0.35)
+        tip_offset_distance = (self.rect.width / 2) if self.rect else (get_setting("gameplay", "TILE_SIZE", 80) * 0.35)
         
         fire_origin_x, fire_origin_y = self.x, self.y
         raw_fire_origin_x = self.x + math.cos(rad_fire_angle) * tip_offset_distance
@@ -252,11 +260,11 @@ class Enemy(pygame.sprite.Sprite):
         
         new_bullet = Bullet(
             x=fire_origin_x, y=fire_origin_y, angle=direct_angle_to_target, 
-            speed=gs.get_game_setting("ENEMY_BULLET_SPEED", 5),
-            lifetime=gs.get_game_setting("ENEMY_BULLET_LIFETIME", 75),
+            speed=get_setting("enemies", "ENEMY_BULLET_SPEED", 5),
+            lifetime=get_setting("enemies", "ENEMY_BULLET_LIFETIME", 75),
             size=self.enemy_bullet_size,
-            color=gs.get_game_setting("ENEMY_BULLET_COLOR", (255,165,0)),
-            damage=gs.get_game_setting("ENEMY_BULLET_DAMAGE", 10)
+            color=get_setting("enemies", "ENEMY_BULLET_COLOR", (255,165,0)),
+            damage=get_setting("enemies", "ENEMY_BULLET_DAMAGE", 10)
         )
         self.bullets.add(new_bullet)
         
@@ -299,10 +307,10 @@ class Enemy(pygame.sprite.Sprite):
         screen_rect = camera.apply_to_rect(self.rect) if camera else self.rect
         bar_x, bar_y = screen_rect.centerx - bar_w/2, screen_rect.top - bar_h - 3
         fill_w = bar_w * (self.health / self.max_health if self.max_health > 0 else 0)
-        fill_color = gs.GREEN if self.health/self.max_health > 0.6 else gs.YELLOW if self.health/self.max_health > 0.3 else gs.RED
+        fill_color = GREEN if self.health/self.max_health > 0.6 else YELLOW if self.health/self.max_health > 0.3 else RED
         pygame.draw.rect(surface, (80,0,0), (bar_x, bar_y, bar_w, bar_h))
         if fill_w > 0: pygame.draw.rect(surface, fill_color, (bar_x, bar_y, int(fill_w), bar_h)) 
-        pygame.draw.rect(surface, gs.WHITE, (bar_x, bar_y, bar_w, bar_h), 1) 
+        pygame.draw.rect(surface, WHITE, (bar_x, bar_y, bar_w, bar_h), 1) 
 
 class DefenseDrone(Enemy):
     def __init__(self, x, y, asset_manager, sprite_asset_key, path_to_core, **kwargs):
@@ -321,16 +329,17 @@ class DefenseDrone(Enemy):
 class SentinelDrone(Enemy): 
     def __init__(self, x, y, player_bullet_size_base, asset_manager, sprite_asset_key, shoot_sound_key=None, target_player_ref=None):
         super().__init__(x, y, player_bullet_size_base, asset_manager, sprite_asset_key, shoot_sound_key, target_player_ref)
-        self.speed = gs.get_game_setting("SENTINEL_DRONE_SPEED", 3.0)
-        self.health = gs.get_game_setting("SENTINEL_DRONE_HEALTH", 75); self.max_health = self.health
-        self.shoot_cooldown = int(gs.get_game_setting("ENEMY_BULLET_COOLDOWN", 1500) * 0.7)
+        self.speed = get_setting("bosses", "SENTINEL_DRONE_SPEED", 3.0)
+        self.health = get_setting("bosses", "SENTINEL_DRONE_HEALTH", 75); self.max_health = self.health
+        self.shoot_cooldown = int(get_setting("enemies", "ENEMY_BULLET_COOLDOWN", 1500) * 0.7)
 
     def _load_sprite(self): 
-        default_size = (int(gs.TILE_SIZE * 0.6), int(gs.TILE_SIZE * 0.6)) 
+        tile_size = get_setting("gameplay", "TILE_SIZE", 80)
+        default_size = (int(tile_size * 0.6), int(tile_size * 0.6)) 
         self.original_image = self.asset_manager.get_image(self.sprite_asset_key, scale_to_size=default_size)
         if self.original_image is None:
             self.original_image = pygame.Surface(default_size, pygame.SRCALPHA)
             points = [(default_size[0]//2,0),(default_size[0],default_size[1]//2),(default_size[0]//2,default_size[1]),(0,default_size[1]//2)]
-            pygame.draw.polygon(self.original_image, gs.get_game_setting("DARK_PURPLE",(70,0,100)), points); pygame.draw.polygon(self.original_image, gs.WHITE, points, 1)
+            pygame.draw.polygon(self.original_image, DARK_PURPLE, points); pygame.draw.polygon(self.original_image, WHITE, points, 1)
         self.image = self.original_image.copy(); self.rect = self.image.get_rect(center=(int(self.x), int(self.y))) 
         if self.rect: self.collision_rect = self.rect.inflate(-self.rect.width * 0.2, -self.rect.height * 0.2)

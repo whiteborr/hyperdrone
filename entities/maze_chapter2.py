@@ -7,7 +7,8 @@ import math
 import logging 
 import copy
 
-import game_settings as gs
+from settings_manager import get_setting
+from hyperdrone_core.constants import BLACK, BLUE, RED, GREEN, YELLOW, CYAN
 
 logger = logging.getLogger(__name__)
 if not logger.hasHandlers():
@@ -31,9 +32,9 @@ class MazeChapter2:
         self.maze_type = maze_type
         
         # --- DYNAMIC DIMENSION CALCULATION ---
-        height = gs.get_game_setting("HEIGHT")
-        width = gs.get_game_setting("WIDTH")
-        tile_size = gs.get_game_setting("TILE_SIZE")
+        height = get_setting("display", "HEIGHT", 1080)
+        width = get_setting("display", "WIDTH", 1920)
+        tile_size = get_setting("gameplay", "TILE_SIZE", 80)
         
         self.actual_maze_rows = height // tile_size
         self.actual_maze_cols = (width - self.game_area_x_offset) // tile_size
@@ -44,8 +45,8 @@ class MazeChapter2:
         
         self.grid = self._build_tilemap()
         
-        self.wall_color = gs.get_game_setting("ARCHITECT_VAULT_WALL_COLOR", gs.BLUE) 
-        self.path_color = gs.BLACK 
+        self.wall_color = get_setting("display", "ARCHITECT_VAULT_WALL_COLOR", BLUE) 
+        self.path_color = BLACK 
         self.turret_spot_color = (0, 100, 0, 150) 
         self.used_turret_spot_color = (50, 50, 50, 100)
 
@@ -118,8 +119,9 @@ class MazeChapter2:
             for c_idx, tile in enumerate(row):
                 if tile == 'C':
                     self.core_reactor_grid_pos = (r_idx, c_idx)
-                    center_x_abs = c_idx * gs.TILE_SIZE + gs.TILE_SIZE // 2 + self.game_area_x_offset
-                    center_y_abs = r_idx * gs.TILE_SIZE + gs.TILE_SIZE // 2
+                    tile_size = get_setting("gameplay", "TILE_SIZE", 80)
+                    center_x_abs = c_idx * tile_size + tile_size // 2 + self.game_area_x_offset
+                    center_y_abs = r_idx * tile_size + tile_size // 2
                     self.core_reactor_abs_spawn_pos = (center_x_abs, center_y_abs)
                     return 
 
@@ -129,9 +131,10 @@ class MazeChapter2:
         if not self.core_reactor_grid_pos:
             return
 
+        tile_size = get_setting("gameplay", "TILE_SIZE", 80)
         for r, c in self.ENEMY_SPAWN_GRID_POSITIONS:
-            center_x_abs = c * gs.TILE_SIZE + gs.TILE_SIZE // 2 + self.game_area_x_offset
-            center_y_abs = r * gs.TILE_SIZE + gs.TILE_SIZE // 2
+            center_x_abs = c * tile_size + tile_size // 2 + self.game_area_x_offset
+            center_y_abs = r * tile_size + tile_size // 2
             self.enemy_spawn_points_abs.append((center_x_abs, center_y_abs))
 
             path_grid_coords = self.find_path_astar((r, c), self.core_reactor_grid_pos)
@@ -140,8 +143,9 @@ class MazeChapter2:
                 self.enemy_paths_to_core[(r, c)] = pixel_path
 
     def _grid_to_pixel_center(self, grid_row, grid_col):
-        pixel_x = (grid_col * gs.TILE_SIZE) + (gs.TILE_SIZE // 2) + self.game_area_x_offset
-        pixel_y = (grid_row * gs.TILE_SIZE) + (gs.TILE_SIZE // 2)
+        tile_size = get_setting("gameplay", "TILE_SIZE", 80)
+        pixel_x = (grid_col * tile_size) + (tile_size // 2) + self.game_area_x_offset
+        pixel_y = (grid_row * tile_size) + (tile_size // 2)
         return pixel_x, pixel_y
 
     def get_neighbors(self, grid_pos):
@@ -200,9 +204,10 @@ class MazeChapter2:
             (obj_center_x_abs + obj_width / 2, obj_center_y_abs + obj_height / 2)
         ]
 
+        tile_size = get_setting("gameplay", "TILE_SIZE", 80)
         for px, py in points_to_check:
-            grid_c = int((px - self.game_area_x_offset) / gs.TILE_SIZE)
-            grid_r = int(py / gs.TILE_SIZE)
+            grid_c = int((px - self.game_area_x_offset) / tile_size)
+            grid_r = int(py / tile_size)
             if 0 <= grid_r < self.actual_maze_rows and 0 <= grid_c < self.actual_maze_cols:
                 if self.grid[grid_r][grid_c] == 1: return True
             else: return True 
@@ -223,7 +228,7 @@ class MazeChapter2:
         return False
 
     def draw(self, surface, camera=None):
-        tile_size = gs.get_game_setting("TILE_SIZE")
+        tile_size = get_setting("gameplay", "TILE_SIZE", 80)
         for r_idx, row_data in enumerate(self.grid):
             for c_idx, tile_type in enumerate(row_data):
                 x = c_idx * tile_size + self.game_area_x_offset
@@ -247,7 +252,7 @@ class MazeChapter2:
                         radius = (tile_size // 3) * camera.zoom_level
                     else:
                         radius = tile_size // 3
-                    pygame.draw.circle(surface, gs.CYAN, center_pos, radius)
+                    pygame.draw.circle(surface, CYAN, center_pos, radius)
                 elif tile_type == 'T':
                     pygame.draw.rect(surface, self.path_color, rect)
                     if camera:
@@ -258,7 +263,7 @@ class MazeChapter2:
                         temp_surface_for_turret_spot = pygame.Surface((tile_size, tile_size), pygame.SRCALPHA)
                         temp_surface_for_turret_spot.fill(self.turret_spot_color)
                         surface.blit(temp_surface_for_turret_spot, (x, y))
-                    pygame.draw.rect(surface, gs.GREEN, rect, 1)
+                    pygame.draw.rect(surface, GREEN, rect, 1)
                 elif tile_type == 'U':
                     pygame.draw.rect(surface, self.path_color, rect)
 
@@ -296,11 +301,12 @@ class MazeChapter2:
 
     def get_path_cells_abs(self):
         path_cells = []
+        tile_size = get_setting("gameplay", "TILE_SIZE", 80)
         for r_idx, row in enumerate(self.grid):
             for c_idx, tile_type in enumerate(row):
                 if tile_type != 1: 
-                    center_x_abs = c_idx * gs.TILE_SIZE + gs.TILE_SIZE // 2 + self.game_area_x_offset
-                    center_y_abs = r_idx * gs.TILE_SIZE + gs.TILE_SIZE // 2
+                    center_x_abs = c_idx * tile_size + tile_size // 2 + self.game_area_x_offset
+                    center_y_abs = r_idx * tile_size + tile_size // 2
                     path_cells.append((center_x_abs, center_y_abs))
         return path_cells
 

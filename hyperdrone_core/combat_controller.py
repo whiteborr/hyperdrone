@@ -3,13 +3,12 @@ import pygame
 import math
 import random
 
-import game_settings as gs
-from game_settings import (
-    TILE_SIZE, WEAPON_MODES_SEQUENCE, POWERUP_TYPES,
+from settings_manager import get_setting, set_setting, get_asset_path
+from hyperdrone_core.constants import (
+    WEAPON_MODES_SEQUENCE, POWERUP_TYPES,
     GAME_STATE_PLAYING, GAME_STATE_ARCHITECT_VAULT_GAUNTLET,
     GAME_STATE_ARCHITECT_VAULT_EXTRACTION, GAME_STATE_ARCHITECT_VAULT_BOSS_FIGHT,
-    GAME_STATE_MAZE_DEFENSE, ARCHITECT_VAULT_DRONES_PER_WAVE, ARCHITECT_VAULT_GAUNTLET_WAVES,
-    MAZE_GUARDIAN_HEALTH, LIGHTNING_DAMAGE, CORE_FRAGMENT_DETAILS
+    GAME_STATE_MAZE_DEFENSE
 )
 
 from entities import (
@@ -47,6 +46,9 @@ class CombatController:
         self.core_reactor = None 
 
         self.architect_vault_gauntlet_current_wave = 0
+        
+        # Get tile size from settings
+        self.tile_size = get_setting("gameplay", "TILE_SIZE", 80)
 
     def set_active_entities(self, player, maze, core_reactor=None, turrets_group=None, power_ups_group=None, explosion_particles_group=None):
         self.player = player
@@ -235,7 +237,7 @@ class CombatController:
                     if corner['status'] != 'destroyed' and projectile.rect.colliderect(corner['rect']):
                         damage_to_corner = projectile.damage
                         if isinstance(projectile, LightningZap):
-                            damage_to_corner = gs.get_game_setting("LIGHTNING_DAMAGE", 15)
+                            damage_to_corner = get_setting("weapons", "LIGHTNING_DAMAGE", 15)
                         
                         if self.maze_guardian.damage_corner(corner['id'], damage_to_corner):
                             self.game_controller.level_manager.add_score(250)
@@ -396,7 +398,7 @@ class CombatController:
                     reactor.take_damage(contact_dmg, self.game_controller) 
                     self.game_controller._create_enemy_explosion(enemy.rect.centerx, enemy.rect.centery)
                     if not reactor.alive:
-                        self.game_controller.state_manager.set_state(gs.GAME_STATE_GAME_OVER) 
+                        self.game_controller.state_manager.set_state(GAME_STATE_GAME_OVER) 
                         return
 
     def _handle_player_power_up_collisions(self):
@@ -422,13 +424,18 @@ class CombatController:
                 p_up.kill()
         current_game_state = self.game_controller.state_manager.get_current_state_id()
         if current_game_state == GAME_STATE_PLAYING: 
-            if random.random() < (gs.get_game_setting("POWERUP_SPAWN_CHANCE") / gs.FPS if gs.FPS > 0 else 0.01):
-                if len(self.power_ups_group) < gs.get_game_setting("MAX_POWERUPS_ON_SCREEN"):
+            fps = get_setting("display", "FPS", 60)
+            powerup_spawn_chance = get_setting("powerups", "POWERUP_SPAWN_CHANCE", 0.05)
+            max_powerups = get_setting("powerups", "MAX_POWERUPS_ON_SCREEN", 2)
+            
+            if random.random() < (powerup_spawn_chance / fps if fps > 0 else 0.01):
+                if len(self.power_ups_group) < max_powerups:
                     self._try_spawn_powerup_item_internal()
 
     def _try_spawn_powerup_item_internal(self):
         if not self.maze or not self.player: return
-        spawn_pos = self.game_controller._get_safe_spawn_point(gs.POWERUP_SIZE, gs.POWERUP_SIZE)
+        powerup_size = get_setting("powerups", "POWERUP_SIZE", 26)
+        spawn_pos = self.game_controller._get_safe_spawn_point(powerup_size, powerup_size)
         if not spawn_pos: return
         abs_x, abs_y = spawn_pos
         powerup_type_keys = list(POWERUP_TYPES.keys())
@@ -445,8 +452,11 @@ class CombatController:
     def spawn_maze_guardian(self):
         if not self.player or not self.maze: return
         self.enemy_manager.reset_all() 
-        boss_spawn_x = self.maze.game_area_x_offset + (gs.WIDTH - self.maze.game_area_x_offset) / 2
-        boss_spawn_y = gs.GAME_PLAY_AREA_HEIGHT / 2
+        width = get_setting("display", "WIDTH", 1920)
+        game_play_area_height = get_setting("display", "HEIGHT", 1080) - get_setting("display", "BOTTOM_PANEL_HEIGHT", 120)
+        
+        boss_spawn_x = self.maze.game_area_x_offset + (width - self.maze.game_area_x_offset) / 2
+        boss_spawn_y = game_play_area_height / 2
         self.maze_guardian = MazeGuardian(x=boss_spawn_x, y=boss_spawn_y, 
                                           player_ref=self.player, maze_ref=self.maze, 
                                           game_controller_ref=self.game_controller,
@@ -460,7 +470,9 @@ class CombatController:
         self.game_controller.drone_system.add_defeated_boss("MAZE_GUARDIAN")
         self.game_controller.trigger_story_beat("story_beat_SB01")
         
-        vault_core_id = "vault_core"; vault_core_details = CORE_FRAGMENT_DETAILS.get("fragment_vault_core")
+        vault_core_id = "vault_core"
+        # Get core fragment details from settings manager
+        vault_core_details = self.asset_manager.settings_manager.get_core_fragment_details().get("fragment_vault_core")
         if vault_core_details and not self.game_controller.drone_system.has_collected_fragment(vault_core_id):
             if self.game_controller.drone_system.collect_core_fragment(vault_core_id):
                 self.game_controller.set_story_message(f"Lore Unlocked: {vault_core_details.get('name', 'Vault Core Data')}")
@@ -488,14 +500,14 @@ class CombatController:
         # Use tower defense manager if available
         if hasattr(self.game_controller, 'tower_defense_manager'):
             # Check if we can place a tower at this position
-            grid_c = int((screen_pos[0] - self.maze.game_area_x_offset) / TILE_SIZE)
-            grid_r = int(screen_pos[1] / TILE_SIZE)
+            grid_c = int((screen_pos[0] - self.maze.game_area_x_offset) / self.tile_size)
+            grid_r = int(screen_pos[1] / self.tile_size)
             
             # First check basic conditions
             if not (0 <= grid_r < self.maze.actual_maze_rows and 0 <= grid_c < self.maze.actual_maze_cols):
                 self.game_controller.play_sound('ui_denied', 0.6); return False
                 
-            max_turrets_allowed = Turret.MAX_TURRETS 
+            max_turrets_allowed = get_setting("defense_mode", "MAX_TURRETS_DEFENSE_MODE", 10)
             if len(self.turrets_group) >= max_turrets_allowed:
                 self.game_controller.play_sound('ui_denied', 0.6); return False
                 
@@ -503,7 +515,7 @@ class CombatController:
                 self.game_controller.play_sound('ui_denied', 0.6); return False
                 
             # Check if player has enough resources
-            turret_cost = Turret.TURRET_COST
+            turret_cost = get_setting("defense_mode", "TURRET_BASE_COST", 50)
             if self.game_controller.drone_system.get_player_cores() < turret_cost:
                 self.game_controller.play_sound('ui_denied', 0.6); return False
                 
@@ -521,8 +533,8 @@ class CombatController:
                 
             # Place the turret
             if self.game_controller.drone_system.spend_player_cores(turret_cost):
-                tile_center_x_abs = grid_c * TILE_SIZE + TILE_SIZE//2 + self.maze.game_area_x_offset
-                tile_center_y_abs = grid_r * TILE_SIZE + TILE_SIZE//2
+                tile_center_x_abs = grid_c * self.tile_size + self.tile_size//2 + self.maze.game_area_x_offset
+                tile_center_y_abs = grid_r * self.tile_size + self.tile_size//2
                 new_turret = Turret(tile_center_x_abs, tile_center_y_abs, self.game_controller, self.asset_manager)
                 self.turrets_group.add(new_turret)
                 self.maze.mark_turret_spot_as_occupied(grid_r, grid_c)
@@ -537,24 +549,24 @@ class CombatController:
                 return True
         else:
             # Original implementation without path validation
-            grid_c = int((screen_pos[0] - self.maze.game_area_x_offset) / TILE_SIZE)
-            grid_r = int(screen_pos[1] / TILE_SIZE)
+            grid_c = int((screen_pos[0] - self.maze.game_area_x_offset) / self.tile_size)
+            grid_r = int(screen_pos[1] / self.tile_size)
             
             if not (0 <= grid_r < self.maze.actual_maze_rows and 0 <= grid_c < self.maze.actual_maze_cols):
                 self.game_controller.play_sound('ui_denied', 0.6); return False
             
-            max_turrets_allowed = Turret.MAX_TURRETS 
+            max_turrets_allowed = get_setting("defense_mode", "MAX_TURRETS_DEFENSE_MODE", 10)
             if len(self.turrets_group) >= max_turrets_allowed:
                 self.game_controller.play_sound('ui_denied', 0.6); return False
                 
             if not self.maze.can_place_turret(grid_r, grid_c):
                 self.game_controller.play_sound('ui_denied', 0.6); return False
                 
-            turret_cost = Turret.TURRET_COST 
+            turret_cost = get_setting("defense_mode", "TURRET_BASE_COST", 50)
             if self.game_controller.drone_system.get_player_cores() >= turret_cost:
                 if self.game_controller.drone_system.spend_player_cores(turret_cost):
-                    tile_center_x_abs = grid_c * TILE_SIZE + TILE_SIZE//2 + self.maze.game_area_x_offset
-                    tile_center_y_abs = grid_r * TILE_SIZE + TILE_SIZE//2
+                    tile_center_x_abs = grid_c * self.tile_size + self.tile_size//2 + self.maze.game_area_x_offset
+                    tile_center_y_abs = grid_r * self.tile_size + self.tile_size//2
                     new_turret = Turret(tile_center_x_abs, tile_center_y_abs, self.game_controller, self.asset_manager)
                     self.turrets_group.add(new_turret)
                     self.maze.mark_turret_spot_as_occupied(grid_r, grid_c) 
@@ -566,7 +578,7 @@ class CombatController:
 
     def try_upgrade_turret(self, turret_to_upgrade):
         if turret_to_upgrade and turret_to_upgrade in self.turrets_group:
-            upgrade_cost = Turret.UPGRADE_COST 
+            upgrade_cost = get_setting("defense_mode", "TURRET_UPGRADE_COST", 100)
             if self.game_controller.drone_system.get_player_cores() >= upgrade_cost:
                 if turret_to_upgrade.upgrade(): 
                     self.game_controller.drone_system.spend_player_cores(upgrade_cost)

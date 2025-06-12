@@ -2,6 +2,7 @@ import heapq
 import pygame
 import logging
 from typing import List, Tuple, Dict, Set, Optional
+from settings_manager import get_setting
 
 logger = logging.getLogger(__name__)
 

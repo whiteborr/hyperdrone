@@ -3,7 +3,11 @@ import pygame
 import random
 import logging
 
-import game_settings as gs
+from settings_manager import get_setting, set_setting, get_asset_path
+from hyperdrone_core.constants import (
+    GAME_STATE_PLAYING, WHITE, BLUE, RED, HUD_RING_ICON_AREA_X_OFFSET,
+    HUD_RING_ICON_AREA_Y_OFFSET, HUD_RING_ICON_SIZE, HUD_RING_ICON_SPACING
+)
 from entities import PlayerDrone, Maze
 
 logger = logging.getLogger(__name__)
@@ -19,19 +23,23 @@ class LevelManager:
         # Ring collection variables
         self.collected_rings_count = 0
         self.displayed_collected_rings_count = 0
-        self.total_rings_per_level = gs.get_game_setting("MAX_RINGS_PER_LEVEL", 5)
+        self.total_rings_per_level = get_setting("collectibles", "MAX_RINGS_PER_LEVEL", 5)
         self.animating_rings_to_hud = []
         
         # Position rings at the right side of the screen to match UI
+        width = get_setting("display", "WIDTH", 1920)
+        height = get_setting("display", "HEIGHT", 1080)
+        bottom_panel_height = get_setting("display", "BOTTOM_PANEL_HEIGHT", 120)
+        
         self.ring_ui_base_pos = (
-            gs.get_game_setting("WIDTH") - gs.HUD_RING_ICON_AREA_X_OFFSET,
-            gs.get_game_setting("HEIGHT") - gs.get_game_setting("BOTTOM_PANEL_HEIGHT") + gs.HUD_RING_ICON_AREA_Y_OFFSET
+            width - HUD_RING_ICON_AREA_X_OFFSET,
+            height - bottom_panel_height + HUD_RING_ICON_AREA_Y_OFFSET
         )
         
         # Level timer variables
         self.level_start_time = pygame.time.get_ticks()
-        self.level_timer_duration = gs.get_game_setting("LEVEL_TIMER_DURATION", 120000)
-        self.level_timer_warning = gs.get_game_setting("LEVEL_TIMER_WARNING_THRESHOLD", 30000)
+        self.level_timer_duration = get_setting("progression", "LEVEL_TIMER_DURATION", 120000)
+        self.level_timer_warning = get_setting("progression", "LEVEL_TIMER_WARNING_THRESHOLD", 30000)
         self.border_flash_state = False
         self.last_border_flash_time = 0
         self.border_flash_interval = 500  # Flash every 500ms when time is low
@@ -67,7 +75,7 @@ class LevelManager:
         """Handle ring collection and animation"""
         # Only collect rings in regular Maze levels
         current_game_state = self.game_controller.scene_manager.get_current_state()
-        if current_game_state == gs.GAME_STATE_PLAYING:
+        if current_game_state == GAME_STATE_PLAYING:
             self.collected_rings_count += 1
             self.score += 10
             self._animate_ring_to_hud(ring_position)
@@ -84,8 +92,8 @@ class LevelManager:
         rings_y = self.ring_ui_base_pos[1]
         
         # Calculate the center of the target icon
-        target_x = rings_x + collected_count * (gs.HUD_RING_ICON_SIZE + gs.HUD_RING_ICON_SPACING) + gs.HUD_RING_ICON_SIZE // 2
-        target_y = rings_y + gs.HUD_RING_ICON_SIZE // 2
+        target_x = rings_x + collected_count * (HUD_RING_ICON_SIZE + HUD_RING_ICON_SPACING) + HUD_RING_ICON_SIZE // 2
+        target_y = rings_y + HUD_RING_ICON_SIZE // 2
         
         self.animating_rings_to_hud.append({
             'pos': list(start_pos),
@@ -119,7 +127,7 @@ class LevelManager:
         
         # Draw level border with timer only for regular maze mode, not for MazeChapter2
         current_game_state = self.game_controller.scene_manager.get_current_state()
-        if current_game_state == gs.GAME_STATE_PLAYING:
+        if current_game_state == GAME_STATE_PLAYING:
             self._draw_level_timer_border(surface, current_time)
             
             # Only process ring animations in regular Maze levels
@@ -141,7 +149,8 @@ class LevelManager:
                 
                 # Draw the ring icon
                 if ring_icon:
-                    icon_size = int(gs.TILE_SIZE * 0.3 * (1 + 0.5 * (1 - progress)))  # Shrink as it moves
+                    tile_size = get_setting("gameplay", "TILE_SIZE", 80)
+                    icon_size = int(tile_size * 0.3 * (1 + 0.5 * (1 - progress)))  # Shrink as it moves
                     scaled_icon = pygame.transform.smoothscale(ring_icon, (icon_size, icon_size))
                     icon_rect = scaled_icon.get_rect(center=(x, y))
                     surface.blit(scaled_icon, icon_rect)
@@ -159,12 +168,13 @@ class LevelManager:
         
         # Draw timer text
         font = pygame.font.Font(None, 36)
-        text_surf = font.render(time_str, True, gs.WHITE)
-        text_rect = text_surf.get_rect(center=(gs.WIDTH // 2, 30))
+        text_surf = font.render(time_str, True, WHITE)
+        width = get_setting("display", "WIDTH", 1920)
+        text_rect = text_surf.get_rect(center=(width // 2, 30))
         surface.blit(text_surf, text_rect)
         
         # Determine border color
-        border_color = gs.BLUE
+        border_color = BLUE
         
         # Flash red when time is running low
         if remaining_time < self.level_timer_warning:
@@ -174,11 +184,12 @@ class LevelManager:
                 self.last_border_flash_time = current_time
                 
             if self.border_flash_state:
-                border_color = gs.RED
+                border_color = RED
         
         # Draw border (4 lines around the screen)
         border_width = 4
-        pygame.draw.rect(surface, border_color, (0, 0, gs.WIDTH, gs.HEIGHT), border_width)
+        height = get_setting("display", "HEIGHT", 1080)
+        pygame.draw.rect(surface, border_color, (0, 0, width, height), border_width)
     
     def check_level_clear_condition(self):
         """Check if the level has been cleared and progress to the next level if so"""
@@ -186,7 +197,7 @@ class LevelManager:
         current_game_state = self.game_controller.scene_manager.get_current_state()
         
         # Check if time has run out - only for regular maze mode
-        if current_game_state == gs.GAME_STATE_PLAYING and current_time - self.level_start_time >= self.level_timer_duration:
+        if current_game_state == GAME_STATE_PLAYING and current_time - self.level_start_time >= self.level_timer_duration:
             # Time's up - player loses a life
             if self.game_controller.player and self.game_controller.player.alive:
                 self.game_controller._handle_player_death_or_life_loss("Time's up!")
@@ -236,7 +247,8 @@ class LevelManager:
         self.game_controller.maze = Maze()
         
         # Spawn the player at a safe location
-        spawn_x, spawn_y = self.game_controller._get_safe_spawn_point(gs.TILE_SIZE * 0.7, gs.TILE_SIZE * 0.7)
+        tile_size = get_setting("gameplay", "TILE_SIZE", 80)
+        spawn_x, spawn_y = self.game_controller._get_safe_spawn_point(tile_size * 0.7, tile_size * 0.7)
         drone_id = self.game_controller.drone_system.get_selected_drone_id()
         drone_stats = self.game_controller.drone_system.get_drone_stats(drone_id)
         sprite_key = f"drone_{drone_id}_ingame_sprite"

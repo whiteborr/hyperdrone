@@ -3,7 +3,8 @@ import math
 import random
 import logging
 
-import game_settings as gs
+from settings_manager import get_setting
+from constants import FLAME_COLORS
 from .particle import Particle
 
 logger = logging.getLogger(__name__)
@@ -77,22 +78,28 @@ class PowerUpManager:
         
         for _ in range(num_particles):
             if is_boosting:
-                speed = random.uniform(gs.THRUST_PARTICLE_SPEED_MIN_BLAST, gs.THRUST_PARTICLE_SPEED_MAX_BLAST)
-                size = random.uniform(gs.THRUST_PARTICLE_START_SIZE_BLAST_MIN, gs.THRUST_PARTICLE_START_SIZE_BLAST_MAX)
-                lifetime = gs.THRUST_PARTICLE_LIFETIME_BLAST
+                speed = random.uniform(get_setting("particles", "THRUST_PARTICLE_SPEED_MIN_BLAST", 2.0), 
+                                      get_setting("particles", "THRUST_PARTICLE_SPEED_MAX_BLAST", 4.0))
+                size = random.uniform(get_setting("particles", "THRUST_PARTICLE_START_SIZE_BLAST_MIN", 2.0), 
+                                     get_setting("particles", "THRUST_PARTICLE_START_SIZE_BLAST_MAX", 4.0))
+                lifetime = get_setting("particles", "THRUST_PARTICLE_LIFETIME_BLAST", 20)
             else:
-                speed = random.uniform(gs.THRUST_PARTICLE_SPEED_MIN_BLAST * 0.5, gs.THRUST_PARTICLE_SPEED_MAX_BLAST * 0.5)
-                size = random.uniform(gs.THRUST_PARTICLE_START_SIZE_BLAST_MIN * 0.4, gs.THRUST_PARTICLE_START_SIZE_BLAST_MAX * 0.6)
-                lifetime = int(gs.THRUST_PARTICLE_LIFETIME_BLAST * 0.7)
+                min_speed = get_setting("particles", "THRUST_PARTICLE_SPEED_MIN_BLAST", 2.0) * 0.5
+                max_speed = get_setting("particles", "THRUST_PARTICLE_SPEED_MAX_BLAST", 4.0) * 0.5
+                min_size = get_setting("particles", "THRUST_PARTICLE_START_SIZE_BLAST_MIN", 2.0) * 0.4
+                max_size = get_setting("particles", "THRUST_PARTICLE_START_SIZE_BLAST_MAX", 4.0) * 0.6
+                speed = random.uniform(min_speed, max_speed)
+                size = random.uniform(min_size, max_size)
+                lifetime = int(get_setting("particles", "THRUST_PARTICLE_LIFETIME_BLAST", 20) * 0.7)
 
             particle = Particle(
                 x=spawn_x, y=spawn_y,
-                color_list=gs.FLAME_COLORS,
+                color_list=FLAME_COLORS,
                 min_speed=speed, max_speed=speed,
                 min_size=size, max_size=size,
                 lifetime_frames=lifetime,
                 base_angle_deg=self.player.angle + 180,
-                spread_angle_deg=gs.THRUST_PARTICLE_SPREAD_ANGLE,
+                spread_angle_deg=get_setting("particles", "THRUST_PARTICLE_SPREAD_ANGLE", 15),
                 blast_mode=True
             )
             self.propulsion_particles.add(particle)

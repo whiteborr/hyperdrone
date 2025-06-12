@@ -1,6 +1,6 @@
 # hyperdrone_core/player_actions.py
 import pygame
-import game_settings as gs
+from settings_manager import get_setting
 
 class PlayerActions:
     """
