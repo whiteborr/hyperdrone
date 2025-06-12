@@ -59,6 +59,9 @@ class MazeChapter2:
 
         self.debug_mode = False 
         
+        # Set initial zoom level to minimum (full zoom out)
+        self.initial_zoom_level = 0.4
+        
         core_status_message = f"Core found at {self.core_reactor_grid_pos}" if self.core_reactor_grid_pos else "Core NOT found"
         logger.info(f"MazeChapter2 post-init (id: {id(self)}). Type: {maze_type}, Offset: {game_area_x_offset}, Grid: {self.actual_maze_rows}x{self.actual_maze_cols}. {core_status_message}. Enemy spawns: {len(self.enemy_spawn_points_abs)}")
         
@@ -225,7 +228,12 @@ class MazeChapter2:
             for c_idx, tile_type in enumerate(row_data):
                 x = c_idx * tile_size + self.game_area_x_offset
                 y = r_idx * tile_size
-                rect = (x, y, tile_size, tile_size)
+                
+                if camera:
+                    rect_pos = camera.apply_to_pos((x, y))
+                    rect = (rect_pos[0], rect_pos[1], tile_size * camera.zoom_level, tile_size * camera.zoom_level)
+                else:
+                    rect = (x, y, tile_size, tile_size)
 
                 if tile_type == 1:
                     pygame.draw.rect(surface, self.wall_color, rect)
@@ -233,24 +241,45 @@ class MazeChapter2:
                     pygame.draw.rect(surface, self.path_color, rect)
                 elif tile_type == 'C':
                     pygame.draw.rect(surface, self.path_color, rect)
-                    pygame.draw.circle(surface, gs.CYAN, (x + tile_size // 2, y + tile_size // 2), tile_size // 3)
+                    center_pos = (x + tile_size // 2, y + tile_size // 2)
+                    if camera:
+                        center_pos = camera.apply_to_pos(center_pos)
+                        radius = (tile_size // 3) * camera.zoom_level
+                    else:
+                        radius = tile_size // 3
+                    pygame.draw.circle(surface, gs.CYAN, center_pos, radius)
                 elif tile_type == 'T':
                     pygame.draw.rect(surface, self.path_color, rect)
-                    temp_surface_for_turret_spot = pygame.Surface((tile_size, tile_size), pygame.SRCALPHA)
-                    temp_surface_for_turret_spot.fill(self.turret_spot_color)
-                    surface.blit(temp_surface_for_turret_spot, (x,y))
+                    if camera:
+                        temp_surface_for_turret_spot = pygame.Surface((tile_size * camera.zoom_level, tile_size * camera.zoom_level), pygame.SRCALPHA)
+                        temp_surface_for_turret_spot.fill(self.turret_spot_color)
+                        surface.blit(temp_surface_for_turret_spot, (rect[0], rect[1]))
+                    else:
+                        temp_surface_for_turret_spot = pygame.Surface((tile_size, tile_size), pygame.SRCALPHA)
+                        temp_surface_for_turret_spot.fill(self.turret_spot_color)
+                        surface.blit(temp_surface_for_turret_spot, (x, y))
                     pygame.draw.rect(surface, gs.GREEN, rect, 1)
                 elif tile_type == 'U':
                     pygame.draw.rect(surface, self.path_color, rect)
 
         if self.debug_mode:
             for r_spawn, c_spawn in self.ENEMY_SPAWN_GRID_POSITIONS:
-                 abs_spawn_x, abs_spawn_y = self._grid_to_pixel_center(r_spawn, c_spawn)
-                 pygame.draw.circle(surface, (255, 0, 255), (int(abs_spawn_x), int(abs_spawn_y)), tile_size // 4)
+                abs_spawn_x, abs_spawn_y = self._grid_to_pixel_center(r_spawn, c_spawn)
+                if camera:
+                    spawn_pos = camera.apply_to_pos((abs_spawn_x, abs_spawn_y))
+                    radius = (tile_size // 4) * camera.zoom_level
+                else:
+                    spawn_pos = (int(abs_spawn_x), int(abs_spawn_y))
+                    radius = tile_size // 4
+                pygame.draw.circle(surface, (255, 0, 255), spawn_pos, radius)
             
             for (spawn_r, spawn_c), path_pixel_coords in self.enemy_paths_to_core.items():
                 if path_pixel_coords and len(path_pixel_coords) > 1:
-                    pygame.draw.lines(surface, (255, 165, 0), False, path_pixel_coords, 2) 
+                    if camera:
+                        transformed_path = [camera.apply_to_pos(pos) for pos in path_pixel_coords]
+                        pygame.draw.lines(surface, (255, 165, 0), False, transformed_path, max(1, int(2 * camera.zoom_level)))
+                    else:
+                        pygame.draw.lines(surface, (255, 165, 0), False, path_pixel_coords, 2) 
 
     def toggle_debug(self):
         self.debug_mode = not self.debug_mode

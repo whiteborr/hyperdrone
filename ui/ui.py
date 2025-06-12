@@ -84,17 +84,20 @@ class UIManager:
         
         reactor_icon_asset = self.asset_manager.get_image("reactor_hud_icon_key", scale_to_size=self.ui_icon_size_reactor)
         if reactor_icon_asset: self.ui_asset_surfaces["reactor_icon_placeholder"] = reactor_icon_asset
-        else: self.ui_asset_surfaces["reactor_icon_placeholder"] = self._create_fallback_icon_surface(self.ui_icon_size_reactor, "⚛", (50,50,200), font_key="ui_emoji_general")
+        else: self.ui_asset_surfaces["reactor_icon_placeholder"] = self._create_fallback_icon_surface(self.ui_icon_size_reactor, "R", (50,50,200))
 
     def update_player_life_icon_surface(self):
         selected_drone_id = self.drone_system.get_selected_drone_id()
         life_icon_asset_key = f"drone_{selected_drone_id}_hud_icon" 
         loaded_icon = self.asset_manager.get_image(life_icon_asset_key, scale_to_size=self.ui_icon_size_lives)
         
-        if loaded_icon: self.ui_asset_surfaces["current_drone_life_icon"] = loaded_icon
+        if loaded_icon:
+            # Rotate the drone icon 90 degrees counterclockwise
+            rotated_icon = pygame.transform.rotate(loaded_icon, 90)
+            self.ui_asset_surfaces["current_drone_life_icon"] = rotated_icon
         else:
             logger.warning(f"UIManager: Life icon for drone '{selected_drone_id}' (key: '{life_icon_asset_key}') not found. Using fallback.")
-            self.ui_asset_surfaces["current_drone_life_icon"] = self._create_fallback_icon_surface(size=self.ui_icon_size_lives, text="♥", color=gs.CYAN, font_key="ui_emoji_small")
+            self.ui_asset_surfaces["current_drone_life_icon"] = self._create_fallback_icon_surface(size=self.ui_icon_size_lives, text="L", color=gs.CYAN)
 
     def _create_fallback_icon_surface(self, size=(30,30), text="?", color=gs.GREY, text_color=gs.WHITE, font_key="ui_text"):
         surface = pygame.Surface(size, pygame.SRCALPHA)
@@ -352,16 +355,20 @@ class UIManager:
         
         # Health bar removed from HUD
         
-        wpn_x, wpn_y = gs.WIDTH * 0.25, panel_y + 20
+        # Center the weapon bar horizontally
+        wpn_x, wpn_y = (gs.WIDTH / 2) - 125, panel_y + 20  # Centered position
         wpn_mode, wpn_name = player.current_weapon_mode, gs.WEAPON_MODE_NAMES.get(player.current_weapon_mode, "N/A")
         wpn_icon_path = gs.WEAPON_MODE_ICONS.get(wpn_mode)
-        self.screen.blit(font_ui.render("Weapon", True, gs.CYAN), (wpn_x + 50, wpn_y - 20))
+        weapon_label = font_ui.render("Weapon", True, gs.CYAN)
+        self.screen.blit(weapon_label, ((gs.WIDTH / 2) - (weapon_label.get_width() / 2), wpn_y - 20))  # Center the label
         if wpn_icon_path:
             asset_key = wpn_icon_path.replace("assets/", "").replace("\\", "/")
             icon_surf = self.asset_manager.get_image(asset_key, scale_to_size=(64, 64))
             if icon_surf:
-                icon_rect = icon_surf.get_rect(topleft=(wpn_x, wpn_y))
-                self.screen.blit(icon_surf, icon_rect)
+                # Rotate the weapon icon 90 degrees counterclockwise
+                rotated_icon = pygame.transform.rotate(icon_surf, 90)
+                icon_rect = rotated_icon.get_rect(topleft=(wpn_x, wpn_y))
+                self.screen.blit(rotated_icon, icon_rect)
                 text_x, cooldown_bar_y = icon_rect.right + 15, wpn_y + 40
                 self.screen.blit(font_small.render(wpn_name, True, gs.WHITE), (text_x, wpn_y + 5))
                 time_since = pygame.time.get_ticks() - player.last_shot_time
@@ -376,13 +383,16 @@ class UIManager:
         frags_x = gs.WIDTH - 150
         frags_y = panel_y + 65
         
-        ring_icon, ring_empty = self.ui_asset_surfaces.get("ring_icon"), self.ui_asset_surfaces.get("ring_icon_empty")
-        if ring_icon and ring_empty:
-            for i in range(self.game_controller.level_manager.total_rings_per_level): 
-                # Show filled icon only for rings that have completed their animation
-                show_filled = i < self.game_controller.level_manager.displayed_collected_rings_count
-                icon_x = rings_x + i * (gs.HUD_RING_ICON_SIZE + gs.HUD_RING_ICON_SPACING)
-                self.screen.blit(ring_icon if show_filled else ring_empty, (icon_x, rings_y))
+        # Only display rings in regular Maze levels (not in MazeChapter2)
+        current_game_state = self.scene_manager.get_current_state()
+        if current_game_state == gs.GAME_STATE_PLAYING:
+            ring_icon, ring_empty = self.ui_asset_surfaces.get("ring_icon"), self.ui_asset_surfaces.get("ring_icon_empty")
+            if ring_icon and ring_empty:
+                for i in range(self.game_controller.level_manager.total_rings_per_level): 
+                    # Show filled icon only for rings that have completed their animation
+                    show_filled = i < self.game_controller.level_manager.displayed_collected_rings_count
+                    icon_x = rings_x + i * (gs.HUD_RING_ICON_SIZE + gs.HUD_RING_ICON_SPACING)
+                    self.screen.blit(ring_icon if show_filled else ring_empty, (icon_x, rings_y))
         collected, required = self.drone_system.get_collected_fragments_ids(), sorted([d['id'] for d in gs.CORE_FRAGMENT_DETAILS.values() if d.get('required_for_vault')])
         for i, frag_id in enumerate(required):
             icon = self.ui_asset_surfaces["core_fragment_icons"].get(frag_id) if frag_id in collected else self.ui_asset_surfaces["core_fragment_empty_icon"]

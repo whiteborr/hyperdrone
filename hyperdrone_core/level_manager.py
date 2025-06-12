@@ -65,10 +65,14 @@ class LevelManager:
     
     def collect_ring(self, ring_position):
         """Handle ring collection and animation"""
-        self.collected_rings_count += 1
-        self.score += 10
-        self._animate_ring_to_hud(ring_position)
-        return self.collected_rings_count
+        # Only collect rings in regular Maze levels
+        current_game_state = self.game_controller.scene_manager.get_current_state()
+        if current_game_state == gs.GAME_STATE_PLAYING:
+            self.collected_rings_count += 1
+            self.score += 10
+            self._animate_ring_to_hud(ring_position)
+            return self.collected_rings_count
+        return 0
     
     def _animate_ring_to_hud(self, start_pos):
         """Create an animation for a collected ring moving to the HUD"""
@@ -113,32 +117,34 @@ class LevelManager:
         """Draw ring animations on the surface"""
         current_time = pygame.time.get_ticks()
         
-        # Draw level border with timer
-        self._draw_level_timer_border(surface, current_time)
-        
-        # Process each animating ring
-        for i in range(len(self.animating_rings_to_hud) - 1, -1, -1):
-            ring_data = self.animating_rings_to_hud[i]
-            elapsed = current_time - ring_data['start_time']
-            progress = min(1.0, elapsed / ring_data['duration'])
+        # Draw level border with timer only for regular maze mode, not for MazeChapter2
+        current_game_state = self.game_controller.scene_manager.get_current_state()
+        if current_game_state == gs.GAME_STATE_PLAYING:
+            self._draw_level_timer_border(surface, current_time)
             
-            if progress >= 1.0:
-                # Animation complete
-                self.displayed_collected_rings_count += 1
-                self.animating_rings_to_hud.pop(i)
-                continue
+            # Only process ring animations in regular Maze levels
+            for i in range(len(self.animating_rings_to_hud) - 1, -1, -1):
+                ring_data = self.animating_rings_to_hud[i]
+                elapsed = current_time - ring_data['start_time']
+                progress = min(1.0, elapsed / ring_data['duration'])
                 
-            # Calculate current position using easing
-            ease_progress = 1 - (1 - progress) ** 3  # Cubic ease out
-            x = ring_data['start_pos'][0] + (ring_data['target_pos'][0] - ring_data['start_pos'][0]) * ease_progress
-            y = ring_data['start_pos'][1] + (ring_data['target_pos'][1] - ring_data['start_pos'][1]) * ease_progress
-            
-            # Draw the ring icon
-            if ring_icon:
-                icon_size = int(gs.TILE_SIZE * 0.3 * (1 + 0.5 * (1 - progress)))  # Shrink as it moves
-                scaled_icon = pygame.transform.smoothscale(ring_icon, (icon_size, icon_size))
-                icon_rect = scaled_icon.get_rect(center=(x, y))
-                surface.blit(scaled_icon, icon_rect)
+                if progress >= 1.0:
+                    # Animation complete
+                    self.displayed_collected_rings_count += 1
+                    self.animating_rings_to_hud.pop(i)
+                    continue
+                    
+                # Calculate current position using easing
+                ease_progress = 1 - (1 - progress) ** 3  # Cubic ease out
+                x = ring_data['start_pos'][0] + (ring_data['target_pos'][0] - ring_data['start_pos'][0]) * ease_progress
+                y = ring_data['start_pos'][1] + (ring_data['target_pos'][1] - ring_data['start_pos'][1]) * ease_progress
+                
+                # Draw the ring icon
+                if ring_icon:
+                    icon_size = int(gs.TILE_SIZE * 0.3 * (1 + 0.5 * (1 - progress)))  # Shrink as it moves
+                    scaled_icon = pygame.transform.smoothscale(ring_icon, (icon_size, icon_size))
+                    icon_rect = scaled_icon.get_rect(center=(x, y))
+                    surface.blit(scaled_icon, icon_rect)
                 
     def _draw_level_timer_border(self, surface, current_time):
         """Draw a border around the screen that shows the level timer"""
@@ -177,9 +183,10 @@ class LevelManager:
     def check_level_clear_condition(self):
         """Check if the level has been cleared and progress to the next level if so"""
         current_time = pygame.time.get_ticks()
+        current_game_state = self.game_controller.scene_manager.get_current_state()
         
-        # Check if time has run out
-        if current_time - self.level_start_time >= self.level_timer_duration:
+        # Check if time has run out - only for regular maze mode
+        if current_game_state == gs.GAME_STATE_PLAYING and current_time - self.level_start_time >= self.level_timer_duration:
             # Time's up - player loses a life
             if self.game_controller.player and self.game_controller.player.alive:
                 self.game_controller._handle_player_death_or_life_loss("Time's up!")

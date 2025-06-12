@@ -42,25 +42,28 @@ class PowerUpManager:
             self.speed_boost_armed = False
 
     def update(self, current_time_ms):
+        """Update all power-up states and create particles only for speed boost."""
+        # Update shield timer
         if self.shield_active and current_time_ms > self.shield_end_time:
             self.shield_active = False
+            logger.debug("Shield deactivated")
         
-        is_boosting = False
+        # Update speed boost timer and create exhaust particles ONLY if the boost is active
         if self.speed_boost_active:
             if current_time_ms > self.speed_boost_end_time:
+                # Deactivate boost when timer runs out
                 self.speed_boost_active = False
                 self.propulsion_active = False
                 self.player.speed = self.original_player_speed
+                logger.debug("Speed boost deactivated")
             else:
-                is_boosting = True
-
-        should_create_particles = self.propulsion_active or self.player.is_cruising
-        particle_interval = 30 if is_boosting else 80
-        
-        if should_create_particles and (current_time_ms - self.last_particle_time > particle_interval):
-            self._create_propulsion_particles(is_boosting=is_boosting)
-            self.last_particle_time = current_time_ms
+                # If boost is active, check if it's time to spawn particles
+                particle_spawn_interval = 30  # Controls the density of the trail
+                if current_time_ms - self.last_particle_time > particle_spawn_interval:
+                    self._create_propulsion_particles(is_boosting=True)
+                    self.last_particle_time = current_time_ms
             
+        # This will update any remaining particles until they fade out
         self.propulsion_particles.update()
 
     def _create_propulsion_particles(self, is_boosting):

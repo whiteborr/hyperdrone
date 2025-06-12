@@ -1,5 +1,19 @@
 # hyperdrone_core/constants.py
 
+# Turret asset paths
+TURRET_ASSET_PATHS = {
+    "WEAPON_MODE_DEFAULT": "images/level_elements/turret_default_base_img.png",
+    "WEAPON_MODE_TRI_SHOT": "images/level_elements/turret_trishot_base_img.png",
+    "WEAPON_MODE_RAPID_SINGLE": "images/level_elements/turret_default_base_img.png",
+    "WEAPON_MODE_RAPID_TRI": "images/level_elements/turret_trishot_base_img.png",
+    "WEAPON_MODE_BIG_SHOT": "images/level_elements/turret_default_base_img.png",
+    "WEAPON_MODE_BOUNCE": "images/level_elements/turret_default_base_img.png",
+    "WEAPON_MODE_PIERCE": "images/level_elements/turret_default_base_img.png",
+    "WEAPON_MODE_HEATSEEKER": "images/level_elements/turret_seeker_base_img.png",
+    "WEAPON_MODE_HEATSEEKER_PLUS_BULLETS": "images/level_elements/turret_seeker_base_img.png",
+    "WEAPON_MODE_LIGHTNING": "images/level_elements/turret_lightning_base_img.png",
+}
+
 # JSON and Dictionary Keys for drone_unlocks.json
 KEY_UNLOCKED_DRONES = "unlocked_drones"
 KEY_SELECTED_DRONE_ID = "selected_drone_id"

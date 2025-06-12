@@ -32,12 +32,19 @@ if not logging.getLogger().hasHandlers():
     logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - [%(name)s] - %(message)s')
 
 
+from hyperdrone_core.constants import TURRET_ASSET_PATHS
+
 TURRET_ASSET_KEYS = {
-    WEAPON_MODE_DEFAULT: "turret_default_base_img", WEAPON_MODE_TRI_SHOT: "turret_trishot_base_img",
-    WEAPON_MODE_RAPID_SINGLE: "turret_default_base_img", WEAPON_MODE_RAPID_TRI: "turret_trishot_base_img",
-    WEAPON_MODE_BIG_SHOT: "turret_default_base_img", WEAPON_MODE_BOUNCE: "turret_default_base_img",
-    WEAPON_MODE_PIERCE: "turret_default_base_img", WEAPON_MODE_HEATSEEKER: "turret_seeker_base_img",
-    WEAPON_MODE_HEATSEEKER_PLUS_BULLETS: "turret_seeker_base_img", WEAPON_MODE_LIGHTNING: "turret_lightning_base_img",
+    WEAPON_MODE_DEFAULT: TURRET_ASSET_PATHS["WEAPON_MODE_DEFAULT"],
+    WEAPON_MODE_TRI_SHOT: TURRET_ASSET_PATHS["WEAPON_MODE_TRI_SHOT"],
+    WEAPON_MODE_RAPID_SINGLE: TURRET_ASSET_PATHS["WEAPON_MODE_RAPID_SINGLE"],
+    WEAPON_MODE_RAPID_TRI: TURRET_ASSET_PATHS["WEAPON_MODE_RAPID_TRI"],
+    WEAPON_MODE_BIG_SHOT: TURRET_ASSET_PATHS["WEAPON_MODE_BIG_SHOT"],
+    WEAPON_MODE_BOUNCE: TURRET_ASSET_PATHS["WEAPON_MODE_BOUNCE"],
+    WEAPON_MODE_PIERCE: TURRET_ASSET_PATHS["WEAPON_MODE_PIERCE"],
+    WEAPON_MODE_HEATSEEKER: TURRET_ASSET_PATHS["WEAPON_MODE_HEATSEEKER"],
+    WEAPON_MODE_HEATSEEKER_PLUS_BULLETS: TURRET_ASSET_PATHS["WEAPON_MODE_HEATSEEKER_PLUS_BULLETS"],
+    WEAPON_MODE_LIGHTNING: TURRET_ASSET_PATHS["WEAPON_MODE_LIGHTNING"],
 }
 
 class Turret(pygame.sprite.Sprite):

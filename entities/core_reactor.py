@@ -98,10 +98,16 @@ class CoreReactor(pygame.sprite.Sprite):
 
     def draw(self, surface, camera=None):
         if not self.image or not self.rect: return
+        
         if camera:
+            # Get the transformed rect
             screen_rect = camera.apply_to_rect(self.rect)
-            if self.image.get_size() != screen_rect.size and screen_rect.width > 0 and screen_rect.height > 0:
-                scaled_image = pygame.transform.smoothscale(self.image, screen_rect.size)
+            
+            # Scale the image based on camera zoom
+            scaled_size = (int(self.size * camera.zoom_level), int(self.size * camera.zoom_level))
+            
+            if scaled_size[0] > 0 and scaled_size[1] > 0:
+                scaled_image = pygame.transform.smoothscale(self.original_image, scaled_size)
                 surface.blit(scaled_image, screen_rect)
             else:
                 surface.blit(self.image, screen_rect)
@@ -109,8 +115,4 @@ class CoreReactor(pygame.sprite.Sprite):
             surface.blit(self.image, self.rect)
         
         if (self.alive or self.current_health > 0) and self.rect:
-             self.draw_health_bar(surface, camera)
-
-        if self.alive or self.current_health > 0:
-            if self.rect:
-                 self.draw_health_bar(surface, camera)
+            self.draw_health_bar(surface, camera)

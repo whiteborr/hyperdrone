@@ -283,7 +283,7 @@ RING_PUZZLE_CORE_REWARD = 750
 LEADERBOARD_FILE_NAME = "leaderboard.json"
 LEADERBOARD_MAX_ENTRIES = 10
 
-UI_FONT_PATH_EMOJI = "assets/fonts/seguiemj.ttf" 
+
 
 # ==========================
 # Asset Path Definitions

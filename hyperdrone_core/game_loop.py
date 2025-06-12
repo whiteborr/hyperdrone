@@ -349,9 +349,27 @@ class GameController:
         if mode_type == gs.GAME_STATE_MAZE_DEFENSE:
             self.maze = MazeChapter2(game_area_x_offset=300) 
             self.camera = Camera(self.maze.actual_maze_cols * gs.TILE_SIZE, self.maze.actual_maze_rows * gs.TILE_SIZE)
+            # Set initial zoom level to full zoom out if specified in maze
+            if hasattr(self.maze, 'initial_zoom_level'):
+                self.camera.zoom_level = self.maze.initial_zoom_level
+            
+            # Initialize tower defense manager
+            from entities.tower_defense_manager import TowerDefenseManager
+            self.tower_defense_manager = TowerDefenseManager(
+                self.maze.actual_maze_cols, 
+                self.maze.actual_maze_rows, 
+                gs.TILE_SIZE, 
+                self.maze.game_area_x_offset
+            )
+            # Set game controller reference
+            self.tower_defense_manager.game_controller = self
+            self.tower_defense_manager.initialize_from_maze(self.maze)
+            
             reactor_pos = self.maze.get_core_reactor_spawn_position_abs()
             if reactor_pos:
+                # Create the core reactor with the correct position
                 self.core_reactor = CoreReactor(reactor_pos[0], reactor_pos[1], self.asset_manager, health=gs.DEFENSE_REACTOR_HEALTH)
+                self.reactor_group.empty()  # Clear any existing reactors
                 self.reactor_group.add(self.core_reactor)
             self.combat_controller.set_active_entities(player=None, maze=self.maze, core_reactor=self.core_reactor, turrets_group=self.turrets_group)
             self.combat_controller.wave_manager.start_first_build_phase()
@@ -400,13 +418,22 @@ class GameController:
 
         if self.player:
             self.player.draw(self.screen)
+            
+        # Draw tower defense elements if available
+        current_game_state = self.scene_manager.get_current_state()
+        if current_game_state == gs.GAME_STATE_MAZE_DEFENSE and hasattr(self, 'tower_defense_manager'):
+            self.tower_defense_manager.draw(self.screen, self.camera)
+            
         if self.combat_controller:
             self.combat_controller.enemy_manager.draw_all(self.screen, self.camera)
-        if self.reactor_group:
-            self.reactor_group.draw(self.screen, self.camera)
+            
         if self.turrets_group:
             for turret in self.turrets_group:
                 turret.draw(self.screen, self.camera)
+                
+        if self.reactor_group:
+            for reactor in self.reactor_group:
+                reactor.draw(self.screen, self.camera)
                 
         # Draw animating rings using level manager
         ring_icon = self.asset_manager.get_image("ring_ui_icon")

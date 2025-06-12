@@ -77,14 +77,34 @@ class CombatController:
         is_defense_mode_active = (current_game_state == GAME_STATE_MAZE_DEFENSE)
         target_for_enemies = self.core_reactor.rect.center if is_defense_mode_active and self.core_reactor and self.core_reactor.alive else player_pos_pixels
 
-        self.enemy_manager.update_enemies(
-            target_for_enemies, 
-            self.maze, 
-            current_time_ms, 
-            delta_time_ms,
-            game_area_x_offset,
-            is_defense_mode=is_defense_mode_active
-        )
+        # Update tower defense manager if available
+        if is_defense_mode_active and hasattr(self.game_controller, 'tower_defense_manager'):
+            self.game_controller.tower_defense_manager.update(delta_time_ms)
+            
+            # Use pathfinding enemies if available
+            if hasattr(self.game_controller.tower_defense_manager, 'enemies_group') and self.game_controller.tower_defense_manager.enemies_group:
+                # We could integrate these with the regular enemy manager, but for now we'll keep them separate
+                pass
+            else:
+                # Use regular enemy manager
+                self.enemy_manager.update_enemies(
+                    target_for_enemies, 
+                    self.maze, 
+                    current_time_ms, 
+                    delta_time_ms,
+                    game_area_x_offset,
+                    is_defense_mode=is_defense_mode_active
+                )
+        else:
+            # Regular enemy update
+            self.enemy_manager.update_enemies(
+                target_for_enemies, 
+                self.maze, 
+                current_time_ms, 
+                delta_time_ms,
+                game_area_x_offset,
+                is_defense_mode=is_defense_mode_active
+            )
 
         if self.boss_active and self.maze_guardian:
             if self.maze_guardian.alive:
@@ -100,6 +120,27 @@ class CombatController:
 
         if is_defense_mode_active and self.wave_manager:
             self.wave_manager.update(current_time_ms, delta_time_ms)
+            
+            # Start a wave of pathfinding enemies if needed
+            if hasattr(self.game_controller, 'tower_defense_manager') and self.wave_manager.is_wave_active and not self.wave_manager.is_build_phase_active:
+                if not self.game_controller.tower_defense_manager.wave_active and self.wave_manager.current_wave_number > 0:
+                    # Start a new wave of pathfinding enemies
+                    enemies_count = 5 + (self.wave_manager.current_wave_number * 2)  # Scale with wave number
+                    
+                    # Get the current wave definition to use the same enemy types
+                    current_wave_def = self.wave_manager.wave_definitions[self.wave_manager.current_wave_number - 1]
+                    enemy_types = []
+                    for group in current_wave_def:
+                        enemy_type = group.get("enemy_type", "defense_drone_1")
+                        count = group.get("count", 1)
+                        enemy_types.extend([enemy_type] * count)
+                    
+                    self.game_controller.tower_defense_manager.start_wave(
+                        self.wave_manager.current_wave_number, 
+                        enemies_count,
+                        enemy_types=enemy_types
+                    )
+            
             if self.wave_manager.all_waves_cleared and self.enemy_manager.get_active_enemies_count() == 0:
                  if hasattr(self.game_controller, 'handle_maze_defense_victory'):
                     self.game_controller.handle_maze_defense_victory()
@@ -403,24 +444,85 @@ class CombatController:
     def try_place_turret(self, screen_pos):
         if not self.maze or not self.core_reactor or not isinstance(self.maze, MazeChapter2):
             self.game_controller.play_sound('ui_denied', 0.6); return False
-        grid_c = int((screen_pos[0] - self.maze.game_area_x_offset) / TILE_SIZE); grid_r = int(screen_pos[1] / TILE_SIZE)
-        if not (0 <= grid_r < self.maze.actual_maze_rows and 0 <= grid_c < self.maze.actual_maze_cols):
-            self.game_controller.play_sound('ui_denied', 0.6); return False
-        
-        max_turrets_allowed = Turret.MAX_TURRETS 
-        if len(self.turrets_group) >= max_turrets_allowed:
-            self.game_controller.play_sound('ui_denied', 0.6); return False
-        if not self.maze.can_place_turret(grid_r, grid_c):
-            self.game_controller.play_sound('ui_denied', 0.6); return False
-        turret_cost = Turret.TURRET_COST 
-        if self.game_controller.drone_system.get_player_cores() >= turret_cost:
+            
+        # Use tower defense manager if available
+        if hasattr(self.game_controller, 'tower_defense_manager'):
+            # Check if we can place a tower at this position
+            grid_c = int((screen_pos[0] - self.maze.game_area_x_offset) / TILE_SIZE)
+            grid_r = int(screen_pos[1] / TILE_SIZE)
+            
+            # First check basic conditions
+            if not (0 <= grid_r < self.maze.actual_maze_rows and 0 <= grid_c < self.maze.actual_maze_cols):
+                self.game_controller.play_sound('ui_denied', 0.6); return False
+                
+            max_turrets_allowed = Turret.MAX_TURRETS 
+            if len(self.turrets_group) >= max_turrets_allowed:
+                self.game_controller.play_sound('ui_denied', 0.6); return False
+                
+            if not self.maze.can_place_turret(grid_r, grid_c):
+                self.game_controller.play_sound('ui_denied', 0.6); return False
+                
+            # Check if player has enough resources
+            turret_cost = Turret.TURRET_COST
+            if self.game_controller.drone_system.get_player_cores() < turret_cost:
+                self.game_controller.play_sound('ui_denied', 0.6); return False
+                
+            # For MazeChapter2, we should prioritize the maze's can_place_turret check
+            # since it knows about designated turret spots
+            if not self.maze.can_place_turret(grid_r, grid_c):
+                self.game_controller.play_sound('ui_denied', 0.6)
+                return False
+                
+            # Only check path blocking for non-designated spots
+            if self.maze.grid[grid_r][grid_c] != 'T' and not self.game_controller.tower_defense_manager.path_manager.can_place_tower(grid_r, grid_c):
+                self.game_controller.play_sound('ui_denied', 0.6)
+                self.game_controller.set_story_message("Cannot place turret - would block all paths to core!", 2000)
+                return False
+                
+            # Place the turret
             if self.game_controller.drone_system.spend_player_cores(turret_cost):
                 tile_center_x_abs = grid_c * TILE_SIZE + TILE_SIZE//2 + self.maze.game_area_x_offset
                 tile_center_y_abs = grid_r * TILE_SIZE + TILE_SIZE//2
                 new_turret = Turret(tile_center_x_abs, tile_center_y_abs, self.game_controller, self.asset_manager)
-                self.turrets_group.add(new_turret); self.maze.mark_turret_spot_as_occupied(grid_r, grid_c) 
-                self.game_controller.play_sound('turret_place_placeholder', 0.7); return True
-        self.game_controller.play_sound('ui_denied', 0.6); return False
+                self.turrets_group.add(new_turret)
+                self.maze.mark_turret_spot_as_occupied(grid_r, grid_c)
+                
+                # Update path manager grid
+                self.game_controller.tower_defense_manager.path_manager.grid[grid_r][grid_c] = 'T'
+                
+                # Trigger path recalculation for all enemies
+                self.game_controller.tower_defense_manager.recalculate_all_enemy_paths()
+                
+                self.game_controller.play_sound('turret_place_placeholder', 0.7)
+                return True
+        else:
+            # Original implementation without path validation
+            grid_c = int((screen_pos[0] - self.maze.game_area_x_offset) / TILE_SIZE)
+            grid_r = int(screen_pos[1] / TILE_SIZE)
+            
+            if not (0 <= grid_r < self.maze.actual_maze_rows and 0 <= grid_c < self.maze.actual_maze_cols):
+                self.game_controller.play_sound('ui_denied', 0.6); return False
+            
+            max_turrets_allowed = Turret.MAX_TURRETS 
+            if len(self.turrets_group) >= max_turrets_allowed:
+                self.game_controller.play_sound('ui_denied', 0.6); return False
+                
+            if not self.maze.can_place_turret(grid_r, grid_c):
+                self.game_controller.play_sound('ui_denied', 0.6); return False
+                
+            turret_cost = Turret.TURRET_COST 
+            if self.game_controller.drone_system.get_player_cores() >= turret_cost:
+                if self.game_controller.drone_system.spend_player_cores(turret_cost):
+                    tile_center_x_abs = grid_c * TILE_SIZE + TILE_SIZE//2 + self.maze.game_area_x_offset
+                    tile_center_y_abs = grid_r * TILE_SIZE + TILE_SIZE//2
+                    new_turret = Turret(tile_center_x_abs, tile_center_y_abs, self.game_controller, self.asset_manager)
+                    self.turrets_group.add(new_turret)
+                    self.maze.mark_turret_spot_as_occupied(grid_r, grid_c) 
+                    self.game_controller.play_sound('turret_place_placeholder', 0.7)
+                    return True
+                    
+        self.game_controller.play_sound('ui_denied', 0.6)
+        return False
 
     def try_upgrade_turret(self, turret_to_upgrade):
         if turret_to_upgrade and turret_to_upgrade in self.turrets_group:
