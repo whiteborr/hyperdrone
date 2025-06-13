@@ -37,9 +37,16 @@ Logic for power-ups is found in `entities/collectibles.py`.
 ### Enemy Drones & AI
 
 Enemy AI uses a behavior-based design pattern for modular and extensible behaviors:
+
 - Base behaviors in `ai/behaviors.py`
 - Enemies delegate AI logic to behavior objects (`entities/enemy.py`)
 - TR3B enemies use patrol, chase, and dash behaviors (`entities/tr3b_enemy.py`)
+
+The game uses a data-driven enemy configuration system:
+
+- All enemy types are defined in `data/enemy_configs.json`
+- Enemy properties (health, speed, weapons) are configured in JSON
+- New enemies can be added without code changes
 
 The Maze Guardian is a multi-phase boss with laser sweeps, minion summoning, shields, and arena changes (`entities/maze_guardian.py`).
 
@@ -47,7 +54,10 @@ Sentinel Drones are summoned minions.
 
 Prototype Drones appear in the Architect's Vault.
 
-For detailed information about the AI behavior system, see [README_AI_BEHAVIORS.md](README_AI_BEHAVIORS.md)
+For detailed information about:
+
+- AI behavior system: see [README_AI_BEHAVIORS.md](README_AI_BEHAVIORS.md)
+- Enemy configuration system: see [README_ENEMY_CONFIG.md](README_ENEMY_CONFIG.md)
 
 ### Collectibles
 
@@ -131,6 +141,7 @@ hyperdrone/
 │   ├── game_loop.py
 │   ├── state_manager.py
 │   ├── event_manager.py
+│   ├── game_events.py
 │   ├── player_actions.py
 │   ├── combat_controller.py
 │   ├── ui_flow_controller.py
@@ -302,15 +313,17 @@ For detailed information about the weapon system refactoring, see [README_WEAPON
 
 ### Architecture Refactoring
 
-1. **State Design Pattern**: Replaced the string-based scene manager with a proper State Design Pattern implementation in `state_manager.py`
-2. **Strategy Pattern for Weapons**: Implemented the Strategy pattern for weapon systems in `entities/weapon_strategies.py`, making it easier to add and modify weapon types
-3. **Behavior Pattern for Enemy AI**: Implemented a behavior-based design pattern for enemy AI in `ai/behaviors.py`, making it easier to create and combine different enemy behaviors
-4. **Controller Classes**: Added specialized controller classes for better separation of concerns:
+1. **Event Bus System**: Implemented an event-driven architecture to decouple game components, allowing them to communicate without direct dependencies. See [README_EVENT_BUS.md](README_EVENT_BUS.md) for details.
+2. **State Design Pattern**: Replaced the string-based scene manager with a proper State Design Pattern implementation in `state_manager.py`
+3. **Strategy Pattern for Weapons**: Implemented the Strategy pattern for weapon systems in `entities/weapon_strategies.py`, making it easier to add and modify weapon types
+4. **Behavior Pattern for Enemy AI**: Implemented a behavior-based design pattern for enemy AI in `ai/behaviors.py`, making it easier to create and combine different enemy behaviors
+5. **Data-Driven Enemy Configuration**: Implemented a JSON-based enemy configuration system in `data/enemy_configs.json`, making it easier to add and balance enemies
+6. **Controller Classes**: Added specialized controller classes for better separation of concerns:
    - `combat_controller.py`: Handles all combat-related logic
    - `ui_flow_controller.py`: Manages UI navigation and state
    - `level_manager.py`: Handles level progression and scoring
-5. **Collision Optimization**: Improved collision detection using pygame's `groupcollide` for better performance
-6. **Pathfinding Module**: Extracted pathfinding logic into a dedicated module for better maintainability
+7. **Collision Optimization**: Improved collision detection using pygame's `groupcollide` for better performance
+8. **Pathfinding Module**: Extracted pathfinding logic into a dedicated module for better maintainability
 
 ### Bug Fixes
 

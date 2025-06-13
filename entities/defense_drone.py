@@ -9,18 +9,32 @@ from constants import GREEN, YELLOW, RED, WHITE
 logger = logging.getLogger(__name__)
 
 class DefenseDrone(pygame.sprite.Sprite):
-    def __init__(self, x, y, asset_manager, sprite_asset_key, path_to_core, **kwargs):
+    def __init__(self, x, y, asset_manager, config, path_to_core=None, **kwargs):
         super().__init__()
         self.x, self.y = float(x), float(y)
         self.asset_manager = asset_manager
-        self.sprite_asset_key = sprite_asset_key
-        self.path = path_to_core if path_to_core else []
-        self.current_path_index = 1 if self.path and len(self.path) > 1 else -1
+        
+        # Extract sprite key from config - ensure it's a string
+        assets = config.get("assets", {})
+        self.sprite_asset_key = str(assets.get("sprite_asset_key", "defense_drone_sprite"))
+        
+        # Initialize pathfinder
+        from ai.pathfinding_component import PathfinderComponent
+        self.pathfinder = PathfinderComponent(self)
+        
+        # Set path if provided
+        if path_to_core:
+            self.pathfinder.path = path_to_core
+            self.pathfinder.current_path_index = 1 if path_to_core and len(path_to_core) > 1 else -1
+        
         self.angle = 0
-        self.speed = kwargs.get('speed', 1.5)
-        self.health = kwargs.get('health', 100)
+        
+        # Get stats from config
+        stats = config.get("stats", {})
+        self.speed = stats.get("speed", 1.5)
+        self.health = stats.get("health", 100)
         self.max_health = self.health
-        self.contact_damage = kwargs.get('contact_damage', 25)
+        self.contact_damage = stats.get("contact_damage", 25)
         self.alive = True
         self._load_sprite()
 
@@ -36,62 +50,17 @@ class DefenseDrone(pygame.sprite.Sprite):
         self.rect = self.image.get_rect(center=(int(self.x), int(self.y)))
         self.collision_rect = self.rect.inflate(-self.rect.width * 0.2, -self.rect.height * 0.2)
 
-    def update(self, _, maze, __, ___, game_area_x_offset=0, is_defense_mode=True):
+    def update(self, _, maze, current_time_ms, delta_time_ms, game_area_x_offset=0, is_defense_mode=True):
         if not self.alive:
             return
         
-        self._update_movement_along_path(maze, game_area_x_offset)
+        self.pathfinder.update_movement(maze, current_time_ms, delta_time_ms, game_area_x_offset)
         
         if self.image and self.original_image:
             self.image = pygame.transform.rotate(self.original_image, -self.angle)
             self.rect = self.image.get_rect(center=(int(self.x), int(self.y)))
             if self.collision_rect:
                 self.collision_rect.center = self.rect.center
-
-    def _update_movement_along_path(self, maze, game_area_x_offset=0):
-        if not self.path or self.current_path_index >= len(self.path):
-            return
-            
-        target = self.path[self.current_path_index]
-        dx, dy = target[0] - self.x, target[1] - self.y
-        dist = math.hypot(dx, dy)
-        
-        # Check if we've reached the waypoint
-        if dist < 5:  # Close enough to waypoint
-            self.current_path_index += 1
-            if self.current_path_index >= len(self.path):
-                # Reached end of path
-                return
-            return
-            
-        # Move toward the waypoint
-        if dist > 0:
-            self.angle = math.degrees(math.atan2(dy, dx))
-            move_x = (dx / dist) * self.speed
-            move_y = (dy / dist) * self.speed
-            
-            next_x, next_y = self.x + move_x, self.y + move_y
-            
-            # Check for wall collision
-            if not (maze and hasattr(maze, 'is_wall') and 
-                    maze.is_wall(next_x, next_y, self.collision_rect.width, self.collision_rect.height)):
-                self.x, self.y = next_x, next_y
-                
-        # Update rect position
-        self.rect.center = (int(self.x), int(self.y))
-        
-        # Keep within game area
-        game_play_area_height = get_setting("display", "HEIGHT", 1080)
-        self.rect.clamp_ip(pygame.Rect(
-            game_area_x_offset, 0, 
-            get_setting("display", "WIDTH", 1920) - game_area_x_offset, 
-            game_play_area_height
-        ))
-        
-        # Update position from rect
-        self.x, self.y = float(self.rect.centerx), float(self.rect.centery)
-        if self.collision_rect:
-            self.collision_rect.center = self.rect.center
 
     def take_damage(self, amount):
         if self.alive:

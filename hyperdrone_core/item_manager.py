@@ -150,6 +150,9 @@ class ItemManager:
         # Spawn all rings immediately for the new level
         if hasattr(self.game_controller, 'maze') and self.game_controller.maze:
             self._spawn_all_rings(self.game_controller.maze)
+            
+        # Spawn a core fragment for this level
+        self._spawn_core_fragment(self.game_controller.maze)
         
     def clear_all_items(self):
         """Clear all collectible items"""
@@ -161,6 +164,58 @@ class ItemManager:
         self.architect_echoes_group.empty()
         self.alien_terminals_group.empty()
 
+    def _spawn_core_fragment(self, maze):
+        """Spawn a core fragment at a random walkable position"""
+        if not maze:
+            logger.warning("Cannot spawn core fragment: maze is None")
+            return False
+            
+        # Get a random walkable position
+        walkable_tiles = maze.get_walkable_tiles_abs()
+        if not walkable_tiles:
+            logger.warning("Cannot spawn core fragment: no walkable tiles found")
+            return False
+            
+        # Choose a position that's not too close to existing items
+        valid_positions = []
+        tile_size = get_setting("gameplay", "TILE_SIZE", 80)
+        for pos in walkable_tiles:
+            # Check distance from existing collectibles
+            too_close = False
+            for ring in self.collectible_rings_group:
+                if math.hypot(pos[0] - ring.rect.centerx, pos[1] - ring.rect.centery) < tile_size * 3:
+                    too_close = True
+                    break
+                    
+            if not too_close:
+                valid_positions.append(pos)
+                
+        if not valid_positions:
+            logger.warning("Cannot spawn core fragment: no valid positions found")
+            return False
+            
+        # Choose a random valid position
+        spawn_pos = random.choice(valid_positions)
+        
+        # Create fragment config details
+        fragment_id = f"fragment_level_{self.game_controller.level_manager.level}"
+        fragment_config = {
+            "name": f"Level {self.game_controller.level_manager.level} Fragment",
+            "display_color": (128, 0, 255)  # Purple color
+        }
+        
+        # Create and add the core fragment
+        new_fragment = CoreFragmentItem(
+            spawn_pos[0], 
+            spawn_pos[1], 
+            fragment_id, 
+            fragment_config, 
+            asset_manager=self.asset_manager
+        )
+        self.core_fragments_group.add(new_fragment)
+        logger.info(f"Spawned core fragment at {spawn_pos}")
+        return True
+        
     def _spawn_all_rings(self, maze):
         """Spawn all rings at once at the beginning of the level"""
         if not maze:

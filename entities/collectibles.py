@@ -166,9 +166,17 @@ class CoreFragmentItem(Collectible):
         self.fragment_id = fragment_id
         self.fragment_name = fragment_config_details.get("name", "Core Fragment")
         icon_asset_key = f"fragment_{self.fragment_id}_icon"
-        target_icon_size = (int(CORE_FRAGMENT_VISUAL_SIZE), int(CORE_FRAGMENT_VISUAL_SIZE))
-        loaded_original_icon = asset_manager.get_image(icon_asset_key, scale_to_size=target_icon_size)
-        super().__init__(x, y, base_color=fragment_config_details.get("display_color", PURPLE), size=CORE_FRAGMENT_VISUAL_SIZE, thickness=3, original_icon_surface=loaded_original_icon)
+        # Use a fixed size for the fragment
+        fragment_size = 32
+        # Try to load the icon, but use a fallback if not found
+        loaded_original_icon = asset_manager.get_image(icon_asset_key)
+        if not loaded_original_icon:
+            # Create a simple purple circle as fallback
+            fallback_size = (fragment_size, fragment_size)
+            fallback_surface = pygame.Surface(fallback_size, pygame.SRCALPHA)
+            pygame.draw.circle(fallback_surface, (128, 0, 255), (fragment_size//2, fragment_size//2), fragment_size//2)
+            loaded_original_icon = fallback_surface
+        super().__init__(x, y, base_color=fragment_config_details.get("display_color", (128, 0, 255)), size=fragment_size, thickness=3, original_icon_surface=loaded_original_icon)
 
     def update(self):
         if self.collected: self.kill(); return True

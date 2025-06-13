@@ -13,7 +13,7 @@ class SettingsState(State):
                 if event.key == pygame.K_ESCAPE:
                     self.game.state_manager.set_state("MainMenuState")
                 else:
-                    self.game.ui_flow_controller.handle_key_input(event.key, "settings_menu")
+                    self.game.ui_flow_controller.handle_key_input(event.key, "SettingsState")
     
     def update(self, delta_time):
         pass

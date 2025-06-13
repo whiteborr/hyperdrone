@@ -44,9 +44,16 @@
   },
   "sprites": {
     "REGULAR_ENEMY_SPRITE_PATH": "images/enemies/TR-3B_enemy.png",
+    "TR-3B_ENEMY_SPRITE_KEY": "images/enemies/TR-3B_enemy.png",
     "PROTOTYPE_DRONE_SPRITE_PATH": "images/enemies/prototype_enemy.png",
     "MAZE_GUARDIAN_SPRITE_PATH": "images/enemies/maze_guardian.png",
-    "SENTINEL_DRONE_SPRITE_PATH": "images/enemies/sentinel_drone.png"
+    "SENTINEL_DRONE_SPRITE_PATH": "images/enemies/sentinel_drone.png",
+    "SENTINEL_DRONE_SPRITE_KEY": "images/enemies/sentinel_drone.png",
+    "DEFENSE_DRONE_1_SPRITE_KEY": "images/enemies/defense_drone_1.png",
+    "DEFENSE_DRONE_2_SPRITE_KEY": "images/enemies/defense_drone_2.png",
+    "DEFENSE_DRONE_3_SPRITE_KEY": "images/enemies/defense_drone_3.png",
+    "DEFENSE_DRONE_4_SPRITE_KEY": "images/enemies/defense_drone_4.png",
+    "DEFENSE_DRONE_5_SPRITE_KEY": "images/enemies/defense_drone_5.png"
   },
   "weapon_icons": {
     "0": "images/drones/drone_default.png",

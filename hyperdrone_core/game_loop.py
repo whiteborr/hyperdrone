@@ -110,6 +110,10 @@ class GameController:
         # Create level manager
         self.level_manager = LevelManager(self)
         
+        # Register for events
+        from hyperdrone_core.game_events import EnemyDefeatedEvent
+        self.event_manager.register_listener(EnemyDefeatedEvent, self.on_enemy_defeated_effects)
+        
         # Fragment collection variables
         self.hud_displayed_fragments = set()
         self.animating_fragments_to_hud = []
@@ -371,6 +375,10 @@ class GameController:
         if specific_sound_key:
             self.play_sound(specific_sound_key)
             
+    def on_enemy_defeated_effects(self, event):
+        """Handle enemy defeated event for visual effects"""
+        self._create_enemy_explosion(event.position[0], event.position[1])
+        
     def _create_enemy_explosion(self, x, y):
         """Creates an explosion specifically for enemy deaths."""
         # Get colors from settings
@@ -484,6 +492,15 @@ class GameController:
                 powerup.apply_effect(self.player)
                 powerup.collected = True
                 self.play_sound('collect_ring')
+                
+        # Check for core fragment collisions
+        for fragment in pygame.sprite.spritecollide(self.player, self.core_fragments_group, False):
+            if not fragment.collected:
+                fragment.collected = True
+                fragment.kill()
+                self.drone_system.collect_core_fragment(fragment.fragment_id)
+                self.play_sound('collect_fragment')
+                self.set_story_message(f"Core Fragment collected!", 2000)
     
     def _check_level_clear_condition(self):
         """Check if the level has been cleared and progress to the next level if so"""

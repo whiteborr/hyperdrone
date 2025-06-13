@@ -2,6 +2,7 @@
 import pygame
 import sys
 import logging
+from collections import defaultdict
 
 from settings_manager import get_setting
 from constants import (
@@ -21,6 +22,9 @@ class EventManager:
         self.combat_controller = combat_controller_ref
         self.puzzle_controller = puzzle_controller_ref
         self.ui_flow_controller = ui_flow_controller_ref
+        
+        # Event bus system
+        self.listeners = defaultdict(list)
         logger.info("EventManager initialized.")
 
     def process_events(self):
@@ -82,6 +86,21 @@ class EventManager:
         if is_gameplay_state_for_continuous and not self.game_controller.paused:
             self.game_controller.player_actions.update_player_movement_and_actions(current_time_ms)
 
+
+    def register_listener(self, event_type, listener_callback):
+        """Register a listener function for a specific event type."""
+        self.listeners[event_type].append(listener_callback)
+        logger.debug(f"Registered listener {listener_callback.__name__} for event {event_type.__name__}")
+
+    def dispatch(self, event):
+        """Dispatch an event to all registered listeners."""
+        event_type = type(event)
+        if event_type in self.listeners:
+            for callback in self.listeners[event_type]:
+                try:
+                    callback(event)
+                except Exception as e:
+                    logger.error(f"Error in event listener {callback.__name__} for event {event_type.__name__}: {e}")
 
     def handle_escape_key(self, current_game_state):
         """Handles the logic for when the ESCAPE key is pressed."""

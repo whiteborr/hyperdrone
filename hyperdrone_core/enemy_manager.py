@@ -1,5 +1,7 @@
 import pygame
 import random
+import json
+import os
 from entities import Enemy, SentinelDrone
 from entities.defense_drone import DefenseDrone
 from entities.tr3b_enemy import TR3BEnemy
@@ -11,45 +13,51 @@ class EnemyManager:
         self.asset_manager = asset_manager
         self.enemies = pygame.sprite.Group()
         self.tile_size = get_setting("gameplay", "TILE_SIZE", 80)
+        
+        # Load enemy configurations from JSON file
+        self.enemy_configs = {}
+        config_path = os.path.join("data", "enemy_configs.json")
+        try:
+            with open(config_path, 'r') as f:
+                self.enemy_configs = json.load(f)["enemies"]
+        except (FileNotFoundError, json.JSONDecodeError, KeyError) as e:
+            print(f"Error loading enemy configs: {e}")
+            # Fallback to default configs if file can't be loaded
 
-        self.defense_enemy_configs = {
-            "defense_drone_1": { 
-                "class": DefenseDrone, 
-                "sprite_asset_key": "defense_drone_1_sprite_key", 
-                "health": get_setting("defense_mode", "DEFENSE_DRONE_1_HEALTH", 75), 
-                "speed": get_setting("defense_mode", "DEFENSE_DRONE_1_SPEED", 1.8), 
-                "contact_damage": 25 
-            },
-            "defense_drone_2": { 
-                "class": DefenseDrone, 
-                "sprite_asset_key": "defense_drone_2_sprite_key", 
-                "health": get_setting("defense_mode", "DEFENSE_DRONE_2_HEALTH", 150), 
-                "speed": get_setting("defense_mode", "DEFENSE_DRONE_2_SPEED", 1.2), 
-                "contact_damage": 30 
-            },
-            "defense_drone_3": { 
-                "class": DefenseDrone, 
-                "sprite_asset_key": "defense_drone_3_sprite_key", 
-                "health": get_setting("defense_mode", "DEFENSE_DRONE_3_HEALTH", 50), 
-                "speed": get_setting("defense_mode", "DEFENSE_DRONE_3_SPEED", 2.5), 
-                "contact_damage": 20 
-            },
-            "defense_drone_4": { 
-                "class": DefenseDrone, 
-                "sprite_asset_key": "defense_drone_4_sprite_key", 
-                "health": get_setting("defense_mode", "DEFENSE_DRONE_4_HEALTH", 250), 
-                "speed": get_setting("defense_mode", "DEFENSE_DRONE_4_SPEED", 1.0), 
-                "contact_damage": 40 
-            },
-            "defense_drone_5": { 
-                "class": DefenseDrone, 
-                "sprite_asset_key": "defense_drone_5_sprite_key", 
-                "health": get_setting("defense_mode", "DEFENSE_DRONE_5_HEALTH", 100), 
-                "speed": get_setting("defense_mode", "DEFENSE_DRONE_5_SPEED", 2.0), 
-                "contact_damage": 35 
-            }
-        }
-
+    def spawn_enemy_by_id(self, enemy_id, x, y, **kwargs):
+        """Spawn an enemy by its ID from the configuration"""
+        config = self.enemy_configs.get(enemy_id)
+        if not config:
+            print(f"ERROR: Enemy config for '{enemy_id}' not found.")
+            return None
+            
+        # Dynamically get the class based on class_name
+        class_name = config.get("class_name", "Enemy")
+        enemy_class = None
+        
+        if class_name == "Enemy":
+            enemy_class = Enemy
+        elif class_name == "SentinelDrone":
+            enemy_class = SentinelDrone
+        elif class_name == "TR3BEnemy":
+            enemy_class = TR3BEnemy
+        elif class_name == "DefenseDrone":
+            enemy_class = DefenseDrone
+        else:
+            print(f"ERROR: Unknown enemy class '{class_name}'")
+            return None
+            
+        # Create the enemy instance
+        enemy = enemy_class(x, y, self.asset_manager, config, self.game_controller.player if hasattr(self.game_controller, 'player') else None)
+        
+        # Handle unique arguments like path_to_core for defense mode
+        if 'path_to_core' in kwargs and hasattr(enemy, 'path'):
+            enemy.path = kwargs['path_to_core']
+            enemy.current_path_index = 1 if enemy.path and len(enemy.path) > 1 else -1
+            
+        self.enemies.add(enemy)
+        return enemy
+        
     def spawn_enemies_for_level(self, level):
         self.enemies.empty()
         num_enemies = min(level + 1, 7)
@@ -60,49 +68,38 @@ class EnemyManager:
             sentinel_count = num_enemies - tr3b_count
             
             # Spawn TR-3B enemies
-            bullet_size = get_setting("weapons", "PLAYER_DEFAULT_BULLET_SIZE", 4)
             for _ in range(tr3b_count):
                 if pos := self.game_controller._get_safe_spawn_point(self.tile_size * 0.7, self.tile_size * 0.7):
-                    self.enemies.add(TR3BEnemy(pos[0], pos[1], bullet_size, 
-                                             self.asset_manager, "TR-3B_enemy_sprite_key", 
-                                             'enemy_shoot', self.game_controller.player))
+                    self.spawn_enemy_by_id("tr3b", pos[0], pos[1])
             
             # Spawn Sentinel drones
             for _ in range(sentinel_count):
                 if pos := self.game_controller._get_safe_spawn_point(self.tile_size * 0.6, self.tile_size * 0.6):
-                    self.enemies.add(SentinelDrone(pos[0], pos[1], bullet_size, 
-                                                 self.asset_manager, "sentinel_drone_sprite_key", 
-                                                 'enemy_shoot', self.game_controller.player))
+                    self.spawn_enemy_by_id("sentinel", pos[0], pos[1])
         elif level >= 4:
             # Spawn only Sentinel drones for mid levels
-            bullet_size = get_setting("weapons", "PLAYER_DEFAULT_BULLET_SIZE", 4)
             for _ in range(num_enemies):
                 if pos := self.game_controller._get_safe_spawn_point(self.tile_size * 0.6, self.tile_size * 0.6):
-                    self.enemies.add(SentinelDrone(pos[0], pos[1], bullet_size, 
-                                                 self.asset_manager, "sentinel_drone_sprite_key", 
-                                                 'enemy_shoot', self.game_controller.player))
+                    self.spawn_enemy_by_id("sentinel", pos[0], pos[1])
         else:
             # Spawn regular enemies for early levels
-            bullet_size = get_setting("weapons", "PLAYER_DEFAULT_BULLET_SIZE", 4)
             for _ in range(num_enemies):
                 if pos := self.game_controller._get_safe_spawn_point(self.tile_size * 0.7, self.tile_size * 0.7):
-                    self.enemies.add(Enemy(pos[0], pos[1], bullet_size, 
-                                         self.asset_manager, "regular_enemy_sprite_key", 
-                                         'enemy_shoot', self.game_controller.player))
+                    self.spawn_enemy_by_id("regular_enemy", pos[0], pos[1])
 
     def spawn_enemy_for_defense(self, enemy_type_key, spawn_position_grid, path_to_core):
-        config = self.defense_enemy_configs.get(enemy_type_key)
-        if not config:
-             config = self.defense_enemy_configs["defense_drone_1"]
-        
-        EnemyClass = config["class"]
         abs_x, abs_y = self.game_controller.maze._grid_to_pixel_center(*spawn_position_grid)
         
-        enemy = EnemyClass(x=abs_x, y=abs_y, asset_manager=self.asset_manager, sprite_asset_key=config["sprite_asset_key"], path_to_core=path_to_core)
-        enemy.health = config.get("health", 100); enemy.max_health = enemy.health
-        enemy.speed = config.get("speed", 1.5); enemy.contact_damage = config.get("contact_damage", 25)
-        self.enemies.add(enemy)
-        print(f"Spawned {enemy_type_key} at {abs_x}, {abs_y} with path length: {len(path_to_core)}")
+        # Use the new spawn_enemy_by_id method with the path_to_core parameter
+        enemy = self.spawn_enemy_by_id(enemy_type_key, abs_x, abs_y, path_to_core=path_to_core)
+        
+        if enemy:
+            print(f"Spawned {enemy_type_key} at {abs_x}, {abs_y} with path length: {len(path_to_core)}")
+        else:
+            # Fallback to defense_drone_1 if the requested enemy type doesn't exist
+            enemy = self.spawn_enemy_by_id("defense_drone_1", abs_x, abs_y, path_to_core=path_to_core)
+            if enemy:
+                print(f"Fallback: Spawned defense_drone_1 at {abs_x}, {abs_y} with path length: {len(path_to_core)}")
         
     def update_enemies(self, primary_target_pos_pixels, maze, current_time_ms, delta_time_ms, game_area_x_offset=0, is_defense_mode=False):
         for enemy_obj in list(self.enemies):

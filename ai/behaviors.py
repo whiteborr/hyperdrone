@@ -32,12 +32,10 @@ class ChasePlayerBehavior(BaseBehavior):
             self.enemy.set_behavior(self.enemy.default_behavior(self.enemy))
             return
             
-        # Calculate or recalculate path to player
+        # Set target and update movement using pathfinder component
         target_pos = self.enemy.player_ref.rect.center
-        self._update_ai_with_astar(target_pos, maze, current_time_ms, game_area_x_offset)
-        
-        # Move along the calculated path
-        self._update_movement_along_path(maze, game_area_x_offset, self.enemy.speed)
+        self.enemy.pathfinder.set_target(target_pos, maze, current_time_ms, game_area_x_offset)
+        self.enemy.pathfinder.update_movement(maze, current_time_ms, delta_time_ms, game_area_x_offset)
         
         # Handle shooting if in range
         if player_dist < self.enemy.aggro_radius and (current_time_ms - self.enemy.last_shot_time > self.enemy.shoot_cooldown):
@@ -45,124 +43,6 @@ class ChasePlayerBehavior(BaseBehavior):
             dy = self.enemy.player_ref.rect.centery - self.enemy.y
             self.enemy.shoot(math.degrees(math.atan2(dy, dx)), maze)
             self.enemy.last_shot_time = current_time_ms
-
-    def _update_ai_with_astar(self, target_pos, maze, current_time_ms, game_area_x_offset):
-        """Update AI using A* pathfinding - adapted from Enemy._update_ai_with_astar"""
-        if not target_pos or not maze: 
-            self.enemy.path = []
-            return
-            
-        # Check if we should use alternative target
-        if self.enemy.alternative_target and current_time_ms - self.enemy.alternative_target_timer < self.enemy.ALTERNATIVE_TARGET_TIMEOUT:
-            # Continue using alternative target
-            target_pos = self.enemy._grid_to_pixel_center(self.enemy.alternative_target[0], self.enemy.alternative_target[1], game_area_x_offset)
-        else:
-            # Reset alternative target
-            self.enemy.alternative_target = None
-            
-        # Calculate or recalculate path
-        if current_time_ms - self.enemy.last_path_recalc_time > self.enemy.PATH_RECALC_INTERVAL or not self.enemy.path:
-            self.enemy.last_path_recalc_time = current_time_ms
-            enemy_grid = self.enemy._pixel_to_grid(self.enemy.x, self.enemy.y, game_area_x_offset)
-            target_grid = self.enemy._pixel_to_grid(target_pos[0], target_pos[1], game_area_x_offset)
-            
-            # Validate grid positions
-            if not (0 <= enemy_grid[0] < maze.actual_maze_rows and 0 <= enemy_grid[1] < maze.actual_maze_cols and 
-                   0 <= target_grid[0] < maze.actual_maze_rows and 0 <= target_grid[1] < maze.actual_maze_cols):
-                self.enemy.path = []
-                return
-                
-            # Check if target is in a wall
-            if hasattr(maze, 'grid') and maze.grid[target_grid[0]][target_grid[1]] == 1:
-                self.enemy.path = []
-                return
-                
-            # Try to find path to target
-            grid_path = a_star_search(maze.grid, enemy_grid, target_grid, maze.actual_maze_rows, maze.actual_maze_cols)
-            
-            if grid_path and len(grid_path) > 1:
-                # Path found
-                self.enemy.path = [self.enemy._grid_to_pixel_center(r, c, game_area_x_offset) for r, c in grid_path]
-                self.enemy.current_path_index = 1
-                
-                # Reset alternative target if we found a path to primary target
-                if not self.enemy.alternative_target:
-                    self.enemy.alternative_target = None
-            else:
-                # No path found, try to find alternative target
-                if not self.enemy.alternative_target:
-                    alt_target = find_alternative_target(
-                        maze, 
-                        enemy_grid, 
-                        target_grid, 
-                        maze.actual_maze_rows, 
-                        maze.actual_maze_cols
-                    )
-                    
-                    if alt_target:
-                        self.enemy.alternative_target = alt_target
-                        self.enemy.alternative_target_timer = current_time_ms
-                        
-                        # Try to find path to alternative target
-                        alt_path = a_star_search(
-                            maze.grid, 
-                            enemy_grid, 
-                            alt_target, 
-                            maze.actual_maze_rows, 
-                            maze.actual_maze_cols
-                        )
-                        
-                        if alt_path and len(alt_path) > 1:
-                            self.enemy.path = [self.enemy._grid_to_pixel_center(r, c, game_area_x_offset) for r, c in alt_path]
-                            self.enemy.current_path_index = 1
-                            return
-                
-                self.enemy.path = []
-                
-        # If no path and we have a target, at least face towards it
-        if not self.enemy.path and target_pos:
-            dx, dy = target_pos[0] - self.enemy.x, target_pos[1] - self.enemy.y
-            if math.hypot(dx, dy) > 0: 
-                self.enemy.angle = math.degrees(math.atan2(dy, dx))
-
-    def _update_movement_along_path(self, maze, game_area_x_offset=0, speed_override=None):
-        """Update movement along the calculated path - adapted from Enemy._update_movement_along_path"""
-        effective_speed = speed_override if speed_override is not None else self.enemy.speed
-        if not self.enemy.path or self.enemy.current_path_index >= len(self.enemy.path): 
-            return
-            
-        target = self.enemy.path[self.enemy.current_path_index]
-        dx, dy = target[0] - self.enemy.x, target[1] - self.enemy.y
-        dist = math.hypot(dx, dy)
-        
-        if dist < self.enemy.WAYPOINT_THRESHOLD:
-            self.enemy.current_path_index += 1
-            if self.enemy.current_path_index >= len(self.enemy.path): 
-                self.enemy.path = []
-                return
-                
-        target = self.enemy.path[self.enemy.current_path_index]
-        dx, dy = target[0] - self.enemy.x, target[1] - self.enemy.y
-        dist = math.hypot(dx, dy)
-        
-        if dist > 0:
-            self.enemy.angle = math.degrees(math.atan2(dy, dx))
-            move_x, move_y = (dx/dist)*effective_speed, (dy/dist)*effective_speed
-            next_x, next_y = self.enemy.x + move_x, self.enemy.y + move_y
-            
-            if not (maze and self.enemy.collision_rect and maze.is_wall(next_x, next_y, 
-                                                                      self.enemy.collision_rect.width, 
-                                                                      self.enemy.collision_rect.height)):
-                self.enemy.x, self.enemy.y = next_x, next_y
-        
-        self.enemy.rect.center = (self.enemy.x, self.enemy.y)
-        game_play_area_height = get_setting("display", "HEIGHT", 1080)
-        self.enemy.rect.clamp_ip(pygame.Rect(game_area_x_offset, 0, 
-                                           get_setting("display", "WIDTH", 1920) - game_area_x_offset, 
-                                           game_play_area_height))
-        self.enemy.x, self.enemy.y = self.enemy.rect.centerx, self.enemy.rect.centery
-        if self.enemy.collision_rect: 
-            self.enemy.collision_rect.center = self.enemy.rect.center
 
 class TRBPatrolBehavior(BaseBehavior):
     """Behavior for TR3B enemy patrol movement"""
@@ -183,7 +63,7 @@ class TRBPatrolBehavior(BaseBehavior):
                 return
         
         # Check if we need a new patrol point
-        if not self.current_patrol_point or not self.enemy.path:
+        if not self.current_patrol_point or not self.enemy.pathfinder.path:
             self._select_new_patrol_point(maze, current_time_ms, game_area_x_offset)
             self.patrol_point_reached = False
             return
@@ -191,24 +71,23 @@ class TRBPatrolBehavior(BaseBehavior):
         # If we're waiting at a patrol point
         if not self.patrol_point_reached:
             # Check if we've reached the current patrol point
-            if self.enemy.path and self.enemy.current_path_index >= len(self.enemy.path):
+            if self.enemy.pathfinder.path and self.enemy.pathfinder.current_path_index >= len(self.enemy.pathfinder.path):
                 self.patrol_point_reached = True
                 self.patrol_wait_time = 0
                 return
                 
             # Check if we're stuck (no progress on path)
-            if self.enemy.path and self.enemy.current_path_index < len(self.enemy.path) and random.random() < 0.01:
+            if self.enemy.pathfinder.path and self.enemy.pathfinder.current_path_index < len(self.enemy.pathfinder.path) and random.random() < 0.01:
                 # Occasionally check distance to target to detect being stuck
-                target = self.enemy.path[self.enemy.current_path_index]
+                target = self.enemy.pathfinder.path[self.enemy.pathfinder.current_path_index]
                 dist = math.hypot(self.enemy.x - target[0], self.enemy.y - target[1])
                 tile_size = get_setting("gameplay", "TILE_SIZE", 80)
                 if dist > tile_size * 3:
                     # We might be stuck, try a new path
-                    self.enemy.path = []
-                    self._update_ai_with_astar(self.current_patrol_point, maze, current_time_ms, game_area_x_offset)
+                    self.enemy.pathfinder.set_target(self.current_patrol_point, maze, current_time_ms, game_area_x_offset)
                 
             # Continue moving to the patrol point
-            self._update_movement_along_path(maze, game_area_x_offset, self.enemy.speed)
+            self.enemy.pathfinder.update_movement(maze, current_time_ms, delta_time_ms, game_area_x_offset)
         else:
             # We're at a patrol point, wait for a bit
             self.patrol_wait_time += delta_time_ms
@@ -241,9 +120,7 @@ class TRBPatrolBehavior(BaseBehavior):
             # If we have valid tiles, choose one
             if valid_tiles:
                 self.current_patrol_point = random.choice(valid_tiles)
-                self.enemy.path = []  # Clear current path
-                self.enemy.last_path_recalc_time = 0  # Force path recalculation
-                self._update_ai_with_astar(self.current_patrol_point, maze, current_time_ms, game_area_x_offset)
+                self.enemy.pathfinder.set_target(self.current_patrol_point, maze, current_time_ms, game_area_x_offset)
                 return
         
         # Fallback: use a simple point near current position
@@ -254,9 +131,7 @@ class TRBPatrolBehavior(BaseBehavior):
             self.enemy.x + math.cos(angle) * distance,
             self.enemy.y + math.sin(angle) * distance
         )
-        self.enemy.path = []  # Clear current path
-        self.enemy.last_path_recalc_time = 0  # Force path recalculation
-        self._update_ai_with_astar(self.current_patrol_point, maze, current_time_ms, game_area_x_offset)
+        self.enemy.pathfinder.set_target(self.current_patrol_point, maze, current_time_ms, game_area_x_offset)
 
     def _hover_movement(self, delta_time_ms, maze, game_area_x_offset):
         """Hover in place with slight random movement"""
@@ -270,84 +145,6 @@ class TRBPatrolBehavior(BaseBehavior):
         if not (maze and maze.is_wall(next_x, next_y, self.enemy.collision_rect.width, self.enemy.collision_rect.height)):
             self.enemy.x, self.enemy.y = next_x, next_y
             self.enemy.rect.center = (self.enemy.x, self.enemy.y)
-            self.enemy.collision_rect.center = self.enemy.rect.center
-            
-    def _update_ai_with_astar(self, target_pos, maze, current_time_ms, game_area_x_offset):
-        """Update AI using A* pathfinding - adapted from Enemy._update_ai_with_astar"""
-        if not target_pos or not maze: 
-            self.enemy.path = []
-            return
-            
-        # Calculate or recalculate path
-        if current_time_ms - self.enemy.last_path_recalc_time > self.enemy.PATH_RECALC_INTERVAL or not self.enemy.path:
-            self.enemy.last_path_recalc_time = current_time_ms
-            enemy_grid = self.enemy._pixel_to_grid(self.enemy.x, self.enemy.y, game_area_x_offset)
-            target_grid = self.enemy._pixel_to_grid(target_pos[0], target_pos[1], game_area_x_offset)
-            
-            # Validate grid positions
-            if not (0 <= enemy_grid[0] < maze.actual_maze_rows and 0 <= enemy_grid[1] < maze.actual_maze_cols and 
-                   0 <= target_grid[0] < maze.actual_maze_rows and 0 <= target_grid[1] < maze.actual_maze_cols):
-                self.enemy.path = []
-                return
-                
-            # Check if target is in a wall
-            if hasattr(maze, 'grid') and maze.grid[target_grid[0]][target_grid[1]] == 1:
-                self.enemy.path = []
-                return
-                
-            # Try to find path to target
-            grid_path = a_star_search(maze.grid, enemy_grid, target_grid, maze.actual_maze_rows, maze.actual_maze_cols)
-            
-            if grid_path and len(grid_path) > 1:
-                # Path found
-                self.enemy.path = [self.enemy._grid_to_pixel_center(r, c, game_area_x_offset) for r, c in grid_path]
-                self.enemy.current_path_index = 1
-            else:
-                self.enemy.path = []
-                
-        # If no path and we have a target, at least face towards it
-        if not self.enemy.path and target_pos:
-            dx, dy = target_pos[0] - self.enemy.x, target_pos[1] - self.enemy.y
-            if math.hypot(dx, dy) > 0: 
-                self.enemy.angle = math.degrees(math.atan2(dy, dx))
-                
-    def _update_movement_along_path(self, maze, game_area_x_offset=0, speed_override=None):
-        """Update movement along the calculated path - adapted from Enemy._update_movement_along_path"""
-        effective_speed = speed_override if speed_override is not None else self.enemy.speed
-        if not self.enemy.path or self.enemy.current_path_index >= len(self.enemy.path): 
-            return
-            
-        target = self.enemy.path[self.enemy.current_path_index]
-        dx, dy = target[0] - self.enemy.x, target[1] - self.enemy.y
-        dist = math.hypot(dx, dy)
-        
-        if dist < self.enemy.WAYPOINT_THRESHOLD:
-            self.enemy.current_path_index += 1
-            if self.enemy.current_path_index >= len(self.enemy.path): 
-                self.enemy.path = []
-                return
-                
-        target = self.enemy.path[self.enemy.current_path_index]
-        dx, dy = target[0] - self.enemy.x, target[1] - self.enemy.y
-        dist = math.hypot(dx, dy)
-        
-        if dist > 0:
-            self.enemy.angle = math.degrees(math.atan2(dy, dx))
-            move_x, move_y = (dx/dist)*effective_speed, (dy/dist)*effective_speed
-            next_x, next_y = self.enemy.x + move_x, self.enemy.y + move_y
-            
-            if not (maze and self.enemy.collision_rect and maze.is_wall(next_x, next_y, 
-                                                                      self.enemy.collision_rect.width, 
-                                                                      self.enemy.collision_rect.height)):
-                self.enemy.x, self.enemy.y = next_x, next_y
-        
-        self.enemy.rect.center = (self.enemy.x, self.enemy.y)
-        game_play_area_height = get_setting("display", "HEIGHT", 1080)
-        self.enemy.rect.clamp_ip(pygame.Rect(game_area_x_offset, 0, 
-                                           get_setting("display", "WIDTH", 1920) - game_area_x_offset, 
-                                           game_play_area_height))
-        self.enemy.x, self.enemy.y = self.enemy.rect.centerx, self.enemy.rect.centery
-        if self.enemy.collision_rect: 
             self.enemy.collision_rect.center = self.enemy.rect.center
 
 class TRBDashBehavior(BaseBehavior):

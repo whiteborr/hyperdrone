@@ -48,6 +48,11 @@ class LevelManager:
         self.all_enemies_killed_this_level = False
         self.level_cleared_pending_animation = False
         self.level_clear_fragment_spawned_this_level = False
+        
+        # Register for events
+        if hasattr(game_controller_ref, 'event_manager'):
+            from hyperdrone_core.game_events import EnemyDefeatedEvent
+            game_controller_ref.event_manager.register_listener(EnemyDefeatedEvent, self.on_enemy_defeated)
     
     def reset(self):
         """Reset level manager state for a new game"""
@@ -70,6 +75,10 @@ class LevelManager:
         """Add points to the score"""
         self.score += points
         return self.score
+        
+    def on_enemy_defeated(self, event):
+        """Handle enemy defeated event"""
+        self.add_score(event.score_value)
     
     def collect_ring(self, ring_position):
         """Handle ring collection and animation"""

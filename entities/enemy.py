@@ -3,6 +3,7 @@ import math
 import random
 import os
 import logging
+import json
 
 import pygame
 
@@ -11,45 +12,71 @@ try:
 except ImportError:
     class Bullet(pygame.sprite.Sprite): pass
 
-# Import pathfinding module
-from hyperdrone_core.pathfinding import a_star_search, find_wall_follow_target, find_alternative_target
-
 # Import from settings_manager for settings access
 from settings_manager import get_setting
 from constants import GREEN, YELLOW, RED, WHITE, DARK_PURPLE
 
-# Import behaviors
+# Import behaviors and pathfinding component
 from ai.behaviors import ChasePlayerBehavior
+from ai.pathfinding_component import PathfinderComponent
 
 logger = logging.getLogger(__name__)
 
 class Enemy(pygame.sprite.Sprite):
-    def __init__(self, x, y, player_bullet_size_base, asset_manager, sprite_asset_key, shoot_sound_key=None, target_player_ref=None):
+    def __init__(self, x, y, asset_manager, config, target_player_ref=None):
         super().__init__()
         self.x, self.y, self.angle = float(x), float(y), 0.0
-        self.speed = get_setting("enemies", "ENEMY_SPEED", 1.5) 
-        self.health = get_setting("enemies", "ENEMY_HEALTH", 100); self.max_health = self.health
+        self.config = config
         self.alive = True
-        self.asset_manager, self.sprite_asset_key, self.shoot_sound_key = asset_manager, sprite_asset_key, shoot_sound_key
+        self.asset_manager = asset_manager
+        
+        # Set attributes from the config dictionary
+        stats = self.config.get("stats", {})
+        self.health = stats.get("health", 100)
+        self.max_health = self.health
+        self.speed = stats.get("speed", 1.5)
+        self.contact_damage = stats.get("contact_damage", 25)
+        
+        # Get tile size for calculations
+        tile_size = get_setting("gameplay", "TILE_SIZE", 80)
+        self.aggro_radius = tile_size * stats.get("aggro_radius_tiles", 9)
+        
+        # Asset keys
+        assets = self.config.get("assets", {})
+        self.sprite_asset_key = assets.get("sprite_asset_key", "regular_enemy_sprite_key")
+        self.shoot_sound_key = assets.get("shoot_sound_key")
+        
+        # Player reference
         self.player_ref = target_player_ref
-        self.contact_damage = 25
-        self.aggro_radius = get_setting("gameplay", "TILE_SIZE", 80) * 9
+        
+        # Initialize sprite
         self.original_image, self.image, self.rect, self.collision_rect = None, None, None, None
         self._load_sprite()
-        self.bullets = pygame.sprite.Group() 
-        self.last_shot_time = pygame.time.get_ticks() + random.randint(0, 1500) 
-        self.shoot_cooldown = get_setting("enemies", "ENEMY_BULLET_COOLDOWN", 1500)
-        self.enemy_bullet_size = int(player_bullet_size_base // 1.5) if player_bullet_size_base else 3
-        self.path, self.current_path_index, self.last_path_recalc_time = [], 0, 0
-        self.PATH_RECALC_INTERVAL, self.WAYPOINT_THRESHOLD = 1000, get_setting("gameplay", "TILE_SIZE", 80) * 0.3
-        self.stuck_timer, self.last_pos_check = 0, (self.x, self.y)
-        self.STUCK_TIME_THRESHOLD_MS, self.STUCK_MOVE_THRESHOLD = 2500, 0.5
-        self.alternative_target = None
-        self.alternative_target_timer = 0
-        self.ALTERNATIVE_TARGET_TIMEOUT = 5000  # 5 seconds before trying primary target again
+        
+        # Bullet system
+        self.bullets = pygame.sprite.Group()
+        self.last_shot_time = pygame.time.get_ticks() + random.randint(0, 1500)
+        
+        # Weapon configuration
+        weapon_config = self.config.get("weapon", {})
+        if weapon_config:
+            self.shoot_cooldown = weapon_config.get("shoot_cooldown", 1500)
+            player_bullet_size_base = get_setting("weapons", "PLAYER_DEFAULT_BULLET_SIZE", 4)
+            bullet_size_ratio = weapon_config.get("bullet_size_ratio", 0.67)
+            self.enemy_bullet_size = int(player_bullet_size_base * bullet_size_ratio)
+        else:
+            self.shoot_cooldown = 0
+            self.enemy_bullet_size = 0
+        
+        # Initialize pathfinder component
+        self.pathfinder = PathfinderComponent(self)
         
         # Behavior system
         self.behavior = None
+        ai_config = self.config.get("ai", {})
+        initial_behavior = ai_config.get("initial_behavior", "ChasePlayerBehavior")
+        
+        # Set default behavior
         self.default_behavior = ChasePlayerBehavior
         self.set_behavior(ChasePlayerBehavior(self))
 
@@ -62,11 +89,10 @@ class Enemy(pygame.sprite.Sprite):
         self.collision_rect = self.rect.inflate(-self.rect.width * 0.2, -self.rect.height * 0.2)
 
     def _pixel_to_grid(self, px, py, offset=0): 
-        tile_size = get_setting("gameplay", "TILE_SIZE", 80)
-        return int(py / tile_size), int((px - offset) / tile_size)
+        return self.pathfinder._pixel_to_grid(px, py, offset)
+        
     def _grid_to_pixel_center(self, r, c, offset=0): 
-        tile_size = get_setting("gameplay", "TILE_SIZE", 80)
-        return (c*tile_size)+(tile_size/2)+offset, (r*tile_size)+(tile_size/2)
+        return self.pathfinder._grid_to_pixel_center(r, c, offset)
 
     def set_behavior(self, new_behavior):
         """Change the current behavior of the enemy"""
@@ -78,11 +104,8 @@ class Enemy(pygame.sprite.Sprite):
             if not self.bullets: self.kill()
             return
 
-        # Check for stuck condition
-        is_stuck = self._handle_stuck_logic(current_time_ms, delta_time_ms, maze, game_area_x_offset)
-        
-        # Execute current behavior if not stuck
-        if not is_stuck and self.behavior:
+        # Execute current behavior
+        if self.behavior:
             self.behavior.execute(maze, current_time_ms, delta_time_ms, game_area_x_offset)
         
         # Update sprite rotation and position
@@ -93,164 +116,7 @@ class Enemy(pygame.sprite.Sprite):
         # Update bullets
         self.bullets.update(maze, game_area_x_offset)
 
-    def _handle_stuck_logic(self, current_time_ms, delta_time_ms, maze, game_area_x_offset):
-        dist_moved = math.hypot(self.x - self.last_pos_check[0], self.y - self.last_pos_check[1])
-        if dist_moved < self.STUCK_MOVE_THRESHOLD: self.stuck_timer += delta_time_ms
-        else: self.stuck_timer = 0; self.last_pos_check = (self.x, self.y)
 
-        if self.stuck_timer > self.STUCK_TIME_THRESHOLD_MS:
-            logger.warning(f"Enemy {id(self)} detected as stuck. Attempting to unstick.")
-            
-            # Try to find a path along the wall using A* pathfinding
-            if maze and hasattr(maze, 'grid'):
-                # Get current position in grid coordinates
-                current_grid_pos = self._pixel_to_grid(self.x, self.y, game_area_x_offset)
-                
-                # Find a target position along the wall
-                wall_follow_target = find_wall_follow_target(
-                    maze, 
-                    current_grid_pos, 
-                    maze.actual_maze_rows, 
-                    maze.actual_maze_cols
-                )
-                
-                if wall_follow_target:
-                    # Convert target back to pixel coordinates
-                    target_pixel = self._grid_to_pixel_center(wall_follow_target[0], wall_follow_target[1], game_area_x_offset)
-                    
-                    # Force a new path calculation to the wall-following target
-                    self.path = []
-                    self.last_path_recalc_time = 0
-                    self._update_ai_with_astar(target_pixel, maze, current_time_ms, game_area_x_offset)
-                    self.stuck_timer = 0
-                    return True
-            
-            # Fallback: try to get walkable tiles from maze
-            walkable_tiles = []
-            if hasattr(maze, 'get_walkable_tiles_abs'):
-                walkable_tiles = maze.get_walkable_tiles_abs()
-            elif hasattr(maze, 'get_path_cells_abs'):
-                walkable_tiles = maze.get_path_cells_abs()
-                
-            if walkable_tiles:
-                # Find tiles that are not too close to current position
-                tile_size = get_setting("gameplay", "TILE_SIZE", 80)
-                viable_tiles = [p for p in walkable_tiles if tile_size * 3 < math.hypot(p[0] - self.x, p[1] - self.y) < tile_size * 12]
-                if viable_tiles:
-                    unstick_target = random.choice(viable_tiles)
-                    # Force a new path calculation
-                    self.path = []
-                    self.last_path_recalc_time = 0
-                    self._update_ai_with_astar(unstick_target, maze, current_time_ms, game_area_x_offset)
-                    self.stuck_timer = 0
-                    return True
-            
-            # Last resort: move in a random direction
-            angle = random.uniform(0, 2 * math.pi)
-            tile_size = get_setting("gameplay", "TILE_SIZE", 80)
-            self.x += math.cos(angle) * tile_size * 2
-            self.y += math.sin(angle) * tile_size * 2
-            self.rect.center = (self.x, self.y)
-            self.collision_rect.center = self.rect.center
-            self.stuck_timer = 0
-            return True
-        return False
-
-    def _update_ai_with_astar(self, target_pos, maze, current_time_ms, game_area_x_offset):
-        if not target_pos or not maze: 
-            self.path = []
-            return
-            
-        # Check if we should use alternative target
-        if self.alternative_target and current_time_ms - self.alternative_target_timer < self.ALTERNATIVE_TARGET_TIMEOUT:
-            # Continue using alternative target
-            target_pos = self._grid_to_pixel_center(self.alternative_target[0], self.alternative_target[1], game_area_x_offset)
-        else:
-            # Reset alternative target
-            self.alternative_target = None
-            
-        # Calculate or recalculate path
-        if current_time_ms - self.last_path_recalc_time > self.PATH_RECALC_INTERVAL or not self.path:
-            self.last_path_recalc_time = current_time_ms
-            enemy_grid, target_grid = self._pixel_to_grid(self.x, self.y, game_area_x_offset), self._pixel_to_grid(target_pos[0], target_pos[1], game_area_x_offset)
-            
-            # Validate grid positions
-            if not (0 <= enemy_grid[0] < maze.actual_maze_rows and 0 <= enemy_grid[1] < maze.actual_maze_cols and 
-                   0 <= target_grid[0] < maze.actual_maze_rows and 0 <= target_grid[1] < maze.actual_maze_cols):
-                self.path = []
-                return
-                
-            # Check if target is in a wall
-            if hasattr(maze, 'grid') and maze.grid[target_grid[0]][target_grid[1]] == 1:
-                self.path = []
-                return
-                
-            # Try to find path to target
-            grid_path = a_star_search(maze.grid, enemy_grid, target_grid, maze.actual_maze_rows, maze.actual_maze_cols)
-            
-            if grid_path and len(grid_path) > 1:
-                # Path found
-                self.path = [self._grid_to_pixel_center(r, c, game_area_x_offset) for r, c in grid_path]
-                self.current_path_index = 1
-                
-                # Reset alternative target if we found a path to primary target
-                if not self.alternative_target:
-                    self.alternative_target = None
-            else:
-                # No path found, try to find alternative target
-                if not self.alternative_target:
-                    alt_target = find_alternative_target(
-                        maze, 
-                        enemy_grid, 
-                        target_grid, 
-                        maze.actual_maze_rows, 
-                        maze.actual_maze_cols
-                    )
-                    
-                    if alt_target:
-                        self.alternative_target = alt_target
-                        self.alternative_target_timer = current_time_ms
-                        
-                        # Try to find path to alternative target
-                        alt_path = a_star_search(
-                            maze.grid, 
-                            enemy_grid, 
-                            alt_target, 
-                            maze.actual_maze_rows, 
-                            maze.actual_maze_cols
-                        )
-                        
-                        if alt_path and len(alt_path) > 1:
-                            self.path = [self._grid_to_pixel_center(r, c, game_area_x_offset) for r, c in alt_path]
-                            self.current_path_index = 1
-                            return
-                
-                self.path = []
-                
-        # If no path and we have a target, at least face towards it
-        if not self.path and target_pos:
-            dx, dy = target_pos[0] - self.x, target_pos[1] - self.y
-            if math.hypot(dx, dy) > 0: self.angle = math.degrees(math.atan2(dy, dx))
-
-    def _update_movement_along_path(self, maze, game_area_x_offset=0, speed_override=None): 
-        effective_speed = speed_override if speed_override is not None else self.speed
-        if not self.path or self.current_path_index >= len(self.path): return
-        target = self.path[self.current_path_index]; dx, dy = target[0] - self.x, target[1] - self.y; dist = math.hypot(dx, dy)
-        if dist < self.WAYPOINT_THRESHOLD:
-            self.current_path_index += 1
-            if self.current_path_index >= len(self.path): self.path = []; return
-        target = self.path[self.current_path_index]; dx, dy = target[0] - self.x, target[1] - self.y; dist = math.hypot(dx, dy)
-        if dist > 0:
-            self.angle = math.degrees(math.atan2(dy, dx)); move_x, move_y = (dx/dist)*effective_speed, (dy/dist)*effective_speed
-            next_x, next_y = self.x + move_x, self.y + move_y
-            if not (maze and self.collision_rect and maze.is_wall(next_x, next_y, self.collision_rect.width, self.collision_rect.height)):
-                self.x, self.y = next_x, next_y
-        
-        self.rect.center = (self.x, self.y)
-        game_play_area_height = get_setting("display", "HEIGHT", 1080)
-        self.rect.clamp_ip(pygame.Rect(game_area_x_offset, 0, get_setting("display", "WIDTH", 1920) - game_area_x_offset, game_play_area_height))
-        self.x, self.y = self.rect.centerx, self.rect.centery
-        if self.collision_rect: self.collision_rect.center = self.rect.center
 
     def shoot(self, direct_angle_to_target, maze): 
         if not self.alive: return
@@ -319,25 +185,23 @@ class Enemy(pygame.sprite.Sprite):
         pygame.draw.rect(surface, WHITE, (bar_x, bar_y, bar_w, bar_h), 1) 
 
 class DefenseDrone(Enemy):
-    def __init__(self, x, y, asset_manager, sprite_asset_key, path_to_core, **kwargs):
-        super().__init__(x, y, 0, asset_manager, sprite_asset_key)
-        self.path = path_to_core if path_to_core else []
-        self.current_path_index = 1 if self.path and len(self.path) > 1 else -1
+    def __init__(self, x, y, asset_manager, config, path_to_core=None):
+        super().__init__(x, y, asset_manager, config)
+        if path_to_core:
+            self.pathfinder.path = path_to_core
+            self.pathfinder.current_path_index = 1 if path_to_core and len(path_to_core) > 1 else -1
 
-    def update(self, _, maze, __, ___, game_area_x_offset=0, is_defense_mode=True):
+    def update(self, _, maze, current_time_ms, delta_time_ms, game_area_x_offset=0, is_defense_mode=True):
         if not self.alive: return
-        self._update_movement_along_path(maze, game_area_x_offset)
+        self.pathfinder.update_movement(maze, current_time_ms, delta_time_ms, game_area_x_offset)
         if self.image and self.original_image:
             self.image = pygame.transform.rotate(self.original_image, -self.angle)
             self.rect = self.image.get_rect(center=(int(self.x), int(self.y)))
             if self.collision_rect: self.collision_rect.center = self.rect.center
 
 class SentinelDrone(Enemy): 
-    def __init__(self, x, y, player_bullet_size_base, asset_manager, sprite_asset_key, shoot_sound_key=None, target_player_ref=None):
-        super().__init__(x, y, player_bullet_size_base, asset_manager, sprite_asset_key, shoot_sound_key, target_player_ref)
-        self.speed = get_setting("bosses", "SENTINEL_DRONE_SPEED", 3.0)
-        self.health = get_setting("bosses", "SENTINEL_DRONE_HEALTH", 75); self.max_health = self.health
-        self.shoot_cooldown = int(get_setting("enemies", "ENEMY_BULLET_COOLDOWN", 1500) * 0.7)
+    def __init__(self, x, y, asset_manager, config, target_player_ref=None):
+        super().__init__(x, y, asset_manager, config, target_player_ref)
 
     def _load_sprite(self): 
         tile_size = get_setting("gameplay", "TILE_SIZE", 80)

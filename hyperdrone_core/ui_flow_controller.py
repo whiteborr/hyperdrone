@@ -75,6 +75,7 @@ class UIFlowController:
             GAME_STATE_MAIN_MENU: self._handle_main_menu_input,
             GAME_STATE_DRONE_SELECT: self._handle_drone_select_input,
             GAME_STATE_SETTINGS: self._handle_settings_input,
+            "SettingsState": self._handle_settings_input,  # Add support for string-based state name
             GAME_STATE_LEADERBOARD: self._handle_leaderboard_input,
             GAME_STATE_CODEX: self._handle_codex_input,
             GAME_STATE_ENTER_NAME: self._handle_enter_name_input,
@@ -266,6 +267,9 @@ class UIFlowController:
             current_val = get_setting(category, item_key)
             if selected_item["type"] == "numeric":
                 step = selected_item.get("step", 1)
+                # Handle case where current_val is None
+                if current_val is None:
+                    current_val = selected_item.get("min", 0)
                 new_val = current_val + direction * step
                 new_val = max(selected_item["min"], min(new_val, selected_item["max"]))
                 from settings_manager import set_setting

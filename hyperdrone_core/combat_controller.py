@@ -272,9 +272,16 @@ class CombatController:
                         enemy.take_damage(damage_to_enemy)
 
                     if not enemy.alive:
-                        self.game_controller.level_manager.add_score(50)
-                        self.game_controller.drone_system.add_player_cores(10) 
-                        self.game_controller._create_enemy_explosion(enemy.rect.centerx, enemy.rect.centery) 
+                        # Create and dispatch the enemy defeated event
+                        from hyperdrone_core.game_events import EnemyDefeatedEvent
+                        event = EnemyDefeatedEvent(
+                            score_value=50,
+                            position=enemy.rect.center,
+                            enemy_id=id(enemy)
+                        )
+                        self.game_controller.event_manager.dispatch(event)
+                        
+                        # Keep this check as it's not related to scoring or explosions
                         self.game_controller.check_for_all_enemies_killed()
                     
                     if isinstance(projectile, LightningZap):
