@@ -1,6 +1,7 @@
 # hyperdrone_core/maze_defense_state.py
 import pygame
 from .state import State
+from settings_manager import get_setting
 
 class MazeDefenseState(State):
     """State for the maze defense gameplay mode"""
@@ -11,12 +12,17 @@ class MazeDefenseState(State):
         self.game.puzzle_controller.reset_puzzles_state()
         
         # Create maze for defense mode
-        self.game.maze = self.game.MazeChapter2(game_area_x_offset=300)
+        from entities.maze_chapter2 import MazeChapter2
+        self.game.maze = MazeChapter2(game_area_x_offset=300)
+        
+        # Get tile size from settings
+        tile_size = get_setting("gameplay", "TILE_SIZE", 80)
         
         # Set up camera
-        self.game.camera = self.game.Camera(
-            self.game.maze.actual_maze_cols * self.game.gs.TILE_SIZE, 
-            self.game.maze.actual_maze_rows * self.game.gs.TILE_SIZE
+        from hyperdrone_core.camera import Camera
+        self.game.camera = Camera(
+            self.game.maze.actual_maze_cols * tile_size, 
+            self.game.maze.actual_maze_rows * tile_size
         )
         
         # Set initial zoom level
@@ -28,7 +34,7 @@ class MazeDefenseState(State):
         self.game.tower_defense_manager = TowerDefenseManager(
             self.game.maze.actual_maze_cols, 
             self.game.maze.actual_maze_rows, 
-            self.game.gs.TILE_SIZE, 
+            tile_size, 
             self.game.maze.game_area_x_offset
         )
         
@@ -39,10 +45,12 @@ class MazeDefenseState(State):
         # Create core reactor
         reactor_pos = self.game.maze.get_core_reactor_spawn_position_abs()
         if reactor_pos:
-            self.game.core_reactor = self.game.CoreReactor(
+            reactor_health = get_setting("defense_mode", "DEFENSE_REACTOR_HEALTH", 1000)
+            from entities.core_reactor import CoreReactor
+            self.game.core_reactor = CoreReactor(
                 reactor_pos[0], reactor_pos[1], 
                 self.game.asset_manager, 
-                health=self.game.gs.DEFENSE_REACTOR_HEALTH
+                health=reactor_health
             )
             self.game.reactor_group.empty()  # Clear any existing reactors
             self.game.reactor_group.add(self.game.core_reactor)
@@ -121,7 +129,8 @@ class MazeDefenseState(State):
     
     def draw(self, surface):
         """Draw the maze defense state"""
-        surface.fill(self.game.gs.BLACK)
+        black_color = get_setting("colors", "BLACK", (0, 0, 0))
+        surface.fill(black_color)
         
         # Draw maze
         if self.game.maze:

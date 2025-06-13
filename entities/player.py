@@ -18,6 +18,11 @@ from .bullet import Bullet, Missile, LightningZap
 from .particle import Particle
 from .base_drone import BaseDrone
 from .powerup_manager import PowerUpManager
+from .weapon_strategies import (
+    DefaultWeaponStrategy, TriShotWeaponStrategy, RapidSingleWeaponStrategy, RapidTriShotWeaponStrategy,
+    BigShotWeaponStrategy, BounceWeaponStrategy, PierceWeaponStrategy, HeatseekerWeaponStrategy,
+    HeatseekerPlusBulletsWeaponStrategy, LightningWeaponStrategy
+)
 
 
 logger = logging.getLogger(__name__)
@@ -35,6 +40,10 @@ class PlayerDrone(BaseDrone):
         self.asset_manager = asset_manager
         self.sprite_asset_key = sprite_asset_key
         self.crash_sound_key = crash_sound_key
+        
+        # Initialize last_shot_time and current_shoot_cooldown for UI
+        self.last_shot_time = pygame.time.get_ticks()
+        self.current_shoot_cooldown = 0
         
         self.base_hp = drone_stats.get("hp", get_setting("gameplay", "PLAYER_MAX_HEALTH", 100))
         self.base_turn_speed = drone_stats.get("turn_speed", get_setting("gameplay", "ROTATION_SPEED", 5))
@@ -62,24 +71,32 @@ class PlayerDrone(BaseDrone):
         self.bullets_group = pygame.sprite.Group()
         self.missiles_group = pygame.sprite.Group()
         self.lightning_zaps_group = pygame.sprite.Group()
-        self.last_shot_time = 0
-        self.current_shoot_cooldown = get_setting("weapons", "PLAYER_BASE_SHOOT_COOLDOWN", 500)
-        self.bullet_size = get_setting("weapons", "PLAYER_DEFAULT_BULLET_SIZE", 5)
+        self.enemies_group = pygame.sprite.Group()  # Initialize enemies_group
         
-        # Initialize weapon properties based on initial weapon mode
-        self._update_weapon_properties()
+        # Initialize weapon strategies
+        self.weapon_strategies = {
+            WEAPON_MODE_DEFAULT: DefaultWeaponStrategy,
+            WEAPON_MODE_TRI_SHOT: TriShotWeaponStrategy,
+            WEAPON_MODE_RAPID_SINGLE: RapidSingleWeaponStrategy,
+            WEAPON_MODE_RAPID_TRI: RapidTriShotWeaponStrategy,
+            WEAPON_MODE_BIG_SHOT: BigShotWeaponStrategy,
+            WEAPON_MODE_BOUNCE: BounceWeaponStrategy,
+            WEAPON_MODE_PIERCE: PierceWeaponStrategy,
+            WEAPON_MODE_HEATSEEKER: HeatseekerWeaponStrategy,
+            WEAPON_MODE_HEATSEEKER_PLUS_BULLETS: HeatseekerPlusBulletsWeaponStrategy,
+            WEAPON_MODE_LIGHTNING: LightningWeaponStrategy
+        }
+        
+        # Set initial weapon strategy
+        self.current_weapon_strategy = None
+        self.set_weapon_mode(self.current_weapon_mode)
         self._load_sprite()
 
     def _load_sprite(self):
-        # Get weapon sprite key based on current weapon mode
-        weapon_sprite_key = f"weapon_mode_{self.current_weapon_mode}_icon"
-        loaded_image = None
-        if weapon_sprite_key:
-            loaded_image = self.asset_manager.get_image(weapon_sprite_key)
-
-        if not loaded_image:
-            loaded_image = self.asset_manager.get_image(self.sprite_asset_key)
-
+        # Always use the base drone sprite first
+        loaded_image = self.asset_manager.get_image(self.sprite_asset_key)
+        
+        # If we have a valid image, use it
         if loaded_image:
             # We now assume the source image faces RIGHT and do not apply any correction here.
             self.original_image = pygame.transform.smoothscale(loaded_image, self.drone_visual_size)
@@ -90,9 +107,71 @@ class PlayerDrone(BaseDrone):
         current_center = self.rect.center if hasattr(self, 'rect') and self.rect else (int(self.x), int(self.y))
         self.rect = self.image.get_rect(center=current_center)
         self.collision_rect = self.rect.inflate(-self.rect.width * 0.3, -self.rect.height * 0.3)
+        
+    def _update_drone_sprite(self):
+        """Update the drone sprite based on the current weapon mode"""
+        # Get the drone ID and weapon mode
+        drone_id = self.drone_id.lower()  # Ensure lowercase for consistency
+        weapon_mode = self.current_weapon_mode
+        
+        # Map weapon modes to their sprite names
+        from constants import (
+            WEAPON_MODE_DEFAULT, WEAPON_MODE_TRI_SHOT, WEAPON_MODE_RAPID_SINGLE, WEAPON_MODE_RAPID_TRI,
+            WEAPON_MODE_BIG_SHOT, WEAPON_MODE_BOUNCE, WEAPON_MODE_PIERCE,
+            WEAPON_MODE_HEATSEEKER, WEAPON_MODE_HEATSEEKER_PLUS_BULLETS,
+            WEAPON_MODE_LIGHTNING
+        )
+        
+        weapon_sprite_names = {
+            WEAPON_MODE_DEFAULT: "default",
+            WEAPON_MODE_TRI_SHOT: "tri_shot",
+            WEAPON_MODE_RAPID_SINGLE: "rapid_single",
+            WEAPON_MODE_RAPID_TRI: "rapid_tri_shot",
+            WEAPON_MODE_BIG_SHOT: "big_shot",
+            WEAPON_MODE_BOUNCE: "bounce",
+            WEAPON_MODE_PIERCE: "pierce",
+            WEAPON_MODE_HEATSEEKER: "heatseeker",
+            WEAPON_MODE_HEATSEEKER_PLUS_BULLETS: "heatseeker_plus_bullets",
+            WEAPON_MODE_LIGHTNING: "lightning"
+        }
+        
+        # Get the weapon sprite name
+        weapon_sprite_name = weapon_sprite_names.get(weapon_mode, "default")
+        
+        # Try to load the weapon-specific drone sprite
+        weapon_sprite_key = f"drone_{weapon_sprite_name}"
+        loaded_image = self.asset_manager.get_image(weapon_sprite_key)
+        
+        # If not found, fall back to the default drone sprite
+        if not loaded_image:
+            loaded_image = self.asset_manager.get_image(self.sprite_asset_key)
+        
+        # If we have a valid image, use it
+        if loaded_image:
+            self.original_image = pygame.transform.smoothscale(loaded_image, self.drone_visual_size)
+        else:
+            # This should rarely happen as we already checked for the default sprite in _load_sprite
+            self.original_image = self.asset_manager._create_fallback_surface(size=self.drone_visual_size, text=self.drone_id[:1], color=(0,200,0,150))
+        
+        # Update the image and maintain the current center position
+        current_center = self.rect.center if hasattr(self, 'rect') and self.rect else (int(self.x), int(self.y))
+        self.image = self.original_image.copy()
+        self.rect = self.image.get_rect(center=current_center)
+        self.collision_rect = self.rect.inflate(-self.rect.width * 0.3, -self.rect.height * 0.3)
 
     def update(self, current_time_ms, maze, enemies_group, player_actions, game_area_x_offset=0):
         if not self.alive: return
+        
+        # Store enemies_group for weapon strategies that need it
+        self.enemies_group = enemies_group
+        
+        # Update power-up states
+        self.powerup_manager.update(current_time_ms)
+        
+        # Update weapon strategy with current maze and enemies
+        if self.current_weapon_strategy:
+            self.current_weapon_strategy.update_maze(maze)
+            self.current_weapon_strategy.update_enemies_group(enemies_group)
         
         self.moving_forward = self.is_cruising
         
@@ -107,179 +186,42 @@ class PlayerDrone(BaseDrone):
         super().rotate(direction, self.rotation_speed)
             
     def shoot(self, sound_asset_key=None, missile_sound_asset_key=None, maze=None, enemies_group=None):
-        current_time_ms = pygame.time.get_ticks()
-        if (current_time_ms - self.last_shot_time) > self.current_shoot_cooldown:
-            self.last_shot_time = current_time_ms
-            if sound_asset_key and self.asset_manager:
-                sound = self.asset_manager.get_sound(sound_asset_key)
-                if sound: sound.play()
-
-            rad_angle = math.radians(self.angle)
-            spawn_x = self.x + math.cos(rad_angle) * (self.rect.width / 2)
-            spawn_y = self.y + math.sin(rad_angle) * (self.rect.height / 2)
-            
-            # Get common bullet settings
-            bullet_speed = get_setting("weapons", "PLAYER_BULLET_SPEED", 8)
-            bullet_lifetime = get_setting("weapons", "PLAYER_BULLET_LIFETIME", 60)
-            bullet_color = get_setting("weapons", "PLAYER_BULLET_COLOR", (0, 200, 255))
-            bullet_damage = get_setting("weapons", "PLAYER_BULLET_DAMAGE", 15)
-            
-            # Create bullets based on weapon mode
-            if self.current_weapon_mode == WEAPON_MODE_TRI_SHOT or self.current_weapon_mode == WEAPON_MODE_RAPID_TRI:
-                # Create tri-shot bullets
-                for angle_offset in [-15, 0, 15]:
-                    shot_angle = self.angle + angle_offset
-                    new_bullet = Bullet(spawn_x, spawn_y, shot_angle, bullet_speed, 
-                                       bullet_lifetime, self.bullet_size, 
-                                       bullet_color, bullet_damage)
-                    self.bullets_group.add(new_bullet)
-            elif self.current_weapon_mode == WEAPON_MODE_BOUNCE:
-                # Create bouncing bullet
-                bounces = get_setting("weapons", "BOUNCING_BULLET_MAX_BOUNCES", 3)
-                new_bullet = Bullet(spawn_x, spawn_y, self.angle, bullet_speed, 
-                                   bullet_lifetime, self.bullet_size, 
-                                   bullet_color, bullet_damage, max_bounces=bounces)
-                self.bullets_group.add(new_bullet)
-            elif self.current_weapon_mode == WEAPON_MODE_PIERCE:
-                # Create piercing bullet that can pass through walls
-                pierces = get_setting("weapons", "PIERCING_BULLET_MAX_PIERCES", 2)
-                new_bullet = Bullet(spawn_x, spawn_y, self.angle, bullet_speed, 
-                                   bullet_lifetime, self.bullet_size, 
-                                   bullet_color, bullet_damage, max_pierces=pierces,
-                                   can_pierce_walls=True)
-                self.bullets_group.add(new_bullet)
-            elif self.current_weapon_mode == WEAPON_MODE_HEATSEEKER or self.current_weapon_mode == WEAPON_MODE_HEATSEEKER_PLUS_BULLETS:
-                # Create heatseeker missile
-                if missile_sound_asset_key and self.asset_manager:
-                    missile_sound = self.asset_manager.get_sound(missile_sound_asset_key)
-                    if missile_sound: missile_sound.play()
-                missile_damage = get_setting("weapons", "MISSILE_DAMAGE", 30)
-                new_missile = Missile(spawn_x, spawn_y, self.angle, missile_damage, enemies_group)
-                self.missiles_group.add(new_missile)
-                
-                # Add regular bullets for HEATSEEKER_PLUS_BULLETS mode
-                if self.current_weapon_mode == WEAPON_MODE_HEATSEEKER_PLUS_BULLETS:
-                    new_bullet = Bullet(spawn_x, spawn_y, self.angle, bullet_speed, 
-                                       bullet_lifetime, self.bullet_size, 
-                                       bullet_color, bullet_damage)
-                    self.bullets_group.add(new_bullet)
-            elif self.current_weapon_mode == WEAPON_MODE_LIGHTNING:
-                # Create lightning zap
-                closest_enemy = None
-                min_distance = float('inf')
-                lightning_range = get_setting("weapons", "LIGHTNING_ZAP_RANGE", 250)
-                
-                if enemies_group:
-                    for enemy in enemies_group:
-                        if enemy.alive:
-                            dx = enemy.rect.centerx - self.rect.centerx
-                            dy = enemy.rect.centery - self.rect.centery
-                            distance = math.sqrt(dx*dx + dy*dy)
-                            if distance < min_distance and distance < lightning_range:
-                                min_distance = distance
-                                closest_enemy = enemy
-                
-                lightning_damage = get_setting("weapons", "LIGHTNING_DAMAGE", 25)
-                lightning_lifetime = get_setting("weapons", "LIGHTNING_LIFETIME", 30)
-                new_zap = LightningZap(self, closest_enemy, lightning_damage, lightning_lifetime, maze)
-                self.lightning_zaps_group.add(new_zap)
-            else:
-                # Default single bullet
-                new_bullet = Bullet(spawn_x, spawn_y, self.angle, bullet_speed, 
-                                   bullet_lifetime, self.bullet_size, 
-                                   bullet_color, bullet_damage)
-                self.bullets_group.add(new_bullet)
+        # Update references if provided
+        if enemies_group is not None:
+            self.enemies_group = enemies_group
+            if self.current_weapon_strategy:
+                self.current_weapon_strategy.update_enemies_group(enemies_group)
+        
+        if maze is not None and self.current_weapon_strategy:
+            self.current_weapon_strategy.update_maze(maze)
+        
+        # Delegate firing logic to the current weapon strategy
+        if self.current_weapon_strategy:
+            if self.current_weapon_strategy.fire(sound_asset_key, missile_sound_asset_key):
+                # Update last_shot_time for UI cooldown display
+                self.last_shot_time = pygame.time.get_ticks()
+                # Ensure the drone sprite matches the current weapon mode
+                self._update_drone_sprite()
             
     def cycle_weapon_state(self):
         weapon_modes_sequence = get_setting("gameplay", "WEAPON_MODES_SEQUENCE", [0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
         self.weapon_mode_index = (self.weapon_mode_index + 1) % len(weapon_modes_sequence)
         self.current_weapon_mode = weapon_modes_sequence[self.weapon_mode_index]
-        self._update_weapon_properties()
-        self._load_sprite() 
+        self.set_weapon_mode(self.current_weapon_mode)
+        self._update_drone_sprite()
         
-    def _update_weapon_properties(self):
-        # Update bullet properties based on weapon mode
-        if self.current_weapon_mode == WEAPON_MODE_BIG_SHOT:
-            self.bullet_size = get_setting("weapons", "PLAYER_BIG_BULLET_SIZE", 8)
-            self.current_shoot_cooldown = get_setting("weapons", "PLAYER_BASE_SHOOT_COOLDOWN", 500) * 1.5
-        elif self.current_weapon_mode in [WEAPON_MODE_RAPID_SINGLE, WEAPON_MODE_RAPID_TRI]:
-            self.bullet_size = get_setting("weapons", "PLAYER_DEFAULT_BULLET_SIZE", 5)
-            self.current_shoot_cooldown = get_setting("weapons", "PLAYER_RAPID_FIRE_COOLDOWN", 250)
-        elif self.current_weapon_mode == WEAPON_MODE_BOUNCE:
-            self.bullet_size = get_setting("weapons", "PLAYER_DEFAULT_BULLET_SIZE", 5)
-            self.current_shoot_cooldown = get_setting("weapons", "PLAYER_BASE_SHOOT_COOLDOWN", 500)
-        elif self.current_weapon_mode == WEAPON_MODE_PIERCE:
-            self.bullet_size = get_setting("weapons", "PLAYER_DEFAULT_BULLET_SIZE", 5)
-            self.current_shoot_cooldown = get_setting("weapons", "PLAYER_BASE_SHOOT_COOLDOWN", 500)
-        else:
-            self.bullet_size = get_setting("weapons", "PLAYER_DEFAULT_BULLET_SIZE", 5)
-            self.current_shoot_cooldown = get_setting("weapons", "PLAYER_BASE_SHOOT_COOLDOWN", 500)
+    def set_weapon_mode(self, mode):
+        """Set the current weapon strategy based on the weapon mode"""
+        self.current_weapon_mode = mode
+        strategy_class = self.weapon_strategies.get(mode, DefaultWeaponStrategy)
+        self.current_weapon_strategy = strategy_class(self)
+        # Update cooldown value for UI
+        if self.current_weapon_strategy:
+            self.current_shoot_cooldown = self.current_weapon_strategy.get_cooldown()
+        self._update_drone_sprite()
+        # Reset last_shot_time attribute needed by UI
+        self.last_shot_time = pygame.time.get_ticks()
 
-    def take_damage(self, amount, sound_key_on_hit=None):
-        if not self.alive: return
-        self.health -= amount
-        if sound_key_on_hit and self.asset_manager:
-            sound = self.asset_manager.get_sound(sound_key_on_hit)
-            if sound: sound.play()
-        if self.health <= 0:
-            self.health = 0
-            self.alive = False
-
-    def draw(self, surface, camera=None):
-        if self.alive and self.original_image:
-            rotated_image = pygame.transform.rotate(self.original_image, -self.angle)
-            draw_rect = rotated_image.get_rect(center=self.rect.center)
-            surface.blit(rotated_image, draw_rect)
-            
-        self.bullets_group.draw(surface)
-        self.missiles_group.draw(surface)
-        
-        # Draw lightning zaps
-        for zap in self.lightning_zaps_group:
-            if hasattr(zap, 'draw'):
-                zap.draw(surface, camera)
-
-    def draw_health_bar(self, surface, camera=None):
-        if not self.alive or not self.rect: return
-        bar_width = self.rect.width * 0.8
-        bar_height = 5
-        bar_x = self.rect.centerx - bar_width / 2
-        bar_y = self.rect.top - bar_height - 3
-        health_percentage = self.health / self.max_health if self.max_health > 0 else 0
-        filled_width = int(bar_width * health_percentage)
-        fill_color = GREEN if health_percentage > 0.6 else YELLOW if health_percentage > 0.3 else RED
-        pygame.draw.rect(surface, (50,50,50), (bar_x, bar_y, bar_width, bar_height))
-        if filled_width > 0: pygame.draw.rect(surface, fill_color, (bar_x, bar_y, filled_width, bar_height))
-        pygame.draw.rect(surface, WHITE, (bar_x, bar_y, bar_width, bar_height), 1)
-    def activate_shield(self, duration_ms):
-        """Activate shield effect for the specified duration"""
-        self.powerup_manager.activate_shield(duration_ms)
-        
-    def arm_speed_boost(self, duration_ms, multiplier=1.5):
-        """Store speed boost for later activation with UP key"""
-        self.powerup_manager.arm_speed_boost(duration_ms, multiplier)
-        
-    def activate_speed_boost(self):
-        """Activate armed speed boost when UP key is pressed"""
-        self.powerup_manager.activate_speed_boost()
-        
-    def update(self, current_time_ms, maze, enemies_group, player_actions, game_area_x_offset=0):
-        if not self.alive: return
-        
-        # Update power-up states
-        self.powerup_manager.update(current_time_ms)
-        
-        self.moving_forward = self.is_cruising
-        
-        super().update(maze, game_area_x_offset)
-        
-        self.bullets_group.update(maze, game_area_x_offset)
-        self.missiles_group.update(enemies_group, maze, game_area_x_offset)
-        if hasattr(self, 'lightning_zaps_group'):
-            self.lightning_zaps_group.update(current_time_ms)
-            
-# Method removed - now handled by PowerUpManager
-            
     def take_damage(self, amount, sound_key_on_hit=None):
         if not self.alive: return
         
@@ -326,3 +268,28 @@ class PlayerDrone(BaseDrone):
         for zap in self.lightning_zaps_group:
             if hasattr(zap, 'draw'):
                 zap.draw(surface, camera)
+                
+    def draw_health_bar(self, surface, camera=None):
+        if not self.alive or not self.rect: return
+        bar_width = self.rect.width * 0.8
+        bar_height = 5
+        bar_x = self.rect.centerx - bar_width / 2
+        bar_y = self.rect.top - bar_height - 3
+        health_percentage = self.health / self.max_health if self.max_health > 0 else 0
+        filled_width = int(bar_width * health_percentage)
+        fill_color = GREEN if health_percentage > 0.6 else YELLOW if health_percentage > 0.3 else RED
+        pygame.draw.rect(surface, (50,50,50), (bar_x, bar_y, bar_width, bar_height))
+        if filled_width > 0: pygame.draw.rect(surface, fill_color, (bar_x, bar_y, filled_width, bar_height))
+        pygame.draw.rect(surface, WHITE, (bar_x, bar_y, bar_width, bar_height), 1)
+        
+    def activate_shield(self, duration_ms):
+        """Activate shield effect for the specified duration"""
+        self.powerup_manager.activate_shield(duration_ms)
+        
+    def arm_speed_boost(self, duration_ms, multiplier=1.5):
+        """Store speed boost for later activation with UP key"""
+        self.powerup_manager.arm_speed_boost(duration_ms, multiplier)
+        
+    def activate_speed_boost(self):
+        """Activate armed speed boost when UP key is pressed"""
+        self.powerup_manager.activate_speed_boost()

@@ -1,6 +1,7 @@
 # hyperdrone_core/bonus_level_state.py
 import pygame
 from .state import State
+from settings_manager import get_setting
 
 class BonusLevelStartState(State):
     def enter(self, previous_state=None, **kwargs):
@@ -20,25 +21,32 @@ class BonusLevelStartState(State):
             self.game.state_manager.set_state("BonusLevelPlayingState")
     
     def draw(self, surface):
-        surface.fill(self.game.gs.BLACK)
+        black_color = get_setting("colors", "BLACK", (0, 0, 0))
+        gold_color = get_setting("colors", "GOLD", (255, 215, 0))
+        white_color = get_setting("colors", "WHITE", (255, 255, 255))
+        cyan_color = get_setting("colors", "CYAN", (0, 255, 255))
+        width = get_setting("display", "WIDTH", 1920)
+        height = get_setting("display", "HEIGHT", 1080)
+        
+        surface.fill(black_color)
         
         # Draw bonus level announcement
         font = self.game.asset_manager.get_font("large_text", 64) or pygame.font.Font(None, 64)
-        title_surf = font.render("BONUS LEVEL", True, self.game.gs.GOLD)
+        title_surf = font.render("BONUS LEVEL", True, gold_color)
         surface.blit(title_surf, title_surf.get_rect(
-            center=(self.game.gs.WIDTH // 2, self.game.gs.HEIGHT // 2 - 50)))
+            center=(width // 2, height // 2 - 50)))
         
         # Draw instructions
         font = self.game.asset_manager.get_font("medium_text", 36) or pygame.font.Font(None, 36)
-        instr_surf = font.render("Collect all rings before time runs out!", True, self.game.gs.WHITE)
+        instr_surf = font.render("Collect all rings before time runs out!", True, white_color)
         surface.blit(instr_surf, instr_surf.get_rect(
-            center=(self.game.gs.WIDTH // 2, self.game.gs.HEIGHT // 2 + 50)))
+            center=(width // 2, height // 2 + 50)))
         
         # Draw "Press SPACE to start" prompt
         font = self.game.asset_manager.get_font("ui_text", 24) or pygame.font.Font(None, 24)
-        prompt_surf = font.render("Press SPACE to start", True, self.game.gs.CYAN)
+        prompt_surf = font.render("Press SPACE to start", True, cyan_color)
         surface.blit(prompt_surf, prompt_surf.get_rect(
-            center=(self.game.gs.WIDTH // 2, self.game.gs.HEIGHT // 2 + 150)))
+            center=(width // 2, height // 2 + 150)))
 
 
 class BonusLevelPlayingState(State):
@@ -51,7 +59,8 @@ class BonusLevelPlayingState(State):
         self.game.maze = self.game.Maze(is_bonus_level=True)
         
         # Initialize player
-        spawn_x, spawn_y = self.game._get_safe_spawn_point(self.game.gs.TILE_SIZE * 0.7, self.game.gs.TILE_SIZE * 0.7)
+        tile_size = get_setting("gameplay", "TILE_SIZE", 80)
+        spawn_x, spawn_y = self.game._get_safe_spawn_point(tile_size * 0.7, tile_size * 0.7)
         drone_id = self.game.drone_system.get_selected_drone_id()
         drone_stats = self.game.drone_system.get_drone_stats(drone_id)
         sprite_key = f"drone_{drone_id}_ingame_sprite"
@@ -77,7 +86,7 @@ class BonusLevelPlayingState(State):
         
         # Start bonus level timer
         self.game.bonus_level_timer_start = pygame.time.get_ticks()
-        self.game.bonus_level_duration_ms = self.game.gs.get_game_setting("BONUS_LEVEL_DURATION_MS")
+        self.game.bonus_level_duration_ms = get_setting("progression", "BONUS_LEVEL_DURATION_MS", 60000)
         
         # Spawn bonus level collectibles
         if hasattr(self.game, 'item_manager'):
@@ -134,7 +143,12 @@ class BonusLevelPlayingState(State):
         self.game.player_actions.update_player_movement_and_actions(current_time_ms)
     
     def draw(self, surface):
-        surface.fill(self.game.gs.BLACK)
+        black_color = get_setting("colors", "BLACK", (0, 0, 0))
+        red_color = get_setting("colors", "RED", (255, 0, 0))
+        white_color = get_setting("colors", "WHITE", (255, 255, 255))
+        width = get_setting("display", "WIDTH", 1920)
+        
+        surface.fill(black_color)
         
         # Draw maze
         if self.game.maze:
@@ -160,5 +174,5 @@ class BonusLevelPlayingState(State):
         
         font = self.game.asset_manager.get_font("large_text", 48) or pygame.font.Font(None, 48)
         timer_surf = font.render(f"Time: {seconds_remaining}s", True, 
-                               self.game.gs.RED if seconds_remaining <= 10 else self.game.gs.WHITE)
-        surface.blit(timer_surf, timer_surf.get_rect(center=(self.game.gs.WIDTH // 2, 50)))
+                               red_color if seconds_remaining <= 10 else white_color)
+        surface.blit(timer_surf, timer_surf.get_rect(center=(width // 2, 50)))

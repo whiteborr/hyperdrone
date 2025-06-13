@@ -18,6 +18,9 @@ from hyperdrone_core.pathfinding import a_star_search, find_wall_follow_target, 
 from settings_manager import get_setting
 from constants import GREEN, YELLOW, RED, WHITE, DARK_PURPLE
 
+# Import behaviors
+from ai.behaviors import ChasePlayerBehavior
+
 logger = logging.getLogger(__name__)
 
 class Enemy(pygame.sprite.Sprite):
@@ -44,6 +47,11 @@ class Enemy(pygame.sprite.Sprite):
         self.alternative_target = None
         self.alternative_target_timer = 0
         self.ALTERNATIVE_TARGET_TIMEOUT = 5000  # 5 seconds before trying primary target again
+        
+        # Behavior system
+        self.behavior = None
+        self.default_behavior = ChasePlayerBehavior
+        self.set_behavior(ChasePlayerBehavior(self))
 
     def _load_sprite(self):
         tile_size = get_setting("gameplay", "TILE_SIZE", 80)
@@ -60,32 +68,30 @@ class Enemy(pygame.sprite.Sprite):
         tile_size = get_setting("gameplay", "TILE_SIZE", 80)
         return (c*tile_size)+(tile_size/2)+offset, (r*tile_size)+(tile_size/2)
 
+    def set_behavior(self, new_behavior):
+        """Change the current behavior of the enemy"""
+        self.behavior = new_behavior
+        
     def update(self, primary_target_pos_pixels, maze, current_time_ms, delta_time_ms, game_area_x_offset=0, is_defense_mode=False):
         if not self.alive:
-            self.bullets.update(maze, game_area_x_offset);
+            self.bullets.update(maze, game_area_x_offset)
             if not self.bullets: self.kill()
             return
 
+        # Check for stuck condition
         is_stuck = self._handle_stuck_logic(current_time_ms, delta_time_ms, maze, game_area_x_offset)
         
-        target_pos, current_speed, can_shoot = None, self.speed, False
+        # Execute current behavior if not stuck
+        if not is_stuck and self.behavior:
+            self.behavior.execute(maze, current_time_ms, delta_time_ms, game_area_x_offset)
         
-        if not is_stuck and self.player_ref and self.player_ref.alive:
-            player_dist = math.hypot(self.x - self.player_ref.x, self.y - self.player_ref.y)
-            target_pos = self.player_ref.rect.center
-            if player_dist < self.aggro_radius: can_shoot = True
-            else: current_speed = self.speed * 0.5
-        
-        self._update_ai_with_astar(target_pos, maze, current_time_ms, game_area_x_offset)
-        self._update_movement_along_path(maze, game_area_x_offset, current_speed) 
-        
+        # Update sprite rotation and position
         self.image = pygame.transform.rotate(self.original_image, -self.angle)
-        self.rect = self.image.get_rect(center=(int(self.x), int(self.y))); self.collision_rect.center = self.rect.center
-        self.bullets.update(maze, game_area_x_offset)
+        self.rect = self.image.get_rect(center=(int(self.x), int(self.y)))
+        self.collision_rect.center = self.rect.center
         
-        if can_shoot and (current_time_ms - self.last_shot_time > self.shoot_cooldown):
-            dx, dy = self.player_ref.rect.centerx - self.x, self.player_ref.rect.centery - self.y
-            self.shoot(math.degrees(math.atan2(dy, dx)), maze); self.last_shot_time = current_time_ms
+        # Update bullets
+        self.bullets.update(maze, game_area_x_offset)
 
     def _handle_stuck_logic(self, current_time_ms, delta_time_ms, maze, game_area_x_offset):
         dist_moved = math.hypot(self.x - self.last_pos_check[0], self.y - self.last_pos_check[1])

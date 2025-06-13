@@ -2,7 +2,6 @@
 import pygame
 from .state import State
 from settings_manager import get_setting
-from constants import *
 
 class MainMenuState(State):
     def enter(self, previous_state=None, **kwargs):
@@ -17,12 +16,16 @@ class MainMenuState(State):
         pass
     
     def draw(self, surface):
-        surface.fill(BLACK)
+        black_color = get_setting("colors", "BLACK", (0, 0, 0))
+        white_color = get_setting("colors", "WHITE", (255, 255, 255))
+        gold_color = get_setting("colors", "GOLD", (255, 215, 0))
+        
+        surface.fill(black_color)
         
         # Draw stars background if available
         if hasattr(self.game.ui_flow_controller, 'menu_stars') and self.game.ui_flow_controller.menu_stars:
             for star_params in self.game.ui_flow_controller.menu_stars:
-                pygame.draw.circle(surface, WHITE, 
+                pygame.draw.circle(surface, white_color, 
                                   (int(star_params[0]), int(star_params[1])), star_params[3])
         
         # Draw menu logo if available
@@ -42,7 +45,7 @@ class MainMenuState(State):
         font_menu = self.game.asset_manager.get_font("large_text", 48) or pygame.font.Font(None, 48)
         
         for i, option_text in enumerate(options):
-            color = GOLD if i == selected_index else WHITE
+            color = gold_color if i == selected_index else white_color
             text_surf = font_menu.render(option_text, True, color)
             screen_width = get_setting("display", "WIDTH", 1920)
             text_rect = text_surf.get_rect(center=(screen_width // 2, 

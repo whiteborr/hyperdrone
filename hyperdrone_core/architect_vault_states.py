@@ -1,6 +1,7 @@
 # hyperdrone_core/architect_vault_states.py
 import pygame
 from .state import State
+from settings_manager import get_setting
 
 class ArchitectVaultIntroState(State):
     def enter(self, previous_state=None, **kwargs):
@@ -14,16 +15,22 @@ class ArchitectVaultIntroState(State):
             self.game.state_manager.set_state("ArchitectVaultEntryPuzzleState")
     
     def draw(self, surface):
-        surface.fill(self.game.gs.ARCHITECT_VAULT_BG_COLOR)
+        bg_color = get_setting("colors", "ARCHITECT_VAULT_BG_COLOR", (20, 0, 30))
+        gold_color = get_setting("colors", "GOLD", (255, 215, 0))
+        white_color = get_setting("colors", "WHITE", (255, 255, 255))
+        width = get_setting("display", "WIDTH", 1920)
+        height = get_setting("display", "HEIGHT", 1080)
+        
+        surface.fill(bg_color)
         
         # Draw intro message
         font = self.game.asset_manager.get_font("large_text", 48) or pygame.font.Font(None, 48)
-        title_surf = font.render("Architect's Vault", True, self.game.gs.GOLD)
-        surface.blit(title_surf, title_surf.get_rect(center=(self.game.gs.WIDTH // 2, 50)))
+        title_surf = font.render("Architect's Vault", True, gold_color)
+        surface.blit(title_surf, title_surf.get_rect(center=(width // 2, 50)))
         
         font = self.game.asset_manager.get_font("medium_text", 36) or pygame.font.Font(None, 36)
-        msg_surf = font.render(self.game.architect_vault_message, True, self.game.gs.WHITE)
-        surface.blit(msg_surf, msg_surf.get_rect(center=(self.game.gs.WIDTH // 2, self.game.gs.HEIGHT // 2)))
+        msg_surf = font.render(self.game.architect_vault_message, True, white_color)
+        surface.blit(msg_surf, msg_surf.get_rect(center=(width // 2, height // 2)))
 
 
 class ArchitectVaultEntryPuzzleState(State):
@@ -47,12 +54,16 @@ class ArchitectVaultEntryPuzzleState(State):
                 self.game.state_manager.set_state("ArchitectVaultGauntletState")
     
     def draw(self, surface):
-        surface.fill(self.game.gs.ARCHITECT_VAULT_BG_COLOR)
+        bg_color = get_setting("colors", "ARCHITECT_VAULT_BG_COLOR", (20, 0, 30))
+        gold_color = get_setting("colors", "GOLD", (255, 215, 0))
+        width = get_setting("display", "WIDTH", 1920)
+        
+        surface.fill(bg_color)
         
         # Draw title
         font = self.game.asset_manager.get_font("large_text", 48) or pygame.font.Font(None, 48)
-        title_surf = font.render("Architect's Vault", True, self.game.gs.GOLD)
-        surface.blit(title_surf, title_surf.get_rect(center=(self.game.gs.WIDTH // 2, 50)))
+        title_surf = font.render("Architect's Vault", True, gold_color)
+        surface.blit(title_surf, title_surf.get_rect(center=(width // 2, 50)))
         
         # Let puzzle controller draw the puzzle
         if hasattr(self.game.puzzle_controller, 'draw_vault_entry_puzzle'):
@@ -67,7 +78,8 @@ class ArchitectVaultGauntletState(State):
         self.game.maze = self.game.Maze(is_architect_vault=True)
         
         # Initialize player
-        spawn_x, spawn_y = self.game._get_safe_spawn_point(self.game.gs.TILE_SIZE * 0.7, self.game.gs.TILE_SIZE * 0.7)
+        tile_size = get_setting("gameplay", "TILE_SIZE", 80)
+        spawn_x, spawn_y = self.game._get_safe_spawn_point(tile_size * 0.7, tile_size * 0.7)
         drone_id = self.game.drone_system.get_selected_drone_id()
         drone_stats = self.game.drone_system.get_drone_stats(drone_id)
         sprite_key = f"drone_{drone_id}_ingame_sprite"
@@ -87,14 +99,15 @@ class ArchitectVaultGauntletState(State):
         )
         
         # Spawn enemies for gauntlet
+        drones_per_wave = get_setting("architect_vault", "ARCHITECT_VAULT_DRONES_PER_WAVE", [3, 4, 5])
         self.game.combat_controller.enemy_manager.spawn_architect_vault_enemies(
             wave=0, 
-            num_enemies=self.game.gs.ARCHITECT_VAULT_DRONES_PER_WAVE[0]
+            num_enemies=drones_per_wave[0]
         )
         
         # Set up wave counter
         self.game.architect_vault_current_wave = 0
-        self.game.architect_vault_total_waves = self.game.gs.ARCHITECT_VAULT_GAUNTLET_WAVES
+        self.game.architect_vault_total_waves = get_setting("architect_vault", "ARCHITECT_VAULT_GAUNTLET_WAVES", 3)
     
     def handle_events(self, events):
         for event in events:
@@ -131,9 +144,10 @@ class ArchitectVaultGauntletState(State):
                 self.game.state_manager.set_state("ArchitectVaultExtractionState")
             else:
                 # Spawn next wave
+                drones_per_wave = get_setting("architect_vault", "ARCHITECT_VAULT_DRONES_PER_WAVE", [3, 4, 5])
                 self.game.combat_controller.enemy_manager.spawn_architect_vault_enemies(
                     wave=self.game.architect_vault_current_wave,
-                    num_enemies=self.game.gs.ARCHITECT_VAULT_DRONES_PER_WAVE[self.game.architect_vault_current_wave]
+                    num_enemies=drones_per_wave[self.game.architect_vault_current_wave]
                 )
         
         # Handle collectible collisions
@@ -143,7 +157,11 @@ class ArchitectVaultGauntletState(State):
         self.game.player_actions.update_player_movement_and_actions(current_time_ms)
     
     def draw(self, surface):
-        surface.fill(self.game.gs.ARCHITECT_VAULT_BG_COLOR)
+        bg_color = get_setting("colors", "ARCHITECT_VAULT_BG_COLOR", (20, 0, 30))
+        white_color = get_setting("colors", "WHITE", (255, 255, 255))
+        width = get_setting("display", "WIDTH", 1920)
+        
+        surface.fill(bg_color)
         
         # Draw maze
         if self.game.maze:
@@ -169,8 +187,8 @@ class ArchitectVaultGauntletState(State):
         # Draw wave counter
         font = self.game.asset_manager.get_font("medium_text", 36) or pygame.font.Font(None, 36)
         wave_surf = font.render(f"Wave {self.game.architect_vault_current_wave + 1}/{self.game.architect_vault_total_waves}", 
-                              True, self.game.gs.WHITE)
-        surface.blit(wave_surf, wave_surf.get_rect(center=(self.game.gs.WIDTH // 2, 100)))
+                              True, white_color)
+        surface.blit(wave_surf, wave_surf.get_rect(center=(width // 2, 100)))
 
 
 class ArchitectVaultExtractionState(State):
@@ -185,10 +203,12 @@ class ArchitectVaultExtractionState(State):
             escape_pos = self.game.maze.create_escape_zone()
             if escape_pos:
                 self.game.escape_zone_group.empty()
+                tile_size = get_setting("gameplay", "TILE_SIZE", 80)
+                escape_zone_color = get_setting("colors", "ESCAPE_ZONE_COLOR", (0, 255, 120))
                 self.game.escape_zone_group.add(self.game.EscapeZone(
                     escape_pos[0], escape_pos[1], 
-                    self.game.gs.TILE_SIZE * 2, self.game.gs.TILE_SIZE * 2, 
-                    self.game.gs.ESCAPE_ZONE_COLOR
+                    tile_size * 2, tile_size * 2, 
+                    escape_zone_color
                 ))
         
         # Spawn vault core collectible
@@ -233,7 +253,8 @@ class ArchitectVaultExtractionState(State):
         
         # Check if time is up
         time_elapsed = current_time_ms - self.game.architect_vault_phase_timer_start
-        if time_elapsed >= self.game.gs.ARCHITECT_VAULT_EXTRACTION_TIMER_MS:
+        extraction_timer = get_setting("architect_vault", "ARCHITECT_VAULT_EXTRACTION_TIMER_MS", 90000)
+        if time_elapsed >= extraction_timer:
             self.game.architect_vault_failure_reason = "Time ran out"
             self.game.state_manager.set_state("ArchitectVaultFailureState")
         
@@ -241,7 +262,13 @@ class ArchitectVaultExtractionState(State):
         self.game.player_actions.update_player_movement_and_actions(current_time_ms)
     
     def draw(self, surface):
-        surface.fill(self.game.gs.ARCHITECT_VAULT_BG_COLOR)
+        bg_color = get_setting("colors", "ARCHITECT_VAULT_BG_COLOR", (20, 0, 30))
+        red_color = get_setting("colors", "RED", (255, 0, 0))
+        white_color = get_setting("colors", "WHITE", (255, 255, 255))
+        gold_color = get_setting("colors", "GOLD", (255, 215, 0))
+        width = get_setting("display", "WIDTH", 1920)
+        
+        surface.fill(bg_color)
         
         # Draw maze
         if self.game.maze:
@@ -272,26 +299,29 @@ class ArchitectVaultExtractionState(State):
         # Draw timer
         current_time_ms = pygame.time.get_ticks()
         time_elapsed = current_time_ms - self.game.architect_vault_phase_timer_start
-        time_remaining = max(0, self.game.gs.ARCHITECT_VAULT_EXTRACTION_TIMER_MS - time_elapsed)
+        extraction_timer = get_setting("architect_vault", "ARCHITECT_VAULT_EXTRACTION_TIMER_MS", 90000)
+        time_remaining = max(0, extraction_timer - time_elapsed)
         seconds_remaining = int(time_remaining / 1000)
         
         font = self.game.asset_manager.get_font("medium_text", 36) or pygame.font.Font(None, 36)
         timer_surf = font.render(f"Extraction Time: {seconds_remaining}s", True, 
-                               self.game.gs.RED if seconds_remaining <= 30 else self.game.gs.WHITE)
-        surface.blit(timer_surf, timer_surf.get_rect(center=(self.game.gs.WIDTH // 2, 100)))
+                               red_color if seconds_remaining <= 30 else white_color)
+        surface.blit(timer_surf, timer_surf.get_rect(center=(width // 2, 100)))
         
         # Draw objective
         has_vault_core = self.game.drone_system.has_collected_fragment("vault_core")
         objective_text = "Find the Vault Core" if not has_vault_core else "Reach the Escape Zone"
-        objective_surf = font.render(objective_text, True, self.game.gs.GOLD)
-        surface.blit(objective_surf, objective_surf.get_rect(center=(self.game.gs.WIDTH // 2, 150)))
+        objective_surf = font.render(objective_text, True, gold_color)
+        surface.blit(objective_surf, objective_surf.get_rect(center=(width // 2, 150)))
 
 
 class ArchitectVaultSuccessState(State):
     def enter(self, previous_state=None, **kwargs):
         # Unlock rewards
-        self.game.drone_system.unlock_drone_by_id(self.game.gs.ARCHITECT_REWARD_BLUEPRINT_ID)
-        self.game.drone_system.unlock_lore_entry_by_id(self.game.gs.ARCHITECT_REWARD_LORE_ID)
+        blueprint_id = get_setting("architect_vault", "ARCHITECT_REWARD_BLUEPRINT_ID", "DRONE_ARCHITECT_X")
+        lore_id = get_setting("architect_vault", "ARCHITECT_REWARD_LORE_ID", "lore_architect_origin")
+        self.game.drone_system.unlock_drone_by_id(blueprint_id)
+        self.game.drone_system.unlock_lore_entry_by_id(lore_id)
     
     def handle_events(self, events):
         for event in events:
@@ -299,25 +329,32 @@ class ArchitectVaultSuccessState(State):
                 self.game.state_manager.set_state("MainMenuState")
     
     def draw(self, surface):
-        surface.fill(self.game.gs.BLACK)
+        black_color = get_setting("colors", "BLACK", (0, 0, 0))
+        gold_color = get_setting("colors", "GOLD", (255, 215, 0))
+        cyan_color = get_setting("colors", "CYAN", (0, 255, 255))
+        white_color = get_setting("colors", "WHITE", (255, 255, 255))
+        width = get_setting("display", "WIDTH", 1920)
+        height = get_setting("display", "HEIGHT", 1080)
+        
+        surface.fill(black_color)
         
         # Draw success message
         font = self.game.asset_manager.get_font("large_text", 64) or pygame.font.Font(None, 64)
-        title_surf = font.render("Vault Conquered", True, self.game.gs.GOLD)
-        surface.blit(title_surf, title_surf.get_rect(center=(self.game.gs.WIDTH // 2, self.game.gs.HEIGHT // 2 - 100)))
+        title_surf = font.render("Vault Conquered", True, gold_color)
+        surface.blit(title_surf, title_surf.get_rect(center=(width // 2, height // 2 - 100)))
         
         # Draw rewards
         font = self.game.asset_manager.get_font("medium_text", 36) or pygame.font.Font(None, 36)
-        reward_surf = font.render("Architect's Blueprint Unlocked!", True, self.game.gs.CYAN)
-        surface.blit(reward_surf, reward_surf.get_rect(center=(self.game.gs.WIDTH // 2, self.game.gs.HEIGHT // 2)))
+        reward_surf = font.render("Architect's Blueprint Unlocked!", True, cyan_color)
+        surface.blit(reward_surf, reward_surf.get_rect(center=(width // 2, height // 2)))
         
-        lore_surf = font.render("New Codex Entry Available", True, self.game.gs.WHITE)
-        surface.blit(lore_surf, lore_surf.get_rect(center=(self.game.gs.WIDTH // 2, self.game.gs.HEIGHT // 2 + 50)))
+        lore_surf = font.render("New Codex Entry Available", True, white_color)
+        surface.blit(lore_surf, lore_surf.get_rect(center=(width // 2, height // 2 + 50)))
         
         # Draw continue prompt
         font = self.game.asset_manager.get_font("ui_text", 24) or pygame.font.Font(None, 24)
-        prompt_surf = font.render("Press any key to continue", True, self.game.gs.WHITE)
-        surface.blit(prompt_surf, prompt_surf.get_rect(center=(self.game.gs.WIDTH // 2, self.game.gs.HEIGHT // 2 + 150)))
+        prompt_surf = font.render("Press any key to continue", True, white_color)
+        surface.blit(prompt_surf, prompt_surf.get_rect(center=(width // 2, height // 2 + 150)))
 
 
 class ArchitectVaultFailureState(State):
@@ -327,20 +364,26 @@ class ArchitectVaultFailureState(State):
                 self.game.state_manager.set_state("MainMenuState")
     
     def draw(self, surface):
-        surface.fill(self.game.gs.BLACK)
+        black_color = get_setting("colors", "BLACK", (0, 0, 0))
+        red_color = get_setting("colors", "RED", (255, 0, 0))
+        white_color = get_setting("colors", "WHITE", (255, 255, 255))
+        width = get_setting("display", "WIDTH", 1920)
+        height = get_setting("display", "HEIGHT", 1080)
+        
+        surface.fill(black_color)
         
         # Draw failure message
         font = self.game.asset_manager.get_font("large_text", 64) or pygame.font.Font(None, 64)
-        title_surf = font.render("Mission Failed", True, self.game.gs.RED)
-        surface.blit(title_surf, title_surf.get_rect(center=(self.game.gs.WIDTH // 2, self.game.gs.HEIGHT // 2 - 100)))
+        title_surf = font.render("Mission Failed", True, red_color)
+        surface.blit(title_surf, title_surf.get_rect(center=(width // 2, height // 2 - 100)))
         
         # Draw reason if available
         if hasattr(self.game, 'architect_vault_failure_reason') and self.game.architect_vault_failure_reason:
             font = self.game.asset_manager.get_font("medium_text", 36) or pygame.font.Font(None, 36)
-            reason_surf = font.render(self.game.architect_vault_failure_reason, True, self.game.gs.WHITE)
-            surface.blit(reason_surf, reason_surf.get_rect(center=(self.game.gs.WIDTH // 2, self.game.gs.HEIGHT // 2)))
+            reason_surf = font.render(self.game.architect_vault_failure_reason, True, white_color)
+            surface.blit(reason_surf, reason_surf.get_rect(center=(width // 2, height // 2)))
         
         # Draw continue prompt
         font = self.game.asset_manager.get_font("ui_text", 24) or pygame.font.Font(None, 24)
-        prompt_surf = font.render("Press any key to continue", True, self.game.gs.WHITE)
-        surface.blit(prompt_surf, prompt_surf.get_rect(center=(self.game.gs.WIDTH // 2, self.game.gs.HEIGHT // 2 + 150)))
+        prompt_surf = font.render("Press any key to continue", True, white_color)
+        surface.blit(prompt_surf, prompt_surf.get_rect(center=(width // 2, height // 2 + 150)))

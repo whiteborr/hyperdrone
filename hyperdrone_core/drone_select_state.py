@@ -1,7 +1,7 @@
 # hyperdrone_core/drone_select_state.py
 import pygame
 from .state import State
-from constants import BLACK, WHITE, GOLD, YELLOW, CYAN
+from settings_manager import get_setting
 
 class DroneSelectState(State):
     def enter(self, previous_state=None, **kwargs):

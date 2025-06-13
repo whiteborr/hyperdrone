@@ -1,7 +1,7 @@
 # hyperdrone_core/settings_state.py
 import pygame
 from .state import State
-from constants import BLACK, WHITE, GOLD, YELLOW
+from settings_manager import get_setting
 
 class SettingsState(State):
     def enter(self, previous_state=None, **kwargs):

@@ -20,6 +20,8 @@ Player progress is managed by the DroneSystem and saved locally in `data/drone_u
 
 Cycle through multiple weapon modes: Single Shot, Tri-Shot, Rapid Single, Rapid Tri-Shot, Big Shot, Bounce Shot, Pierce Shot, Heatseeker Missiles, Heatseeker + Rapid Bullets, and Chain Lightning.
 
+Weapon logic uses the Strategy pattern with classes in `entities/weapon_strategies.py`, making it easy to add new weapon types.
+
 Projectile logic is handled in `entities/bullet.py`.
 
 Collect weapon upgrade power-ups to advance to the next weapon mode.
@@ -34,13 +36,18 @@ Logic for power-ups is found in `entities/collectibles.py`.
 
 ### Enemy Drones & AI
 
-AI drones navigate using A* pathfinding and shoot at the player (`entities/enemy.py`).
+Enemy AI uses a behavior-based design pattern for modular and extensible behaviors:
+- Base behaviors in `ai/behaviors.py`
+- Enemies delegate AI logic to behavior objects (`entities/enemy.py`)
+- TR3B enemies use patrol, chase, and dash behaviors (`entities/tr3b_enemy.py`)
 
 The Maze Guardian is a multi-phase boss with laser sweeps, minion summoning, shields, and arena changes (`entities/maze_guardian.py`).
 
 Sentinel Drones are summoned minions.
 
 Prototype Drones appear in the Architect's Vault.
+
+For detailed information about the AI behavior system, see [README_AI_BEHAVIORS.md](README_AI_BEHAVIORS.md)
 
 ### Collectibles
 
@@ -252,6 +259,34 @@ pyinstaller --onefile --windowed --add-data "assets;assets" --add-data "data;dat
 
 No code changes required!
 
+## 🔫 Weapon System Architecture
+
+The weapon system uses the Strategy design pattern to make it easy to add, modify, and maintain different weapon types.
+
+### Key Components
+
+1. **BaseWeaponStrategy**: Abstract base class that defines the interface for all weapon strategies
+2. **Concrete Strategy Classes**: Implementations for each weapon type (e.g., `TriShotWeaponStrategy`, `HeatseekerWeaponStrategy`)
+3. **PlayerDrone**: Context class that holds and uses the current weapon strategy
+
+### Adding New Weapons
+
+To add a new weapon type:
+
+1. Add a new weapon mode constant in `constants.py`
+2. Create a new weapon strategy class in `entities/weapon_strategies.py` that extends `BaseWeaponStrategy`
+3. Add the new strategy class to the `weapon_strategies` dictionary in `PlayerDrone.__init__()`
+4. Add the new weapon mode to the `WEAPON_MODES_SEQUENCE` list in settings
+
+### Benefits
+
+- **Decoupling**: The `PlayerDrone` class no longer needs to know the details of how each weapon works
+- **Encapsulation**: Each weapon's behavior is now fully contained in its own strategy class
+- **Extensibility**: Adding new weapons is now much easier - just create a new strategy class
+- **Maintainability**: The code is more modular and easier to understand
+
+For detailed information about the weapon system refactoring, see [README_WEAPON_SYSTEM.md](README_WEAPON_SYSTEM.md)
+
 ### Settings Categories
 
 - **display**: Screen resolution, FPS, volume settings
@@ -268,12 +303,14 @@ No code changes required!
 ### Architecture Refactoring
 
 1. **State Design Pattern**: Replaced the string-based scene manager with a proper State Design Pattern implementation in `state_manager.py`
-2. **Controller Classes**: Added specialized controller classes for better separation of concerns:
+2. **Strategy Pattern for Weapons**: Implemented the Strategy pattern for weapon systems in `entities/weapon_strategies.py`, making it easier to add and modify weapon types
+3. **Behavior Pattern for Enemy AI**: Implemented a behavior-based design pattern for enemy AI in `ai/behaviors.py`, making it easier to create and combine different enemy behaviors
+4. **Controller Classes**: Added specialized controller classes for better separation of concerns:
    - `combat_controller.py`: Handles all combat-related logic
    - `ui_flow_controller.py`: Manages UI navigation and state
    - `level_manager.py`: Handles level progression and scoring
-3. **Collision Optimization**: Improved collision detection using pygame's `groupcollide` for better performance
-4. **Pathfinding Module**: Extracted pathfinding logic into a dedicated module for better maintainability
+5. **Collision Optimization**: Improved collision detection using pygame's `groupcollide` for better performance
+6. **Pathfinding Module**: Extracted pathfinding logic into a dedicated module for better maintainability
 
 ### Bug Fixes
 

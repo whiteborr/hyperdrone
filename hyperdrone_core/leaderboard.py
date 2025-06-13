@@ -2,7 +2,6 @@ import json
 import os
 
 from settings_manager import get_setting, set_setting, save_settings
-from constants import *
 
 DATA_DIR = "data" #
 LEADERBOARD_FULL_PATH = os.path.join(DATA_DIR, get_setting("progression", "LEADERBOARD_FILE_NAME", "leaderboard.json")) #

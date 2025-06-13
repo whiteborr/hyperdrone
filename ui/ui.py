@@ -104,6 +104,48 @@ class UIManager:
         else:
             logger.warning(f"UIManager: Life icon for drone '{selected_drone_id}' (key: '{life_icon_asset_key}') not found. Using fallback.")
             self.ui_asset_surfaces["current_drone_life_icon"] = self._create_fallback_icon_surface(size=self.ui_icon_size_lives, text="L", color=CYAN)
+            
+    def update_weapon_icon_surface(self, weapon_mode):
+        """Update the weapon icon in the HUD based on the current weapon mode"""
+        # Map weapon modes to their sprite names
+        from constants import (
+            WEAPON_MODE_DEFAULT, WEAPON_MODE_TRI_SHOT, WEAPON_MODE_RAPID_SINGLE, WEAPON_MODE_RAPID_TRI,
+            WEAPON_MODE_BIG_SHOT, WEAPON_MODE_BOUNCE, WEAPON_MODE_PIERCE,
+            WEAPON_MODE_HEATSEEKER, WEAPON_MODE_HEATSEEKER_PLUS_BULLETS,
+            WEAPON_MODE_LIGHTNING
+        )
+        
+        weapon_sprite_names = {
+            WEAPON_MODE_DEFAULT: "default",
+            WEAPON_MODE_TRI_SHOT: "tri_shot",
+            WEAPON_MODE_RAPID_SINGLE: "rapid_single",
+            WEAPON_MODE_RAPID_TRI: "rapid_tri_shot",
+            WEAPON_MODE_BIG_SHOT: "big_shot",
+            WEAPON_MODE_BOUNCE: "bounce",
+            WEAPON_MODE_PIERCE: "pierce",
+            WEAPON_MODE_HEATSEEKER: "heatseeker",
+            WEAPON_MODE_HEATSEEKER_PLUS_BULLETS: "heatseeker_plus_bullets",
+            WEAPON_MODE_LIGHTNING: "lightning"
+        }
+        
+        # Get the weapon sprite name
+        weapon_sprite_name = weapon_sprite_names.get(weapon_mode, "default")
+        
+        # Try to load the weapon-specific drone sprite for the HUD
+        weapon_sprite_key = f"drone_{weapon_sprite_name}"
+        loaded_icon = self.asset_manager.get_image(weapon_sprite_key, scale_to_size=(64, 64))
+        
+        # If not found, use the generic weapon icon
+        if not loaded_icon:
+            loaded_icon = self.asset_manager.get_image("weapon_upgrade_powerup_icon", scale_to_size=(64, 64))
+            
+        # Store the icon for use in the HUD
+        if loaded_icon:
+            self.ui_asset_surfaces["current_weapon_icon"] = loaded_icon
+        else:
+            logger.warning(f"UIManager: Weapon icon for mode '{weapon_mode}' not found. Using fallback.")
+            # Use CYAN which is already imported at the top of the file
+            self.ui_asset_surfaces["current_weapon_icon"] = self._create_fallback_icon_surface(size=(64, 64), text="W", color=CYAN)
 
     def _create_fallback_icon_surface(self, size=(30,30), text="?", color=GREY, text_color=WHITE, font_key="ui_text"):
         surface = pygame.Surface(size, pygame.SRCALPHA)
@@ -386,24 +428,27 @@ class UIManager:
         wpn_mode = player.current_weapon_mode
         from hyperdrone_core.constants import WEAPON_MODE_NAMES
         wpn_name = WEAPON_MODE_NAMES.get(wpn_mode, "N/A")
-        wpn_icon_path = settings_manager.get_weapon_icon_path(wpn_mode)
+        
+        # Update the weapon icon based on the current weapon mode
+        self.update_weapon_icon_surface(wpn_mode)
+        
         weapon_label = font_ui.render("Weapon", True, CYAN)
         self.screen.blit(weapon_label, ((width / 2) - (weapon_label.get_width() / 2), wpn_y - 20))  # Center the label
-        if wpn_icon_path:
-            asset_key = wpn_icon_path.replace("assets/", "").replace("\\", "/")
-            icon_surf = self.asset_manager.get_image(asset_key, scale_to_size=(64, 64))
-            if icon_surf:
-                # Rotate the weapon icon 90 degrees counterclockwise
-                rotated_icon = pygame.transform.rotate(icon_surf, 90)
-                icon_rect = rotated_icon.get_rect(topleft=(wpn_x, wpn_y))
-                self.screen.blit(rotated_icon, icon_rect)
-                text_x, cooldown_bar_y = icon_rect.right + 15, wpn_y + 40
-                self.screen.blit(font_small.render(wpn_name, True, WHITE), (text_x, wpn_y + 5))
-                time_since = pygame.time.get_ticks() - player.last_shot_time
-                progress = min(1.0, time_since / player.current_shoot_cooldown) if player.current_shoot_cooldown > 0 else 1.0
-                pygame.draw.rect(self.screen, DARK_GREY, (text_x, cooldown_bar_y, 150, 10))
-                pygame.draw.rect(self.screen, YELLOW, (text_x, cooldown_bar_y, 150 * progress, 10))
-                pygame.draw.rect(self.screen, WHITE, (text_x, cooldown_bar_y, 150, 10), 1)
+        
+        # Use the updated weapon icon
+        icon_surf = self.ui_asset_surfaces.get("current_weapon_icon")
+        if icon_surf:
+            # Rotate the weapon icon 90 degrees counterclockwise
+            rotated_icon = pygame.transform.rotate(icon_surf, 90)
+            icon_rect = rotated_icon.get_rect(topleft=(wpn_x, wpn_y))
+            self.screen.blit(rotated_icon, icon_rect)
+            text_x, cooldown_bar_y = icon_rect.right + 15, wpn_y + 40
+            self.screen.blit(font_small.render(wpn_name, True, WHITE), (text_x, wpn_y + 5))
+            time_since = pygame.time.get_ticks() - player.last_shot_time
+            progress = min(1.0, time_since / player.current_shoot_cooldown) if player.current_shoot_cooldown > 0 else 1.0
+            pygame.draw.rect(self.screen, DARK_GREY, (text_x, cooldown_bar_y, 150, 10))
+            pygame.draw.rect(self.screen, YELLOW, (text_x, cooldown_bar_y, 150 * progress, 10))
+            pygame.draw.rect(self.screen, WHITE, (text_x, cooldown_bar_y, 150, 10), 1)
 
         # Position rings and fragments at the right side of the screen
         hud_ring_icon_area_x_offset = get_setting("display", "HUD_RING_ICON_AREA_X_OFFSET", 150)

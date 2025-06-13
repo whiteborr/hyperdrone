@@ -2,7 +2,8 @@
 
 from .base_drone import BaseDrone
 from .player import PlayerDrone
-from .enemy import Enemy, SentinelDrone, DefenseDrone
+from .enemy import Enemy, SentinelDrone
+from .defense_drone import DefenseDrone
 from .bullet import Bullet, Missile, LightningZap
 from .powerup_manager import PowerUpManager # <-- ADD THIS IMPORT
 from .collectibles import (

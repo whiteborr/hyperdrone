@@ -2,7 +2,6 @@
 import json
 import os
 import logging
-from constants import *
 
 logger = logging.getLogger(__name__)
 

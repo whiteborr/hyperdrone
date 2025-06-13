@@ -1,6 +1,7 @@
 # hyperdrone_core/ring_puzzle_state.py
 import pygame
 from .state import State
+from settings_manager import get_setting
 
 class RingPuzzleState(State):
     def enter(self, previous_state=None, **kwargs):
@@ -23,12 +24,16 @@ class RingPuzzleState(State):
     def draw(self, surface):
         # Check if puzzle is active
         if not (self.game.puzzle_controller and self.game.puzzle_controller.ring_puzzle_active_flag):
-            surface.fill(self.game.gs.DARK_GREY)
+            dark_grey = get_setting("colors", "DARK_GREY", (50, 50, 50))
+            white = get_setting("colors", "WHITE", (255, 255, 255))
+            width = get_setting("display", "WIDTH", 1920)
+            height = get_setting("display", "HEIGHT", 1080)
+            
+            surface.fill(dark_grey)
             font = self.game.asset_manager.get_font("medium_text", 48) or pygame.font.Font(None, 48)
-            fallback_surf = font.render("Loading Puzzle...", True, self.game.gs.WHITE)
+            fallback_surf = font.render("Loading Puzzle...", True, white)
             surface.blit(fallback_surf, fallback_surf.get_rect(
-                center=(self.game.gs.get_game_setting("WIDTH") // 2, 
-                       self.game.gs.get_game_setting("HEIGHT") // 2)))
+                center=(width // 2, height // 2)))
         else:
             # Let the puzzle controller draw the puzzle
             self.game.puzzle_controller.draw_ring_puzzle(surface)

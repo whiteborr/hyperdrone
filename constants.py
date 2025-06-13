@@ -1,86 +1,98 @@
 # constants.py
 # Contains unchanging constants that should not be modified during gameplay
+# This file now only contains true constants, not configurable settings
+
+# Import settings from settings_manager for backward compatibility
+from settings_manager import get_setting
 
 # ==========================
 # Color Definitions
 # ==========================
-BLACK = (0, 0, 0)
-WHITE = (255, 255, 255)
-RED = (255, 0, 0)
-DARK_RED = (100, 0, 0)
-GREEN = (0, 255, 0)
-BLUE = (0, 100, 255) 
-CYAN = (0, 255, 255)
-LIGHT_BLUE = (173, 216, 230) 
-YELLOW = (255, 255, 0)
-GOLD = (255, 215, 0) 
-ORANGE = (255, 165, 0)
-PURPLE = (128, 0, 128)
-DARK_PURPLE = (40, 0, 70)
-MAGENTA = (255, 0, 255) 
-PINK = (255, 192, 203)
-GREY = (100, 100, 100)
-DARK_GREY = (50, 50, 50)
-ELECTRIC_BLUE = (0, 128, 255) 
-ESCAPE_ZONE_COLOR = (0, 255, 120)
+BLACK = get_setting("colors", "BLACK", (0, 0, 0))
+WHITE = get_setting("colors", "WHITE", (255, 255, 255))
+RED = get_setting("colors", "RED", (255, 0, 0))
+DARK_RED = get_setting("colors", "DARK_RED", (100, 0, 0))
+GREEN = get_setting("colors", "GREEN", (0, 255, 0))
+BLUE = get_setting("colors", "BLUE", (0, 100, 255))
+CYAN = get_setting("colors", "CYAN", (0, 255, 255))
+LIGHT_BLUE = get_setting("colors", "LIGHT_BLUE", (173, 216, 230))
+YELLOW = get_setting("colors", "YELLOW", (255, 255, 0))
+GOLD = get_setting("colors", "GOLD", (255, 215, 0))
+ORANGE = get_setting("colors", "ORANGE", (255, 165, 0))
+PURPLE = get_setting("colors", "PURPLE", (128, 0, 128))
+DARK_PURPLE = get_setting("colors", "DARK_PURPLE", (40, 0, 70))
+MAGENTA = get_setting("colors", "MAGENTA", (255, 0, 255))
+PINK = get_setting("colors", "PINK", (255, 192, 203))
+GREY = get_setting("colors", "GREY", (100, 100, 100))
+DARK_GREY = get_setting("colors", "DARK_GREY", (50, 50, 50))
+ELECTRIC_BLUE = get_setting("colors", "ELECTRIC_BLUE", (0, 128, 255))
+ESCAPE_ZONE_COLOR = get_setting("colors", "ESCAPE_ZONE_COLOR", (0, 255, 120))
 
 # Bullet colors
-PLAYER_BULLET_COLOR = CYAN
-MISSILE_COLOR = RED
-LIGHTNING_COLOR = ELECTRIC_BLUE
+PLAYER_BULLET_COLOR = get_setting("colors", "PLAYER_BULLET_COLOR", CYAN)
+MISSILE_COLOR = get_setting("colors", "MISSILE_COLOR", RED)
+LIGHTNING_COLOR = get_setting("colors", "LIGHTNING_COLOR", ELECTRIC_BLUE)
 
-FLAME_COLORS = [(255, 100, 0), (255, 165, 0), (255, 215, 0), (255, 255, 100)]
+FLAME_COLORS = get_setting("colors", "FLAME_COLORS", [(255, 100, 0), (255, 165, 0), (255, 215, 0), (255, 255, 100)])
 
-ARCHITECT_VAULT_BG_COLOR = (20, 0, 30)
-ARCHITECT_VAULT_WALL_COLOR = (150, 120, 200)
-ARCHITECT_VAULT_ACCENT_COLOR = GOLD
+ARCHITECT_VAULT_BG_COLOR = get_setting("colors", "ARCHITECT_VAULT_BG_COLOR", (20, 0, 30))
+ARCHITECT_VAULT_WALL_COLOR = get_setting("colors", "ARCHITECT_VAULT_WALL_COLOR", (150, 120, 200))
+ARCHITECT_VAULT_ACCENT_COLOR = get_setting("colors", "ARCHITECT_VAULT_ACCENT_COLOR", GOLD)
 
 # ==========================
 # Game State Definitions
 # ==========================
-GAME_STATE_MAIN_MENU = "main_menu"
-GAME_STATE_PLAYING = "playing" 
-GAME_STATE_GAME_OVER = "game_over"
-GAME_STATE_LEADERBOARD = "leaderboard_display"
-GAME_STATE_ENTER_NAME = "enter_name"
-GAME_STATE_SETTINGS = "settings_menu"
-GAME_STATE_DRONE_SELECT = "drone_select_menu"
-GAME_STATE_CODEX = "codex_screen"
-GAME_STATE_BONUS_LEVEL_START = "bonus_level_start" 
-GAME_STATE_BONUS_LEVEL_PLAYING = "bonus_level_playing"
-GAME_STATE_ARCHITECT_VAULT_INTRO = "architect_vault_intro"
-GAME_STATE_ARCHITECT_VAULT_ENTRY_PUZZLE = "architect_vault_entry_puzzle"
-GAME_STATE_ARCHITECT_VAULT_GAUNTLET = "architect_vault_gauntlet"
-GAME_STATE_ARCHITECT_VAULT_BOSS_FIGHT = "architect_vault_boss_fight" 
-GAME_STATE_ARCHITECT_VAULT_EXTRACTION = "architect_vault_extraction"
-GAME_STATE_ARCHITECT_VAULT_SUCCESS = "architect_vault_success"
-GAME_STATE_ARCHITECT_VAULT_FAILURE = "architect_vault_failure"
-GAME_STATE_RING_PUZZLE = "ring_puzzle_active"
-GAME_STATE_GAME_INTRO_SCROLL = "game_intro_scroll"
-GAME_STATE_MAZE_DEFENSE = "maze_defense_mode"
+GAME_STATE_MAIN_MENU = get_setting("game_states", "GAME_STATE_MAIN_MENU", "main_menu")
+GAME_STATE_PLAYING = get_setting("game_states", "GAME_STATE_PLAYING", "playing")
+GAME_STATE_GAME_OVER = get_setting("game_states", "GAME_STATE_GAME_OVER", "game_over")
+GAME_STATE_LEADERBOARD = get_setting("game_states", "GAME_STATE_LEADERBOARD", "leaderboard_display")
+GAME_STATE_ENTER_NAME = get_setting("game_states", "GAME_STATE_ENTER_NAME", "enter_name")
+GAME_STATE_SETTINGS = get_setting("game_states", "GAME_STATE_SETTINGS", "settings_menu")
+GAME_STATE_DRONE_SELECT = get_setting("game_states", "GAME_STATE_DRONE_SELECT", "drone_select_menu")
+GAME_STATE_CODEX = get_setting("game_states", "GAME_STATE_CODEX", "codex_screen")
+GAME_STATE_BONUS_LEVEL_START = get_setting("game_states", "GAME_STATE_BONUS_LEVEL_START", "bonus_level_start")
+GAME_STATE_BONUS_LEVEL_PLAYING = get_setting("game_states", "GAME_STATE_BONUS_LEVEL_PLAYING", "bonus_level_playing")
+GAME_STATE_ARCHITECT_VAULT_INTRO = get_setting("game_states", "GAME_STATE_ARCHITECT_VAULT_INTRO", "architect_vault_intro")
+GAME_STATE_ARCHITECT_VAULT_ENTRY_PUZZLE = get_setting("game_states", "GAME_STATE_ARCHITECT_VAULT_ENTRY_PUZZLE", "architect_vault_entry_puzzle")
+GAME_STATE_ARCHITECT_VAULT_GAUNTLET = get_setting("game_states", "GAME_STATE_ARCHITECT_VAULT_GAUNTLET", "architect_vault_gauntlet")
+GAME_STATE_ARCHITECT_VAULT_BOSS_FIGHT = get_setting("game_states", "GAME_STATE_ARCHITECT_VAULT_BOSS_FIGHT", "architect_vault_boss_fight")
+GAME_STATE_ARCHITECT_VAULT_EXTRACTION = get_setting("game_states", "GAME_STATE_ARCHITECT_VAULT_EXTRACTION", "architect_vault_extraction")
+GAME_STATE_ARCHITECT_VAULT_SUCCESS = get_setting("game_states", "GAME_STATE_ARCHITECT_VAULT_SUCCESS", "architect_vault_success")
+GAME_STATE_ARCHITECT_VAULT_FAILURE = get_setting("game_states", "GAME_STATE_ARCHITECT_VAULT_FAILURE", "architect_vault_failure")
+GAME_STATE_RING_PUZZLE = get_setting("game_states", "GAME_STATE_RING_PUZZLE", "ring_puzzle_active")
+GAME_STATE_GAME_INTRO_SCROLL = get_setting("game_states", "GAME_STATE_GAME_INTRO_SCROLL", "game_intro_scroll")
+GAME_STATE_MAZE_DEFENSE = get_setting("game_states", "GAME_STATE_MAZE_DEFENSE", "maze_defense_mode")
 
 # ==========================
 # Player Weapon Modes
 # ==========================
-WEAPON_MODE_DEFAULT = 0
-WEAPON_MODE_TRI_SHOT = 1
-WEAPON_MODE_RAPID_SINGLE = 2
-WEAPON_MODE_RAPID_TRI = 3
-WEAPON_MODE_BIG_SHOT = 4
-WEAPON_MODE_BOUNCE = 5
-WEAPON_MODE_PIERCE = 6
-WEAPON_MODE_HEATSEEKER = 7
-WEAPON_MODE_HEATSEEKER_PLUS_BULLETS = 8
-WEAPON_MODE_LIGHTNING = 9
+WEAPON_MODE_DEFAULT = get_setting("weapon_modes", "WEAPON_MODE_DEFAULT", 0)
+WEAPON_MODE_TRI_SHOT = get_setting("weapon_modes", "WEAPON_MODE_TRI_SHOT", 1)
+WEAPON_MODE_RAPID_SINGLE = get_setting("weapon_modes", "WEAPON_MODE_RAPID_SINGLE", 2)
+WEAPON_MODE_RAPID_TRI = get_setting("weapon_modes", "WEAPON_MODE_RAPID_TRI", 3)
+WEAPON_MODE_BIG_SHOT = get_setting("weapon_modes", "WEAPON_MODE_BIG_SHOT", 4)
+WEAPON_MODE_BOUNCE = get_setting("weapon_modes", "WEAPON_MODE_BOUNCE", 5)
+WEAPON_MODE_PIERCE = get_setting("weapon_modes", "WEAPON_MODE_PIERCE", 6)
+WEAPON_MODE_HEATSEEKER = get_setting("weapon_modes", "WEAPON_MODE_HEATSEEKER", 7)
+WEAPON_MODE_HEATSEEKER_PLUS_BULLETS = get_setting("weapon_modes", "WEAPON_MODE_HEATSEEKER_PLUS_BULLETS", 8)
+WEAPON_MODE_LIGHTNING = get_setting("weapon_modes", "WEAPON_MODE_LIGHTNING", 9)
 
 # ==========================
 # Fixed Identifiers
 # ==========================
-ARCHITECT_REWARD_BLUEPRINT_ID = "DRONE_ARCHITECT_X"
-ARCHITECT_REWARD_LORE_ID = "lore_architect_origin"
+ARCHITECT_REWARD_BLUEPRINT_ID = get_setting("architect_vault", "ARCHITECT_REWARD_BLUEPRINT_ID", "DRONE_ARCHITECT_X")
+ARCHITECT_REWARD_LORE_ID = get_setting("architect_vault", "ARCHITECT_REWARD_LORE_ID", "lore_architect_origin")
+
+# Powerup types
+POWERUP_TYPES = get_setting("powerups", "POWERUP_TYPES", {
+    "weapon_upgrade": "Weapon Upgrade",
+    "shield": "Shield",
+    "speed_boost": "Speed Boost"
+})
 
 # Weapon mode names and icons (these don't change)
-WEAPON_MODE_NAMES = {
+weapon_mode_names_dict = get_setting("weapon_modes", "WEAPON_MODE_NAMES", {})
+WEAPON_MODE_NAMES = {int(k): v for k, v in weapon_mode_names_dict.items()} if weapon_mode_names_dict else {
     WEAPON_MODE_DEFAULT: "Single Shot", WEAPON_MODE_TRI_SHOT: "Tri-Shot",
     WEAPON_MODE_RAPID_SINGLE: "Rapid Single", WEAPON_MODE_RAPID_TRI: "Rapid Tri-Shot",
     WEAPON_MODE_BIG_SHOT: "Big Shot", WEAPON_MODE_BOUNCE: "Bounce Shot",
@@ -89,12 +101,12 @@ WEAPON_MODE_NAMES = {
 }
 
 # Weapon modes sequence
-WEAPON_MODES_SEQUENCE = [
+WEAPON_MODES_SEQUENCE = get_setting("weapon_modes", "WEAPON_MODES_SEQUENCE", [
     WEAPON_MODE_DEFAULT, WEAPON_MODE_TRI_SHOT, WEAPON_MODE_RAPID_SINGLE,
     WEAPON_MODE_RAPID_TRI, WEAPON_MODE_BIG_SHOT, WEAPON_MODE_BOUNCE,
     WEAPON_MODE_PIERCE, WEAPON_MODE_HEATSEEKER, WEAPON_MODE_HEATSEEKER_PLUS_BULLETS,
     WEAPON_MODE_LIGHTNING
-]
+])
 
 # ==========================
 # Asset Paths
@@ -112,6 +124,15 @@ TURRET_ASSET_PATHS = {
     "WEAPON_MODE_HEATSEEKER_PLUS_BULLETS": "images/level_elements/turret_seeker_base_img.png",
     "WEAPON_MODE_LIGHTNING": "images/level_elements/turret_lightning_base_img.png",
 }
+
+# ==========================
+# UI Layout Constants
+# ==========================
+# HUD ring icon positioning
+HUD_RING_ICON_AREA_X_OFFSET = get_setting("display", "HUD_RING_ICON_AREA_X_OFFSET", 200)
+HUD_RING_ICON_AREA_Y_OFFSET = get_setting("display", "HUD_RING_ICON_AREA_Y_OFFSET", 20)
+HUD_RING_ICON_SIZE = get_setting("display", "HUD_RING_ICON_SIZE", 40)
+HUD_RING_ICON_SPACING = get_setting("display", "HUD_RING_ICON_SPACING", 10)
 
 # ==========================
 # JSON and Dictionary Keys

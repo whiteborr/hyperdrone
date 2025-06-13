@@ -180,29 +180,39 @@ class ItemManager:
         rings_to_spawn = self.max_rings_per_level - self.spawned_rings_count
         logger.info(f"Attempting to spawn {rings_to_spawn} rings for level {self.game_controller.level_manager.level}")
         
-        # Try to spawn all remaining rings
+        # Clear existing rings first to avoid issues
+        self.collectible_rings_group.empty()
+        self.spawned_rings_count = 0
+        
+        # Try to spawn all rings
         spawned = 0
         tile_size = get_setting("gameplay", "TILE_SIZE", 80)
-        for i in range(min(rings_to_spawn * 2, len(walkable_tiles))):  # Try more positions to ensure we get enough rings
-            if spawned >= rings_to_spawn:
-                break
-                
-            # Ensure rings are spaced apart
-            spawn_pos = walkable_tiles[i]
-            
-            # Check if this position is too close to existing rings
+        min_spacing = tile_size * 3  # Minimum spacing between rings
+        
+        # Use a different approach to ensure we get enough rings
+        positions = []
+        for pos in walkable_tiles:
+            # Check if this position is too close to already selected positions
             too_close = False
-            for ring in self.collectible_rings_group:
-                if math.hypot(spawn_pos[0] - ring.rect.centerx, spawn_pos[1] - ring.rect.centery) < tile_size * 3:
+            for existing_pos in positions:
+                if math.hypot(pos[0] - existing_pos[0], pos[1] - existing_pos[1]) < min_spacing:
                     too_close = True
                     break
                     
             if not too_close:
-                # Create and add the ring
-                new_ring = CollectibleRing(spawn_pos[0], spawn_pos[1])
-                self.collectible_rings_group.add(new_ring)
-                self.spawned_rings_count += 1
-                spawned += 1
-                logger.debug(f"Spawned ring at {spawn_pos}, total: {self.spawned_rings_count}")
+                positions.append(pos)
+                if len(positions) >= self.max_rings_per_level:
+                    break
+        
+        # Create rings at the selected positions
+        for pos in positions:
+            new_ring = CollectibleRing(pos[0], pos[1])
+            self.collectible_rings_group.add(new_ring)
+            self.spawned_rings_count += 1
+            spawned += 1
+            
+        # Also spawn an initial powerup
+        if spawned > 0 and len(self.power_ups_group) == 0:
+            self._spawn_random_powerup(maze)
                 
         logger.info(f"Successfully spawned {spawned} rings for level {self.game_controller.level_manager.level}")

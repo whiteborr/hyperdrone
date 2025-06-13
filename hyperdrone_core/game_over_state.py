@@ -1,7 +1,7 @@
 # hyperdrone_core/game_over_state.py
 import pygame
 from .state import State
-from constants import RED, WHITE
+from settings_manager import get_setting
 
 class GameOverState(State):
     def enter(self, previous_state=None, **kwargs):

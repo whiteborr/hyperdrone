@@ -2,7 +2,6 @@
 import pygame
 from .state import State
 from settings_manager import get_setting
-from constants import *
 
 class PlayingState(State):
     """State for the main gameplay"""
@@ -11,6 +10,14 @@ class PlayingState(State):
         """Initialize the playing state"""
         self.game.combat_controller.reset_combat_state()
         self.game.puzzle_controller.reset_puzzles_state()
+        
+        # Clear all collectible groups first
+        self.game.collectible_rings_group.empty()
+        self.game.power_ups_group.empty()
+        self.game.core_fragments_group.empty()
+        self.game.vault_logs_group.empty()
+        self.game.glyph_tablets_group.empty()
+        self.game.architect_echoes_group.empty()
         
         # Initialize maze and player
         self.game.maze = self.game.level_manager.create_maze()
@@ -51,9 +58,11 @@ class PlayingState(State):
         self.game.level_timer_start_ticks = pygame.time.get_ticks()
         self.game.level_time_remaining_ms = get_setting("gameplay", "LEVEL_TIMER_DURATION", 180000)
         
-        # Reset item manager
+        # Reset item manager and spawn collectibles
         if hasattr(self.game, 'item_manager'):
             self.game.item_manager.reset_for_level()
+            # Force immediate spawn of rings
+            self.game.item_manager._spawn_all_rings(self.game.maze)
     
     def handle_events(self, events):
         """Handle input events specific to playing state"""
@@ -100,7 +109,8 @@ class PlayingState(State):
     
     def draw(self, surface):
         """Draw the playing state"""
-        surface.fill(BLACK)
+        black_color = get_setting("colors", "BLACK", (0, 0, 0))
+        surface.fill(black_color)
         
         # Draw maze
         if self.game.maze:

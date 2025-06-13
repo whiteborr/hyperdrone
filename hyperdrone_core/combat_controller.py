@@ -545,7 +545,7 @@ class CombatController:
                 # Trigger path recalculation for all enemies
                 self.game_controller.tower_defense_manager.recalculate_all_enemy_paths()
                 
-                self.game_controller.play_sound('turret_place_placeholder', 0.7)
+                self.game_controller.play_sound('turret_placement', 0.7)
                 return True
         else:
             # Original implementation without path validation
@@ -570,7 +570,7 @@ class CombatController:
                     new_turret = Turret(tile_center_x_abs, tile_center_y_abs, self.game_controller, self.asset_manager)
                     self.turrets_group.add(new_turret)
                     self.maze.mark_turret_spot_as_occupied(grid_r, grid_c) 
-                    self.game_controller.play_sound('turret_place_placeholder', 0.7)
+                    self.game_controller.play_sound('turret_placement', 0.7)
                     return True
                     
         self.game_controller.play_sound('ui_denied', 0.6)

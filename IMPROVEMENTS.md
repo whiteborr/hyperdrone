@@ -225,6 +225,7 @@ Story beats give structure to your campaign mode or progression path.
 * Railgun: High-damage, charge-up piercing shot.  
 * Grenade Launcher: Lobs explosive projectiles.  
   (✅ Multiple weapon modes implemented, including missiles and lightning)
+  (✅ Weapon Strategy pattern implemented for easy addition of new weapons)
 
 ### **Expanded Power-Ups & Collectibles**
 

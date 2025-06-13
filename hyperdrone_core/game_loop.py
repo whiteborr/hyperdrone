@@ -25,7 +25,7 @@ from entities.collectibles import Ring as CollectibleRing, WeaponUpgradeItem, Sh
 from entities.collectibles import CoreFragmentItem, VaultLogItem, GlyphTabletItem, AncientAlienTerminal, ArchitectEchoItem
 from drone_management import DroneSystem, DRONE_DATA
 from settings_manager import get_setting, set_setting, save_settings
-from constants import GAME_STATE_GAME_OVER, WEAPON_MODE_NAMES, BLACK, WHITE, RED, YELLOW, ORANGE
+from settings_manager import get_setting
 from hyperdrone_core.camera import Camera
 
 logger_gc = logging.getLogger(__name__)
@@ -266,22 +266,25 @@ class GameController:
         return fallback_data
     
     def _get_settings_menu_items_data_structure(self):
-        # Import weapon modes from constants or settings
-        weapon_modes_sequence = get_setting("weapons", "WEAPON_MODES_SEQUENCE", [0, 1, 2, 3])
-        weapon_mode_names = get_setting("weapons", "WEAPON_MODE_NAMES", {
+        # Import weapon modes from settings
+        weapon_modes_sequence = get_setting("weapon_modes", "WEAPON_MODES_SEQUENCE", [0, 1, 2, 3])
+        
+        # Convert weapon mode names from settings
+        weapon_mode_names_dict = get_setting("weapon_modes", "WEAPON_MODE_NAMES", {})
+        weapon_mode_names = {int(k): v for k, v in weapon_mode_names_dict.items()} if weapon_mode_names_dict else {
             0: "Standard", 1: "Spread", 2: "Rapid", 3: "Missile"
-        })
+        }
         
         return [
             {"label":"Base Max Health","key":"PLAYER_MAX_HEALTH","category":"gameplay","type":"numeric","min":50,"max":200,"step":10,"note":"Original Drone base, others vary"},
             {"label":"Starting Lives","key":"PLAYER_LIVES","category":"gameplay","type":"numeric","min":1,"max":9,"step":1},
             {"label":"Base Speed","key":"PLAYER_SPEED","category":"gameplay","type":"numeric","min":1,"max":10,"step":1,"note":"Original Drone base, others vary"},
-            {"label":"Initial Weapon","key":"INITIAL_WEAPON_MODE","category":"weapons","type":"choice",
+            {"label":"Initial Weapon","key":"INITIAL_WEAPON_MODE","category":"gameplay","type":"choice",
              "choices":weapon_modes_sequence, "get_display":lambda val:weapon_mode_names.get(val,"Unknown")},
-            {"label":"Missile Damage","key":"MISSILE_DAMAGE","category":"weapons","type":"numeric","min":10,"max":100,"step":5},
+            {"label":"Missile Damage","key":"weapons","type":"numeric","min":10,"max":100,"step":5},
             {"label":"Enemy Speed","key":"ENEMY_SPEED","category":"enemies","type":"numeric","min":0.5,"max":5,"step":0.5},
             {"label":"Enemy Health","key":"ENEMY_HEALTH","category":"enemies","type":"numeric","min":25,"max":300,"step":25},
-            {"label":"Level Timer (sec)","key":"LEVEL_TIMER_DURATION","category":"gameplay","type":"numeric","min":60000,"max":300000,"step":15000,
+            {"label":"Level Timer (sec)","key":"LEVEL_TIMER_DURATION","category":"progression","type":"numeric","min":60000,"max":300000,"step":15000,
              "is_ms_to_sec":True, "display_format": "{:.0f}s"},
             {"label":"Shield Duration (sec)","key":"SHIELD_POWERUP_DURATION","category":"powerups","type":"numeric","min":5000,"max":60000,"step":5000,
              "is_ms_to_sec":True, "display_format": "{:.0f}s"},
@@ -331,12 +334,18 @@ class GameController:
     
     def _create_explosion(self, x, y, num_particles=20, specific_sound_key=None):
         """Creates a particle explosion at a given coordinate."""
+        # Get colors from settings
+        orange_color = get_setting("colors", "ORANGE", (255, 165, 0))
+        yellow_color = get_setting("colors", "YELLOW", (255, 255, 0))
+        red_color = get_setting("colors", "RED", (255, 0, 0))
+        white_color = get_setting("colors", "WHITE", (255, 255, 255))
+        
         # Create explosion particles with varied colors and sizes
-        colors = [ORANGE, YELLOW, RED]
+        colors = [orange_color, yellow_color, red_color]
         
         # Create a bright flash at the center
         self.explosion_particles_group.add(
-            Particle(x, y, [WHITE, YELLOW], 
+            Particle(x, y, [white_color, yellow_color], 
                     min_speed=0.5, max_speed=1.0, 
                     min_size=5.0, max_size=8.0, 
                     gravity=0, shrink_rate=0.2, 
@@ -364,10 +373,16 @@ class GameController:
             
     def _create_enemy_explosion(self, x, y):
         """Creates an explosion specifically for enemy deaths."""
+        # Get colors from settings
+        white_color = get_setting("colors", "WHITE", (255, 255, 255))
+        yellow_color = get_setting("colors", "YELLOW", (255, 255, 0))
+        red_color = get_setting("colors", "RED", (255, 0, 0))
+        orange_color = get_setting("colors", "ORANGE", (255, 165, 0))
+        
         # Create a bright flash at the center
         flash_size = random.uniform(3.0, 5.0)
         self.explosion_particles_group.add(
-            Particle(x, y, [WHITE, YELLOW], 
+            Particle(x, y, [white_color, yellow_color], 
                      min_speed=0.5, max_speed=1.0, 
                      min_size=flash_size*0.8, max_size=flash_size, 
                      gravity=0, shrink_rate=0.2, 
@@ -375,7 +390,7 @@ class GameController:
         )
         
         # Create outward expanding particles
-        colors = [RED, ORANGE, YELLOW]
+        colors = [red_color, orange_color, yellow_color]
         for _ in range(15):
             angle = random.uniform(0, 360)
             distance = random.uniform(2.0, 4.0)
@@ -401,7 +416,8 @@ class GameController:
             self.level_manager.all_enemies_killed_this_level = True
     
     def _draw_game_world(self):
-        self.screen.fill(BLACK)
+        black_color = get_setting("colors", "BLACK", (0, 0, 0))
+        self.screen.fill(black_color)
         if self.maze:
             self.maze.draw(self.screen, self.camera)
         
@@ -421,7 +437,7 @@ class GameController:
             
         # Draw tower defense elements if available
         current_game_state = self.state_manager.get_current_state_id()
-        game_state_maze_defense = get_setting("game_states", "GAME_STATE_MAZE_DEFENSE", "maze_defense")
+        game_state_maze_defense = get_setting("game_states", "GAME_STATE_MAZE_DEFENSE", "maze_defense_mode")
         if current_game_state == game_state_maze_defense and hasattr(self, 'tower_defense_manager'):
             self.tower_defense_manager.draw(self.screen, self.camera)
             
@@ -457,6 +473,9 @@ class GameController:
                 powerup.apply_effect(self.player)
                 powerup.collected = True
                 self.play_sound('weapon_upgrade_collect')
+                # Update the UI to reflect the new weapon
+                if hasattr(self.ui_manager, 'update_weapon_icon_surface'):
+                    self.ui_manager.update_weapon_icon_surface(self.player.current_weapon_mode)
             elif isinstance(powerup, ShieldItem):
                 powerup.apply_effect(self.player)
                 powerup.collected = True

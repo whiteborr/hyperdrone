@@ -11,7 +11,8 @@
     "UI_CONFIRM_SOUND": "sounds/ui_confirm.wav",
     "UI_DENIED_SOUND": "sounds/ui_denied.wav",
     "MISSILE_LAUNCH_SOUND": "sounds/missile_launch.wav",
-    "PROTOTYPE_DRONE_EXPLODE_SOUND": "sounds/prototype_drone_explode.wav"
+    "PROTOTYPE_DRONE_EXPLODE_SOUND": "sounds/prototype_drone_explode.wav",
+    "TURRET_PLACE_SOUND": "sounds/turret_placement.wav"
   },
   "music": {
     "MENU_THEME_MUSIC": "sounds/menu_music.wav",

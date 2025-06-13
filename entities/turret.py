@@ -43,7 +43,7 @@ TURRET_ASSET_KEYS = {
 
 class Turret(pygame.sprite.Sprite):
     TURRET_COST = get_setting("gameplay", "TURRET_BASE_COST", 50)
-    UPGRADE_COST = get_setting("gameplay", "TURRET_UPGRADE_COST", 100)
+    UPGRADE_COST = get_setting("gameplay", "TURRET_UPGRADE_COST", 200)
     MAX_UPGRADE_LEVEL = len(get_setting("gameplay", "WEAPON_MODES_SEQUENCE", [0, 1, 2, 3, 4, 5, 6, 7, 8, 9])) - 1
     MAX_TURRETS = get_setting("gameplay", "MAX_TURRETS_DEFENSE_MODE", 10)
 
@@ -57,6 +57,7 @@ class Turret(pygame.sprite.Sprite):
         self.angle, self.target, self.upgrade_level = 0, None, 0
         self.show_range_indicator = False
         self.weapon_mode_index = 0
+        self.turret_base_color_fallback = (100, 100, 120)
         weapon_modes = get_setting("gameplay", "WEAPON_MODES_SEQUENCE", [0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
         self.current_weapon_mode = weapon_modes[self.weapon_mode_index]
         self.original_image, self.image = None, None
@@ -74,7 +75,6 @@ class Turret(pygame.sprite.Sprite):
         self.bullets = pygame.sprite.Group()
         self.missiles = pygame.sprite.Group()
         self.lightning_zaps = pygame.sprite.Group()
-        self.turret_base_color_fallback = (100, 100, 120)
         self._ensure_drawable_state()
 
     def _ensure_drawable_state(self):

@@ -5,10 +5,12 @@ import math
 import random
 import traceback
 
-# Define some colors (can be replaced with your game_settings if available)
-WHITE = (255, 255, 255)
-GREEN = (0, 255, 0)
-DARK_GREY = (50, 50, 50)
+from settings_manager import get_setting
+
+# Get colors from settings
+WHITE = get_setting("colors", "WHITE", (255, 255, 255))
+GREEN = get_setting("colors", "GREEN", (0, 255, 0))
+DARK_GREY = get_setting("colors", "DARK_GREY", (50, 50, 50))
 HIGHLIGHT_GREEN = (100, 255, 100, 100) # Semi-transparent for glow
 
 class Ring:

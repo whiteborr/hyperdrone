@@ -1,6 +1,7 @@
 import pygame
 import random
-from entities import Enemy, SentinelDrone, DefenseDrone
+from entities import Enemy, SentinelDrone
+from entities.defense_drone import DefenseDrone
 from entities.tr3b_enemy import TR3BEnemy
 from settings_manager import get_setting, set_setting, get_asset_path
 
@@ -101,6 +102,7 @@ class EnemyManager:
         enemy.health = config.get("health", 100); enemy.max_health = enemy.health
         enemy.speed = config.get("speed", 1.5); enemy.contact_damage = config.get("contact_damage", 25)
         self.enemies.add(enemy)
+        print(f"Spawned {enemy_type_key} at {abs_x}, {abs_y} with path length: {len(path_to_core)}")
         
     def update_enemies(self, primary_target_pos_pixels, maze, current_time_ms, delta_time_ms, game_area_x_offset=0, is_defense_mode=False):
         for enemy_obj in list(self.enemies):

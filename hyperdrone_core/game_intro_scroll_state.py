@@ -1,7 +1,7 @@
 # hyperdrone_core/game_intro_scroll_state.py
 import pygame
 from .state import State
-from constants import BLACK, WHITE, GOLD
+from settings_manager import get_setting
 
 class GameIntroScrollState(State):
     def enter(self, previous_state=None, **kwargs):
