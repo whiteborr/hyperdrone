@@ -9,6 +9,14 @@ The pathfinding functionality has been extracted from `entities/enemy.py` into a
 - `pathfinding.py` is responsible for finding paths
 - `enemy.py` is responsible for enemy behavior
 
+## Integration with State Manager
+
+The pathfinding system now works with the new State Design Pattern implementation:
+
+- Enemy pathfinding is aware of the current game state through the state manager
+- Different states (like PlayingState vs MazeDefenseState) can have different pathfinding behaviors
+- The state manager ensures pathfinding is only active in appropriate game states
+
 ## Key Components
 
 ### A* Pathfinding Algorithm

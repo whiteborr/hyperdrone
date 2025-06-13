@@ -74,8 +74,8 @@ class LevelManager:
     def collect_ring(self, ring_position):
         """Handle ring collection and animation"""
         # Only collect rings in regular Maze levels
-        current_game_state = self.game_controller.scene_manager.get_current_state()
-        if current_game_state == GAME_STATE_PLAYING:
+        current_game_state = self.game_controller.state_manager.get_current_state_id()
+        if current_game_state == "PlayingState":
             self.collected_rings_count += 1
             self.score += 10
             self._animate_ring_to_hud(ring_position)
@@ -126,8 +126,8 @@ class LevelManager:
         current_time = pygame.time.get_ticks()
         
         # Draw level border with timer only for regular maze mode, not for MazeChapter2
-        current_game_state = self.game_controller.scene_manager.get_current_state()
-        if current_game_state == GAME_STATE_PLAYING:
+        current_game_state = self.game_controller.state_manager.get_current_state_id()
+        if current_game_state == "PlayingState":
             self._draw_level_timer_border(surface, current_time)
             
             # Only process ring animations in regular Maze levels
@@ -194,10 +194,10 @@ class LevelManager:
     def check_level_clear_condition(self):
         """Check if the level has been cleared and progress to the next level if so"""
         current_time = pygame.time.get_ticks()
-        current_game_state = self.game_controller.scene_manager.get_current_state()
+        current_game_state = self.game_controller.state_manager.get_current_state_id()
         
         # Check if time has run out - only for regular maze mode
-        if current_game_state == GAME_STATE_PLAYING and current_time - self.level_start_time >= self.level_timer_duration:
+        if current_game_state == "PlayingState" and current_time - self.level_start_time >= self.level_timer_duration:
             # Time's up - player loses a life
             if self.game_controller.player and self.game_controller.player.alive:
                 self.game_controller._handle_player_death_or_life_loss("Time's up!")

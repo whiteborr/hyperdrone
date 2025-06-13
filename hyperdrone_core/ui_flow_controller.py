@@ -274,12 +274,21 @@ class UIFlowController:
             elif selected_item["type"] == "choice":
                 choices = selected_item["choices"]
                 try:
-                    current_idx = choices.index(current_val)
-                    new_idx = (current_idx + direction + len(choices)) % len(choices)
+                    # Handle the case where current_val is not in choices
+                    if current_val not in choices:
+                        new_idx = 0 if direction > 0 else len(choices) - 1
+                    else:
+                        current_idx = choices.index(current_val)
+                        new_idx = (current_idx + direction) % len(choices)
                     from settings_manager import set_setting
                     set_setting(category, item_key, choices[new_idx])
                     self.game_controller.play_sound('ui_select')
-                except ValueError: pass
+                except (ValueError, TypeError):
+                    # If there's any error, just set to the first choice
+                    if choices:
+                        from settings_manager import set_setting
+                        set_setting(category, item_key, choices[0])
+                        self.game_controller.play_sound('ui_select')
             return True
         return False
 

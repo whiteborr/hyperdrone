@@ -461,14 +461,14 @@ class UIManager:
                 category = item.get('category', 'gameplay')  # Default to gameplay if not specified
                 current_val = get_setting(category, item['key'], None)
                 val_to_format = current_val
-                if item.get("is_ms_to_sec"): val_to_format /= 1000
+                if item.get("is_ms_to_sec") and val_to_format is not None: val_to_format /= 1000
                 
-                if 'display_format' in item:
+                if 'display_format' in item and val_to_format is not None:
                     val_text = item['display_format'].format(val_to_format)
-                elif 'get_display' in item:
+                elif 'get_display' in item and current_val is not None:
                     val_text = item['get_display'](current_val)
                 else:
-                    val_text = str(current_val)
+                    val_text = str(current_val) if current_val is not None else "N/A"
                     
                 if item['type'] in ["numeric", "choice"]: val_text = f"< {val_text} >"
             else: val_text = "[PRESS ENTER]"

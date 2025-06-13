@@ -100,7 +100,7 @@ Stored in `assets/sounds/`.
 
 ### Game States
 
-Handled by `hyperdrone_core/scene_manager.py`.
+Handled by `hyperdrone_core/state_manager.py` using the State Design Pattern.
 
 ### Sliding Ring Puzzle Minigame
 
@@ -122,9 +122,13 @@ hyperdrone/
 ├── constants.py
 ├── hyperdrone_core/
 │   ├── game_loop.py
-│   ├── scene_manager.py
+│   ├── state_manager.py
 │   ├── event_manager.py
 │   ├── player_actions.py
+│   ├── combat_controller.py
+│   ├── ui_flow_controller.py
+│   ├── level_manager.py
+│   ├── pathfinding.py
 │   └── leaderboard.py
 ├── entities/
 │   ├── player.py
@@ -259,9 +263,28 @@ No code changes required!
 - **collectibles**: Collectible properties, goals
 - **progression**: Level timers, rewards, leaderboard
 
+## Recent Improvements
+
+### Architecture Refactoring
+
+1. **State Design Pattern**: Replaced the string-based scene manager with a proper State Design Pattern implementation in `state_manager.py`
+2. **Controller Classes**: Added specialized controller classes for better separation of concerns:
+   - `combat_controller.py`: Handles all combat-related logic
+   - `ui_flow_controller.py`: Manages UI navigation and state
+   - `level_manager.py`: Handles level progression and scoring
+3. **Collision Optimization**: Improved collision detection using pygame's `groupcollide` for better performance
+4. **Pathfinding Module**: Extracted pathfinding logic into a dedicated module for better maintainability
+
+### Bug Fixes
+
+1. Fixed issues with settings menu navigation
+2. Improved error handling in the UI system
+3. Fixed weapon selection in the settings menu
+
 ## Recommendations for Future Development
 
-1. **Settings Documentation**: Consider creating a comprehensive settings documentation file
+1. **Settings Documentation**: Create a comprehensive settings documentation file
 2. **Settings UI**: Update the settings UI to reflect the new categorized structure
 3. **Settings Validation**: Add validation for settings values to prevent invalid configurations
-4. **Settings Presets**: Consider implementing settings presets for different difficulty levels or play styles
+4. **Settings Presets**: Implement settings presets for different difficulty levels or play styles
+5. **Refactor UI States**: Continue refactoring UI states to use the State Design Pattern consistently

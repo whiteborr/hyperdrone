@@ -6,7 +6,15 @@ This document explains the optimization of collision handling in the combat cont
 
 The original collision handling code in `hyperdrone_core/combat_controller.py` used nested loops to check for collisions between sprites. This approach works but can be inefficient, especially with many sprites.
 
-The refactored version in `hyperdrone_core/combat_controller_refactored.py` uses pygame's optimized `groupcollide` function to improve performance.
+The optimized version now uses pygame's `groupcollide` function to improve performance.
+
+## Integration with State Manager
+
+The collision system now works with the new State Design Pattern implementation:
+
+- Collision handling is aware of the current game state through the state manager
+- Different states (like PlayingState vs MazeDefenseState) can have different collision behaviors
+- The state manager ensures collision detection is only active in appropriate game states
 
 ## Benefits
 

@@ -219,7 +219,7 @@ class StateManager:
         self.current_state = state_class(self.game_controller)
         
         # Enter the new state
-        self.current_state.enter(previous_state, **kwargs)
+        self.current_state.enter(previous_state.get_state_id() if previous_state else None, **kwargs)
         
         # Update music for the new state
         self._update_music()
@@ -229,7 +229,6 @@ class StateManager:
             self.game_controller.handle_state_transition(state_id, 
                 previous_state.get_state_id() if previous_state else None, 
                 **kwargs)
-            state_id = self.legacy_state_mapping[state_id]
         
         # Check if the state exists
         if state_id not in self.state_classes:

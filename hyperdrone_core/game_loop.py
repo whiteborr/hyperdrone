@@ -25,7 +25,7 @@ from entities.collectibles import Ring as CollectibleRing, WeaponUpgradeItem, Sh
 from entities.collectibles import CoreFragmentItem, VaultLogItem, GlyphTabletItem, AncientAlienTerminal, ArchitectEchoItem
 from drone_management import DroneSystem, DRONE_DATA
 from settings_manager import get_setting, set_setting, save_settings
-from constants import GAME_STATE_GAME_OVER, WEAPON_MODE_NAMES
+from constants import GAME_STATE_GAME_OVER, WEAPON_MODE_NAMES, BLACK, WHITE, RED, YELLOW, ORANGE
 from hyperdrone_core.camera import Camera
 
 logger_gc = logging.getLogger(__name__)
@@ -469,3 +469,9 @@ class GameController:
     def _check_level_clear_condition(self):
         """Check if the level has been cleared and progress to the next level if so"""
         return self.level_manager.check_level_clear_condition()
+        
+    def set_story_message(self, message, duration=5000):
+        """Set a story message to be displayed on screen for a duration."""
+        self.story_message = message
+        self.story_message_active = True
+        self.story_message_end_time = pygame.time.get_ticks() + duration
