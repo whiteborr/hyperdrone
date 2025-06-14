@@ -1,4 +1,5 @@
 # hyperdrone_core/game_events.py
+import logging
 from .event_batch import BatchedEvent
 
 class GameEvent:
@@ -113,3 +114,17 @@ class BatchedParticleEmitEvent(GameEvent):
         self.particle_types = particle_types
         self.positions_and_counts = positions_and_counts
         self.total_count = total_count
+
+class ItemCollectedEvent(GameEvent):
+    """Event triggered when a story-relevant item is collected."""
+    def __init__(self, item_id, item_type='generic'):
+        self.item_id = item_id
+        self.item_type = item_type
+        logging.info(f"ItemCollectedEvent dispatched: id={item_id}, type={item_type}")
+
+
+class BossDefeatedEvent(GameEvent):
+    """Event triggered when a boss is defeated."""
+    def __init__(self, boss_id):
+        self.boss_id = boss_id
+        logging.info(f"BossDefeatedEvent dispatched: id={boss_id}")

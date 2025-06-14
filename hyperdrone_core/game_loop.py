@@ -145,19 +145,43 @@ class GameController:
         self.intro_font_key = "codex_category_font"
         
         # Story and Chapter Display Setup
-        self.story_manager = StoryManager()
-        chapter1 = Chapter(
-            title="A Faint Signal",
-            description="You pick up a faint, repeating signal from a nearby uncharted moon.",
-            objectives=["Investigate the signal's origin", "Scan the moon for lifeforms"]
-        )
-        chapter2 = Chapter(
-            title="The Crash Site",
-            description="The signal leads to a crashed vessel of unknown design. It's old and silent.",
-            objectives=["Explore the wreckage", "Retrieve the ship's log"]
-        )
+        # --- Story and Chapter Display Setup ---
+        # We need a reference to the state manager to allow the story to trigger level changes.
+        # It's initialized right before this, so we can pass it in.
+        self.story_manager = StoryManager(state_manager_ref=self.state_manager)
+
+        # Import the story classes
+        from story import Chapter, Objective
+
+        # -- Define Chapter 1: The Anomaly --
+        ch1_obj1 = Objective(objective_id="c1_collect_rings", description="Gather energy signatures (Collect 5 Rings)", obj_type="collect_all", target="rings")
+        ch1_obj2 = Objective(objective_id="c1_clear_hostiles", description="Neutralize initial defense drones", obj_type="kill_all", target="standard_enemies")
+        chapter1 = Chapter(chapter_id="chapter_1", title="The Anomaly", 
+                           description="A strange energy signature requires investigation. Enter the Vault and assess the situation.", 
+                           objectives=[ch1_obj1, ch1_obj2], 
+                           next_state_id="PlayingState") # Stays in PlayingState for Chapter 2
+
+        # -- Define Chapter 2: The Guardian --
+        ch2_obj1 = Objective(objective_id="c2_defeat_guardian", description="Decommission the Vault's primary Guardian", obj_type="kill", target="MAZE_GUARDIAN")
+        chapter2 = Chapter(chapter_id="chapter_2", title="The Guardian", 
+                           description="The Vault's defenses are active and hostile. A formidable Guardian blocks the path forward.", 
+                           objectives=[ch2_obj1], 
+                           next_state_id="CorruptedSectorState") # This will transition to our first new level
+
+        # -- Define Chapter 3: The Corrupted Sector --
+        ch3_obj1 = Objective(objective_id="c3_find_log_alpha", description="Find Corrupted Log Alpha", obj_type="collect", target="log_alpha")
+        ch3_obj2 = Objective(objective_id="c3_find_log_beta", description="Access secure data with VANTIS drone", obj_type="collect", target="log_beta")
+        chapter3 = Chapter(chapter_id="chapter_3", title="The Corrupted Sector", 
+                           description="This sector is unstable. Find out why the Vault is failing.", 
+                           objectives=[ch3_obj1, ch3_obj2], 
+                           next_state_id="HarvestChamberState") # This will transition to our second new level
+
+        # Add the chapters to the story manager in order
         self.story_manager.add_chapter(chapter1)
         self.story_manager.add_chapter(chapter2)
+        self.story_manager.add_chapter(chapter3)
+        
+        # Start the story
         self.story_manager.start_story()
 
         # Fonts for displaying the story overlay
@@ -217,7 +241,7 @@ class GameController:
             # Draw UI
             self.ui_manager.draw_current_scene_ui()
             self._draw_story_overlay(self.screen)
-            
+
             # Update display
             pygame.display.flip()
 
@@ -512,6 +536,11 @@ class GameController:
                 self.drone_system.collect_core_fragment(fragment.fragment_id)
                 self.play_sound('collect_fragment')
                 self.set_story_message(f"Core Fragment collected!", 2000)
+
+                # Dispatch an event for the story system
+                from .game_events import ItemCollectedEvent
+                event = ItemCollectedEvent(item_id=fragment.fragment_id, item_type='core_fragment')
+                self.event_manager.dispatch(event)
     
     def _check_level_clear_condition(self):
         """Check if the level has been cleared and progress to the next level if so"""
@@ -526,8 +555,6 @@ class GameController:
     def _draw_story_overlay(self, surface):
         """
         Draws the current chapter's title, description, and objectives on the screen.
-        This is a temporary overlay for development and can be integrated into the
-        UI manager or specific game states later.
         """
         current_chapter = self.story_manager.get_current_chapter()
 
@@ -536,18 +563,18 @@ class GameController:
 
         # Display the Title
         title_surface = self.STORY_FONT_TITLE.render(current_chapter.title, True, self.STORY_TITLE_COLOR)
-        surface.blit(title_surface, (20, 20))
+        surface.blit(title_surface, (20, 20)) # Use surface
 
         # Display the Description
         desc_surface = self.STORY_FONT_BODY.render(current_chapter.description, True, self.STORY_TEXT_COLOR)
-        surface.blit(desc_surface, (20, 80))
+        surface.blit(desc_surface, (20, 80)) # Use surface
 
         # Display the Objectives
         obj_y_pos = 150
         for obj in current_chapter.objectives:
-            status = "[X]" if obj in current_chapter.completed_objectives else "[ ]"
-            obj_text = f"{status} {obj}"
+            status = "[X]" if obj.is_complete else "[ ]"
+            obj_text = f"{status} {obj.description}"
             
             obj_surface = self.STORY_FONT_BODY.render(obj_text, True, self.STORY_TEXT_COLOR)
-            surface.blit(obj_surface, (40, obj_y_pos))
+            surface.blit(obj_surface, (40, obj_y_pos)) # Use surface
             obj_y_pos += 40

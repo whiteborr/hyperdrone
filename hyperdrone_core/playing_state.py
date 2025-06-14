@@ -118,14 +118,44 @@ class PlayingState(State):
     
     def handle_events(self, events):
         """Handle input events specific to playing state"""
+        # --- FIX: Get the current chapter ONCE at the start of the method ---
+        # This ensures the variable is always available within the function's scope.
+        current_chapter = self.game.story_manager.get_current_chapter()
+
         for event in events:
+            # --- ORIGINAL gameplay logic ---
             if event.type == pygame.KEYDOWN:
+                # Handle pausing
                 if event.key == pygame.K_p:
                     self.game.toggle_pause()
+                # Pass other keys to the player_actions handler for movement, shooting etc.
                 else:
                     self.game.player_actions.handle_key_down(event)
+
             elif event.type == pygame.KEYUP:
                 self.game.player_actions.handle_key_up(event)
+            
+            # --- NEW story interaction logic ---
+            # We still check for KEYDOWN here for our specific story keys
+            if event.type == pygame.KEYDOWN:
+                # And we check if a chapter is active before trying to use it
+                if current_chapter:
+                    
+                    # Temporary key to complete the 1st objective
+                    if event.key == pygame.K_1:
+                        if len(current_chapter.objectives) > 0:
+                            objective_to_complete_id = current_chapter.objectives[0].objective_id
+                            current_chapter.complete_objective_by_id(objective_to_complete_id)
+
+                    # Temporary key to complete the 2nd objective
+                    elif event.key == pygame.K_2:
+                        if len(current_chapter.objectives) > 1:
+                            objective_to_complete_id = current_chapter.objectives[1].objective_id
+                            current_chapter.complete_objective_by_id(objective_to_complete_id)
+                    
+                    # Temporary key to advance to the next chapter
+                    elif event.key == pygame.K_n:
+                        self.game.story_manager.advance_chapter()
     
     def update(self, delta_time):
         """Update game logic for playing state"""
