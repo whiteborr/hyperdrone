@@ -18,6 +18,7 @@ from .ui_flow_controller import UIFlowController
 from .level_manager import LevelManager
 from ui import UIManager
 from .asset_manager import AssetManager
+from story import StoryManager, Chapter 
 
 from entities import PlayerDrone, CoreReactor, Turret, LightningZap, Missile, Particle
 from entities import MazeGuardian, SentinelDrone, EscapeZone, Maze, MazeChapter2, Bullet
@@ -143,6 +144,28 @@ class GameController:
         self.intro_screen_text_surfaces_current = []
         self.intro_font_key = "codex_category_font"
         
+        # Story and Chapter Display Setup
+        self.story_manager = StoryManager()
+        chapter1 = Chapter(
+            title="A Faint Signal",
+            description="You pick up a faint, repeating signal from a nearby uncharted moon.",
+            objectives=["Investigate the signal's origin", "Scan the moon for lifeforms"]
+        )
+        chapter2 = Chapter(
+            title="The Crash Site",
+            description="The signal leads to a crashed vessel of unknown design. It's old and silent.",
+            objectives=["Explore the wreckage", "Retrieve the ship's log"]
+        )
+        self.story_manager.add_chapter(chapter1)
+        self.story_manager.add_chapter(chapter2)
+        self.story_manager.start_story()
+
+        # Fonts for displaying the story overlay
+        self.STORY_FONT_TITLE = pygame.font.Font(None, 48)
+        self.STORY_FONT_BODY = pygame.font.Font(None, 28)
+        self.STORY_TEXT_COLOR = (220, 220, 220)
+        self.STORY_TITLE_COLOR = (255, 255, 255)
+        
         # Initialize player to None
         self.player = None
         
@@ -193,6 +216,7 @@ class GameController:
             
             # Draw UI
             self.ui_manager.draw_current_scene_ui()
+            self._draw_story_overlay(self.screen)
             
             # Update display
             pygame.display.flip()
@@ -498,3 +522,32 @@ class GameController:
         self.story_message = message
         self.story_message_active = True
         self.story_message_end_time = pygame.time.get_ticks() + duration
+    
+    def _draw_story_overlay(self, surface):
+        """
+        Draws the current chapter's title, description, and objectives on the screen.
+        This is a temporary overlay for development and can be integrated into the
+        UI manager or specific game states later.
+        """
+        current_chapter = self.story_manager.get_current_chapter()
+
+        if not current_chapter:
+            return
+
+        # Display the Title
+        title_surface = self.STORY_FONT_TITLE.render(current_chapter.title, True, self.STORY_TITLE_COLOR)
+        surface.blit(title_surface, (20, 20))
+
+        # Display the Description
+        desc_surface = self.STORY_FONT_BODY.render(current_chapter.description, True, self.STORY_TEXT_COLOR)
+        surface.blit(desc_surface, (20, 80))
+
+        # Display the Objectives
+        obj_y_pos = 150
+        for obj in current_chapter.objectives:
+            status = "[X]" if obj in current_chapter.completed_objectives else "[ ]"
+            obj_text = f"{status} {obj}"
+            
+            obj_surface = self.STORY_FONT_BODY.render(obj_text, True, self.STORY_TEXT_COLOR)
+            surface.blit(obj_surface, (40, obj_y_pos))
+            obj_y_pos += 40
