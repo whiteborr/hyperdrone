@@ -290,3 +290,20 @@ class CombatController:
         self.maze_guardian_defeat_processed = False
         self.core_reactor = None
         self.architect_vault_gauntlet_current_wave = 0
+        
+    def try_place_turret(self, world_pos):
+        """Attempt to place a turret at the given world position"""
+        if not hasattr(self.game_controller, 'tower_defense_manager'):
+            return False
+            
+        if not self.game_controller.is_build_phase:
+            return False
+            
+        # world_pos is already in screen coordinates in this context
+        return self.game_controller.tower_defense_manager.try_place_tower(world_pos, self.asset_manager)
+        
+    def try_upgrade_clicked_turret(self, world_pos):
+        """Attempt to upgrade a turret at the given world position"""
+        # This is a stub method that will be implemented later
+        # For now, just return False to prevent errors
+        return False

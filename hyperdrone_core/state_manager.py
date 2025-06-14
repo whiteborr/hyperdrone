@@ -131,6 +131,7 @@ class StateManager:
         self.registry.register_transition("MainMenuState", "DroneSelectState")
         self.registry.register_transition("MainMenuState", "CodexState")
         self.registry.register_transition("MainMenuState", "GameIntroScrollState")
+        self.registry.register_transition("MainMenuState", "MazeDefenseState")
         
         # Settings transitions
         self.registry.register_transition("SettingsState", "MainMenuState")

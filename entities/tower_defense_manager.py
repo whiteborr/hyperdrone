@@ -72,8 +72,8 @@ class TowerDefenseManager:
         # Convert screen position to grid position
         x, y = screen_pos
         x -= self.game_area_x_offset  # Adjust for game area offset
-        grid_col = x // self.tile_size
-        grid_row = y // self.tile_size
+        grid_col = int(x // self.tile_size)
+        grid_row = int(y // self.tile_size)
         
         # Check if tower can be placed
         if not self.path_manager.can_place_tower(grid_row, grid_col):
