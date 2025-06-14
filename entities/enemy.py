@@ -88,11 +88,7 @@ class Enemy(pygame.sprite.Sprite):
         self.image = self.original_image.copy(); self.rect = self.image.get_rect(center=(int(self.x), int(self.y)))
         self.collision_rect = self.rect.inflate(-self.rect.width * 0.2, -self.rect.height * 0.2)
 
-    def _pixel_to_grid(self, px, py, offset=0): 
-        return self.pathfinder._pixel_to_grid(px, py, offset)
-        
-    def _grid_to_pixel_center(self, r, c, offset=0): 
-        return self.pathfinder._grid_to_pixel_center(r, c, offset)
+
 
     def set_behavior(self, new_behavior):
         """Change the current behavior of the enemy"""
@@ -160,10 +156,9 @@ class Enemy(pygame.sprite.Sprite):
                 if hasattr(self, 'rect') and self.rect:
                     x, y = self.rect.center
                     if hasattr(self.asset_manager, 'game_controller') and self.asset_manager.game_controller:
-                        # Create a larger explosion with more particles
+                        # Create explosions for enemy death
                         self.asset_manager.game_controller._create_explosion(x, y, 40, 'enemy_shoot')
-                        # Add a second explosion with different colors for more visual impact
-                        self.asset_manager.game_controller._create_enemy_explosion(x, y)
+                        self.asset_manager.game_controller._create_explosion(x, y, 15, None, True)
 
     def draw(self, surface, camera=None):
         if self.alive and self.image:

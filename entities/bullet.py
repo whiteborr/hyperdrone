@@ -29,19 +29,24 @@ class Bullet(pygame.sprite.Sprite):
         self.max_pierces, self.pierces_done = int(max_pierces), 0
         self.can_pierce_walls = can_pierce_walls
         self.alive, self.frames_existed = True, 0
-        self._ensure_drawable_state() 
+        # Create a completely transparent surface
+        surface_dim = max(1, self.size * 2)
+        self.image = pygame.Surface([surface_dim, surface_dim], pygame.SRCALPHA)
+        self.image.fill((0,0,0,0))
+        # Draw the bullet
+        draw_radius = max(1, self.size)
+        try:
+            pygame.draw.circle(self.image, self.color, (surface_dim // 2, surface_dim // 2), draw_radius)
+        except TypeError:
+            pygame.draw.circle(self.image, RED, (surface_dim // 2, surface_dim // 2), draw_radius)
+        self.rect = self.image.get_rect(center=(int(self.x), int(self.y)))
         rad_angle = math.radians(self.angle)
         self.dx = math.cos(rad_angle) * self.speed
         self.dy = math.sin(rad_angle) * self.speed
 
     def _ensure_drawable_state(self):
-        surface_dim = max(1, self.size * 2)
-        self.image = pygame.Surface([surface_dim, surface_dim], pygame.SRCALPHA)
-        draw_radius = max(1, self.size)
-        try: pygame.draw.circle(self.image, self.color, (surface_dim // 2, surface_dim // 2), draw_radius)
-        except TypeError: 
-            pygame.draw.circle(self.image, RED, (surface_dim // 2, surface_dim // 2), draw_radius)
-        self.rect = self.image.get_rect(center=(int(self.x), int(self.y)))
+        # This method is no longer used, initialization is done directly in __init__
+        pass
 
     def update(self, maze=None, game_area_x_offset=0):
         if not self.alive: return
@@ -75,6 +80,17 @@ class Bullet(pygame.sprite.Sprite):
                     min_y_bound < center_y - half_size and center_y + half_size < max_y_bound):
                 self.alive = False 
         if not self.alive: self.kill()
+        
+        # Recreate the bullet image each frame to prevent artifacts
+        if self.alive:
+            surface_dim = max(1, self.size * 2)
+            self.image = pygame.Surface([surface_dim, surface_dim], pygame.SRCALPHA)
+            self.image.fill((0,0,0,0))
+            draw_radius = max(1, self.size)
+            try:
+                pygame.draw.circle(self.image, self.color, (surface_dim // 2, surface_dim // 2), draw_radius)
+            except TypeError:
+                pygame.draw.circle(self.image, RED, (surface_dim // 2, surface_dim // 2), draw_radius)
 
     def draw(self, surface, camera=None):
         if self.alive and self.image and self.rect:

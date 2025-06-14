@@ -1,7 +1,7 @@
 import pygame
 import random
 import math
-from hyperdrone_core.constants import FLAME_COLORS
+from constants import FLAME_COLORS
 
 class ExhaustParticle(pygame.sprite.Sprite):
     """A specialized particle class for exhaust flames"""

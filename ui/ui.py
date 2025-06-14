@@ -7,7 +7,7 @@ import logging
 import pygame
 
 from settings_manager import get_setting, set_setting, get_asset_path, settings_manager
-from hyperdrone_core.constants import (
+from constants import (
     WHITE, BLACK, CYAN, YELLOW, GREEN, RED, DARK_GREY, GOLD, GREY, PURPLE,
     HUD_RING_ICON_AREA_X_OFFSET, HUD_RING_ICON_AREA_Y_OFFSET,
     HUD_RING_ICON_SIZE, HUD_RING_ICON_SPACING
@@ -81,11 +81,20 @@ class UIManager:
             for _, details in core_fragment_details.items():
                 frag_id = details.get("id")
                 if frag_id:
-                    asset_key = f"fragment_{frag_id}_icon"
-                    loaded_icon = self.asset_manager.get_image(asset_key, scale_to_size=self.ui_icon_size_fragments)
-                    if loaded_icon: self.ui_asset_surfaces["core_fragment_icons"][frag_id] = loaded_icon
+                    # Try to load using icon_filename from details first
+                    loaded_icon = None
+                    if "icon_filename" in details:
+                        loaded_icon = self.asset_manager.get_image(details["icon_filename"], scale_to_size=self.ui_icon_size_fragments)
+                    
+                    # If that fails, try the old key pattern
+                    if not loaded_icon:
+                        asset_key = f"{frag_id}_icon"
+                        loaded_icon = self.asset_manager.get_image(asset_key, scale_to_size=self.ui_icon_size_fragments)
+                    
+                    if loaded_icon: 
+                        self.ui_asset_surfaces["core_fragment_icons"][frag_id] = loaded_icon
                     else:
-                        logger.warning(f"UIManager: Core fragment icon for ID '{frag_id}' (key: '{asset_key}') not found. Using fallback.")
+                        logger.warning(f"UIManager: Core fragment icon for ID '{frag_id}' not found. Using fallback.")
                         self.ui_asset_surfaces["core_fragment_icons"][frag_id] = self._create_fallback_icon_surface(self.ui_icon_size_fragments, frag_id[:1] if frag_id else "!", PURPLE)
         
         reactor_icon_asset = self.asset_manager.get_image("reactor_hud_icon_key", scale_to_size=self.ui_icon_size_reactor)
@@ -426,7 +435,7 @@ class UIManager:
         # Center the weapon bar horizontally
         wpn_x, wpn_y = (width / 2) - 125, panel_y + 20  # Centered position
         wpn_mode = player.current_weapon_mode
-        from hyperdrone_core.constants import WEAPON_MODE_NAMES
+        from constants import WEAPON_MODE_NAMES
         wpn_name = WEAPON_MODE_NAMES.get(wpn_mode, "N/A")
         
         # Update the weapon icon based on the current weapon mode

@@ -336,7 +336,7 @@ class GameController:
             # Game over
             self.state_manager.set_state("GameOverState")
     
-    def _create_explosion(self, x, y, num_particles=20, specific_sound_key=None):
+    def _create_explosion(self, x, y, num_particles=20, specific_sound_key=None, is_enemy=False):
         """Creates a particle explosion at a given coordinate."""
         # Get colors from settings
         orange_color = get_setting("colors", "ORANGE", (255, 165, 0))
@@ -344,79 +344,66 @@ class GameController:
         red_color = get_setting("colors", "RED", (255, 0, 0))
         white_color = get_setting("colors", "WHITE", (255, 255, 255))
         
-        # Create explosion particles with varied colors and sizes
-        colors = [orange_color, yellow_color, red_color]
-        
         # Create a bright flash at the center
+        flash_size = random.uniform(3.0, 5.0) if is_enemy else 8.0
         self.explosion_particles_group.add(
             Particle(x, y, [white_color, yellow_color], 
                     min_speed=0.5, max_speed=1.0, 
-                    min_size=5.0, max_size=8.0, 
+                    min_size=flash_size*0.8, max_size=flash_size, 
                     gravity=0, shrink_rate=0.2, 
-                    lifetime_frames=12)
+                    lifetime_frames=10 if is_enemy else 12)
         )
         
-        # Create the main explosion particles
-        for _ in range(num_particles):
-            # Calculate random angle for directional explosion
-            angle = random.uniform(0, 360)
-            speed = random.uniform(2.0, 4.0)
-            size = random.uniform(2.0, 4.0)
-            lifetime = random.randint(20, 30)
+        # Set explosion parameters based on type
+        if is_enemy:
+            colors = [red_color, orange_color, yellow_color]
+            particle_count = 15
+            gravity = 0.01
+            spread_angle = 15
             
-            self.explosion_particles_group.add(
-                Particle(x, y, colors, 
-                        min_speed=speed*0.8, max_speed=speed, 
-                        min_size=size*0.8, max_size=size, 
-                        gravity=0.02, shrink_rate=0.08, 
-                        lifetime_frames=lifetime,
-                        base_angle_deg=angle, spread_angle_deg=20)
-            )
+            # Create outward expanding particles for enemy explosions
+            for _ in range(particle_count):
+                angle = random.uniform(0, 360)
+                distance = random.uniform(2.0, 4.0)
+                px = x + math.cos(math.radians(angle)) * distance
+                py = y + math.sin(math.radians(angle)) * distance
+                
+                size = random.uniform(1.5, 3.0)
+                speed = random.uniform(1.5, 3.0)
+                lifetime = random.randint(15, 25)
+                
+                self.explosion_particles_group.add(
+                    Particle(px, py, colors, 
+                            min_speed=speed*0.8, max_speed=speed, 
+                            min_size=size*0.8, max_size=size, 
+                            gravity=gravity, shrink_rate=0.08, 
+                            lifetime_frames=lifetime,
+                            base_angle_deg=angle, spread_angle_deg=spread_angle)
+                )
+        else:
+            # Standard explosion particles
+            colors = [orange_color, yellow_color, red_color]
+            for _ in range(num_particles):
+                angle = random.uniform(0, 360)
+                speed = random.uniform(2.0, 4.0)
+                size = random.uniform(2.0, 4.0)
+                lifetime = random.randint(20, 30)
+                
+                self.explosion_particles_group.add(
+                    Particle(x, y, colors, 
+                            min_speed=speed*0.8, max_speed=speed, 
+                            min_size=size*0.8, max_size=size, 
+                            gravity=0.02, shrink_rate=0.08, 
+                            lifetime_frames=lifetime,
+                            base_angle_deg=angle, spread_angle_deg=20)
+                )
+                
         if specific_sound_key:
             self.play_sound(specific_sound_key)
             
     def on_enemy_defeated_effects(self, event):
         """Handle enemy defeated event for visual effects"""
-        self._create_enemy_explosion(event.position[0], event.position[1])
-        
-    def _create_enemy_explosion(self, x, y):
-        """Creates an explosion specifically for enemy deaths."""
-        # Get colors from settings
-        white_color = get_setting("colors", "WHITE", (255, 255, 255))
-        yellow_color = get_setting("colors", "YELLOW", (255, 255, 0))
-        red_color = get_setting("colors", "RED", (255, 0, 0))
-        orange_color = get_setting("colors", "ORANGE", (255, 165, 0))
-        
-        # Create a bright flash at the center
-        flash_size = random.uniform(3.0, 5.0)
-        self.explosion_particles_group.add(
-            Particle(x, y, [white_color, yellow_color], 
-                     min_speed=0.5, max_speed=1.0, 
-                     min_size=flash_size*0.8, max_size=flash_size, 
-                     gravity=0, shrink_rate=0.2, 
-                     lifetime_frames=10)
-        )
-        
-        # Create outward expanding particles
-        colors = [red_color, orange_color, yellow_color]
-        for _ in range(15):
-            angle = random.uniform(0, 360)
-            distance = random.uniform(2.0, 4.0)
-            px = x + math.cos(math.radians(angle)) * distance
-            py = y + math.sin(math.radians(angle)) * distance
-            
-            size = random.uniform(1.5, 3.0)
-            speed = random.uniform(1.5, 3.0)
-            lifetime = random.randint(15, 25)
-            
-            self.explosion_particles_group.add(
-                Particle(px, py, colors, 
-                         min_speed=speed*0.8, max_speed=speed, 
-                         min_size=size*0.8, max_size=size, 
-                         gravity=0.01, shrink_rate=0.08, 
-                         lifetime_frames=lifetime,
-                         base_angle_deg=angle, spread_angle_deg=15)
-            )
+        self._create_explosion(event.position[0], event.position[1], 15, None, True)
     
     def check_for_all_enemies_killed(self):
         """Check if all enemies have been killed."""

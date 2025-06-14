@@ -3,7 +3,7 @@ import logging
 from typing import List, Tuple, Optional
 from entities.path_manager import PathManager
 from entities.enemy_pathfinder import PathfindingEnemy
-from hyperdrone_core.constants import RED, YELLOW, GREEN, WHITE, DARK_GREY
+from constants import RED, YELLOW, GREEN, WHITE, DARK_GREY
 
 logger = logging.getLogger(__name__)
 

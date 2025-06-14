@@ -6,6 +6,58 @@ from settings_manager import get_setting
 class PlayingState(State):
     """State for the main gameplay"""
     
+    def _handle_bullet_enemy_collisions(self):
+        """Handle collisions between player bullets/missiles/lightning and enemies"""
+        if not self.game.player or not hasattr(self.game.player, 'bullets_group'):
+            return
+            
+        # Get enemy sprites
+        enemy_sprites = self.game.combat_controller.enemy_manager.get_sprites()
+        if not enemy_sprites:
+            return
+            
+        # Check bullet collisions with enemies
+        for bullet in self.game.player.bullets_group:
+            for enemy in pygame.sprite.spritecollide(bullet, enemy_sprites, False):
+                if enemy.alive and bullet.alive:
+                    # Apply damage to enemy
+                    enemy.take_damage(bullet.damage)
+                    
+                    # Handle bullet piercing logic
+                    if bullet.max_pierces > 0:
+                        bullet.pierces_done += 1
+                        if bullet.pierces_done > bullet.max_pierces:
+                            bullet.alive = False
+                    else:
+                        bullet.alive = False
+                        
+        # Check missile collisions with enemies
+        if hasattr(self.game.player, 'missiles_group'):
+            for missile in self.game.player.missiles_group:
+                for enemy in pygame.sprite.spritecollide(missile, enemy_sprites, False):
+                    if enemy.alive and missile.alive:
+                        enemy.take_damage(missile.damage)
+                        # Create larger explosion for missile hits
+                        if hasattr(enemy, 'rect') and enemy.rect:
+                            self.game._create_explosion(enemy.rect.centerx, enemy.rect.centery, 10, 'missile_launch')
+                        missile.alive = False
+                        
+        # Check lightning zap collisions with enemies
+        if hasattr(self.game.player, 'lightning_zaps_group'):
+            for zap in self.game.player.lightning_zaps_group:
+                if not hasattr(zap, 'damage_applied') or not zap.damage_applied:
+                    # Lightning zaps apply damage to their target directly
+                    if zap.initial_target_ref and hasattr(zap.initial_target_ref, 'alive') and zap.initial_target_ref.alive:
+                        zap.initial_target_ref.take_damage(zap.damage)
+                        # Create lightning effect at target position
+                        if hasattr(zap.initial_target_ref, 'rect') and zap.initial_target_ref.rect:
+                            self.game._create_explosion(
+                                zap.initial_target_ref.rect.centerx, 
+                                zap.initial_target_ref.rect.centery, 
+                                5, None
+                            )
+                        zap.damage_applied = True
+    
     def enter(self, previous_state=None, **kwargs):
         """Initialize the playing state"""
         self.game.combat_controller.reset_combat_state()
@@ -91,6 +143,10 @@ class PlayingState(State):
             self.game.maze.game_area_x_offset if self.game.maze else 0
         )
         
+        # Check if player died and handle respawn
+        if self.game.player and not self.game.player.alive:
+            self.game._handle_player_death_or_life_loss()
+        
         # Update combat
         self.game.combat_controller.update(current_time_ms, delta_time)
         
@@ -100,6 +156,9 @@ class PlayingState(State):
             
         # Handle collectible collisions
         self.game._handle_collectible_collisions()
+        
+        # Handle bullet-enemy collisions
+        self._handle_bullet_enemy_collisions()
         
         # Check if level is cleared
         self.game._check_level_clear_condition()

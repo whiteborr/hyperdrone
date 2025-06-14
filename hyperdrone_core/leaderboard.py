@@ -19,7 +19,7 @@ def _ensure_data_dir_exists(): #
 
 def load_scores(): #
     """Loads scores from the leaderboard file."""
-    from hyperdrone_core.constants import KEY_LEADERBOARD_NAME, KEY_LEADERBOARD_SCORE, KEY_LEADERBOARD_LEVEL
+    from constants import KEY_LEADERBOARD_NAME, KEY_LEADERBOARD_SCORE, KEY_LEADERBOARD_LEVEL
     
     if not _ensure_data_dir_exists(): #
         return [] #
@@ -71,7 +71,7 @@ def add_score(name, score, level): #
     """
     Adds a new score (and level) to the leaderboard if it qualifies.
     """
-    from hyperdrone_core.constants import KEY_LEADERBOARD_NAME, KEY_LEADERBOARD_SCORE, KEY_LEADERBOARD_LEVEL
+    from constants import KEY_LEADERBOARD_NAME, KEY_LEADERBOARD_SCORE, KEY_LEADERBOARD_LEVEL
     
     if not name or not isinstance(name, str) or len(name.strip()) == 0: #
         print("Leaderboard: Invalid name provided for score. Not adding.") #
@@ -125,7 +125,7 @@ def is_high_score(score, level): #
     """
     Checks if a score and level are high enough to be on the leaderboard.
     """
-    from hyperdrone_core.constants import KEY_LEADERBOARD_SCORE, KEY_LEADERBOARD_LEVEL
+    from constants import KEY_LEADERBOARD_SCORE, KEY_LEADERBOARD_LEVEL
     
     try: #
         check_score = int(score) #

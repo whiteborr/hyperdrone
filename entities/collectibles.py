@@ -165,11 +165,21 @@ class CoreFragmentItem(Collectible):
     def __init__(self, x, y, fragment_id, fragment_config_details, *, asset_manager):
         self.fragment_id = fragment_id
         self.fragment_name = fragment_config_details.get("name", "Core Fragment")
-        icon_asset_key = f"fragment_{self.fragment_id}_icon"
+        # Use the icon_filename from config if available
+        icon_filename = fragment_config_details.get("icon_filename")
         # Use a fixed size for the fragment
         fragment_size = 32
-        # Try to load the icon, but use a fallback if not found
-        loaded_original_icon = asset_manager.get_image(icon_asset_key)
+        # Try to load the icon using the filename first, then fallback to the key pattern
+        loaded_original_icon = None
+        if icon_filename:
+            loaded_original_icon = asset_manager.get_image(icon_filename)
+        
+        # If no icon loaded yet, try the old key pattern
+        if not loaded_original_icon:
+            icon_asset_key = f"{self.fragment_id}_icon"
+            loaded_original_icon = asset_manager.get_image(icon_asset_key)
+            
+        # If still no icon, create a fallback
         if not loaded_original_icon:
             # Create a simple purple circle as fallback
             fallback_size = (fragment_size, fragment_size)

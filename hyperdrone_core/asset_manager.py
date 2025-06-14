@@ -289,7 +289,7 @@ class AssetManager:
         if core_fragments:
             for _, details in core_fragments.items():
                 if details and "id" in details and "icon_filename" in details:
-                    asset_manifest["images"][f"fragment_{details['id']}_icon"] = {"path": details['icon_filename']}
+                    asset_manifest["images"][f"{details['id']}_icon"] = {"path": details['icon_filename']}
 
         # Add drone sprites
         for drone_id, config in DRONE_DATA.items():

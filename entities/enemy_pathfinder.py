@@ -2,7 +2,7 @@ import pygame
 import logging
 from typing import List, Tuple, Optional
 from entities.path_manager import PathManager
-from hyperdrone_core.constants import RED, GREEN, BLUE
+from constants import RED, GREEN, BLUE
 
 logger = logging.getLogger(__name__)
 

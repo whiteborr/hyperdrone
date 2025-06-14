@@ -1,7 +1,7 @@
 # ui/build_menu.py
 import pygame
 from settings_manager import get_setting, set_setting, get_asset_path
-from hyperdrone_core.constants import (
+from constants import (
     WHITE, BLACK, CYAN, YELLOW, GREEN, RED, DARK_GREY, GOLD, GREY
 )
 try:

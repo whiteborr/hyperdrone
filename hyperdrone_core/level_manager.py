@@ -4,7 +4,7 @@ import random
 import logging
 
 from settings_manager import get_setting, set_setting, get_asset_path
-from hyperdrone_core.constants import (
+from constants import (
     GAME_STATE_PLAYING, WHITE, BLUE, RED, HUD_RING_ICON_AREA_X_OFFSET,
     HUD_RING_ICON_AREA_Y_OFFSET, HUD_RING_ICON_SIZE, HUD_RING_ICON_SPACING
 )

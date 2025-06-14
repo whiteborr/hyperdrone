@@ -10,6 +10,33 @@ from constants import (
     WEAPON_MODE_LIGHTNING
 )
 
+def create_weapon_strategy(weapon_mode, player_drone):
+    """
+    Factory method to create the appropriate weapon strategy based on weapon mode.
+    
+    Args:
+        weapon_mode: The weapon mode constant
+        player_drone: The player drone instance
+        
+    Returns:
+        An instance of the appropriate weapon strategy
+    """
+    strategy_map = {
+        WEAPON_MODE_DEFAULT: DefaultWeaponStrategy,
+        WEAPON_MODE_TRI_SHOT: TriShotWeaponStrategy,
+        WEAPON_MODE_RAPID_SINGLE: RapidSingleWeaponStrategy,
+        WEAPON_MODE_RAPID_TRI: RapidTriShotWeaponStrategy,
+        WEAPON_MODE_BIG_SHOT: BigShotWeaponStrategy,
+        WEAPON_MODE_BOUNCE: BounceWeaponStrategy,
+        WEAPON_MODE_PIERCE: PierceWeaponStrategy,
+        WEAPON_MODE_HEATSEEKER: HeatseekerWeaponStrategy,
+        WEAPON_MODE_HEATSEEKER_PLUS_BULLETS: HeatseekerPlusBulletsWeaponStrategy,
+        WEAPON_MODE_LIGHTNING: LightningWeaponStrategy
+    }
+    
+    strategy_class = strategy_map.get(weapon_mode, DefaultWeaponStrategy)
+    return strategy_class(player_drone)
+
 class BaseWeaponStrategy:
     def __init__(self, player_drone):
         self.player = player_drone

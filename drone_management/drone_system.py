@@ -40,7 +40,7 @@ class DroneSystem:
 
     def _load_all_lore_entries(self):
         """Loads all possible lore entries from the JSON file and converts the list to a dictionary."""
-        from hyperdrone_core.constants import KEY_LORE_ENTRIES, KEY_LORE_ID
+        from constants import KEY_LORE_ENTRIES, KEY_LORE_ID
         
         if not os.path.exists(self.LORE_FILE):
             logger.error(f"Lore file not found at '{self.LORE_FILE}'. No lore will be available.")
@@ -60,7 +60,7 @@ class DroneSystem:
 
     def _load_unlocks(self):
         """Loads player progress from the save file."""
-        from hyperdrone_core.constants import (
+        from constants import (
             KEY_UNLOCKED_DRONES, KEY_SELECTED_DRONE_ID, KEY_PLAYER_CORES,
             KEY_UNLOCKED_LORE_IDS, KEY_COLLECTED_CORE_FRAGMENTS,
             KEY_ARCHITECT_VAULT_COMPLETED, KEY_COLLECTED_GLYPH_TABLETS,
@@ -88,7 +88,7 @@ class DroneSystem:
 
     def _save_unlocks(self):
         """Saves current player progress to the save file."""
-        from hyperdrone_core.constants import (
+        from constants import (
             KEY_UNLOCKED_DRONES, KEY_SELECTED_DRONE_ID, KEY_PLAYER_CORES,
             KEY_UNLOCKED_LORE_IDS, KEY_COLLECTED_CORE_FRAGMENTS,
             KEY_ARCHITECT_VAULT_COMPLETED, KEY_COLLECTED_GLYPH_TABLETS,
@@ -135,7 +135,7 @@ class DroneSystem:
         return self.drones.get(drone_id, self.drones["DRONE"])
 
     def get_drone_stats(self, drone_id, is_in_architect_vault=False):
-        from hyperdrone_core.constants import KEY_BASE_STATS, KEY_VAULT_STATS
+        from constants import KEY_BASE_STATS, KEY_VAULT_STATS
         
         config = self.get_drone_config(drone_id)
         # Use a more robust check for 'base_stats'
@@ -152,7 +152,7 @@ class DroneSystem:
         return False
 
     def unlock_drone(self, drone_id):
-        from hyperdrone_core.constants import KEY_UNLOCK_CONDITION, KEY_UNLOCK_TYPE, KEY_UNLOCK_VALUE
+        from constants import KEY_UNLOCK_CONDITION, KEY_UNLOCK_TYPE, KEY_UNLOCK_VALUE
         
         if drone_id in self.unlocked_drones:
             return True
@@ -207,7 +207,7 @@ class DroneSystem:
         
     def check_and_unlock_lore_entries(self, event_trigger, **kwargs):
         """Checks conditions for all lore entries and unlocks them if criteria are met."""
-        from hyperdrone_core.constants import KEY_LORE_UNLOCKED_BY
+        from constants import KEY_LORE_UNLOCKED_BY
         
         unlocked_ids_this_check = []
         for lore_id, entry in self.all_lore_entries.items():
@@ -225,7 +225,7 @@ class DroneSystem:
 
     def get_unlocked_lore_categories(self):
         """Gets a sorted list of unique categories from all unlocked lore entries."""
-        from hyperdrone_core.constants import KEY_LORE_CATEGORY
+        from constants import KEY_LORE_CATEGORY
         
         if not self.unlocked_lore_ids:
             return []
@@ -244,7 +244,7 @@ class DroneSystem:
 
     def get_unlocked_lore_entries_by_category(self, category_name):
         """Gets a list of all unlocked lore entries within a specific category."""
-        from hyperdrone_core.constants import KEY_LORE_CATEGORY, KEY_LORE_SEQUENCE
+        from constants import KEY_LORE_CATEGORY, KEY_LORE_SEQUENCE
         
         entries = []
         for lore_id in self.unlocked_lore_ids:
@@ -271,7 +271,7 @@ class DroneSystem:
 
     def are_all_core_fragments_collected(self):
         """Checks if all fragments *required for the vault* are collected."""
-        from hyperdrone_core.constants import KEY_FRAGMENT_ID, KEY_FRAGMENT_REQUIRED_FOR_VAULT
+        from constants import KEY_FRAGMENT_ID, KEY_FRAGMENT_REQUIRED_FOR_VAULT
         
         core_fragments = settings_manager.get_core_fragment_details()
         required_fragments = {details[KEY_FRAGMENT_ID] for _, details in core_fragments.items() 

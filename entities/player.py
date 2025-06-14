@@ -73,19 +73,7 @@ class PlayerDrone(BaseDrone):
         self.lightning_zaps_group = pygame.sprite.Group()
         self.enemies_group = pygame.sprite.Group()  # Initialize enemies_group
         
-        # Initialize weapon strategies
-        self.weapon_strategies = {
-            WEAPON_MODE_DEFAULT: DefaultWeaponStrategy,
-            WEAPON_MODE_TRI_SHOT: TriShotWeaponStrategy,
-            WEAPON_MODE_RAPID_SINGLE: RapidSingleWeaponStrategy,
-            WEAPON_MODE_RAPID_TRI: RapidTriShotWeaponStrategy,
-            WEAPON_MODE_BIG_SHOT: BigShotWeaponStrategy,
-            WEAPON_MODE_BOUNCE: BounceWeaponStrategy,
-            WEAPON_MODE_PIERCE: PierceWeaponStrategy,
-            WEAPON_MODE_HEATSEEKER: HeatseekerWeaponStrategy,
-            WEAPON_MODE_HEATSEEKER_PLUS_BULLETS: HeatseekerPlusBulletsWeaponStrategy,
-            WEAPON_MODE_LIGHTNING: LightningWeaponStrategy
-        }
+        # Current weapon strategy will be set by set_weapon_mode
         
         # Set initial weapon strategy
         self.current_weapon_strategy = None
@@ -212,13 +200,15 @@ class PlayerDrone(BaseDrone):
         
     def set_weapon_mode(self, mode):
         """Set the current weapon strategy based on the weapon mode"""
+        from .weapon_strategies import create_weapon_strategy
+        
         self.current_weapon_mode = mode
-        strategy_class = self.weapon_strategies.get(mode, DefaultWeaponStrategy)
-        self.current_weapon_strategy = strategy_class(self)
+        self.current_weapon_strategy = create_weapon_strategy(mode, self)
+        
         # Update cooldown value for UI
-        if self.current_weapon_strategy:
-            self.current_shoot_cooldown = self.current_weapon_strategy.get_cooldown()
+        self.current_shoot_cooldown = self.current_weapon_strategy.get_cooldown()
         self._update_drone_sprite()
+        
         # Reset last_shot_time attribute needed by UI
         self.last_shot_time = pygame.time.get_ticks()
 

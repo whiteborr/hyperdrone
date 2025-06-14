@@ -8,7 +8,7 @@ import logging
 import copy
 
 from settings_manager import get_setting
-from hyperdrone_core.constants import BLACK, BLUE, RED, GREEN, YELLOW, CYAN
+from constants import BLACK, BLUE, RED, GREEN, YELLOW, CYAN
 
 logger = logging.getLogger(__name__)
 if not logger.hasHandlers():

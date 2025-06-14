@@ -141,3 +141,8 @@ def get_asset_path(category, key):
 
 def save_settings():
     settings_manager.save_settings()
+    
+def reset_all_settings_to_default():
+    """Reset all settings to their default values."""
+    settings_manager._load_settings()  # Reload settings from file
+    logger.info("Game settings have been reset to defaults.")

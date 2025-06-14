@@ -201,7 +201,8 @@ class ItemManager:
         fragment_id = f"fragment_level_{self.game_controller.level_manager.level}"
         fragment_config = {
             "name": f"Level {self.game_controller.level_manager.level} Fragment",
-            "display_color": (128, 0, 255)  # Purple color
+            "display_color": (128, 0, 255),  # Purple color
+            "icon_filename": "images/collectibles/core_fragment_alpha.png"  # Use existing fragment image
         }
         
         # Create and add the core fragment
