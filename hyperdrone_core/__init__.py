@@ -10,6 +10,8 @@ from .player_actions import PlayerActions
 from .enemy_manager import EnemyManager
 from .ring_puzzle_module import RingPuzzle
 from .wave_manager import WaveManager
+from .boss_fight_state import BossFightState
+from .corrupted_sector_state import CorruptedSectorState # Import the new state
 
 # Import NEW sub-controller classes
 from .combat_controller import CombatController
@@ -32,6 +34,8 @@ __all__ = [
     "EnemyManager",
     "RingPuzzle",
     "WaveManager",
+    "BossFightState",
+    "CorruptedSectorState", # Add CorruptedSectorState
     "CombatController",
     "PuzzleController",
     "UIFlowController",

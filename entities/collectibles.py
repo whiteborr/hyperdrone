@@ -197,18 +197,33 @@ class CoreFragmentItem(Collectible):
             if game_controller_instance.drone_system.collect_core_fragment(self.fragment_id): self.collected = True; return True
         return False
 
-class VaultLogItem(Collectible):
-    def __init__(self, x, y, log_id, icon_filename=None, *, asset_manager=None):
+class CorruptedLogItem(Collectible):
+    """A collectible that represents a piece of lore or a story objective."""
+    def __init__(self, x, y, log_id, *, asset_manager):
         self.log_id = log_id
-        item_size_tuple = (TILE_SIZE * 0.4, TILE_SIZE * 0.5)
-        font = asset_manager.get_font("ui_emoji_general", int(item_size_tuple[1] * 0.6)) if asset_manager else pygame.font.Font(None, int(item_size_tuple[1] * 0.6))
-        text_surf = font.render("📝", True, gs.CYAN)
-        icon_surface = pygame.Surface(text_surf.get_size(), pygame.SRCALPHA); icon_surface.blit(text_surf, (0,0))
-        super().__init__(x, y, base_color=DARK_PURPLE, size=item_size_tuple, thickness=2, original_icon_surface=None, is_rectangular=True)
-        self.icon_surface = icon_surface; self.icon_rotation_speed = 0
+        item_size = (int(get_setting("gameplay", "TILE_SIZE", 80) * 0.4), int(get_setting("gameplay", "TILE_SIZE", 80) * 0.5))
+
+        # Create a simple icon for the corrupted log
+        icon_surface = pygame.Surface(item_size, pygame.SRCALPHA)
+        pygame.draw.rect(icon_surface, (50, 255, 150, 50), icon_surface.get_rect(), border_radius=3)
+        font = pygame.font.Font(None, int(item_size[1] * 0.7))
+        text_surf = font.render("?", True, (150, 255, 200))
+        icon_surface.blit(text_surf, text_surf.get_rect(center=(item_size[0]//2, item_size[1]//2)))
+
+        super().__init__(x, y, base_color=DARK_PURPLE, size=item_size, thickness=2, original_icon_surface=icon_surface, is_rectangular=True)
+        self.icon_rotation_speed = 0 # Logs don't need to spin
 
     def apply_effect(self, player_drone, game_controller_instance):
-        if not self.collected: self.collected = True; return True
+        if not self.collected and hasattr(game_controller_instance, 'event_manager'):
+            self.collected = True
+            
+            from hyperdrone_core.game_events import ItemCollectedEvent
+            event = ItemCollectedEvent(item_id=self.log_id, item_type='corrupted_log')
+            game_controller_instance.event_manager.dispatch(event)
+            
+            game_controller_instance.play_sound('collect_fragment')
+            game_controller_instance.set_story_message(f"Corrupted Log '{self.log_id}' Acquired.")
+            return True
         return False
 
 class AncientAlienTerminal(pygame.sprite.Sprite):
@@ -216,7 +231,9 @@ class AncientAlienTerminal(pygame.sprite.Sprite):
         super().__init__()
         self.asset_manager = asset_manager
         self.item_id = "ancient_alien_terminal_puzzle_trigger"; self.interacted = False
-        self.image_asset_key = "ancient_terminal_sprite_img"; self.size = (int(TILE_SIZE * 0.8), int(TILE_SIZE * 1.0))
+        self.image_asset_key = "ancient_terminal_sprite_img"; 
+        tile_size = get_setting("gameplay", "TILE_SIZE", 80)
+        self.size = (int(tile_size * 0.8), int(tile_size * 1.0))
         self.original_image = self.asset_manager.get_image(self.image_asset_key)
         if self.original_image:
             self.original_image = pygame.transform.smoothscale(self.original_image, self.size)
@@ -230,8 +247,8 @@ class AncientAlienTerminal(pygame.sprite.Sprite):
     def interact(self, game_controller_instance):
         if not self.interacted:
             self.interacted = True; self.image = self.active_image
-            if hasattr(game_controller_instance, 'scene_manager') and hasattr(gs, 'GAME_STATE_RING_PUZZLE'):
-                game_controller_instance.scene_manager.set_game_state(gs.GAME_STATE_RING_PUZZLE, triggering_terminal=self)
+            if hasattr(game_controller_instance, 'puzzle_controller'):
+                game_controller_instance.puzzle_controller.start_ring_puzzle(self)
             if hasattr(game_controller_instance, 'play_sound'): game_controller_instance.play_sound('ui_confirm')
             return True
         return False
@@ -250,7 +267,8 @@ class AncientAlienTerminal(pygame.sprite.Sprite):
 class GlyphTabletItem(Collectible):
     def __init__(self, x, y, tablet_id, *, asset_manager, icon_filename=None):
         self.tablet_id = tablet_id
-        item_size_tuple = (TILE_SIZE * 0.45, TILE_SIZE * 0.35)
+        tile_size = get_setting("gameplay", "TILE_SIZE", 80)
+        item_size_tuple = (tile_size * 0.45, tile_size * 0.35)
         loaded_icon = asset_manager.get_image(f"glyph_tablet_{tablet_id}_icon") if not icon_filename else asset_manager.get_image(icon_filename)
         if loaded_icon is None:
             font = asset_manager.get_font("ui_emoji_general", int(item_size_tuple[1] * 0.7)) or pygame.font.Font(None, int(item_size_tuple[1] * 0.7))
@@ -266,7 +284,8 @@ class GlyphTabletItem(Collectible):
 class ArchitectEchoItem(Collectible):
     def __init__(self, x, y, echo_id, associated_lore_id, *, asset_manager, icon_char="◈"):
         self.echo_id, self.associated_lore_id = echo_id, associated_lore_id
-        item_size = TILE_SIZE * 0.35
+        tile_size = get_setting("gameplay", "TILE_SIZE", 80)
+        item_size = tile_size * 0.35
         font = asset_manager.get_font("ui_emoji_general", int(item_size * 0.7)) or pygame.font.Font(None, int(item_size*0.7))
         text_surf = font.render(icon_char, True, WHITE)
         icon_surface = pygame.Surface(text_surf.get_size(), pygame.SRCALPHA); icon_surface.blit(text_surf, (0,0))

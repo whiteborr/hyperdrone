@@ -7,7 +7,7 @@ import logging
 
 # Import from settings_manager for settings access
 from settings_manager import get_setting
-from constants import PLAYER_BULLET_COLOR, RED, MISSILE_COLOR, LIGHTNING_COLOR
+from constants import PLAYER_BULLET_COLOR, RED, MISSILE_COLOR, LIGHTNING_COLOR, WHITE
 
 try:
     from .particle import Particle
@@ -311,3 +311,64 @@ class LightningZap(pygame.sprite.Sprite):
             alpha = int(255 * (1.0 - (self.frames_existed / self.lifetime_frames)))
             if alpha > 5:
                 self._draw_lightning_bolt(surface, self.current_start_pos, self.current_target_pos, self.color, alpha)
+
+class LaserBeam(pygame.sprite.Sprite):
+    """A persistent laser beam fired by the Maze Guardian."""
+    def __init__(self, start_pos, angle):
+        super().__init__()
+        self.start_pos = start_pos
+        self.angle = angle
+        self.length = get_setting("display", "WIDTH", 1920) * 1.5
+        self.width = get_setting("bosses", "MAZE_GUARDIAN_LASER_WIDTH", 10)
+        self.damage = get_setting("bosses", "MAZE_GUARDIAN_LASER_DAMAGE", 2)
+        self.lifetime = get_setting("bosses", "MAZE_GUARDIAN_LASER_LIFETIME_MS", 1000)
+        self.creation_time = pygame.time.get_ticks()
+        self.alive = True
+
+        # Visual properties
+        self.outer_color = (*get_setting("colors", "RED", (255, 0, 0)), 100)
+        self.inner_color = (*get_setting("colors", "WHITE", (255, 255, 255)), 200)
+        self.inner_width_ratio = 0.4
+
+        # Create the visual representation of the laser
+        self.original_image = self._create_laser_surface()
+        self.image = pygame.transform.rotate(self.original_image, -self.angle)
+        self.rect = self.image.get_rect(center=self.start_pos)
+
+    def _create_laser_surface(self):
+        """Creates the surface for the laser with a glowing effect."""
+        laser_surface = pygame.Surface((self.length, self.width), pygame.SRCALPHA)
+        
+        # Outer glow/beam
+        outer_rect = pygame.Rect(0, 0, self.length, self.width)
+        pygame.draw.rect(laser_surface, self.outer_color, outer_rect, border_radius=int(self.width/2))
+
+        # Inner core
+        inner_width = self.width * self.inner_width_ratio
+        inner_height = self.width * self.inner_width_ratio
+        inner_rect = pygame.Rect(0, (self.width - inner_height) / 2, self.length, inner_height)
+        pygame.draw.rect(laser_surface, self.inner_color, inner_rect, border_radius=int(inner_height/2))
+        
+        return laser_surface
+
+    def update(self):
+        """The laser fades out over its lifetime."""
+        if not self.alive:
+            return
+            
+        time_elapsed = pygame.time.get_ticks() - self.creation_time
+        if time_elapsed > self.lifetime:
+            self.alive = False
+            self.kill()
+            return
+
+        # Fade out effect
+        life_ratio = 1.0 - (time_elapsed / self.lifetime)
+        alpha = int(255 * life_ratio)
+        self.image.set_alpha(alpha)
+
+    def draw(self, surface, camera=None):
+        """Draws the laser beam."""
+        if self.alive and self.image:
+            # We assume camera is not used or is static for the boss fight
+            surface.blit(self.image, self.rect)

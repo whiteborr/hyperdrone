@@ -4,16 +4,29 @@ import os
 import time
 import logging
 from settings_manager import get_setting
-from constants import (
-    GAME_STATE_PLAYING, GAME_STATE_MAZE_DEFENSE, GAME_STATE_MAIN_MENU,
-    GAME_STATE_GAME_OVER, GAME_STATE_LEADERBOARD, GAME_STATE_SETTINGS,
-    GAME_STATE_DRONE_SELECT, GAME_STATE_CODEX, GAME_STATE_ENTER_NAME,
-    GAME_STATE_GAME_INTRO_SCROLL, GAME_STATE_RING_PUZZLE,
-    GAME_STATE_BONUS_LEVEL_START, GAME_STATE_BONUS_LEVEL_PLAYING,
-    GAME_STATE_ARCHITECT_VAULT_INTRO, GAME_STATE_ARCHITECT_VAULT_ENTRY_PUZZLE,
-    GAME_STATE_ARCHITECT_VAULT_GAUNTLET, GAME_STATE_ARCHITECT_VAULT_EXTRACTION,
-    GAME_STATE_ARCHITECT_VAULT_SUCCESS, GAME_STATE_ARCHITECT_VAULT_FAILURE
-)
+
+# Define game state constants directly here to avoid circular imports
+GAME_STATE_PLAYING = get_setting("game_states", "GAME_STATE_PLAYING", "playing")
+GAME_STATE_MAZE_DEFENSE = get_setting("game_states", "GAME_STATE_MAZE_DEFENSE", "maze_defense_mode")
+GAME_STATE_MAIN_MENU = get_setting("game_states", "GAME_STATE_MAIN_MENU", "main_menu")
+GAME_STATE_GAME_OVER = get_setting("game_states", "GAME_STATE_GAME_OVER", "game_over")
+GAME_STATE_LEADERBOARD = get_setting("game_states", "GAME_STATE_LEADERBOARD", "leaderboard_display")
+GAME_STATE_SETTINGS = get_setting("game_states", "GAME_STATE_SETTINGS", "settings_menu")
+GAME_STATE_DRONE_SELECT = get_setting("game_states", "GAME_STATE_DRONE_SELECT", "drone_select_menu")
+GAME_STATE_CODEX = get_setting("game_states", "GAME_STATE_CODEX", "codex_screen")
+GAME_STATE_ENTER_NAME = get_setting("game_states", "GAME_STATE_ENTER_NAME", "enter_name")
+GAME_STATE_GAME_INTRO_SCROLL = get_setting("game_states", "GAME_STATE_GAME_INTRO_SCROLL", "game_intro_scroll")
+GAME_STATE_RING_PUZZLE = get_setting("game_states", "GAME_STATE_RING_PUZZLE", "ring_puzzle_active")
+GAME_STATE_BONUS_LEVEL_START = get_setting("game_states", "GAME_STATE_BONUS_LEVEL_START", "bonus_level_start")
+GAME_STATE_BONUS_LEVEL_PLAYING = get_setting("game_states", "GAME_STATE_BONUS_LEVEL_PLAYING", "bonus_level_playing")
+GAME_STATE_ARCHITECT_VAULT_INTRO = get_setting("game_states", "GAME_STATE_ARCHITECT_VAULT_INTRO", "architect_vault_intro")
+GAME_STATE_ARCHITECT_VAULT_ENTRY_PUZZLE = get_setting("game_states", "GAME_STATE_ARCHITECT_VAULT_ENTRY_PUZZLE", "architect_vault_entry_puzzle")
+GAME_STATE_ARCHITECT_VAULT_GAUNTLET = get_setting("game_states", "GAME_STATE_ARCHITECT_VAULT_GAUNTLET", "architect_vault_gauntlet")
+GAME_STATE_ARCHITECT_VAULT_EXTRACTION = get_setting("game_states", "GAME_STATE_ARCHITECT_VAULT_EXTRACTION", "architect_vault_extraction")
+GAME_STATE_ARCHITECT_VAULT_SUCCESS = get_setting("game_states", "GAME_STATE_ARCHITECT_VAULT_SUCCESS", "architect_vault_success")
+GAME_STATE_ARCHITECT_VAULT_FAILURE = get_setting("game_states", "GAME_STATE_ARCHITECT_VAULT_FAILURE", "architect_vault_failure")
+GAME_STATE_BOSS_FIGHT = get_setting("game_states", "GAME_STATE_BOSS_FIGHT", "boss_fight")
+GAME_STATE_CORRUPTED_SECTOR = get_setting("game_states", "GAME_STATE_CORRUPTED_SECTOR", "corrupted_sector")
 from .state import State
 from .playing_state import PlayingState
 from .maze_defense_state import MazeDefenseState
@@ -35,6 +48,8 @@ from .architect_vault_states import (
     ArchitectVaultSuccessState,
     ArchitectVaultFailureState
 )
+from .boss_fight_state import BossFightState
+from .corrupted_sector_state import CorruptedSectorState # Import the new state
 
 logger = logging.getLogger(__name__)
 
@@ -88,7 +103,9 @@ class StateManager:
             "ArchitectVaultGauntletState": ArchitectVaultGauntletState,
             "ArchitectVaultExtractionState": ArchitectVaultExtractionState,
             "ArchitectVaultSuccessState": ArchitectVaultSuccessState,
-            "ArchitectVaultFailureState": ArchitectVaultFailureState
+            "ArchitectVaultFailureState": ArchitectVaultFailureState,
+            "BossFightState": BossFightState,
+            "CorruptedSectorState": CorruptedSectorState # Add the new state here
         }
         
         # Register states with both the local cache and the central registry
@@ -119,7 +136,9 @@ class StateManager:
             GAME_STATE_ARCHITECT_VAULT_GAUNTLET: "ArchitectVaultGauntletState",
             GAME_STATE_ARCHITECT_VAULT_EXTRACTION: "ArchitectVaultExtractionState",
             GAME_STATE_ARCHITECT_VAULT_SUCCESS: "ArchitectVaultSuccessState",
-            GAME_STATE_ARCHITECT_VAULT_FAILURE: "ArchitectVaultFailureState"
+            GAME_STATE_ARCHITECT_VAULT_FAILURE: "ArchitectVaultFailureState",
+            GAME_STATE_BOSS_FIGHT: "BossFightState",
+            GAME_STATE_CORRUPTED_SECTOR: "CorruptedSectorState"
         }
         
     def _register_allowed_transitions(self):
@@ -154,7 +173,8 @@ class StateManager:
         self.registry.register_transition("PlayingState", "BonusLevelStartState")
         self.registry.register_transition("PlayingState", "ArchitectVaultIntroState")
         self.registry.register_transition("PlayingState", "MazeDefenseState")
-        
+        self.registry.register_transition("PlayingState", "BossFightState")
+
         # Game over transitions
         self.registry.register_transition("GameOverState", "MainMenuState")
         self.registry.register_transition("GameOverState", "EnterNameState")
@@ -182,6 +202,16 @@ class StateManager:
         # Maze defense transitions
         self.registry.register_transition("MazeDefenseState", "PlayingState")
         self.registry.register_transition("MazeDefenseState", "GameOverState")
+
+        # Boss fight transitions
+        self.registry.register_transition("BossFightState", "GameOverState")
+        self.registry.register_transition("BossFightState", "MainMenuState")
+        self.registry.register_transition("BossFightState", "CorruptedSectorState") # Transition to Chapter 3 state
+
+        # Corrupted Sector transitions
+        self.registry.register_transition("CorruptedSectorState", "GameOverState")
+        # In the future, this will transition to Chapter 4's state
+        self.registry.register_transition("CorruptedSectorState", "MainMenuState")
     
     def get_current_state(self):
         """Returns the current state object."""
@@ -234,6 +264,8 @@ class StateManager:
             "RingPuzzleState": "architect_vault_theme",
             "GameIntroScrollState": "menu_theme",
             "PlayingState": "gameplay_theme",
+            "BossFightState": "boss_theme", 
+            "CorruptedSectorState": "corrupted_theme", # Add theme for the new chapter
             "BonusLevelPlayingState": "gameplay_theme",
             "MazeDefenseState": "defense_theme",
             "ArchitectVaultIntroState": "architect_vault_theme",
@@ -250,7 +282,6 @@ class StateManager:
             if self.current_music_context_key != music_key_for_state or not pygame.mixer.music.get_busy():
                 self._play_music(music_key_for_state)
 
-        # Handle pause/unpause based on game_controller's paused state
         if hasattr(self.game_controller, 'paused'):
             if self.game_controller.paused:
                 if pygame.mixer.music.get_busy():
@@ -268,52 +299,40 @@ class StateManager:
             state_id: The identifier of the state to set (class name or legacy string constant)
             **kwargs: Additional parameters to pass to the state's enter method
         """
-        # Handle legacy string constants
         if state_id in self.legacy_state_mapping:
             state_id = self.legacy_state_mapping[state_id]
         
-        # Avoid redundant state changes
         if self.current_state and self.current_state.get_state_id() == state_id:
-            # Special case for gameplay states being re-entered after unpausing
-            is_gameplay_state = state_id in ["PlayingState", "BonusLevelPlayingState", "MazeDefenseState"] or state_id.startswith("ArchitectVault")
+            is_gameplay_state = state_id in ["PlayingState", "BonusLevelPlayingState", "MazeDefenseState", "BossFightState", "CorruptedSectorState"] or state_id.startswith("ArchitectVault")
             if not (is_gameplay_state and hasattr(self.game_controller, 'paused') and self.game_controller.paused):
                 return
         
-        # Get the old state for reference
         old_state = self.current_state
         old_state_id = old_state.get_state_id() if old_state else None
         
-        # Check if the transition is allowed
         if old_state_id and not self.registry.is_transition_allowed(old_state_id, state_id):
             logger.warning(f"Transition from '{old_state_id}' to '{state_id}' is not allowed")
             return
         
-        # Get the state class from the registry
         state_class = self.registry.get_state_class(state_id)
         if not state_class:
             logger.error(f"Unknown state '{state_id}'")
             return
         
-        # Exit the current state if it exists
         if old_state:
             old_state.exit(state_id)
         
-        # Create and enter the new state
         new_state = state_class(self.game_controller)
         new_state.enter(old_state_id, **kwargs)
         
-        # Update the current state
         self.current_state = new_state
         
-        # Record the transition in the registry
         self.registry.record_transition(old_state_id, state_id, time.time())
         
         logger.info(f"Game state changed from '{old_state_id}' to '{state_id}'")
         
-        # Update music based on the new state
         self._update_music()
         
-        # Notify the game controller about the transition
         if hasattr(self.game_controller, 'handle_state_transition'):
             self.game_controller.handle_state_transition(state_id, old_state_id, **kwargs)
     
@@ -340,6 +359,5 @@ class StateManager:
                 if current_time > self.game_controller.bonus_level_start_display_end_time:
                     self.set_state("BonusLevelPlayingState")
         
-        # Music pause/unpause is handled in _update_music
         if hasattr(self.game_controller, 'paused') and not self.game_controller.paused:
             self._update_music()

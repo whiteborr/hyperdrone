@@ -4,11 +4,12 @@ from .base_drone import BaseDrone
 from .player import PlayerDrone
 from .enemy import Enemy, SentinelDrone
 from .defense_drone import DefenseDrone
-from .bullet import Bullet, Missile, LightningZap
-from .powerup_manager import PowerUpManager # <-- ADD THIS IMPORT
+from .bullet import Bullet, Missile, LightningZap, LaserBeam
+from .powerup_manager import PowerUpManager
 from .collectibles import (
     Ring, WeaponUpgradeItem, ShieldItem, SpeedBoostItem, 
-    CoreFragmentItem, VaultLogItem, GlyphTabletItem, AncientAlienTerminal, ArchitectEchoItem
+    CoreFragmentItem, GlyphTabletItem, AncientAlienTerminal, 
+    ArchitectEchoItem, CorruptedLogItem
 )
 from .particle import Particle
 from .maze_guardian import MazeGuardian 
@@ -24,11 +25,13 @@ __all__ = [
     "BaseDrone",
     "Bullet",
     "CoreFragmentItem",
+    "CorruptedLogItem", # Add CorruptedLogItem
     "CoreReactor",
     "DefenseDrone",
     "Enemy",
     "EscapeZone",
     "GlyphTabletItem",
+    "LaserBeam",
     "LightningZap",
     "Maze", 
     "MazeChapter2", 
@@ -42,6 +45,6 @@ __all__ = [
     "ShieldItem",
     "SpeedBoostItem",
     "Turret",
-    "VaultLogItem",
+
     "WeaponUpgradeItem"
 ]

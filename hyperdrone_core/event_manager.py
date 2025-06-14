@@ -35,6 +35,10 @@ class EventManager:
         logger.info("EventManager initialized.")
 
     def process_events(self):
+        """
+        Process all game events for the current frame.
+        This includes pygame events, camera controls, and player input.
+        """
         current_time_ms = pygame.time.get_ticks()
         current_game_state = self.scene_manager.get_current_state()
         
@@ -64,7 +68,7 @@ class EventManager:
                 self._handle_mouse_down(event, current_game_state)
 
         # Handle continuous player movement in gameplay states
-        is_gameplay_state = current_game_state in [GAME_STATE_PLAYING, GAME_STATE_BONUS_LEVEL_PLAYING] or current_game_state.startswith("architect_vault")
+        is_gameplay_state = current_game_state in [GAME_STATE_PLAYING, GAME_STATE_BONUS_LEVEL_PLAYING] or (isinstance(current_game_state, str) and current_game_state.startswith("architect_vault"))
         if is_gameplay_state and not self.game_controller.paused:
             self.game_controller.player_actions.update_player_movement_and_actions(current_time_ms)
             
@@ -72,6 +76,7 @@ class EventManager:
         self._process_timed_out_batches()
     
     def _handle_camera_panning(self):
+        """Handle continuous camera panning from keyboard input."""
         keys = pygame.key.get_pressed()
         dx, dy = 0, 0
         if keys[pygame.K_LEFT] or keys[pygame.K_a]: dx = -1
@@ -98,7 +103,7 @@ class EventManager:
             return
             
         # Handle gameplay input
-        is_gameplay_state = current_game_state in [GAME_STATE_PLAYING, GAME_STATE_BONUS_LEVEL_PLAYING] or current_game_state.startswith("architect_vault")
+        is_gameplay_state = current_game_state in [GAME_STATE_PLAYING, GAME_STATE_BONUS_LEVEL_PLAYING] or (isinstance(current_game_state, str) and current_game_state.startswith("architect_vault"))
         if is_gameplay_state and not self.game_controller.paused:
             self.game_controller.player_actions.handle_key_down(event)
             
@@ -141,10 +146,14 @@ class EventManager:
 
     def dispatch(self, event):
         """
-        Dispatch an event to all registered listeners.
+        Dispatch an event to all registered listeners and the story manager.
         If the event is batchable, it may be batched with similar events.
         """
         event_type = type(event)
+
+        # Pass the event to the Story Manager for objective tracking.
+        if hasattr(self.game_controller, 'story_manager'):
+            self.game_controller.story_manager.handle_game_event(event)
         
         # Check if this event type should be batched
         if self.batch_enabled and hasattr(event, 'batchable') and event.batchable:
@@ -152,7 +161,7 @@ class EventManager:
             if not should_dispatch:
                 return  # Event was batched, don't dispatch yet
         
-        # Dispatch the event to all listeners
+        # Dispatch the event to all registered listeners
         if event_type in self.listeners:
             for callback in self.listeners[event_type]:
                 try:
@@ -236,7 +245,7 @@ class EventManager:
         if current_game_state in [GAME_STATE_DRONE_SELECT, GAME_STATE_SETTINGS, GAME_STATE_LEADERBOARD, GAME_STATE_CODEX, GAME_STATE_ENTER_NAME]:
             self.scene_manager.set_game_state(GAME_STATE_MAIN_MENU)
         
-        elif current_game_state.startswith("architect_vault"):
+        elif isinstance(current_game_state, str) and current_game_state.startswith("architect_vault"):
             self.game_controller.toggle_pause()
         
         elif current_game_state in [GAME_STATE_RING_PUZZLE]:

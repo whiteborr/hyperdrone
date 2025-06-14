@@ -8,16 +8,17 @@ from settings_manager import get_setting
 from constants import WHITE, BLACK, RED, YELLOW, ORANGE, DARK_GREY, GREEN
 from .base_drone import BaseDrone
 from .enemy import SentinelDrone
+from .bullet import LaserBeam # Import the new LaserBeam class
 
 class MazeGuardian(BaseDrone):
-    def __init__(self, x, y, player_ref, maze_ref, game_controller_ref, asset_manager):
+    def __init__(self, x, y, player_ref, maze_ref, combat_controller_ref, asset_manager): # Changed game_controller_ref to combat_controller_ref
         tile_size = get_setting("gameplay", "TILE_SIZE", 80)
         self.visual_size = (int(tile_size * 2.8), int(tile_size * 2.8))
         super().__init__(x, y, size=self.visual_size[0], speed=get_setting("bosses", "MAZE_GUARDIAN_SPEED", 2.0))
 
         self.player_ref = player_ref
         self.maze_ref = maze_ref
-        self.game_controller_ref = game_controller_ref
+        self.combat_controller_ref = combat_controller_ref # Store combat_controller
         self.asset_manager = asset_manager
         self.total_health_points = get_setting("bosses", "MAZE_GUARDIAN_HEALTH", 1000)
         self.alive = True
@@ -100,12 +101,12 @@ class MazeGuardian(BaseDrone):
             if corner['id'] == corner_id:
                 if corner['status'] == 'destroyed': return False
                 corner['health'] -= damage_amount
-                if self.game_controller_ref:
-                    self.game_controller_ref.play_sound('boss_hit', 0.7)
+                if self.combat_controller_ref.game_controller:
+                    self.combat_controller_ref.game_controller.play_sound('boss_hit', 0.7)
                 if corner['health'] <= 0:
                     corner['health'] = 0; corner['status'] = 'destroyed'; corner['color'] = BLACK
-                    if self.game_controller_ref:
-                         self.game_controller_ref._create_explosion(corner['rect'].centerx, corner['rect'].centery, num_particles=30, specific_sound_key='prototype_drone_explode')
+                    if self.combat_controller_ref.game_controller:
+                         self.combat_controller_ref.game_controller._create_explosion(corner['rect'].centerx, corner['rect'].centery, num_particles=30, specific_sound_key='prototype_drone_explode')
                 elif corner['status'] == 'intact':
                     corner['status'] = 'damaged'; corner['color'] = ORANGE
                 elif corner['status'] == 'damaged':
@@ -149,7 +150,6 @@ class MazeGuardian(BaseDrone):
             else:
                 self.x, self.y = self.target_pos; self.target_pos = None
         
-        # Clamp position to screen bounds
         game_play_area_height = get_setting("display", "HEIGHT", 1080)
         min_x = game_area_x_offset + self.rect.width / 2
         max_x = get_setting("display", "WIDTH", 1920) - self.rect.width / 2
@@ -163,17 +163,47 @@ class MazeGuardian(BaseDrone):
         
         self._update_corner_positions()
         
+        # Attack Logic
         if current_time_ms - self.last_laser_time > self.laser_cooldown:
             self.last_laser_time = current_time_ms
+            self.shoot_laser()
+
         if current_time_ms - self.last_minion_spawn_time > self.minion_spawn_cooldown:
             self.last_minion_spawn_time = current_time_ms
+            self.spawn_minions(2)
+
         if all(c['status'] == 'destroyed' for c in self.corners):
             self.alive = False
-            if self.game_controller_ref:
-                self.game_controller_ref.play_sound('boss_death', 1.0)
+            if self.combat_controller_ref.game_controller:
+                self.combat_controller_ref.game_controller.play_sound('boss_death', 1.0)
+                from hyperdrone_core.game_events import BossDefeatedEvent
+                event = BossDefeatedEvent(boss_id="MAZE_GUARDIAN")
+                self.combat_controller_ref.game_controller.event_manager.dispatch(event)
 
-    def shoot_projectiles(self, target_pos):
-        pass
+    def shoot_laser(self):
+        """Fires a laser beam towards the player."""
+        if self.player_ref and self.player_ref.alive:
+            dx = self.player_ref.rect.centerx - self.x
+            dy = self.player_ref.rect.centery - self.y
+            angle = math.degrees(math.atan2(dy, dx))
+            laser = LaserBeam(self.rect.center, angle)
+            self.laser_beams.add(laser)
+
+    def spawn_minions(self, count):
+        """Spawns SentinelDrone minions near the boss."""
+        if not self.combat_controller_ref:
+            return
+        print(f"Spawning {count} minions.")
+        for _ in range(count):
+            angle = random.uniform(0, 360)
+            spawn_x = self.x + math.cos(math.radians(angle)) * 150
+            spawn_y = self.y + math.sin(math.radians(angle)) * 150
+
+            self.combat_controller_ref.enemy_manager.spawn_enemy_by_id(
+                "sentinel",
+                spawn_x,
+                spawn_y
+            )
 
     def draw(self, surface):
         if not self.image or not self.rect: return
@@ -190,6 +220,8 @@ class MazeGuardian(BaseDrone):
                 filled_width = bar_width * health_perc
                 fill_c = RED if health_perc < 0.33 else YELLOW if health_perc < 0.66 else GREEN
                 pygame.draw.rect(surface, (50,50,50), (bar_x, bar_y, bar_width, bar_height))
-                if filled_width > 0: pygame.draw.rect(surface, fill_c, (bar_x, bar_y, filled_width, bar_height))
+                if filled_width > 0: pygame.draw.rect(surface, fill_c, (bar_x, bar_y, int(filled_width), bar_height))
                 pygame.draw.rect(surface, WHITE, (bar_x, bar_y, bar_width, bar_height), 1)
         self.laser_beams.draw(surface)
+        self.bullets.draw(surface)
+

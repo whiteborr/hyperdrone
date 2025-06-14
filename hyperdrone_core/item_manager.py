@@ -6,8 +6,8 @@ import logging
 
 from entities.collectibles import (
     Ring as CollectibleRing, WeaponUpgradeItem, ShieldItem, SpeedBoostItem,
-    CoreFragmentItem, VaultLogItem, GlyphTabletItem, AncientAlienTerminal,
-    ArchitectEchoItem
+    CoreFragmentItem, GlyphTabletItem, AncientAlienTerminal,
+    ArchitectEchoItem, CorruptedLogItem
 )
 from settings_manager import get_setting
 
@@ -26,7 +26,8 @@ class ItemManager:
         self.glyph_tablets_group = self.game_controller.glyph_tablets_group
         self.architect_echoes_group = self.game_controller.architect_echoes_group
         self.alien_terminals_group = self.game_controller.alien_terminals_group
-        
+        self.corrupted_logs_group = self.game_controller.corrupted_logs_group # New group
+
         # Item spawn settings
         self.last_powerup_spawn_time = 0
         self.powerup_spawn_interval = get_setting("powerups", "POWERUP_SPAWN_INTERVAL", 15000)  # 15 seconds
@@ -137,6 +138,29 @@ class ItemManager:
         self.power_ups_group.add(new_powerup)
         logger.debug(f"Spawned {powerup_type} powerup at {spawn_pos}")
         return True
+
+    def spawn_corrupted_logs(self, maze, log_ids_to_spawn):
+        """Spawns specified corrupted logs in the maze."""
+        if not maze:
+            logger.warning("Cannot spawn corrupted logs: maze is None")
+            return
+
+        walkable_tiles = maze.get_walkable_tiles_abs()
+        if not walkable_tiles:
+            logger.warning("Cannot spawn corrupted logs: no walkable tiles found")
+            return
+
+        random.shuffle(walkable_tiles)
+        
+        for log_id in log_ids_to_spawn:
+            if not walkable_tiles:
+                logger.error(f"Ran out of walkable tiles to spawn log: {log_id}")
+                break
+            
+            spawn_pos = walkable_tiles.pop()
+            new_log = CorruptedLogItem(spawn_pos[0], spawn_pos[1], log_id, asset_manager=self.asset_manager)
+            self.corrupted_logs_group.add(new_log)
+            logger.info(f"Spawned Corrupted Log '{log_id}' at {spawn_pos}")
         
     def reset_for_level(self):
         """Reset item manager state for a new level"""
@@ -144,8 +168,7 @@ class ItemManager:
         self.last_powerup_spawn_time = pygame.time.get_ticks()
         
         # Clear all collectible groups
-        self.collectible_rings_group.empty()
-        self.power_ups_group.empty()
+        self.clear_all_items()
         
         # Spawn all rings immediately for the new level
         if hasattr(self.game_controller, 'maze') and self.game_controller.maze:
@@ -153,7 +176,7 @@ class ItemManager:
             
         # Spawn a core fragment for this level
         self._spawn_core_fragment(self.game_controller.maze)
-        
+            
     def clear_all_items(self):
         """Clear all collectible items"""
         self.collectible_rings_group.empty()
@@ -163,6 +186,7 @@ class ItemManager:
         self.glyph_tablets_group.empty()
         self.architect_echoes_group.empty()
         self.alien_terminals_group.empty()
+        self.corrupted_logs_group.empty() # Clear new group
 
     def _spawn_core_fragment(self, maze):
         """Spawn a core fragment at a random walkable position"""
@@ -170,17 +194,14 @@ class ItemManager:
             logger.warning("Cannot spawn core fragment: maze is None")
             return False
             
-        # Get a random walkable position
         walkable_tiles = maze.get_walkable_tiles_abs()
         if not walkable_tiles:
             logger.warning("Cannot spawn core fragment: no walkable tiles found")
             return False
             
-        # Choose a position that's not too close to existing items
         valid_positions = []
         tile_size = get_setting("gameplay", "TILE_SIZE", 80)
         for pos in walkable_tiles:
-            # Check distance from existing collectibles
             too_close = False
             for ring in self.collectible_rings_group:
                 if math.hypot(pos[0] - ring.rect.centerx, pos[1] - ring.rect.centery) < tile_size * 3:
@@ -194,18 +215,15 @@ class ItemManager:
             logger.warning("Cannot spawn core fragment: no valid positions found")
             return False
             
-        # Choose a random valid position
         spawn_pos = random.choice(valid_positions)
         
-        # Create fragment config details
         fragment_id = f"fragment_level_{self.game_controller.level_manager.level}"
         fragment_config = {
             "name": f"Level {self.game_controller.level_manager.level} Fragment",
-            "display_color": (128, 0, 255),  # Purple color
-            "icon_filename": "images/collectibles/core_fragment_alpha.png"  # Use existing fragment image
+            "display_color": (128, 0, 255),
+            "icon_filename": "images/collectibles/core_fragment_alpha.png"
         }
         
-        # Create and add the core fragment
         new_fragment = CoreFragmentItem(
             spawn_pos[0], 
             spawn_pos[1], 
@@ -223,32 +241,25 @@ class ItemManager:
             logger.warning("Cannot spawn rings: maze is None")
             return
             
-        # Get all walkable positions
         walkable_tiles = maze.get_walkable_tiles_abs()
         if not walkable_tiles:
             logger.warning("Cannot spawn rings: no walkable tiles found")
             return
             
-        # Shuffle the walkable tiles to get random positions
         random.shuffle(walkable_tiles)
         
-        # Calculate how many rings we still need to spawn
         rings_to_spawn = self.max_rings_per_level - self.spawned_rings_count
         logger.info(f"Attempting to spawn {rings_to_spawn} rings for level {self.game_controller.level_manager.level}")
         
-        # Clear existing rings first to avoid issues
         self.collectible_rings_group.empty()
         self.spawned_rings_count = 0
         
-        # Try to spawn all rings
         spawned = 0
         tile_size = get_setting("gameplay", "TILE_SIZE", 80)
-        min_spacing = tile_size * 3  # Minimum spacing between rings
+        min_spacing = tile_size * 3
         
-        # Use a different approach to ensure we get enough rings
         positions = []
         for pos in walkable_tiles:
-            # Check if this position is too close to already selected positions
             too_close = False
             for existing_pos in positions:
                 if math.hypot(pos[0] - existing_pos[0], pos[1] - existing_pos[1]) < min_spacing:
@@ -260,14 +271,12 @@ class ItemManager:
                 if len(positions) >= self.max_rings_per_level:
                     break
         
-        # Create rings at the selected positions
         for pos in positions:
             new_ring = CollectibleRing(pos[0], pos[1])
             self.collectible_rings_group.add(new_ring)
             self.spawned_rings_count += 1
             spawned += 1
             
-        # Also spawn an initial powerup
         if spawned > 0 and len(self.power_ups_group) == 0:
             self._spawn_random_powerup(maze)
                 

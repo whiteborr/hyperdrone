@@ -2,8 +2,9 @@
 import pygame
 import random
 import logging
+import math
 from settings_manager import get_setting
-from constants import BLUE, RED, GOLD, ARCHITECT_VAULT_WALL_COLOR
+from constants import BLUE, RED, GOLD, ARCHITECT_VAULT_WALL_COLOR, DARK_PURPLE, WHITE
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +37,10 @@ class Maze:
         self.walls = self._create_wall_lines()
         
         # Add border lines around the perimeter
-        self.border_lines = self._create_border_lines() 
+        self.border_lines = self._create_border_lines()
+        
+        # For corrupted effect
+        self.corruption_pulse = 0
 
     def _generate_maze_grid(self, row, col): 
         self.grid[row][col] = 0
@@ -90,7 +94,20 @@ class Maze:
         return border_lines
 
     def draw(self, surface, camera=None): 
-        wall_color = ARCHITECT_VAULT_WALL_COLOR if self.maze_type == "architect_vault" else BLUE
+        # Determine wall color based on maze type
+        if self.maze_type == "architect_vault":
+            wall_color = ARCHITECT_VAULT_WALL_COLOR
+        elif self.maze_type == "corrupted":
+            # Create a pulsing, corrupted color effect
+            self.corruption_pulse += 0.05
+            pulse = (math.sin(self.corruption_pulse) + 1) / 2 # Oscillates between 0 and 1
+            r = int(70 + pulse * 60)
+            g = int(20 + pulse * 40)
+            b = int(90 + pulse * 60)
+            wall_color = (r, g, b)
+        else:
+            wall_color = BLUE
+
         wall_thickness = 2
         border_thickness = 3
         border_color = RED if self.maze_type == "architect_vault" else GOLD

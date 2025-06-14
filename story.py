@@ -113,7 +113,6 @@ class StoryManager:
         else:
             logging.warning("Story has not started or is already over.")
 
-    # --- NEW: Game Event Handler (to be implemented in the next task) ---
     def handle_game_event(self, event):
         """Processes game events to update objective status."""
         current_chapter = self.get_current_chapter()
@@ -123,13 +122,13 @@ class StoryManager:
         logging.debug(f"StoryManager processing event: {type(event).__name__}")
 
         for objective in current_chapter.objectives:
-            # Skip objectives that are already complete
             if objective.is_complete:
                 continue
 
-            # Check for item collection objectives
+            # Check for item collection objectives (generic)
             if isinstance(event, ItemCollectedEvent) and objective.type == 'collect':
-                if objective.target == event.item_id:
+                # This now specifically checks for corrupted logs
+                if event.item_type == 'corrupted_log' and objective.target == event.item_id:
                     objective.complete()
 
             # Check for boss kill objectives
@@ -137,4 +136,6 @@ class StoryManager:
                 if objective.target == event.boss_id:
                     objective.complete()
             
-            # Future objective types like 'reach_zone' would be added here
+            # Note: The 'collect_all' and 'kill_all' objectives for Chapter 1
+            # are handled directly in the PlayingState's update loop for now.
+            # This event handler is for specific, event-driven objectives.

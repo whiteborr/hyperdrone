@@ -118,44 +118,14 @@ class PlayingState(State):
     
     def handle_events(self, events):
         """Handle input events specific to playing state"""
-        # --- FIX: Get the current chapter ONCE at the start of the method ---
-        # This ensures the variable is always available within the function's scope.
-        current_chapter = self.game.story_manager.get_current_chapter()
-
         for event in events:
-            # --- ORIGINAL gameplay logic ---
             if event.type == pygame.KEYDOWN:
-                # Handle pausing
                 if event.key == pygame.K_p:
                     self.game.toggle_pause()
-                # Pass other keys to the player_actions handler for movement, shooting etc.
                 else:
                     self.game.player_actions.handle_key_down(event)
-
             elif event.type == pygame.KEYUP:
                 self.game.player_actions.handle_key_up(event)
-            
-            # --- NEW story interaction logic ---
-            # We still check for KEYDOWN here for our specific story keys
-            if event.type == pygame.KEYDOWN:
-                # And we check if a chapter is active before trying to use it
-                if current_chapter:
-                    
-                    # Temporary key to complete the 1st objective
-                    if event.key == pygame.K_1:
-                        if len(current_chapter.objectives) > 0:
-                            objective_to_complete_id = current_chapter.objectives[0].objective_id
-                            current_chapter.complete_objective_by_id(objective_to_complete_id)
-
-                    # Temporary key to complete the 2nd objective
-                    elif event.key == pygame.K_2:
-                        if len(current_chapter.objectives) > 1:
-                            objective_to_complete_id = current_chapter.objectives[1].objective_id
-                            current_chapter.complete_objective_by_id(objective_to_complete_id)
-                    
-                    # Temporary key to advance to the next chapter
-                    elif event.key == pygame.K_n:
-                        self.game.story_manager.advance_chapter()
     
     def update(self, delta_time):
         """Update game logic for playing state"""
@@ -164,7 +134,6 @@ class PlayingState(State):
         if not self.game.player:
             return
             
-        # Update player
         self.game.player.update(
             current_time_ms, 
             self.game.maze, 
@@ -173,27 +142,33 @@ class PlayingState(State):
             self.game.maze.game_area_x_offset if self.game.maze else 0
         )
         
-        # Check if player died and handle respawn
         if self.game.player and not self.game.player.alive:
             self.game._handle_player_death_or_life_loss()
         
-        # Update combat
         self.game.combat_controller.update(current_time_ms, delta_time)
         
-        # Update item manager
         if hasattr(self.game, 'item_manager'):
             self.game.item_manager.update(current_time_ms, self.game.maze)
             
-        # Handle collectible collisions
         self.game._handle_collectible_collisions()
-        
-        # Handle bullet-enemy collisions
         self._handle_bullet_enemy_collisions()
         
-        # Check if level is cleared
-        self.game._check_level_clear_condition()
-        
-        # Update continuous player movement and actions
+        # Check story objectives for Chapter 1
+        current_chapter = self.game.story_manager.get_current_chapter()
+        if current_chapter and current_chapter.chapter_id == "chapter_1":
+            # Check if all rings for the level have been collected
+            if self.game.level_manager.collected_rings_count >= self.game.level_manager.total_rings_per_level:
+                self.game.story_manager.complete_objective_by_id("c1_collect_rings")
+
+            # Check if all enemies on the level have been defeated
+            if self.game.combat_controller.enemy_manager.get_active_enemies_count() == 0:
+                 self.game.story_manager.complete_objective_by_id("c1_clear_hostiles")
+
+            # If all objectives for chapter 1 are done, advance the story
+            if current_chapter.is_complete():
+                self.game.story_manager.advance_chapter()
+                return # Stop further updates in this state as a transition is happening
+
         self.game.player_actions.update_player_movement_and_actions(current_time_ms)
     
     def draw(self, surface):
@@ -201,11 +176,9 @@ class PlayingState(State):
         black_color = get_setting("colors", "BLACK", (0, 0, 0))
         surface.fill(black_color)
         
-        # Draw maze
         if self.game.maze:
             self.game.maze.draw(surface, self.game.camera)
         
-        # Draw collectibles and powerups
         for item_group in [
             self.game.collectible_rings_group, 
             self.game.power_ups_group, 
@@ -217,18 +190,15 @@ class PlayingState(State):
             for item in item_group:
                 item.draw(surface, self.game.camera)
         
-        # Update and draw explosion particles
         self.game.explosion_particles_group.update()
         self.game.explosion_particles_group.draw(surface)
         
-        # Draw player
         if self.game.player:
             self.game.player.draw(surface)
             
-        # Draw enemies
         if self.game.combat_controller:
             self.game.combat_controller.enemy_manager.draw_all(surface, self.game.camera)
             
-        # Draw animating rings
         ring_icon = self.game.asset_manager.get_image("ring_ui_icon")
         self.game.level_manager.draw_ring_animations(surface, ring_icon)
+

@@ -101,6 +101,9 @@ GAME_STATE_ARCHITECT_VAULT_FAILURE = GameStates.ARCHITECT_VAULT_FAILURE
 GAME_STATE_RING_PUZZLE = GameStates.RING_PUZZLE
 GAME_STATE_GAME_INTRO_SCROLL = GameStates.GAME_INTRO_SCROLL
 GAME_STATE_MAZE_DEFENSE = GameStates.MAZE_DEFENSE
+# Add missing game states for boss fight and corrupted sector
+GAME_STATE_BOSS_FIGHT = get_setting("game_states", "GAME_STATE_BOSS_FIGHT", "boss_fight")
+GAME_STATE_CORRUPTED_SECTOR = get_setting("game_states", "GAME_STATE_CORRUPTED_SECTOR", "corrupted_sector")
 
 # ==========================
 # Player Weapon Modes
