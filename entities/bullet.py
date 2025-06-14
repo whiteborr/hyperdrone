@@ -81,8 +81,8 @@ class Bullet(pygame.sprite.Sprite):
                 self.alive = False 
         if not self.alive: self.kill()
         
-        # Recreate the bullet image each frame to prevent artifacts
-        if self.alive:
+        # Only recreate the bullet image if it's necessary (first frame or after bouncing)
+        if self.alive and (self.frames_existed == 1 or self.bounces_done > 0):
             surface_dim = max(1, self.size * 2)
             self.image = pygame.Surface([surface_dim, surface_dim], pygame.SRCALPHA)
             self.image.fill((0,0,0,0))
