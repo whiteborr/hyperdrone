@@ -11,7 +11,8 @@ from .enemy_manager import EnemyManager
 from .ring_puzzle_module import RingPuzzle
 from .wave_manager import WaveManager
 from .boss_fight_state import BossFightState
-from .corrupted_sector_state import CorruptedSectorState # Import the new state
+from .corrupted_sector_state import CorruptedSectorState
+from .harvest_chamber_state import HarvestChamberState # Import the new state
 
 # Import NEW sub-controller classes
 from .combat_controller import CombatController
@@ -35,7 +36,8 @@ __all__ = [
     "RingPuzzle",
     "WaveManager",
     "BossFightState",
-    "CorruptedSectorState", # Add CorruptedSectorState
+    "CorruptedSectorState",
+    "HarvestChamberState", # Add HarvestChamberState
     "CombatController",
     "PuzzleController",
     "UIFlowController",

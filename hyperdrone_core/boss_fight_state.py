@@ -62,6 +62,12 @@ class BossFightState(State):
             
         self.game.player.update(current_time, self.game.maze, self.game.combat_controller.enemy_manager.get_sprites(), self.game.player_actions, self.game.maze.game_area_x_offset if self.game.maze else 0)
         self.game.combat_controller.update(current_time, delta_time)
+        
+        # Update player actions (rotation, shooting)
+        self.game.player_actions.update_player_movement_and_actions(current_time)
+        
+        # Handle bullet-enemy collisions
+        self._handle_bullet_enemy_collisions()
 
         # Check if the boss has been defeated
         if self.game.combat_controller.boss_active and not self.game.combat_controller.maze_guardian.alive:
@@ -73,7 +79,50 @@ class BossFightState(State):
 
         # Check if the player has been defeated
         if not self.game.player.alive:
-            self.game.state_manager.set_state("GameOverState")
+            self.game._handle_player_death_or_life_loss()
+            
+    def _handle_bullet_enemy_collisions(self):
+        """Handle collisions between player bullets/missiles/lightning and enemies"""
+        if not self.game.player or not hasattr(self.game.player, 'bullets_group'):
+            return
+            
+        # Get enemy sprites and add the boss if active
+        enemy_sprites = self.game.combat_controller.enemy_manager.get_sprites()
+        if self.game.combat_controller.boss_active and self.game.combat_controller.maze_guardian:
+            enemy_sprites.add(self.game.combat_controller.maze_guardian)
+            
+        if not enemy_sprites:
+            return
+            
+        # Check bullet collisions with enemies
+        for bullet in self.game.player.bullets_group:
+            for enemy in pygame.sprite.spritecollide(bullet, enemy_sprites, False):
+                if enemy.alive and bullet.alive:
+                    # Apply damage to enemy
+                    enemy.take_damage(bullet.damage)
+                    
+                    # Handle bullet piercing logic
+                    if bullet.max_pierces > 0:
+                        bullet.pierces_done += 1
+                        if bullet.pierces_done > bullet.max_pierces:
+                            bullet.alive = False
+                            bullet.kill()
+                    else:
+                        bullet.alive = False
+                        bullet.kill()
+                        
+        # Check missile collisions with enemies
+        if hasattr(self.game.player, 'missiles_group'):
+            for missile in self.game.player.missiles_group:
+                for enemy in pygame.sprite.spritecollide(missile, enemy_sprites, False):
+                    if enemy.alive and missile.alive:
+                        enemy.take_damage(missile.damage)
+                        # Create larger explosion for missile hits
+                        if hasattr(enemy, 'rect') and enemy.rect:
+                            self.game._create_explosion(enemy.rect.centerx, enemy.rect.centery, 10, 'missile_launch')
+                        missile.alive = False
+                        missile.kill()
+                        missile.kill()
 
     def handle_events(self, events):
         """Handle player input during the boss fight."""

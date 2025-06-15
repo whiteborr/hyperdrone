@@ -4,29 +4,17 @@ import os
 import time
 import logging
 from settings_manager import get_setting
-
-# Define game state constants directly here to avoid circular imports
-GAME_STATE_PLAYING = get_setting("game_states", "GAME_STATE_PLAYING", "playing")
-GAME_STATE_MAZE_DEFENSE = get_setting("game_states", "GAME_STATE_MAZE_DEFENSE", "maze_defense_mode")
-GAME_STATE_MAIN_MENU = get_setting("game_states", "GAME_STATE_MAIN_MENU", "main_menu")
-GAME_STATE_GAME_OVER = get_setting("game_states", "GAME_STATE_GAME_OVER", "game_over")
-GAME_STATE_LEADERBOARD = get_setting("game_states", "GAME_STATE_LEADERBOARD", "leaderboard_display")
-GAME_STATE_SETTINGS = get_setting("game_states", "GAME_STATE_SETTINGS", "settings_menu")
-GAME_STATE_DRONE_SELECT = get_setting("game_states", "GAME_STATE_DRONE_SELECT", "drone_select_menu")
-GAME_STATE_CODEX = get_setting("game_states", "GAME_STATE_CODEX", "codex_screen")
-GAME_STATE_ENTER_NAME = get_setting("game_states", "GAME_STATE_ENTER_NAME", "enter_name")
-GAME_STATE_GAME_INTRO_SCROLL = get_setting("game_states", "GAME_STATE_GAME_INTRO_SCROLL", "game_intro_scroll")
-GAME_STATE_RING_PUZZLE = get_setting("game_states", "GAME_STATE_RING_PUZZLE", "ring_puzzle_active")
-GAME_STATE_BONUS_LEVEL_START = get_setting("game_states", "GAME_STATE_BONUS_LEVEL_START", "bonus_level_start")
-GAME_STATE_BONUS_LEVEL_PLAYING = get_setting("game_states", "GAME_STATE_BONUS_LEVEL_PLAYING", "bonus_level_playing")
-GAME_STATE_ARCHITECT_VAULT_INTRO = get_setting("game_states", "GAME_STATE_ARCHITECT_VAULT_INTRO", "architect_vault_intro")
-GAME_STATE_ARCHITECT_VAULT_ENTRY_PUZZLE = get_setting("game_states", "GAME_STATE_ARCHITECT_VAULT_ENTRY_PUZZLE", "architect_vault_entry_puzzle")
-GAME_STATE_ARCHITECT_VAULT_GAUNTLET = get_setting("game_states", "GAME_STATE_ARCHITECT_VAULT_GAUNTLET", "architect_vault_gauntlet")
-GAME_STATE_ARCHITECT_VAULT_EXTRACTION = get_setting("game_states", "GAME_STATE_ARCHITECT_VAULT_EXTRACTION", "architect_vault_extraction")
-GAME_STATE_ARCHITECT_VAULT_SUCCESS = get_setting("game_states", "GAME_STATE_ARCHITECT_VAULT_SUCCESS", "architect_vault_success")
-GAME_STATE_ARCHITECT_VAULT_FAILURE = get_setting("game_states", "GAME_STATE_ARCHITECT_VAULT_FAILURE", "architect_vault_failure")
-GAME_STATE_BOSS_FIGHT = get_setting("game_states", "GAME_STATE_BOSS_FIGHT", "boss_fight")
-GAME_STATE_CORRUPTED_SECTOR = get_setting("game_states", "GAME_STATE_CORRUPTED_SECTOR", "corrupted_sector")
+from constants import (
+    GAME_STATE_PLAYING, GAME_STATE_MAZE_DEFENSE, GAME_STATE_MAIN_MENU,
+    GAME_STATE_GAME_OVER, GAME_STATE_LEADERBOARD, GAME_STATE_SETTINGS,
+    GAME_STATE_DRONE_SELECT, GAME_STATE_CODEX, GAME_STATE_ENTER_NAME,
+    GAME_STATE_GAME_INTRO_SCROLL, GAME_STATE_RING_PUZZLE,
+    GAME_STATE_BONUS_LEVEL_START, GAME_STATE_BONUS_LEVEL_PLAYING,
+    GAME_STATE_ARCHITECT_VAULT_INTRO, GAME_STATE_ARCHITECT_VAULT_ENTRY_PUZZLE,
+    GAME_STATE_ARCHITECT_VAULT_GAUNTLET, GAME_STATE_ARCHITECT_VAULT_EXTRACTION,
+    GAME_STATE_ARCHITECT_VAULT_SUCCESS, GAME_STATE_ARCHITECT_VAULT_FAILURE,
+    GAME_STATE_BOSS_FIGHT, GAME_STATE_CORRUPTED_SECTOR, GAME_STATE_HARVEST_CHAMBER
+)
 from .state import State
 from .playing_state import PlayingState
 from .maze_defense_state import MazeDefenseState
@@ -49,7 +37,8 @@ from .architect_vault_states import (
     ArchitectVaultFailureState
 )
 from .boss_fight_state import BossFightState
-from .corrupted_sector_state import CorruptedSectorState # Import the new state
+from .corrupted_sector_state import CorruptedSectorState
+from .harvest_chamber_state import HarvestChamberState
 
 logger = logging.getLogger(__name__)
 
@@ -105,7 +94,8 @@ class StateManager:
             "ArchitectVaultSuccessState": ArchitectVaultSuccessState,
             "ArchitectVaultFailureState": ArchitectVaultFailureState,
             "BossFightState": BossFightState,
-            "CorruptedSectorState": CorruptedSectorState # Add the new state here
+            "CorruptedSectorState": CorruptedSectorState,
+            "HarvestChamberState": HarvestChamberState
         }
         
         # Register states with both the local cache and the central registry
@@ -138,7 +128,8 @@ class StateManager:
             GAME_STATE_ARCHITECT_VAULT_SUCCESS: "ArchitectVaultSuccessState",
             GAME_STATE_ARCHITECT_VAULT_FAILURE: "ArchitectVaultFailureState",
             GAME_STATE_BOSS_FIGHT: "BossFightState",
-            GAME_STATE_CORRUPTED_SECTOR: "CorruptedSectorState"
+            GAME_STATE_CORRUPTED_SECTOR: "CorruptedSectorState",
+            GAME_STATE_HARVEST_CHAMBER: "HarvestChamberState"
         }
         
     def _register_allowed_transitions(self):
@@ -205,13 +196,15 @@ class StateManager:
 
         # Boss fight transitions
         self.registry.register_transition("BossFightState", "GameOverState")
-        self.registry.register_transition("BossFightState", "MainMenuState")
-        self.registry.register_transition("BossFightState", "CorruptedSectorState") # Transition to Chapter 3 state
+        self.registry.register_transition("BossFightState", "CorruptedSectorState")
 
         # Corrupted Sector transitions
         self.registry.register_transition("CorruptedSectorState", "GameOverState")
-        # In the future, this will transition to Chapter 4's state
-        self.registry.register_transition("CorruptedSectorState", "MainMenuState")
+        self.registry.register_transition("CorruptedSectorState", "HarvestChamberState")
+
+        # Harvest Chamber transitions
+        self.registry.register_transition("HarvestChamberState", "GameOverState")
+        self.registry.register_transition("HarvestChamberState", "MainMenuState") # Placeholder for now
     
     def get_current_state(self):
         """Returns the current state object."""
@@ -265,7 +258,8 @@ class StateManager:
             "GameIntroScrollState": "menu_theme",
             "PlayingState": "gameplay_theme",
             "BossFightState": "boss_theme", 
-            "CorruptedSectorState": "corrupted_theme", # Add theme for the new chapter
+            "CorruptedSectorState": "corrupted_theme",
+            "HarvestChamberState": "shmup_theme",
             "BonusLevelPlayingState": "gameplay_theme",
             "MazeDefenseState": "defense_theme",
             "ArchitectVaultIntroState": "architect_vault_theme",
@@ -302,8 +296,12 @@ class StateManager:
         if state_id in self.legacy_state_mapping:
             state_id = self.legacy_state_mapping[state_id]
         
-        if self.current_state and self.current_state.get_state_id() == state_id:
-            is_gameplay_state = state_id in ["PlayingState", "BonusLevelPlayingState", "MazeDefenseState", "BossFightState", "CorruptedSectorState"] or state_id.startswith("ArchitectVault")
+        # Special case for PlayingState - always allow restarting the playing state
+        # This is needed for player respawning when they lose a life
+        force_restart = kwargs.get('force_restart', False)
+        
+        if self.current_state and self.current_state.get_state_id() == state_id and not force_restart:
+            is_gameplay_state = state_id in ["PlayingState", "BonusLevelPlayingState", "MazeDefenseState", "BossFightState", "CorruptedSectorState", "HarvestChamberState"] or state_id.startswith("ArchitectVault")
             if not (is_gameplay_state and hasattr(self.game_controller, 'paused') and self.game_controller.paused):
                 return
         

@@ -63,6 +63,11 @@ class GameStates:
     CODEX: str = get_setting("game_states", "GAME_STATE_CODEX", "codex_screen")
     GAME_INTRO_SCROLL: str = get_setting("game_states", "GAME_STATE_GAME_INTRO_SCROLL", "game_intro_scroll")
     
+    # Chapter-specific states
+    BOSS_FIGHT: str = get_setting("game_states", "GAME_STATE_BOSS_FIGHT", "boss_fight")
+    CORRUPTED_SECTOR: str = get_setting("game_states", "GAME_STATE_CORRUPTED_SECTOR", "corrupted_sector")
+    HARVEST_CHAMBER: str = get_setting("game_states", "GAME_STATE_HARVEST_CHAMBER", "harvest_chamber")
+
     # Bonus level states
     BONUS_LEVEL_START: str = get_setting("game_states", "GAME_STATE_BONUS_LEVEL_START", "bonus_level_start")
     BONUS_LEVEL_PLAYING: str = get_setting("game_states", "GAME_STATE_BONUS_LEVEL_PLAYING", "bonus_level_playing")
@@ -101,9 +106,9 @@ GAME_STATE_ARCHITECT_VAULT_FAILURE = GameStates.ARCHITECT_VAULT_FAILURE
 GAME_STATE_RING_PUZZLE = GameStates.RING_PUZZLE
 GAME_STATE_GAME_INTRO_SCROLL = GameStates.GAME_INTRO_SCROLL
 GAME_STATE_MAZE_DEFENSE = GameStates.MAZE_DEFENSE
-# Add missing game states for boss fight and corrupted sector
-GAME_STATE_BOSS_FIGHT = get_setting("game_states", "GAME_STATE_BOSS_FIGHT", "boss_fight")
-GAME_STATE_CORRUPTED_SECTOR = get_setting("game_states", "GAME_STATE_CORRUPTED_SECTOR", "corrupted_sector")
+GAME_STATE_BOSS_FIGHT = GameStates.BOSS_FIGHT
+GAME_STATE_CORRUPTED_SECTOR = GameStates.CORRUPTED_SECTOR
+GAME_STATE_HARVEST_CHAMBER = GameStates.HARVEST_CHAMBER
 
 # ==========================
 # Player Weapon Modes

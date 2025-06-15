@@ -113,6 +113,14 @@ class StoryManager:
         else:
             logging.warning("Story has not started or is already over.")
 
+    def complete_objective_by_id(self, objective_id):
+        """Finds and completes a specific objective by its ID in the current chapter."""
+        current_chapter = self.get_current_chapter()
+        if current_chapter:
+            current_chapter.complete_objective_by_id(objective_id)
+        else:
+            logging.warning(f"No current chapter to complete objective: '{objective_id}'")
+
     def handle_game_event(self, event):
         """Processes game events to update objective status."""
         current_chapter = self.get_current_chapter()

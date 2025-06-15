@@ -174,6 +174,10 @@ class PierceWeaponStrategy(BaseWeaponStrategy):
         self.player.bullets_group.add(new_bullet)
 
 class HeatseekerWeaponStrategy(BaseWeaponStrategy):
+    def __init__(self, player_drone):
+        super().__init__(player_drone)
+        self.shoot_cooldown = get_setting("weapons", "MISSILE_COOLDOWN", 3000)  # 3 seconds cooldown
+    
     def _create_projectile(self, spawn_x, spawn_y, missile_sound_asset_key=None):
         # Create heatseeker missile
         if missile_sound_asset_key and self.asset_manager:
@@ -185,6 +189,12 @@ class HeatseekerWeaponStrategy(BaseWeaponStrategy):
         self.player.missiles_group.add(new_missile)
 
 class HeatseekerPlusBulletsWeaponStrategy(BaseWeaponStrategy):
+    def __init__(self, player_drone):
+        super().__init__(player_drone)
+        self.shoot_cooldown = get_setting("weapons", "MISSILE_COOLDOWN", 3000)  # 3 seconds cooldown
+        # Use rapid fire bullet speed for this mode
+        self.rapid_fire_cooldown = get_setting("weapons", "PLAYER_RAPID_FIRE_COOLDOWN", 250)
+    
     def _create_projectile(self, spawn_x, spawn_y, missile_sound_asset_key=None):
         # Create heatseeker missile
         if missile_sound_asset_key and self.asset_manager:
@@ -195,11 +205,17 @@ class HeatseekerPlusBulletsWeaponStrategy(BaseWeaponStrategy):
         new_missile = Missile(spawn_x, spawn_y, self.player.angle, missile_damage, self.enemies_group)
         self.player.missiles_group.add(new_missile)
         
-        # Add regular bullet
+        # Add rapid fire bullet (same as RAPID_SINGLE mode)
+        current_time_ms = pygame.time.get_ticks()
+        
+        # Create rapid fire bullet
         new_bullet = Bullet(spawn_x, spawn_y, self.player.angle, self.bullet_speed, 
                            self.bullet_lifetime, self.bullet_size, 
                            self.bullet_color, self.bullet_damage)
         self.player.bullets_group.add(new_bullet)
+        
+        # Schedule next rapid fire bullet
+        self.player.last_shot_time = current_time_ms - (self.shoot_cooldown - self.rapid_fire_cooldown)
 
 class LightningWeaponStrategy(BaseWeaponStrategy):
     def _create_projectile(self, spawn_x, spawn_y, missile_sound_asset_key=None):

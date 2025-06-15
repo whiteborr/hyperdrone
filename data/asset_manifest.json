@@ -17,7 +17,11 @@
   "music": {
     "MENU_THEME_MUSIC": "sounds/menu_music.wav",
     "GAMEPLAY_THEME_MUSIC": "sounds/gameplay_music.wav",
-    "DEFENSE_THEME_MUSIC": "sounds/defense_mode_music.wav"
+    "DEFENSE_THEME_MUSIC": "sounds/defense_mode_music.wav",
+    "BOSS_THEME_MUSIC": "sounds/gameplay_music.wav",
+    "CORRUPTED_THEME_MUSIC": "sounds/gameplay_music.wav",
+    "SHMUP_THEME_MUSIC": "sounds/gameplay_music.wav",
+    "ARCHITECT_VAULT_THEME_MUSIC": "sounds/defense_mode_music.wav"
   },
   "images": {
     "RING_UI_ICON": "images/collectibles/ring_ui_icon.png",

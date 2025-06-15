@@ -28,8 +28,10 @@ class PlayingState(State):
                         bullet.pierces_done += 1
                         if bullet.pierces_done > bullet.max_pierces:
                             bullet.alive = False
+                            bullet.kill()
                     else:
                         bullet.alive = False
+                        bullet.kill()
                         
         # Check missile collisions with enemies
         if hasattr(self.game.player, 'missiles_group'):
@@ -41,6 +43,7 @@ class PlayingState(State):
                         if hasattr(enemy, 'rect') and enemy.rect:
                             self.game._create_explosion(enemy.rect.centerx, enemy.rect.centery, 10, 'missile_launch')
                         missile.alive = False
+                        missile.kill()  # Ensure missile is removed from sprite group
                         
         # Check lightning zap collisions with enemies
         if hasattr(self.game.player, 'lightning_zaps_group'):

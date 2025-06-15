@@ -1,7 +1,7 @@
 {
   "display": {
     "WIDTH": 1920,
-    "HEIGHT": 1080,
+    "HEIGHT": 1200,
     "FPS": 60,
     "FULLSCREEN_MODE": true,
     "MUSIC_VOLUME_MULTIPLIER": 0.5,
@@ -25,32 +25,153 @@
     "GAME_PLAY_AREA_HEIGHT": 960
   },
   "colors": {
-    "BLACK": [0, 0, 0],
-    "WHITE": [255, 255, 255],
-    "RED": [255, 0, 0],
-    "DARK_RED": [100, 0, 0],
-    "GREEN": [0, 255, 0],
-    "BLUE": [0, 100, 255],
-    "CYAN": [0, 255, 255],
-    "LIGHT_BLUE": [173, 216, 230],
-    "YELLOW": [255, 255, 0],
-    "GOLD": [255, 215, 0],
-    "ORANGE": [255, 165, 0],
-    "PURPLE": [128, 0, 128],
-    "DARK_PURPLE": [40, 0, 70],
-    "MAGENTA": [255, 0, 255],
-    "PINK": [255, 192, 203],
-    "GREY": [100, 100, 100],
-    "DARK_GREY": [50, 50, 50],
-    "ELECTRIC_BLUE": [0, 128, 255],
-    "ESCAPE_ZONE_COLOR": [0, 255, 120],
-    "PLAYER_BULLET_COLOR": [0, 255, 255],
-    "MISSILE_COLOR": [255, 0, 0],
-    "LIGHTNING_COLOR": [0, 128, 255],
-    "FLAME_COLORS": [[255, 100, 0], [255, 165, 0], [255, 215, 0], [255, 255, 100]],
-    "ARCHITECT_VAULT_BG_COLOR": [20, 0, 30],
-    "ARCHITECT_VAULT_WALL_COLOR": [150, 120, 200],
-    "ARCHITECT_VAULT_ACCENT_COLOR": [255, 215, 0]
+    "BLACK": [
+      0,
+      0,
+      0
+    ],
+    "WHITE": [
+      255,
+      255,
+      255
+    ],
+    "RED": [
+      255,
+      0,
+      0
+    ],
+    "DARK_RED": [
+      100,
+      0,
+      0
+    ],
+    "GREEN": [
+      0,
+      255,
+      0
+    ],
+    "BLUE": [
+      0,
+      100,
+      255
+    ],
+    "CYAN": [
+      0,
+      255,
+      255
+    ],
+    "LIGHT_BLUE": [
+      173,
+      216,
+      230
+    ],
+    "YELLOW": [
+      255,
+      255,
+      0
+    ],
+    "GOLD": [
+      255,
+      215,
+      0
+    ],
+    "ORANGE": [
+      255,
+      165,
+      0
+    ],
+    "PURPLE": [
+      128,
+      0,
+      128
+    ],
+    "DARK_PURPLE": [
+      40,
+      0,
+      70
+    ],
+    "MAGENTA": [
+      255,
+      0,
+      255
+    ],
+    "PINK": [
+      255,
+      192,
+      203
+    ],
+    "GREY": [
+      100,
+      100,
+      100
+    ],
+    "DARK_GREY": [
+      50,
+      50,
+      50
+    ],
+    "ELECTRIC_BLUE": [
+      0,
+      128,
+      255
+    ],
+    "ESCAPE_ZONE_COLOR": [
+      0,
+      255,
+      120
+    ],
+    "PLAYER_BULLET_COLOR": [
+      0,
+      255,
+      255
+    ],
+    "MISSILE_COLOR": [
+      255,
+      0,
+      0
+    ],
+    "LIGHTNING_COLOR": [
+      0,
+      128,
+      255
+    ],
+    "FLAME_COLORS": [
+      [
+        255,
+        100,
+        0
+      ],
+      [
+        255,
+        165,
+        0
+      ],
+      [
+        255,
+        215,
+        0
+      ],
+      [
+        255,
+        255,
+        100
+      ]
+    ],
+    "ARCHITECT_VAULT_BG_COLOR": [
+      20,
+      0,
+      30
+    ],
+    "ARCHITECT_VAULT_WALL_COLOR": [
+      150,
+      120,
+      200
+    ],
+    "ARCHITECT_VAULT_ACCENT_COLOR": [
+      255,
+      215,
+      0
+    ]
   },
   "gameplay": {
     "TILE_SIZE": 80,
@@ -60,17 +181,34 @@
     "ROTATION_SPEED": 5,
     "PLAYER_INVINCIBILITY": false,
     "INITIAL_WEAPON_MODE": 0,
-    "PLAYER_BULLET_COLOR": [0, 255, 255],
-    "MISSILE_COLOR": [255, 0, 0],
+    "PLAYER_BULLET_COLOR": [
+      0,
+      255,
+      255
+    ],
+    "MISSILE_COLOR": [
+      255,
+      0,
+      0
+    ],
     "TOTAL_CORE_FRAGMENTS_NEEDED": 3,
     "RING_PUZZLE_CORE_REWARD": 750,
     "LEADERBOARD_FILE_NAME": "leaderboard.json",
     "LEADERBOARD_MAX_ENTRIES": 10,
     "MAX_RINGS_PER_LEVEL": 5,
     "POWERUP_TYPES": {
-      "weapon_upgrade": {"weight": 0.4, "duration": 0},
-      "shield": {"weight": 0.3, "duration": 10000},
-      "speed_boost": {"weight": 0.3, "duration": 5000}
+      "weapon_upgrade": {
+        "weight": 0.4,
+        "duration": 0
+      },
+      "shield": {
+        "weight": 0.3,
+        "duration": 10000
+      },
+      "speed_boost": {
+        "weight": 0.3,
+        "duration": 5000
+      }
     }
   },
   "weapons": {
@@ -107,7 +245,11 @@
     "LIGHTNING_WALL_CRAWL_THICKNESS_RATIO": 0.6,
     "LIGHTNING_WALL_CRAWL_SEGMENTS": 4,
     "LIGHTNING_WALL_CRAWL_OFFSET_RATIO": 0.4,
-    "LIGHTNING_COLOR": [0, 128, 255]
+    "LIGHTNING_COLOR": [
+      0,
+      128,
+      255
+    ]
   },
   "abilities": {
     "PHANTOM_CLOAK_DURATION_MS": 5000,
@@ -171,7 +313,11 @@
   "architect_vault": {
     "ARCHITECT_VAULT_EXTRACTION_TIMER_MS": 90000,
     "ARCHITECT_VAULT_GAUNTLET_WAVES": 3,
-    "ARCHITECT_VAULT_DRONES_PER_WAVE": [3, 4, 5],
+    "ARCHITECT_VAULT_DRONES_PER_WAVE": [
+      3,
+      4,
+      5
+    ],
     "ARCHITECT_REWARD_BLUEPRINT_ID": "DRONE_ARCHITECT_X",
     "ARCHITECT_REWARD_LORE_ID": "lore_architect_origin"
   },
@@ -288,6 +434,17 @@
       "8": "Seeker + Rapid",
       "9": "Chain Lightning"
     },
-    "WEAPON_MODES_SEQUENCE": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+    "WEAPON_MODES_SEQUENCE": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9
+    ]
   }
 }

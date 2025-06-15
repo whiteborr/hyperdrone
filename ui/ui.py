@@ -423,17 +423,46 @@ class UIManager:
         pygame.draw.line(self.screen, CYAN, (0, panel_y), (width, panel_y), 2)
         font_ui, font_small, font_large_val = self.asset_manager.get_font("ui_text", 28), self.asset_manager.get_font("ui_text", 24), self.asset_manager.get_font("ui_values", 30)
         
-        life_icon = self.ui_asset_surfaces.get("current_drone_life_icon")
-        if life_icon: self.screen.blit(life_icon, (30, panel_y + 20))
-        self.screen.blit(font_large_val.render(f"x {self.game_controller.lives}", True, WHITE), (30 + self.ui_icon_size_lives[0] + 10, panel_y + 25))
+        # Move weapon bar to the left side of the HUD
+        wpn_x, wpn_y = 30, panel_y + 20  # Left position
+        
+        # Initialize icon_height outside the if block so it's always defined
+        icon_height = 0
+        
+        # Display weapon info
+        weapon_icon = self.ui_asset_surfaces.get("current_weapon_icon")
+        if weapon_icon:
+            # Rotate the weapon icon 90 degrees counterclockwise
+            rotated_icon = pygame.transform.rotate(weapon_icon, 90)
+            icon_width, icon_height = rotated_icon.get_size()
+            
+            # Draw weapon label
+            weapon_label = font_ui.render("Weapon", True, CYAN)
+            self.screen.blit(weapon_label, (wpn_x, wpn_y - 20))
+            
+            # Draw weapon icon
+            self.screen.blit(rotated_icon, (wpn_x, wpn_y))
+            
+            # Display lives as multiple weapon mode icons to the right of the weapon bar
+            if self.game_controller.lives > 0:
+                # Calculate spacing for life icons
+                icon_spacing = 10
+                
+                # Start position for the first icon (right after weapon icon)
+                lives_start_x = wpn_x + icon_width + 20
+                
+                # Draw one icon for each life based on settings value minus 1
+                # (since the weapon icon already represents one life)
+                actual_lives = get_setting("gameplay", "PLAYER_LIVES", 3) - 1
+                for i in range(actual_lives):
+                    icon_x = lives_start_x + (i * (icon_width + icon_spacing))
+                    self.screen.blit(rotated_icon, (icon_x, panel_y + 20))
+        
         score_label = font_ui.render("Score:", True, CYAN)
         self.screen.blit(score_label, (30, panel_y + 65))
         self.screen.blit(font_large_val.render(f"{self.game_controller.level_manager.score}", True, WHITE), (30 + score_label.get_width() + 10, panel_y + 65))
         
         # Health bar removed from HUD
-        
-        # Center the weapon bar horizontally
-        wpn_x, wpn_y = (width / 2) - 125, panel_y + 20  # Centered position
         wpn_mode = player.current_weapon_mode
         from constants import WEAPON_MODE_NAMES
         wpn_name = WEAPON_MODE_NAMES.get(wpn_mode, "N/A")
@@ -451,13 +480,16 @@ class UIManager:
             rotated_icon = pygame.transform.rotate(icon_surf, 90)
             icon_rect = rotated_icon.get_rect(topleft=(wpn_x, wpn_y))
             self.screen.blit(rotated_icon, icon_rect)
-            text_x, cooldown_bar_y = icon_rect.right + 15, wpn_y + 40
+            text_x = icon_rect.right + 15
+            # Move cooldown bar below the weapon and life icons
+            cooldown_bar_y = wpn_y + icon_height + 10
             self.screen.blit(font_small.render(wpn_name, True, WHITE), (text_x, wpn_y + 5))
             time_since = pygame.time.get_ticks() - player.last_shot_time
             progress = min(1.0, time_since / player.current_shoot_cooldown) if player.current_shoot_cooldown > 0 else 1.0
-            pygame.draw.rect(self.screen, DARK_GREY, (text_x, cooldown_bar_y, 150, 10))
-            pygame.draw.rect(self.screen, YELLOW, (text_x, cooldown_bar_y, 150 * progress, 10))
-            pygame.draw.rect(self.screen, WHITE, (text_x, cooldown_bar_y, 150, 10), 1)
+            cooldown_width = 120  # Slightly smaller to fit better with new layout
+            pygame.draw.rect(self.screen, DARK_GREY, (text_x, cooldown_bar_y, cooldown_width, 10))
+            pygame.draw.rect(self.screen, YELLOW, (text_x, cooldown_bar_y, cooldown_width * progress, 10))
+            pygame.draw.rect(self.screen, WHITE, (text_x, cooldown_bar_y, cooldown_width, 10), 1)
 
         # Position rings and fragments at the right side of the screen
         hud_ring_icon_area_x_offset = get_setting("display", "HUD_RING_ICON_AREA_X_OFFSET", 150)

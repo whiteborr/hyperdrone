@@ -261,7 +261,7 @@ class DroneSystem:
             self.collected_core_fragments.add(fragment_id)
             self._save_unlocks()
             return True
-        return False
+        return True  # Return True even if already collected to support chapter selection
 
     def has_collected_fragment(self, fragment_id):
         return fragment_id in self.collected_core_fragments

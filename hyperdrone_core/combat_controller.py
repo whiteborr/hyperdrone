@@ -177,7 +177,7 @@ class CombatController:
                     if not enemy.alive:
                         self.game_controller.level_manager.add_score(50)
                         self.game_controller.drone_system.add_player_cores(10) 
-                        self.game_controller._create_enemy_explosion(enemy.rect.centerx, enemy.rect.centery) 
+                        self.game_controller._create_explosion(enemy.rect.centerx, enemy.rect.centery, 15, None, True) 
                         self.game_controller.check_for_all_enemies_killed()
                     
                     if not (hasattr(projectile, 'max_pierces') and projectile.pierces_done < projectile.max_pierces):
@@ -222,7 +222,7 @@ class CombatController:
                     enemy.take_damage(50) 
                     if not enemy.alive: 
                         self.game_controller.level_manager.add_score(10)
-                        self.game_controller._create_enemy_explosion(enemy.rect.centerx, enemy.rect.centery)
+                        self.game_controller._create_explosion(enemy.rect.centerx, enemy.rect.centery, 15, None, True)
                         self.game_controller.check_for_all_enemies_killed()
                     if not self.player.alive: 
                         self.game_controller._handle_player_death_or_life_loss("Drone Destroyed!")

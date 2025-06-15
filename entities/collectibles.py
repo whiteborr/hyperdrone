@@ -165,23 +165,17 @@ class CoreFragmentItem(Collectible):
     def __init__(self, x, y, fragment_id, fragment_config_details, *, asset_manager):
         self.fragment_id = fragment_id
         self.fragment_name = fragment_config_details.get("name", "Core Fragment")
-        # Use the icon_filename from config if available
         icon_filename = fragment_config_details.get("icon_filename")
-        # Use a fixed size for the fragment
         fragment_size = 32
-        # Try to load the icon using the filename first, then fallback to the key pattern
         loaded_original_icon = None
         if icon_filename:
             loaded_original_icon = asset_manager.get_image(icon_filename)
         
-        # If no icon loaded yet, try the old key pattern
         if not loaded_original_icon:
             icon_asset_key = f"{self.fragment_id}_icon"
             loaded_original_icon = asset_manager.get_image(icon_asset_key)
             
-        # If still no icon, create a fallback
         if not loaded_original_icon:
-            # Create a simple purple circle as fallback
             fallback_size = (fragment_size, fragment_size)
             fallback_surface = pygame.Surface(fallback_size, pygame.SRCALPHA)
             pygame.draw.circle(fallback_surface, (128, 0, 255), (fragment_size//2, fragment_size//2), fragment_size//2)
@@ -195,6 +189,35 @@ class CoreFragmentItem(Collectible):
     def apply_effect(self, player_drone, game_controller_instance):
         if not self.collected and hasattr(game_controller_instance, 'drone_system'):
             if game_controller_instance.drone_system.collect_core_fragment(self.fragment_id): self.collected = True; return True
+        return False
+
+class VaultLogItem(Collectible):
+    """A collectible that represents a log entry from the Architect's Vault."""
+    def __init__(self, x, y, log_id, *, asset_manager):
+        self.log_id = log_id
+        item_size = (int(get_setting("gameplay", "TILE_SIZE", 80) * 0.4), int(get_setting("gameplay", "TILE_SIZE", 80) * 0.5))
+
+        # Create a simple icon for the vault log
+        icon_surface = pygame.Surface(item_size, pygame.SRCALPHA)
+        pygame.draw.rect(icon_surface, (200, 200, 50, 50), icon_surface.get_rect(), border_radius=3)
+        font = pygame.font.Font(None, int(item_size[1] * 0.7))
+        text_surf = font.render("!", True, (255, 255, 150))
+        icon_surface.blit(text_surf, text_surf.get_rect(center=(item_size[0]//2, item_size[1]//2)))
+
+        super().__init__(x, y, base_color=GOLD, size=item_size, thickness=2, original_icon_surface=icon_surface, is_rectangular=True)
+        self.icon_rotation_speed = 0  # Logs don't need to spin
+
+    def apply_effect(self, player_drone, game_controller_instance):
+        if not self.collected and hasattr(game_controller_instance, 'event_manager'):
+            self.collected = True
+            
+            from hyperdrone_core.game_events import ItemCollectedEvent
+            event = ItemCollectedEvent(item_id=self.log_id, item_type='vault_log')
+            game_controller_instance.event_manager.dispatch(event)
+            
+            game_controller_instance.play_sound('collect_fragment')
+            game_controller_instance.set_story_message(f"Vault Log '{self.log_id}' Acquired.")
+            return True
         return False
 
 class CorruptedLogItem(Collectible):
@@ -223,6 +246,38 @@ class CorruptedLogItem(Collectible):
             
             game_controller_instance.play_sound('collect_fragment')
             game_controller_instance.set_story_message(f"Corrupted Log '{self.log_id}' Acquired.")
+            return True
+        return False
+
+class QuantumCircuitryItem(Collectible):
+    """The main objective collectible for the Harvest Chamber (Chapter 4)."""
+    def __init__(self, x, y, *, asset_manager):
+        self.item_id = "quantum_circuitry"
+        tile_size = get_setting("gameplay", "TILE_SIZE", 80)
+        item_size = int(tile_size * 0.8)
+
+        # Create a unique icon for the Quantum Circuitry
+        icon_surface = pygame.Surface((item_size, item_size), pygame.SRCALPHA)
+        # A series of concentric, glowing blue rectangles
+        for i in range(4):
+            rect_size = item_size * (1 - i * 0.2)
+            alpha = 200 - i * 40
+            color = (*LIGHT_BLUE[:3], alpha)
+            rect = pygame.Rect(0, 0, rect_size, rect_size)
+            rect.center = (item_size // 2, item_size // 2)
+            pygame.draw.rect(icon_surface, color, rect, 2, border_radius=3)
+        
+        super().__init__(x, y, base_color=CYAN, size=item_size, thickness=4, original_icon_surface=icon_surface, is_rectangular=True)
+        self.icon_rotation_speed = 0.5 # A slow, steady spin
+
+    def apply_effect(self, player_drone, game_controller_instance):
+        if not self.collected and hasattr(game_controller_instance, 'event_manager'):
+            self.collected = True
+            from hyperdrone_core.game_events import ItemCollectedEvent
+            event = ItemCollectedEvent(item_id=self.item_id, item_type='quantum_circuitry')
+            game_controller_instance.event_manager.dispatch(event)
+            game_controller_instance.play_sound('level_up')
+            game_controller_instance.set_story_message("Quantum Circuitry Payload Secured!", 5000)
             return True
         return False
 

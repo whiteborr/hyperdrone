@@ -7,7 +7,7 @@ import logging
 from entities.collectibles import (
     Ring as CollectibleRing, WeaponUpgradeItem, ShieldItem, SpeedBoostItem,
     CoreFragmentItem, GlyphTabletItem, AncientAlienTerminal,
-    ArchitectEchoItem, CorruptedLogItem
+    ArchitectEchoItem, CorruptedLogItem, QuantumCircuitryItem
 )
 from settings_manager import get_setting
 
@@ -26,12 +26,13 @@ class ItemManager:
         self.glyph_tablets_group = self.game_controller.glyph_tablets_group
         self.architect_echoes_group = self.game_controller.architect_echoes_group
         self.alien_terminals_group = self.game_controller.alien_terminals_group
-        self.corrupted_logs_group = self.game_controller.corrupted_logs_group # New group
+        self.corrupted_logs_group = self.game_controller.corrupted_logs_group
+        self.quantum_circuitry_group = self.game_controller.quantum_circuitry_group
 
         # Item spawn settings
         self.last_powerup_spawn_time = 0
-        self.powerup_spawn_interval = get_setting("powerups", "POWERUP_SPAWN_INTERVAL", 15000)  # 15 seconds
-        self.powerup_spawn_chance = get_setting("powerups", "POWERUP_SPAWN_CHANCE", 0.3)  # 30% chance each interval
+        self.powerup_spawn_interval = get_setting("powerups", "POWERUP_SPAWN_INTERVAL", 15000)
+        self.powerup_spawn_chance = get_setting("powerups", "POWERUP_SPAWN_CHANCE", 0.3)
         
         # Track spawned items
         self.spawned_rings_count = 0
@@ -40,16 +41,14 @@ class ItemManager:
     def update(self, current_time_ms, maze):
         """Update item manager state and spawn items as needed"""
         # Update all collectible items
-        for item in list(self.collectible_rings_group):
-            item.update()
-        for item in list(self.power_ups_group):
-            item.update()
+        for group in [self.collectible_rings_group, self.power_ups_group, self.corrupted_logs_group, self.quantum_circuitry_group]:
+            for item in list(group):
+                item.update()
             
         # Check if it's time to try spawning a powerup
         if current_time_ms - self.last_powerup_spawn_time > self.powerup_spawn_interval:
             self.last_powerup_spawn_time = current_time_ms
             
-            # Try to spawn a powerup with the configured chance
             if random.random() < self.powerup_spawn_chance:
                 self._spawn_random_powerup(maze)
                 
@@ -62,16 +61,13 @@ class ItemManager:
         if not maze:
             return False
             
-        # Get a random walkable position
         walkable_tiles = maze.get_walkable_tiles_abs()
         if not walkable_tiles:
             return False
             
-        # Choose a position that's not too close to existing items
         valid_positions = []
         tile_size = get_setting("gameplay", "TILE_SIZE", 80)
         for pos in walkable_tiles:
-            # Check distance from existing collectibles
             too_close = False
             for ring in self.collectible_rings_group:
                 if math.hypot(pos[0] - ring.rect.centerx, pos[1] - ring.rect.centery) < tile_size * 3:
@@ -84,10 +80,8 @@ class ItemManager:
         if not valid_positions:
             return False
             
-        # Choose a random valid position
         spawn_pos = random.choice(valid_positions)
         
-        # Create and add the ring
         new_ring = CollectibleRing(spawn_pos[0], spawn_pos[1])
         self.collectible_rings_group.add(new_ring)
         self.spawned_rings_count += 1
@@ -96,44 +90,28 @@ class ItemManager:
         
     def _spawn_random_powerup(self, maze):
         """Spawn a random powerup at a walkable position"""
-        if not maze:
-            return False
-            
-        # Get a random walkable position
+        if not maze: return False
         walkable_tiles = maze.get_walkable_tiles_abs()
-        if not walkable_tiles:
-            return False
+        if not walkable_tiles: return False
             
-        # Choose a position that's not too close to existing items
         valid_positions = []
         tile_size = get_setting("gameplay", "TILE_SIZE", 80)
         for pos in walkable_tiles:
-            # Check distance from existing powerups
             too_close = False
             for powerup in self.power_ups_group:
                 if math.hypot(pos[0] - powerup.rect.centerx, pos[1] - powerup.rect.centery) < tile_size * 4:
                     too_close = True
                     break
-                    
-            if not too_close:
-                valid_positions.append(pos)
+            if not too_close: valid_positions.append(pos)
                 
-        if not valid_positions:
-            return False
+        if not valid_positions: return False
             
-        # Choose a random valid position
         spawn_pos = random.choice(valid_positions)
-        
-        # Determine which powerup to spawn
         powerup_type = random.choice(["weapon", "shield", "speed"])
         
-        # Create and add the powerup
-        if powerup_type == "weapon":
-            new_powerup = WeaponUpgradeItem(spawn_pos[0], spawn_pos[1], asset_manager=self.asset_manager)
-        elif powerup_type == "shield":
-            new_powerup = ShieldItem(spawn_pos[0], spawn_pos[1], asset_manager=self.asset_manager)
-        else:  # speed
-            new_powerup = SpeedBoostItem(spawn_pos[0], spawn_pos[1], asset_manager=self.asset_manager)
+        if powerup_type == "weapon": new_powerup = WeaponUpgradeItem(spawn_pos[0], spawn_pos[1], asset_manager=self.asset_manager)
+        elif powerup_type == "shield": new_powerup = ShieldItem(spawn_pos[0], spawn_pos[1], asset_manager=self.asset_manager)
+        else: new_powerup = SpeedBoostItem(spawn_pos[0], spawn_pos[1], asset_manager=self.asset_manager)
             
         self.power_ups_group.add(new_powerup)
         logger.debug(f"Spawned {powerup_type} powerup at {spawn_pos}")
@@ -161,6 +139,13 @@ class ItemManager:
             new_log = CorruptedLogItem(spawn_pos[0], spawn_pos[1], log_id, asset_manager=self.asset_manager)
             self.corrupted_logs_group.add(new_log)
             logger.info(f"Spawned Corrupted Log '{log_id}' at {spawn_pos}")
+
+    def spawn_quantum_circuitry(self, x, y):
+        """Spawns the Quantum Circuitry at a specific location."""
+        from entities.collectibles import QuantumCircuitryItem
+        circuitry = QuantumCircuitryItem(x, y, asset_manager=self.asset_manager)
+        self.quantum_circuitry_group.add(circuitry)
+        logger.info(f"Spawned Quantum Circuitry at ({x}, {y})")
         
     def reset_for_level(self):
         """Reset item manager state for a new level"""
@@ -186,7 +171,8 @@ class ItemManager:
         self.glyph_tablets_group.empty()
         self.architect_echoes_group.empty()
         self.alien_terminals_group.empty()
-        self.corrupted_logs_group.empty() # Clear new group
+        self.corrupted_logs_group.empty()
+        self.quantum_circuitry_group.empty()
 
     def _spawn_core_fragment(self, maze):
         """Spawn a core fragment at a random walkable position"""
@@ -224,6 +210,7 @@ class ItemManager:
             "icon_filename": "images/collectibles/core_fragment_alpha.png"
         }
         
+        from entities.collectibles import CoreFragmentItem
         new_fragment = CoreFragmentItem(
             spawn_pos[0], 
             spawn_pos[1], 

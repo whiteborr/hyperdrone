@@ -90,6 +90,7 @@ class GameController:
         self.reactor_group = pygame.sprite.GroupSingle()
         self.turrets_group = pygame.sprite.Group()
         self.corrupted_logs_group = pygame.sprite.Group() # New group for logs
+        self.quantum_circuitry_group = pygame.sprite.GroupSingle() # For Chapter 4
 
         from .item_manager import ItemManager
         self.item_manager = ItemManager(self, self.asset_manager)
@@ -136,6 +137,7 @@ class GameController:
         
         self.story_manager = StoryManager(state_manager_ref=self.state_manager)
 
+        # -- Define Chapter 1: The Anomaly --
         ch1_obj1 = Objective(objective_id="c1_collect_rings", description="Gather energy signatures (Collect 5 Rings)", obj_type="collect_all", target="rings")
         ch1_obj2 = Objective(objective_id="c1_clear_hostiles", description="Neutralize initial defense drones", obj_type="kill_all", target="standard_enemies")
         chapter1 = Chapter(chapter_id="chapter_1", title="Chapter 1: The Anomaly", 
@@ -143,22 +145,33 @@ class GameController:
                            objectives=[ch1_obj1, ch1_obj2], 
                            next_state_id="PlayingState")
 
+        # -- Define Chapter 2: The Guardian --
         ch2_obj1 = Objective(objective_id="c2_defeat_guardian", description="Decommission the Vault's primary Guardian", obj_type="kill", target="MAZE_GUARDIAN")
         chapter2 = Chapter(chapter_id="chapter_2", title="Chapter 2: The Guardian", 
                            description="The Vault's defenses are active and hostile. A formidable Guardian blocks the path forward.", 
                            objectives=[ch2_obj1], 
                            next_state_id="BossFightState")
 
+        # -- Define Chapter 3: The Corrupted Sector --
         ch3_obj1 = Objective(objective_id="c3_find_log_alpha", description="Find Corrupted Log Alpha", obj_type="collect", target="log_alpha")
         ch3_obj2 = Objective(objective_id="c3_find_log_beta", description="Access secure data with VANTIS drone", obj_type="collect", target="log_beta")
         chapter3 = Chapter(chapter_id="chapter_3", title="Chapter 3: The Corrupted Sector", 
                            description="This sector is unstable. Find out why the Vault is failing.", 
                            objectives=[ch3_obj1, ch3_obj2], 
                            next_state_id="CorruptedSectorState")
+                           
+        # -- Define Chapter 4: The Harvest Chamber --
+        ch4_obj1 = Objective(objective_id="c4_retrieve_payload", description="Retrieve the Quantum Circuitry", obj_type="collect", target="quantum_circuitry")
+        chapter4 = Chapter(chapter_id="chapter_4", title="Chapter 4: The Harvest Chamber",
+                            description="Descend into the Vault's intake chamber. Find the payload from flight MH370.",
+                            objectives=[ch4_obj1],
+                            next_state_id="HarvestChamberState")
 
+        # Add the chapters to the story manager in order
         self.story_manager.add_chapter(chapter1)
         self.story_manager.add_chapter(chapter2)
         self.story_manager.add_chapter(chapter3)
+        self.story_manager.add_chapter(chapter4)
         
         self.story_manager.start_story()
 
@@ -281,12 +294,23 @@ class GameController:
             0: "Standard", 1: "Spread", 2: "Rapid", 3: "Missile"
         }
         
+        # Create chapter choices for the settings menu
+        chapter_choices = []
+        chapter_display_names = {}
+        for i, chapter in enumerate(self.story_manager.chapters):
+            chapter_id = f"chapter_{i+1}"
+            chapter_choices.append(chapter_id)
+            chapter_display_names[chapter_id] = chapter.title
+        
         return [
             {"label":"Base Max Health","key":"PLAYER_MAX_HEALTH","category":"gameplay","type":"numeric","min":50,"max":200,"step":10,"note":"Original Drone base, others vary"},
             {"label":"Starting Lives","key":"PLAYER_LIVES","category":"gameplay","type":"numeric","min":1,"max":9,"step":1},
             {"label":"Base Speed","key":"PLAYER_SPEED","category":"gameplay","type":"numeric","min":1,"max":10,"step":1,"note":"Original Drone base, others vary"},
             {"label":"Initial Weapon","key":"INITIAL_WEAPON_MODE","category":"gameplay","type":"choice",
              "choices":weapon_modes_sequence, "get_display":lambda val:weapon_mode_names.get(val,"Unknown")},
+            {"label":"Start Chapter","key":"START_CHAPTER","category":"testing","type":"choice",
+             "choices":chapter_choices, "get_display":lambda val:chapter_display_names.get(val,"Unknown"),
+             "note":"For testing - sets prerequisites for chapter", "action":"start_chapter"},
             {"label":"Missile Damage","key":"weapons","type":"numeric","min":10,"max":100,"step":5},
             {"label":"Enemy Speed","key":"ENEMY_SPEED","category":"enemies","type":"numeric","min":0.5,"max":5,"step":0.5},
             {"label":"Enemy Health","key":"ENEMY_HEALTH","category":"enemies","type":"numeric","min":25,"max":300,"step":25},
@@ -309,16 +333,56 @@ class GameController:
             if walkable:
                 return random.choice(walkable)
         return (200, 200)
+        
+    def _respawn_player(self):
+        """Respawn the player without recreating the maze or level"""
+        if not self.maze:
+            return
+            
+        # Get spawn position
+        tile_size = get_setting("display", "TILE_SIZE", 64)
+        spawn_x, spawn_y = self._get_safe_spawn_point(tile_size * 0.7, tile_size * 0.7)
+        
+        # Get drone details
+        drone_id = self.drone_system.get_selected_drone_id()
+        drone_stats = self.drone_system.get_drone_stats(drone_id)
+        sprite_key = f"drone_{drone_id}_ingame_sprite"
+        
+        # Create new player drone
+        from entities import PlayerDrone
+        self.player = PlayerDrone(
+            spawn_x, spawn_y, drone_id, drone_stats, 
+            self.asset_manager, sprite_key, 'crash', 
+            self.drone_system
+        )
+        
+        # Update combat controller with new player
+        self.combat_controller.set_active_entities(
+            player=self.player, 
+            maze=self.maze, 
+            power_ups_group=self.power_ups_group
+        )
+        
+        # Update puzzle controller with new player
+        self.puzzle_controller.set_active_entities(
+            player=self.player, 
+            drone_system=self.drone_system, 
+            scene_manager=self.state_manager
+        )
 
     def _handle_player_death_or_life_loss(self, reason=""):
         self.player.alive = False 
         self._create_explosion(self.player.x, self.player.y, 6, 'crash')
         self.lives -= 1
         
+        logging.info(f"Player died. Lives remaining: {self.lives}")
+        
         if self.lives > 0:
             self.set_story_message(f"Lives remaining: {self.lives}", 2000)
-            self.state_manager.set_state(self.state_manager.get_current_state_id()) 
+            # Respawn the player without recreating the maze
+            self._respawn_player()
         else:
+            logging.info("No lives remaining. Game over.")
             self.state_manager.set_state("GameOverState")
     
     def _create_explosion(self, x, y, num_particles=20, specific_sound_key=None, is_enemy=False):
@@ -396,7 +460,7 @@ class GameController:
         for item_group in [self.collectible_rings_group, self.power_ups_group, 
                           self.core_fragments_group, self.vault_logs_group,
                           self.glyph_tablets_group, self.architect_echoes_group,
-                          self.corrupted_logs_group]: # Add new group to drawing
+                          self.corrupted_logs_group, self.quantum_circuitry_group]: # Add new group to drawing
             for item in item_group:
                 item.draw(self.screen, self.camera)
         
@@ -455,6 +519,11 @@ class GameController:
         for log in pygame.sprite.spritecollide(self.player, self.corrupted_logs_group, True):
             if hasattr(log, 'apply_effect'):
                 log.apply_effect(self.player, self) # Pass game_controller instance
+
+        # Handle Quantum Circuitry collision
+        for qc in pygame.sprite.spritecollide(self.player, self.quantum_circuitry_group, True):
+            if hasattr(qc, 'apply_effect'):
+                qc.apply_effect(self.player, self)
     
     def _check_level_clear_condition(self):
         return self.level_manager.check_level_clear_condition()
@@ -480,7 +549,7 @@ class GameController:
         for obj in current_chapter.objectives:
             status = "[X]" if obj.is_complete else "[ ]"
             obj_text = f"{status} {obj.description}"
-            
+
             obj_surface = self.STORY_FONT_BODY.render(obj_text, True, self.STORY_TEXT_COLOR)
             surface.blit(obj_surface, (40, obj_y_pos))
             obj_y_pos += 40

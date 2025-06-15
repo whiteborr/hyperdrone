@@ -9,7 +9,8 @@ from constants import (
     GAME_STATE_MAIN_MENU, GAME_STATE_DRONE_SELECT, GAME_STATE_SETTINGS,
     GAME_STATE_LEADERBOARD, GAME_STATE_GAME_OVER, GAME_STATE_ENTER_NAME, GAME_STATE_CODEX,
     GAME_STATE_PLAYING, GAME_STATE_MAZE_DEFENSE, GAME_STATE_GAME_INTRO_SCROLL,
-    GAME_STATE_ARCHITECT_VAULT_SUCCESS, GAME_STATE_ARCHITECT_VAULT_FAILURE
+    GAME_STATE_ARCHITECT_VAULT_SUCCESS, GAME_STATE_ARCHITECT_VAULT_FAILURE,
+    KEY_DEFEATED_BOSSES
 )
 from . import leaderboard
 
@@ -250,13 +251,30 @@ class UIFlowController:
             self.selected_setting_index = (self.selected_setting_index + 1) % len(self.settings_items_data)
             self.game_controller.play_sound('ui_select', 0.5)
             return True
-        elif key == pygame.K_RETURN and selected_item["type"] == "action":
-            if item_key == "RESET_SETTINGS_ACTION":
-                # Reset settings to defaults
-                from settings_manager import save_settings
-                save_settings()
-                self.game_controller.play_sound('ui_confirm')
-            return True
+        elif key == pygame.K_RETURN:
+            if selected_item["type"] == "action":
+                if item_key == "RESET_SETTINGS_ACTION":
+                    # Reset settings to defaults
+                    from settings_manager import save_settings
+                    save_settings()
+                    self.game_controller.play_sound('ui_confirm')
+                return True
+            elif selected_item.get("action") == "start_chapter" and selected_item["type"] == "choice":
+                # Handle chapter selection
+                category = selected_item.get("category", "testing")
+                current_val = get_setting(category, item_key)
+                if current_val:
+                    # Extract chapter number from chapter_id (e.g., "chapter_2" -> 2)
+                    try:
+                        chapter_num = int(current_val.split("_")[1]) - 1
+                        # Save the selected chapter setting before starting it
+                        from settings_manager import set_setting
+                        set_setting(category, item_key, current_val)
+                        self._start_selected_chapter(chapter_num)
+                        self.game_controller.play_sound('ui_confirm')
+                    except (ValueError, IndexError):
+                        self.game_controller.play_sound('ui_denied')
+                return True
         
         direction = 0
         if key == pygame.K_LEFT or key == pygame.K_a: direction = -1
@@ -295,6 +313,52 @@ class UIFlowController:
                         self.game_controller.play_sound('ui_select')
             return True
         return False
+        
+    def _start_selected_chapter(self, chapter_index):
+        """Set up prerequisites and start the selected chapter."""
+        if not hasattr(self.game_controller, 'story_manager'):
+            return
+            
+        story_manager = self.game_controller.story_manager
+        
+        # Validate chapter index
+        if chapter_index < 0 or chapter_index >= len(story_manager.chapters):
+            return
+            
+        # Set the current chapter in the story manager
+        story_manager.current_chapter_index = chapter_index
+        
+        # Set up prerequisites based on chapter
+        if chapter_index >= 1:  # Chapter 2 or later
+            # Mark all objectives in previous chapters as complete
+            for i in range(chapter_index):
+                prev_chapter = story_manager.chapters[i]
+                for obj in prev_chapter.objectives:
+                    obj.complete()
+                    
+            # For Chapter 2 (Guardian), unlock VANTIS drone
+            if chapter_index >= 1 and hasattr(self.game_controller, 'drone_system'):
+                self.game_controller.drone_system.unlock_drone("VANTIS")
+                
+            # For Chapter 3 (Corrupted Sector), defeat the Guardian boss
+            if chapter_index >= 2:
+                if hasattr(self.game_controller, 'drone_system'):
+                    # Add the boss to defeated_bosses directly
+                    self.game_controller.drone_system.add_defeated_boss("MAZE_GUARDIAN")
+                    self.game_controller.drone_system.unlock_drone("STRIX")
+                
+            # For Chapter 4 (Harvest Chamber), collect core fragments
+            if chapter_index >= 3:
+                if hasattr(self.game_controller, 'drone_system'):
+                    self.game_controller.drone_system.collect_core_fragment("alpha")
+                    self.game_controller.drone_system.collect_core_fragment("beta")
+                    self.game_controller.drone_system.collect_core_fragment("gamma")
+        
+        # Start the chapter
+        next_state_id = story_manager.chapters[chapter_index].next_state_id
+        if next_state_id and self.scene_manager:
+            # Use the correct next_state_id from the chapter instead of always defaulting to PlayingState
+            self.scene_manager.set_state(next_state_id)
 
     def _handle_leaderboard_input(self, key):
         if key == pygame.K_RETURN or key == pygame.K_q or key == pygame.K_ESCAPE:

@@ -280,7 +280,11 @@ class AssetManager:
             "music": {
                 "menu_theme": get_asset_path("music", "MENU_THEME_MUSIC"),
                 "gameplay_theme": get_asset_path("music", "GAMEPLAY_THEME_MUSIC"),
-                "defense_theme": get_asset_path("music", "DEFENSE_THEME_MUSIC")
+                "defense_theme": get_asset_path("music", "DEFENSE_THEME_MUSIC"),
+                "boss_theme": get_asset_path("music", "BOSS_THEME_MUSIC"),
+                "corrupted_theme": get_asset_path("music", "CORRUPTED_THEME_MUSIC"),
+                "shmup_theme": get_asset_path("music", "SHMUP_THEME_MUSIC"),
+                "architect_vault_theme": get_asset_path("music", "ARCHITECT_VAULT_THEME_MUSIC")
             }
         }
         
