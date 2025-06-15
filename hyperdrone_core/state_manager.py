@@ -8,7 +8,7 @@ from constants import (
     GAME_STATE_PLAYING, GAME_STATE_MAZE_DEFENSE, GAME_STATE_MAIN_MENU,
     GAME_STATE_GAME_OVER, GAME_STATE_LEADERBOARD, GAME_STATE_SETTINGS,
     GAME_STATE_DRONE_SELECT, GAME_STATE_CODEX, GAME_STATE_ENTER_NAME,
-    GAME_STATE_GAME_INTRO_SCROLL, GAME_STATE_RING_PUZZLE,
+    GAME_STATE_GAME_INTRO_SCROLL, GAME_STATE_RING_PUZZLE, GAME_STATE_STORY_MAP,
     GAME_STATE_BONUS_LEVEL_START, GAME_STATE_BONUS_LEVEL_PLAYING,
     GAME_STATE_ARCHITECT_VAULT_INTRO, GAME_STATE_ARCHITECT_VAULT_ENTRY_PUZZLE,
     GAME_STATE_ARCHITECT_VAULT_GAUNTLET, GAME_STATE_ARCHITECT_VAULT_EXTRACTION,
@@ -27,6 +27,7 @@ from .codex_state import CodexState
 from .enter_name_state import EnterNameState
 from .game_intro_scroll_state import GameIntroScrollState
 from .ring_puzzle_state import RingPuzzleState
+from .story_map_state import StoryMapState
 from .bonus_level_state import BonusLevelStartState, BonusLevelPlayingState
 from .architect_vault_states import (
     ArchitectVaultIntroState,
@@ -85,6 +86,7 @@ class StateManager:
             "EnterNameState": EnterNameState,
             "GameIntroScrollState": GameIntroScrollState,
             "RingPuzzleState": RingPuzzleState,
+            "StoryMapState": StoryMapState,
             "BonusLevelStartState": BonusLevelStartState,
             "BonusLevelPlayingState": BonusLevelPlayingState,
             "ArchitectVaultIntroState": ArchitectVaultIntroState,
@@ -118,6 +120,7 @@ class StateManager:
             GAME_STATE_CODEX: "CodexState",
             GAME_STATE_ENTER_NAME: "EnterNameState",
             GAME_STATE_GAME_INTRO_SCROLL: "GameIntroScrollState",
+            GAME_STATE_STORY_MAP: "StoryMapState",
             GAME_STATE_RING_PUZZLE: "RingPuzzleState",
             GAME_STATE_BONUS_LEVEL_START: "BonusLevelStartState",
             GAME_STATE_BONUS_LEVEL_PLAYING: "BonusLevelPlayingState",
@@ -135,7 +138,7 @@ class StateManager:
     def _register_allowed_transitions(self):
         """Register allowed transitions between states"""
         # Main menu transitions
-        self.registry.register_transition("MainMenuState", "PlayingState")
+        self.registry.register_transition("MainMenuState", "StoryMapState")
         self.registry.register_transition("MainMenuState", "SettingsState")
         self.registry.register_transition("MainMenuState", "LeaderboardState")
         self.registry.register_transition("MainMenuState", "DroneSelectState")
@@ -156,7 +159,13 @@ class StateManager:
         self.registry.register_transition("CodexState", "MainMenuState")
         
         # Game intro transitions
-        self.registry.register_transition("GameIntroScrollState", "PlayingState")
+        self.registry.register_transition("GameIntroScrollState", "StoryMapState")
+        
+        # Story map transitions
+        self.registry.register_transition("StoryMapState", "PlayingState")
+        self.registry.register_transition("StoryMapState", "BossFightState")
+        self.registry.register_transition("StoryMapState", "CorruptedSectorState")
+        self.registry.register_transition("StoryMapState", "HarvestChamberState")
         
         # Playing state transitions
         self.registry.register_transition("PlayingState", "GameOverState")
@@ -169,6 +178,7 @@ class StateManager:
         # Game over transitions
         self.registry.register_transition("GameOverState", "MainMenuState")
         self.registry.register_transition("GameOverState", "EnterNameState")
+        self.registry.register_transition("GameOverState", "StoryMapState")
         
         # Enter name transitions
         self.registry.register_transition("EnterNameState", "LeaderboardState")
@@ -256,6 +266,7 @@ class StateManager:
             "CodexState": "menu_theme",
             "RingPuzzleState": "architect_vault_theme",
             "GameIntroScrollState": "menu_theme",
+            "StoryMapState": "menu_theme",
             "PlayingState": "gameplay_theme",
             "BossFightState": "boss_theme", 
             "CorruptedSectorState": "corrupted_theme",
@@ -356,6 +367,11 @@ class StateManager:
             if hasattr(self.game_controller, 'bonus_level_start_display_end_time'):
                 if current_time > self.game_controller.bonus_level_start_display_end_time:
                     self.set_state("BonusLevelPlayingState")
+                    
+        elif current_state_id == "StoryMapState":
+            if hasattr(self.game_controller, 'story_map_state') and hasattr(self.game_controller.story_map_state, 'ready_to_transition'):
+                if self.game_controller.story_map_state.ready_to_transition:
+                    self.game_controller.story_map_state._transition_to_gameplay()
         
         if hasattr(self.game_controller, 'paused') and not self.game_controller.paused:
             self._update_music()

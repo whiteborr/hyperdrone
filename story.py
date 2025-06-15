@@ -1,11 +1,11 @@
 # story.py
 import logging
 from hyperdrone_core.game_events import GameEvent, ItemCollectedEvent, BossDefeatedEvent
+from settings_manager import get_setting
 
 # Using the existing logger is great.
 logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
 
-# --- NEW: Objective Class ---
 # This class represents a single, trackable objective.
 class Objective:
     """A specific, trackable goal within a chapter."""
@@ -31,7 +31,6 @@ class Objective:
             self.is_complete = True
             logging.info(f"Objective COMPLETED: '{self.description}' ({self.objective_id})")
 
-# --- MODIFIED: Chapter Class ---
 class Chapter:
     """Acts as a blueprint for a single chapter in our story."""
     def __init__(self, chapter_id, title, description, objectives, next_state_id=None):
@@ -63,26 +62,65 @@ class Chapter:
                 return
         logging.warning(f"Chapter '{self.title}': Tried to complete non-existent objective ID: '{objective_id}'")
 
-# --- MODIFIED: StoryManager Class ---
 class StoryManager:
     """The main controller for the game's narrative."""
-    def __init__(self, state_manager_ref=None):
+    def __init__(self, state_manager_ref=None, drone_system_ref=None): # <-- Add drone_system_ref
         """Initializes the StoryManager."""
         self.chapters = []
         self.current_chapter_index = -1
-        self.state_manager = state_manager_ref # Store a reference to the game's state manager
+        self.state_manager = state_manager_ref
+        self.drone_system = drone_system_ref # <-- Store the reference
 
     def add_chapter(self, chapter):
         """Adds a Chapter object to the story sequence."""
         self.chapters.append(chapter)
 
+    def _apply_chapter_prerequisites(self, start_chapter_index):
+        """Sets up the game state to match the starting chapter's requirements."""
+        if not self.drone_system or start_chapter_index == 0:
+            return
+
+        logging.info(f"Applying prerequisites for starting at Chapter {start_chapter_index + 1}.")
+        # Mark all previous chapters as complete
+        for i in range(start_chapter_index):
+            for obj in self.chapters[i].objectives:
+                obj.complete()
+
+        # Grant fragments based on which chapters are being skipped
+        if start_chapter_index >= 1: # Starting at Ch 2 or later, grant Earth
+            self.drone_system.collect_core_fragment("cf_earth")
+            self.drone_system.unlock_drone("VANTIS")
+            
+        if start_chapter_index >= 2: # Starting at Ch 3 or later, grant Fire
+            self.drone_system.collect_core_fragment("cf_fire")
+            self.drone_system.add_defeated_boss("MAZE_GUARDIAN") # Also mark boss as defeated
+            self.drone_system.unlock_drone("STRIX")
+            
+        if start_chapter_index >= 3: # Starting at Ch 4 or later, grant Air
+            self.drone_system.collect_core_fragment("cf_air")
+            
+        if start_chapter_index >= 4: # Starting at Ch 5 or later, grant Water
+            self.drone_system.collect_core_fragment("cf_water")
+
     def start_story(self):
-        """Begins the story by setting the current chapter to the first one."""
-        if self.chapters:
-            self.current_chapter_index = 0
-            logging.info("Story has started!")
-        else:
+        """Begins the story by setting the current chapter based on settings."""
+        if not self.chapters:
             logging.error("No chapters in the story to start.")
+            return
+
+        start_chapter_id = get_setting("testing", "START_CHAPTER", "chapter_1")
+        try:
+            # Chapter IDs are "chapter_1", "chapter_2", etc.
+            start_index = int(start_chapter_id.split('_')[1]) - 1
+            if not (0 <= start_index < len(self.chapters)):
+                start_index = 0
+        except (ValueError, IndexError):
+            start_index = 0
+
+        self.current_chapter_index = start_index
+        self._apply_chapter_prerequisites(start_index)
+        
+        logging.info(f"Story has started at Chapter {self.current_chapter_index + 1}!")
 
     def get_current_chapter(self):
         """Retrieves the chapter the player is currently on."""

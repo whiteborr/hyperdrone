@@ -92,7 +92,7 @@ class Collectible(pygame.sprite.Sprite):
             screen_rect = camera.apply_to_rect(self.rect)
             if not screen_rect.colliderect(surface.get_rect()): return
             if screen_rect.width > 0 and screen_rect.height > 0:
-                scaled_image = pygame.transform.smoothscale(self.image, screen_rect.size)
+                scaled_image = pygame.transform.scale(self.image, screen_rect.size)
                 surface.blit(scaled_image, screen_rect.topleft)
         else:
             surface.blit(self.image, self.rect)
@@ -180,6 +180,12 @@ class CoreFragmentItem(Collectible):
             fallback_surface = pygame.Surface(fallback_size, pygame.SRCALPHA)
             pygame.draw.circle(fallback_surface, (128, 0, 255), (fragment_size//2, fragment_size//2), fragment_size//2)
             loaded_original_icon = fallback_surface
+        
+        # Explicitly resize the icon to the desired size
+        if loaded_original_icon:
+            icon_size = (fragment_size, fragment_size)
+            loaded_original_icon = pygame.transform.scale(loaded_original_icon, icon_size)
+            
         super().__init__(x, y, base_color=fragment_config_details.get("display_color", (128, 0, 255)), size=fragment_size, thickness=3, original_icon_surface=loaded_original_icon)
 
     def update(self):
@@ -188,7 +194,12 @@ class CoreFragmentItem(Collectible):
 
     def apply_effect(self, player_drone, game_controller_instance):
         if not self.collected and hasattr(game_controller_instance, 'drone_system'):
-            if game_controller_instance.drone_system.collect_core_fragment(self.fragment_id): self.collected = True; return True
+            if game_controller_instance.drone_system.collect_core_fragment(self.fragment_id): 
+                self.collected = True
+                # Play collection sound
+                if hasattr(game_controller_instance, 'play_sound'):
+                    game_controller_instance.play_sound('collect_fragment')
+                return True
         return False
 
 class VaultLogItem(Collectible):

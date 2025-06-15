@@ -204,4 +204,9 @@ class PlayingState(State):
             
         ring_icon = self.game.asset_manager.get_image("ring_ui_icon")
         self.game.level_manager.draw_ring_animations(surface, ring_icon)
+        
+        # Draw fragment animations
+        self.game._draw_fragment_animations()
+        
+
 

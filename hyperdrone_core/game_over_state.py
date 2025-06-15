@@ -16,7 +16,7 @@ class GameOverState(State):
                     self.game.level_manager.reset()
                     self.game.lives = 3
                     self.game.score = 0
-                    self.game.state_manager.set_state("PlayingState")
+                    self.game.state_manager.set_state("StoryMapState")
                 elif event.key == pygame.K_m:
                     # Return to main menu
                     self.game.state_manager.set_state("MainMenuState")

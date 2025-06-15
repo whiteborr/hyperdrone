@@ -104,13 +104,15 @@ class LevelManager:
         target_x = rings_x + collected_count * (HUD_RING_ICON_SIZE + HUD_RING_ICON_SPACING) + HUD_RING_ICON_SIZE // 2
         target_y = rings_y + HUD_RING_ICON_SIZE // 2
         
-        self.animating_rings_to_hud.append({
-            'pos': list(start_pos),
-            'start_time': pygame.time.get_ticks(),
-            'duration': 1000,  # 1 second animation
-            'start_pos': start_pos,
-            'target_pos': (target_x, target_y)
-        })
+        # Ensure we don't add more animations than needed
+        if collected_count < self.total_rings_per_level:
+            self.animating_rings_to_hud.append({
+                'pos': list(start_pos),
+                'start_time': pygame.time.get_ticks(),
+                'duration': 1000,  # 1 second animation
+                'start_pos': start_pos,
+                'target_pos': (target_x, target_y)
+            })
     
     def update_ring_animations(self, current_time):
         """Update ring animations and return completed animations count"""
@@ -201,32 +203,52 @@ class LevelManager:
         pygame.draw.rect(surface, border_color, (0, 0, width, height), border_width)
     
     def check_level_clear_condition(self):
-        """Check if the level has been cleared and progress to the next level if so"""
+        """
+        Check if the level has been cleared and progress to the next level if so.
+        Completion requires all enemies to be defeated and all essential collectibles to be gathered.
+        """
         current_time = pygame.time.get_ticks()
         current_game_state = self.game_controller.state_manager.get_current_state_id()
-        
-        # Check if time has run out - only for regular maze mode
+
+        # Check for timeout in regular maze mode
         if current_game_state == "PlayingState" and current_time - self.level_start_time >= self.level_timer_duration:
-            # Time's up - player loses a life
             if self.game_controller.player and self.game_controller.player.alive:
                 self.game_controller._handle_player_death_or_life_loss("Time's up!")
             return False
             
-        # Check if all rings are collected and all enemies are defeated
-        all_rings_collected = self.collected_rings_count >= self.total_rings_per_level
+        # --- NEW COMPLETION LOGIC ---
+
+        # 1. Check if all enemies are defeated
         all_enemies_defeated = self.game_controller.combat_controller.enemy_manager.get_active_enemies_count() == 0
-        
-        # Only stop player movement when both conditions are met
-        if all_rings_collected and all_enemies_defeated:
-            # Stop the player drone when all conditions are met
+
+        # 2. Check if all non-powerup collectibles have been collected.
+        #    This is true if their sprite groups are empty.
+        required_collectible_groups = [
+            self.game_controller.collectible_rings_group,
+            self.game_controller.core_fragments_group,
+            self.game_controller.corrupted_logs_group,
+            self.game_controller.quantum_circuitry_group,
+            # NOTE: Add any other future collectible groups here that are required for level completion.
+            # The power_ups_group is intentionally excluded.
+        ]
+        all_items_collected = all(len(group) == 0 for group in required_collectible_groups)
+
+        # 3. Check if the primary conditions (enemies and items) are met
+        if all_enemies_defeated and all_items_collected:
+            # Stop the player drone's movement
             if self.game_controller.player and hasattr(self.game_controller.player, 'is_cruising'):
                 self.game_controller.player.is_cruising = False
                 
-            # Wait for all ring animations to complete before progressing
-            if len(self.animating_rings_to_hud) > 0:
-                return False
-                
+            # 4. Also check that all collection animations are finished
+            rings_animating = len(self.animating_rings_to_hud) > 0
+            fragments_animating = len(self.game_controller.animating_fragments_to_hud) > 0
+
+            if rings_animating or fragments_animating:
+                return False  # Wait for animations to finish before advancing
+
+            # All clear! Advance to the next level.
             return self._advance_to_next_level()
+            
         return False
     
     def _advance_to_next_level(self):

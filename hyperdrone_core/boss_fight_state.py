@@ -24,7 +24,14 @@ class BossFightState(State):
         if not self.game.player:
             drone_id = self.game.drone_system.get_selected_drone_id()
             drone_stats = self.game.drone_system.get_drone_stats(drone_id)
-            sprite_key = drone_config.get("ingame_sprite_path") if (drone_config := DRONE_DATA.get(drone_id)) else None
+            drone_config = DRONE_DATA.get(drone_id, {})
+            sprite_key = "drone_default"  # Default fallback sprite key
+            if "ingame_sprite_path" in drone_config:
+                # Extract just the filename without the assets/ prefix
+                sprite_path = drone_config["ingame_sprite_path"]
+                if sprite_path.startswith("assets/"):
+                    sprite_path = sprite_path[7:]  # Remove "assets/" prefix
+                sprite_key = sprite_path
             self.game.player = PlayerDrone(
                 player_spawn_pos[0], player_spawn_pos[1], drone_id, drone_stats,
                 self.game.asset_manager, sprite_key, 'crash', self.game.drone_system
@@ -42,7 +49,8 @@ class BossFightState(State):
             self.game.asset_manager
         )
         self.game.combat_controller.boss_active = True
-
+        self.game.combat_controller.enemy_manager.enemies.add(self.game.combat_controller.maze_guardian)
+       
         # Set up combat controller for the boss fight
         self.game.combat_controller.set_active_entities(
             player=self.game.player,

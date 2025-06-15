@@ -17,7 +17,7 @@ class GameIntroScrollState(State):
     
     def update(self, delta_time):
         if self.game.ui_flow_controller.intro_sequence_finished:
-            self.game.state_manager.set_state("PlayingState")
+            self.game.state_manager.set_state("StoryMapState")
     
     def draw(self, surface):
         # Let the UI manager handle drawing the game intro screen

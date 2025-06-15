@@ -208,7 +208,7 @@ class UIManager:
             "MainMenuState", "DroneSelectState", "SettingsState",
             "LeaderboardState", "CodexState",
             "ArchitectVaultSuccessState", "ArchitectVaultFailureState",
-            "GameOverState", "EnterNameState"
+            "GameOverState", "EnterNameState", "StoryMapState"
         ]
         
         if is_menu_like_state: 
@@ -226,6 +226,7 @@ class UIManager:
             "GameOverState": self.draw_game_over_overlay,
             "EnterNameState": self.draw_enter_name_overlay,
             "GameIntroScrollState": self.draw_game_intro_scroll,
+            "StoryMapState": self.draw_story_map,
             "ArchitectVaultSuccessState": self.draw_architect_vault_success_overlay,
             "ArchitectVaultFailureState": self.draw_architect_vault_failure_overlay
         }
@@ -261,6 +262,114 @@ class UIManager:
             if current_state != "game_intro_scroll":
                 self.draw_story_message_overlay(self.game_controller.story_message)
     
+    def draw_story_map(self):
+        """Draw the story map screen showing player progression through chapters"""
+        # 1. Draw background
+        bg = self.asset_manager.load_image('images/ui/story_map_background.png', key='story_map_background')
+        width = get_setting("display", "WIDTH", 1920)
+        height = get_setting("display", "HEIGHT", 1080)
+        
+        if bg:
+            scaled_bg = pygame.transform.scale(bg, (width, height))
+            self.screen.blit(scaled_bg, (0, 0))
+        else:
+            self.screen.fill((10, 20, 40))  # Dark blue fallback color
+            
+        # Draw title
+        title_surf = self._render_text_safe("CHAPTER MAP", "large_text", GOLD, fallback_size=48)
+        self.screen.blit(title_surf, title_surf.get_rect(center=(width // 2, 80)))
+
+        # 2. Define chapter positions and path
+        chapter_positions = [
+            (width * 0.2, height * 0.5),    # Chapter 1
+            (width * 0.35, height * 0.35),  # Chapter 2
+            (width * 0.5, height * 0.5),    # Chapter 3
+            (width * 0.65, height * 0.35),  # Chapter 4
+            (width * 0.8, height * 0.5),    # Chapter 5
+            (width * 0.9, height * 0.3)     # Bonus Chapter
+        ]
+        
+        # Get current chapter index from story manager
+        current_chapter_index = 0  # Default to first chapter
+        if hasattr(self.game_controller, 'story_manager'):
+            story_manager = self.game_controller.story_manager
+            if story_manager:
+                current_chapter = story_manager.get_current_chapter()
+                if current_chapter:
+                    # Map chapter IDs to indices (0-based)
+                    chapter_id_map = {
+                        "chapter1": 0,
+                        "chapter2": 1,
+                        "chapter3": 2,
+                        "chapter4": 3,
+                        "chapter5": 4,
+                        "bonus": 5
+                    }
+                    current_chapter_index = chapter_id_map.get(current_chapter.chapter_id, 0)
+                else:
+                    # If no current chapter, set to first chapter
+                    current_chapter_index = 0
+        
+        # 3. Draw paths between chapters
+        path_color = (100, 80, 50)        # Brown for locked paths
+        unlocked_path_color = (200, 160, 100)  # Light gold for unlocked paths
+        
+        for i in range(len(chapter_positions) - 1):
+            # Skip the path to bonus chapter if not the last main chapter
+            if i == 4:  # Path from Chapter 5 to Bonus
+                if current_chapter_index >= 4:  # Only show if Chapter 5 is unlocked
+                    color = unlocked_path_color if current_chapter_index >= 5 else path_color
+                    pygame.draw.line(self.screen, color, chapter_positions[i], chapter_positions[i+1], 4)
+            else:  # Regular chapter paths
+                color = unlocked_path_color if i < current_chapter_index else path_color
+                pygame.draw.line(self.screen, color, chapter_positions[i], chapter_positions[i+1], 4)
+
+        # 4. Draw chapter icons and player cursor
+        # Load images directly from file paths
+        locked_icon = self.asset_manager.load_image('images/ui/chapter_icon_locked.png', key='chapter_icon_locked')
+        unlocked_icon = self.asset_manager.load_image('images/ui/chapter_icon_unlocked.png', key='chapter_icon_unlocked')
+        player_cursor = self.asset_manager.load_image('images/ui/player_map_cursor.png', key='player_map_cursor')
+        
+        # Create fallback icons if needed
+        if not locked_icon:
+            locked_icon = self._create_fallback_icon_surface((40, 40), "?", (80, 80, 80))
+        if not unlocked_icon:
+            unlocked_icon = self._create_fallback_icon_surface((40, 40), "!", (200, 200, 100))
+        if not player_cursor:
+            player_cursor = self._create_fallback_icon_surface((50, 50), "X", (0, 200, 200))
+
+        # Chapter names
+        chapter_names = ["Chapter 1", "Chapter 2", "Chapter 3", "Chapter 4", "Chapter 5", "Bonus"]
+        # Use a font size that's already loaded
+        font = self.asset_manager.get_font("medium_text", 36) or pygame.font.Font(None, 24)
+        
+        for i, pos in enumerate(chapter_positions):
+            # Determine if this chapter is unlocked
+            is_unlocked = i <= current_chapter_index
+            
+            # Draw the appropriate icon
+            icon_to_draw = unlocked_icon if is_unlocked else locked_icon
+            if icon_to_draw:
+                rect = icon_to_draw.get_rect(center=pos)
+                self.screen.blit(icon_to_draw, rect)
+            
+            # Draw chapter name
+            name_color = WHITE if is_unlocked else GREY
+            name_surf = font.render(chapter_names[i], True, name_color)
+            name_pos = (pos[0], pos[1] + 40)  # Position below the icon
+            self.screen.blit(name_surf, name_surf.get_rect(center=name_pos))
+            
+            # Draw player cursor on current chapter
+            if i == current_chapter_index and player_cursor:
+                cursor_rect = player_cursor.get_rect(center=(pos[0], pos[1] - 30))  # Position above the icon
+                self.screen.blit(player_cursor, cursor_rect)
+        
+        # Draw instruction at bottom
+        instruction = "Press SPACE or ENTER to continue"
+        # Use a font size that's already loaded (28 instead of 24)
+        instruction_surf = self._render_text_safe(instruction, "ui_text", CYAN, fallback_size=28)
+        self.screen.blit(instruction_surf, instruction_surf.get_rect(center=(width // 2, height - 50)))
+
     def draw_architect_vault_hud_elements(self):
         title_surf = self._render_text_safe("Architect's Vault", "large_text", GOLD, fallback_size=48)
         width = get_setting("display", "WIDTH", 1920)
@@ -292,7 +401,7 @@ class UIManager:
             line_surf = font.render(line, True, WHITE)
             self.screen.blit(line_surf, line_surf.get_rect(center=(screen_width / 2, start_y + i * 40)))
             
-        prompt_surf = self._render_text_safe("Press SPACE to continue...", "ui_text", GOLD, fallback_size=24)
+        prompt_surf = self._render_text_safe("Press SPACE to continue...", "ui_text", GOLD, fallback_size=28)
         self.screen.blit(prompt_surf, prompt_surf.get_rect(center=(screen_width / 2, screen_height - 50)))
 
     def draw_story_message_overlay(self, message):
@@ -423,37 +532,29 @@ class UIManager:
         pygame.draw.line(self.screen, CYAN, (0, panel_y), (width, panel_y), 2)
         font_ui, font_small, font_large_val = self.asset_manager.get_font("ui_text", 28), self.asset_manager.get_font("ui_text", 24), self.asset_manager.get_font("ui_values", 30)
         
-        # Move weapon bar to the left side of the HUD
-        wpn_x, wpn_y = 30, panel_y + 20  # Left position
-        
-        # Initialize icon_height outside the if block so it's always defined
+        wpn_x, wpn_y = 30, panel_y + 20
         icon_height = 0
         
-        # Display weapon info
         weapon_icon = self.ui_asset_surfaces.get("current_weapon_icon")
         if weapon_icon:
-            # Rotate the weapon icon 90 degrees counterclockwise
             rotated_icon = pygame.transform.rotate(weapon_icon, 90)
             icon_width, icon_height = rotated_icon.get_size()
             
-            # Draw weapon label
             weapon_label = font_ui.render("Weapon", True, CYAN)
             self.screen.blit(weapon_label, (wpn_x, wpn_y - 20))
             
-            # Draw weapon icon
             self.screen.blit(rotated_icon, (wpn_x, wpn_y))
             
             # Display lives as multiple weapon mode icons to the right of the weapon bar
             if self.game_controller.lives > 0:
-                # Calculate spacing for life icons
                 icon_spacing = 10
-                
-                # Start position for the first icon (right after weapon icon)
                 lives_start_x = wpn_x + icon_width + 20
                 
-                # Draw one icon for each life based on settings value minus 1
-                # (since the weapon icon already represents one life)
-                actual_lives = get_setting("gameplay", "PLAYER_LIVES", 3) - 1
+                # --- FIX: Use the game_controller's current lives count ---
+                # The number of extra icons is the current lives minus the one being displayed.
+                actual_lives = self.game_controller.lives - 1
+                # --- END OF FIX ---
+
                 for i in range(actual_lives):
                     icon_x = lives_start_x + (i * (icon_width + icon_spacing))
                     self.screen.blit(rotated_icon, (icon_x, panel_y + 20))
@@ -462,36 +563,31 @@ class UIManager:
         self.screen.blit(score_label, (30, panel_y + 65))
         self.screen.blit(font_large_val.render(f"{self.game_controller.level_manager.score}", True, WHITE), (30 + score_label.get_width() + 10, panel_y + 65))
         
-        # Health bar removed from HUD
         wpn_mode = player.current_weapon_mode
         from constants import WEAPON_MODE_NAMES
         wpn_name = WEAPON_MODE_NAMES.get(wpn_mode, "N/A")
         
-        # Update the weapon icon based on the current weapon mode
         self.update_weapon_icon_surface(wpn_mode)
         
-        weapon_label = font_ui.render("Weapon", True, CYAN)
-        self.screen.blit(weapon_label, ((width / 2) - (weapon_label.get_width() / 2), wpn_y - 20))  # Center the label
+        weapon_label_center = font_ui.render("Weapon", True, CYAN)
+        self.screen.blit(weapon_label_center, ((width / 2) - (weapon_label_center.get_width() / 2), wpn_y - 20))
         
-        # Use the updated weapon icon
         icon_surf = self.ui_asset_surfaces.get("current_weapon_icon")
         if icon_surf:
-            # Rotate the weapon icon 90 degrees counterclockwise
             rotated_icon = pygame.transform.rotate(icon_surf, 90)
             icon_rect = rotated_icon.get_rect(topleft=(wpn_x, wpn_y))
-            self.screen.blit(rotated_icon, icon_rect)
+            # This logic seems duplicated, but we'll focus on the lives bug for now.
+            # self.screen.blit(rotated_icon, icon_rect) 
             text_x = icon_rect.right + 15
-            # Move cooldown bar below the weapon and life icons
             cooldown_bar_y = wpn_y + icon_height + 10
             self.screen.blit(font_small.render(wpn_name, True, WHITE), (text_x, wpn_y + 5))
             time_since = pygame.time.get_ticks() - player.last_shot_time
             progress = min(1.0, time_since / player.current_shoot_cooldown) if player.current_shoot_cooldown > 0 else 1.0
-            cooldown_width = 120  # Slightly smaller to fit better with new layout
+            cooldown_width = 120
             pygame.draw.rect(self.screen, DARK_GREY, (text_x, cooldown_bar_y, cooldown_width, 10))
             pygame.draw.rect(self.screen, YELLOW, (text_x, cooldown_bar_y, cooldown_width * progress, 10))
             pygame.draw.rect(self.screen, WHITE, (text_x, cooldown_bar_y, cooldown_width, 10), 1)
 
-        # Position rings and fragments at the right side of the screen
         hud_ring_icon_area_x_offset = get_setting("display", "HUD_RING_ICON_AREA_X_OFFSET", 150)
         hud_ring_icon_area_y_offset = get_setting("display", "HUD_RING_ICON_AREA_Y_OFFSET", 30)
         hud_ring_icon_size = get_setting("display", "HUD_RING_ICON_SIZE", 24)
@@ -502,13 +598,11 @@ class UIManager:
         frags_x = width - 150
         frags_y = panel_y + 65
         
-        # Only display rings in regular Maze levels (not in MazeChapter2)
         current_game_state = self.state_manager.get_current_state_id() if self.state_manager else None
         if current_game_state == "PlayingState":
             ring_icon, ring_empty = self.ui_asset_surfaces.get("ring_icon"), self.ui_asset_surfaces.get("ring_icon_empty")
             if ring_icon and ring_empty:
                 for i in range(self.game_controller.level_manager.total_rings_per_level): 
-                    # Show filled icon only for rings that have completed their animation
                     show_filled = i < self.game_controller.level_manager.displayed_collected_rings_count
                     icon_x = rings_x + i * (hud_ring_icon_size + hud_ring_icon_spacing)
                     self.screen.blit(ring_icon if show_filled else ring_empty, (icon_x, rings_y))
@@ -516,13 +610,38 @@ class UIManager:
         core_fragment_details = settings_manager.get_core_fragment_details()
         collected = self.drone_system.get_collected_fragments_ids()
         required = sorted([d['id'] for d in core_fragment_details.values() if d.get('required_for_vault')])
+        animating_ids = [anim['fragment_id'] for anim in self.game_controller.animating_fragments_to_hud]
+
         for i, frag_id in enumerate(required):
-            icon = self.ui_asset_surfaces["core_fragment_icons"].get(frag_id) if frag_id in collected else self.ui_asset_surfaces["core_fragment_empty_icon"]
+            show_filled_icon = (frag_id in collected) and (frag_id not in animating_ids)
+            icon = self.ui_asset_surfaces["core_fragment_icons"].get(frag_id) if show_filled_icon else self.ui_asset_surfaces["core_fragment_empty_icon"]
             if icon: self.screen.blit(icon, (frags_x + i * (self.ui_icon_size_fragments[0] + 5), frags_y))
 
     def get_scaled_fragment_icon_surface(self, fragment_id):
+        # First check if it's a level fragment (fragment_level_1, etc.)
+        if fragment_id.startswith("fragment_level_"):
+            level_num = fragment_id.split("_")[-1]
+            # Try to find the corresponding alpha, beta, gamma fragment based on level
+            if level_num == "1":
+                fragment_id = "alpha"
+            elif level_num == "2":
+                fragment_id = "beta"
+            elif level_num == "3":
+                fragment_id = "gamma"
+        
         icon_surface = self.ui_asset_surfaces["core_fragment_icons"].get(fragment_id)
-        if icon_surface: return icon_surface
+        if icon_surface: 
+            return icon_surface
+        
+        # Try loading directly from asset manager
+        if fragment_id in ["alpha", "beta", "gamma"]:
+            direct_key = f"images/collectibles/core_fragment_{fragment_id}.png"
+            icon_surface = self.asset_manager.get_image(direct_key, scale_to_size=self.ui_icon_size_fragments)
+            if icon_surface:
+                # Cache it for future use
+                self.ui_asset_surfaces["core_fragment_icons"][fragment_id] = icon_surface
+                return icon_surface
+        
         logger.warning(f"UIManager: Scaled icon surface for fragment_id '{fragment_id}' not found. Using fallback.")
         return self._create_fallback_icon_surface(self.ui_icon_size_fragments, "?", PURPLE)
 

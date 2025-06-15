@@ -62,6 +62,7 @@ class GameStates:
     DRONE_SELECT: str = get_setting("game_states", "GAME_STATE_DRONE_SELECT", "drone_select_menu")
     CODEX: str = get_setting("game_states", "GAME_STATE_CODEX", "codex_screen")
     GAME_INTRO_SCROLL: str = get_setting("game_states", "GAME_STATE_GAME_INTRO_SCROLL", "game_intro_scroll")
+    STORY_MAP: str = get_setting("game_states", "GAME_STATE_STORY_MAP", "story_map")
     
     # Chapter-specific states
     BOSS_FIGHT: str = get_setting("game_states", "GAME_STATE_BOSS_FIGHT", "boss_fight")
@@ -105,6 +106,7 @@ GAME_STATE_ARCHITECT_VAULT_SUCCESS = GameStates.ARCHITECT_VAULT_SUCCESS
 GAME_STATE_ARCHITECT_VAULT_FAILURE = GameStates.ARCHITECT_VAULT_FAILURE
 GAME_STATE_RING_PUZZLE = GameStates.RING_PUZZLE
 GAME_STATE_GAME_INTRO_SCROLL = GameStates.GAME_INTRO_SCROLL
+GAME_STATE_STORY_MAP = GameStates.STORY_MAP
 GAME_STATE_MAZE_DEFENSE = GameStates.MAZE_DEFENSE
 GAME_STATE_BOSS_FIGHT = GameStates.BOSS_FIGHT
 GAME_STATE_CORRUPTED_SECTOR = GameStates.CORRUPTED_SECTOR

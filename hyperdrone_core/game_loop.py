@@ -28,7 +28,7 @@ from entities.collectibles import (
     ArchitectEchoItem, CorruptedLogItem
 )
 from drone_management import DroneSystem, DRONE_DATA
-from settings_manager import get_setting, set_setting, save_settings
+from settings_manager import get_setting, set_setting, save_settings, settings_manager
 from hyperdrone_core.camera import Camera
 
 logger_gc = logging.getLogger(__name__)
@@ -135,7 +135,7 @@ class GameController:
         self.intro_screen_text_surfaces_current = []
         self.intro_font_key = "codex_category_font"
         
-        self.story_manager = StoryManager(state_manager_ref=self.state_manager)
+        self.story_manager = StoryManager(state_manager_ref=self.state_manager, drone_system_ref=self.drone_system)
 
         # -- Define Chapter 1: The Anomaly --
         ch1_obj1 = Objective(objective_id="c1_collect_rings", description="Gather energy signatures (Collect 5 Rings)", obj_type="collect_all", target="rings")
@@ -486,8 +486,12 @@ class GameController:
             for reactor in self.reactor_group:
                 reactor.draw(self.screen, self.camera)
                 
+        # Draw ring animations
         ring_icon = self.asset_manager.get_image("ring_ui_icon")
         self.level_manager.draw_ring_animations(self.screen, ring_icon)
+        
+        # Draw fragment animations
+        self._draw_fragment_animations()
     
     def _handle_collectible_collisions(self):
         if not self.player or not hasattr(self.player, 'rect'):
@@ -508,11 +512,56 @@ class GameController:
                 self.play_sound('collect_ring')
                 
         for fragment in pygame.sprite.spritecollide(self.player, self.core_fragments_group, True):
-            self.drone_system.collect_core_fragment(fragment.fragment_id)
+            # Get the fragment's position before removing it
+            fragment_pos = (fragment.center_x, fragment.center_y)
+            fragment_id = fragment.fragment_id
+            
+            # Add to collected fragments
+            self.drone_system.collect_core_fragment(fragment_id)
+            
+            # Play sound
             self.play_sound('collect_fragment')
+            
+            # Get the target position in the HUD
+            width = get_setting("display", "WIDTH", 1920)
+            height = get_setting("display", "HEIGHT", 1080)
+            bottom_panel_height = get_setting("display", "BOTTOM_PANEL_HEIGHT", 120)
+            frags_x = width - 150
+            frags_y = height - bottom_panel_height + 65
+            
+            # Use the stored target positions from UI manager if available
+            target_pos = None
+            if hasattr(self, 'fragment_ui_target_positions') and fragment_id in self.fragment_ui_target_positions:
+                target_pos = self.fragment_ui_target_positions[fragment_id]
+            
+            # If no stored position, calculate it
+            if not target_pos:
+                core_fragment_details = settings_manager.get_core_fragment_details()
+                required = sorted([d['id'] for d in core_fragment_details.values() if d.get('required_for_vault')])
+                try:
+                    index = required.index(fragment_id)
+                    target_x = frags_x + index * (self.ui_manager.ui_icon_size_fragments[0] + 5) + self.ui_manager.ui_icon_size_fragments[0] // 2
+                    target_y = frags_y + self.ui_manager.ui_icon_size_fragments[1] // 2
+                    target_pos = (target_x, target_y)
+                except ValueError:
+                    # Fragment not in required list, use default position
+                    target_x = frags_x + len(required) * (self.ui_manager.ui_icon_size_fragments[0] + 5) + self.ui_manager.ui_icon_size_fragments[0] // 2
+                    target_y = frags_y + self.ui_manager.ui_icon_size_fragments[1] // 2
+                    target_pos = (target_x, target_y)
+            
+            # Add to animating fragments with longer animation duration
+            self.animating_fragments_to_hud.append({
+                'pos': list(fragment_pos),
+                'start_time': pygame.time.get_ticks(),
+                'duration': 1500,  # 1.5 second animation for better visibility
+                'start_pos': fragment_pos,
+                'target_pos': target_pos,
+                'fragment_id': fragment_id
+            })
+            
             self.set_story_message(f"Core Fragment collected!", 2000)
             from .game_events import ItemCollectedEvent
-            event = ItemCollectedEvent(item_id=fragment.fragment_id, item_type='core_fragment')
+            event = ItemCollectedEvent(item_id=fragment_id, item_type='core_fragment')
             self.event_manager.dispatch(event)
 
         # Handle Corrupted Log collisions
@@ -526,12 +575,46 @@ class GameController:
                 qc.apply_effect(self.player, self)
     
     def _check_level_clear_condition(self):
+        """Delegates all level clear condition checks to the LevelManager."""
         return self.level_manager.check_level_clear_condition()
         
     def set_story_message(self, message, duration=5000):
         self.story_message = message
         self.story_message_active = True
         self.story_message_end_time = pygame.time.get_ticks() + duration
+    
+    def _draw_fragment_animations(self):
+        """Draw animations for core fragments moving to the HUD"""
+        current_time = pygame.time.get_ticks()
+        
+        # Process each animating fragment
+        for i in range(len(self.animating_fragments_to_hud) - 1, -1, -1):
+            fragment_data = self.animating_fragments_to_hud[i]
+            elapsed = current_time - fragment_data['start_time']
+            progress = min(1.0, elapsed / fragment_data['duration'])
+            
+            if progress >= 1.0:
+                # Animation complete
+                self.animating_fragments_to_hud.pop(i)
+                continue
+                
+            # Calculate current position using easing
+            ease_progress = 1 - (1 - progress) ** 3  # Cubic ease out
+            x = fragment_data['start_pos'][0] + (fragment_data['target_pos'][0] - fragment_data['start_pos'][0]) * ease_progress
+            y = fragment_data['start_pos'][1] + (fragment_data['target_pos'][1] - fragment_data['start_pos'][1]) * ease_progress
+            
+            # Get the fragment icon
+            fragment_id = fragment_data['fragment_id']
+            fragment_icon = self.ui_manager.get_scaled_fragment_icon_surface(fragment_id)
+            
+            if fragment_icon:
+                # Use exact size of the empty fragment icon
+                icon_size = self.ui_manager.ui_icon_size_fragments
+                
+                # Draw the fragment icon
+                scaled_icon = pygame.transform.scale(fragment_icon, icon_size)
+                icon_rect = scaled_icon.get_rect(center=(int(x), int(y)))
+                self.screen.blit(scaled_icon, icon_rect)
     
     def _draw_story_overlay(self, surface):
         current_chapter = self.story_manager.get_current_chapter()

@@ -41,7 +41,11 @@
     "LORE_SCENE_1": "images/lore/scene1.png",
     "LORE_SCENE_2": "images/lore/scene2.png",
     "LORE_SCENE_3": "images/lore/scene3.png",
-    "LORE_SCENE_4": "images/lore/scene4.png"
+    "LORE_SCENE_4": "images/lore/scene4.png",
+    "STORY_MAP_BACKGROUND": "images/ui/story_map_background.png",
+    "CHAPTER_ICON_UNLOCKED": "images/ui/chapter_icon_unlocked.png",
+    "CHAPTER_ICON_LOCKED": "images/ui/chapter_icon_locked.png",
+    "PLAYER_MAP_CURSOR": "images/ui/player_map_cursor.png"
   },
   "fonts": {
     "UI_TEXT_FONT": "fonts/neuropol.otf"
@@ -72,31 +76,40 @@
     "9": "images/drones/drone_lightning.png"
   },
   "core_fragments": {
-    "fragment_alpha": {
-      "id": "cf_alpha",
-      "name": "Alpha Core Fragment",
+    "fragment_earth": {
+      "id": "cf_earth",
+      "name": "Earth Core Fragment",
       "icon_filename": "images/collectibles/core_fragment_alpha.png",
-      "description": "Pulses with unstable energy.",
+      "description": "Solid and foundational, the first step on your journey.",
       "spawn_info": {"level": 3},
       "buff": {"type": "speed", "value": 1.05},
       "required_for_vault": true
     },
-    "fragment_beta": {
-      "id": "cf_beta",
-      "name": "Beta Core Fragment",
-      "icon_filename": "images/collectibles/core_fragment_beta.png",
-      "description": "Hums with alien resonance.",
+    "fragment_fire": {
+      "id": "cf_fire",
+      "name": "Fire Core Fragment",
+      "icon_filename": "images/collectibles/core_fragment_fire.png",
+      "description": "Pulses with raw power and energy.",
       "spawn_info": {"level": 6},
       "buff": {"type": "bullet_damage_multiplier", "value": 1.05},
       "required_for_vault": true
     },
-    "fragment_gamma": {
-      "id": "cf_gamma",
-      "name": "Gamma Core Fragment",
+    "fragment_air": {
+      "id": "cf_air",
+      "name": "Air Core Fragment",
       "icon_filename": "images/collectibles/core_fragment_gamma.png",
-      "description": "A critical processing unit.",
+      "description": "Represents thought, intellect, and elusiveness.",
       "spawn_info": {"level": 9},
       "buff_alt": {"type": "damage_reduction", "value": 0.05},
+      "required_for_vault": true
+    },
+    "fragment_water": {
+      "id": "cf_water",
+      "name": "Water Core Fragment",
+      "icon_filename": "images/collectibles/core_fragment_beta.png",
+      "description": "Represents the deep, hidden secrets of the Vault and the flow of harvested materials.",
+      "spawn_info": {"level": 12},
+      "buff": {"type": "health_regen", "value": 0.01},
       "required_for_vault": true
     },
     "fragment_vault_core": {
