@@ -62,6 +62,15 @@ class EnemyManager:
         self.enemies.empty()
         num_enemies = min(level + 1, 7)
         
+        # Get screen dimensions to ensure enemies are within visible area
+        width = get_setting("display", "WIDTH", 1920)
+        height = get_setting("display", "HEIGHT", 1080)
+        game_play_area_height = get_setting("display", "GAME_PLAY_AREA_HEIGHT", 960)
+        
+        # Track spawned enemies to ensure we have the correct count
+        spawned_count = 0
+        max_attempts = 20  # Limit attempts to prevent infinite loops
+        
         if level >= 6:
             # Spawn mix of TR-3B and Sentinel drones for higher levels
             tr3b_count = min(level - 5, 3)  # Up to 3 TR-3B enemies based on level
@@ -69,23 +78,57 @@ class EnemyManager:
             
             # Spawn TR-3B enemies
             for _ in range(tr3b_count):
-                if pos := self.game_controller._get_safe_spawn_point(self.tile_size * 0.7, self.tile_size * 0.7):
-                    self.spawn_enemy_by_id("tr3b", pos[0], pos[1])
+                attempts = 0
+                while attempts < max_attempts:
+                    if pos := self.game_controller._get_safe_spawn_point(self.tile_size * 0.7, self.tile_size * 0.7):
+                        # Verify position is within screen bounds
+                        if 0 < pos[0] < width and 0 < pos[1] < game_play_area_height:
+                            enemy = self.spawn_enemy_by_id("tr3b", pos[0], pos[1])
+                            if enemy:
+                                spawned_count += 1
+                                break
+                    attempts += 1
             
             # Spawn Sentinel drones
             for _ in range(sentinel_count):
-                if pos := self.game_controller._get_safe_spawn_point(self.tile_size * 0.6, self.tile_size * 0.6):
-                    self.spawn_enemy_by_id("sentinel", pos[0], pos[1])
+                attempts = 0
+                while attempts < max_attempts:
+                    if pos := self.game_controller._get_safe_spawn_point(self.tile_size * 0.6, self.tile_size * 0.6):
+                        # Verify position is within screen bounds
+                        if 0 < pos[0] < width and 0 < pos[1] < game_play_area_height:
+                            enemy = self.spawn_enemy_by_id("sentinel", pos[0], pos[1])
+                            if enemy:
+                                spawned_count += 1
+                                break
+                    attempts += 1
         elif level >= 4:
             # Spawn only Sentinel drones for mid levels
             for _ in range(num_enemies):
-                if pos := self.game_controller._get_safe_spawn_point(self.tile_size * 0.6, self.tile_size * 0.6):
-                    self.spawn_enemy_by_id("sentinel", pos[0], pos[1])
+                attempts = 0
+                while attempts < max_attempts:
+                    if pos := self.game_controller._get_safe_spawn_point(self.tile_size * 0.6, self.tile_size * 0.6):
+                        # Verify position is within screen bounds
+                        if 0 < pos[0] < width and 0 < pos[1] < game_play_area_height:
+                            enemy = self.spawn_enemy_by_id("sentinel", pos[0], pos[1])
+                            if enemy:
+                                spawned_count += 1
+                                break
+                    attempts += 1
         else:
             # Spawn regular enemies for early levels
             for _ in range(num_enemies):
-                if pos := self.game_controller._get_safe_spawn_point(self.tile_size * 0.7, self.tile_size * 0.7):
-                    self.spawn_enemy_by_id("regular_enemy", pos[0], pos[1])
+                attempts = 0
+                while attempts < max_attempts:
+                    if pos := self.game_controller._get_safe_spawn_point(self.tile_size * 0.7, self.tile_size * 0.7):
+                        # Verify position is within screen bounds
+                        if 0 < pos[0] < width and 0 < pos[1] < game_play_area_height:
+                            enemy = self.spawn_enemy_by_id("regular_enemy", pos[0], pos[1])
+                            if enemy:
+                                spawned_count += 1
+                                break
+                    attempts += 1
+        
+        print(f"Level {level}: Spawned {spawned_count} enemies out of {num_enemies} requested")
 
     def spawn_enemy_for_defense(self, enemy_type_key, spawn_position_grid, path_to_core):
         abs_x, abs_y = self.game_controller.maze._grid_to_pixel_center(*spawn_position_grid)
@@ -118,4 +161,7 @@ class EnemyManager:
 
     def reset_all(self): self.enemies.empty()
     def get_sprites(self): return self.enemies
-    def get_active_enemies_count(self): return sum(1 for e in self.enemies if e.alive)
+    def get_active_enemies_count(self): 
+        count = sum(1 for e in self.enemies if e.alive)
+        print(f"Active enemies count: {count}")
+        return count

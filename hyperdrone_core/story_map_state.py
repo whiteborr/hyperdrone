@@ -36,13 +36,7 @@ class StoryMapState(State):
                     
     def update(self, delta_time):
         """Handle continuous updates"""
-        current_time = pygame.time.get_ticks()
-        
-        # Check if display time has elapsed
-        if current_time - self.display_timer > self.display_duration:
-            self.ready_to_transition = True
-            
-        # Transition to the appropriate gameplay state when ready
+        # Only transition when player presses spacebar or Enter
         if self.ready_to_transition:
             self._transition_to_gameplay()
             

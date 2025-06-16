@@ -52,6 +52,18 @@ class PlayerActions:
                 if player.try_activate_cloak(pygame.time.get_ticks()):
                     if hasattr(self.game_controller, 'play_sound'):
                         self.game_controller.play_sound('cloak_activate')
+                        
+        # Emergency key to eliminate stuck enemies (F1)
+        elif event.key == pygame.K_F1:
+            if hasattr(self.game_controller, 'combat_controller') and hasattr(self.game_controller.combat_controller, 'enemy_manager'):
+                enemy_count = self.game_controller.combat_controller.enemy_manager.get_active_enemies_count()
+                if enemy_count > 0:
+                    for enemy in list(self.game_controller.combat_controller.enemy_manager.enemies):
+                        if enemy.alive:
+                            enemy.health = 0
+                            enemy.alive = False
+                    if hasattr(self.game_controller, 'set_story_message'):
+                        self.game_controller.set_story_message(f"Emergency: {enemy_count} stuck enemies eliminated", 2000)
 
     def handle_key_up(self, event):
         """Processes key release events to reset action flags."""

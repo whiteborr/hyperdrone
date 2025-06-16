@@ -279,18 +279,19 @@ class UIManager:
         title_surf = self._render_text_safe("CHAPTER MAP", "large_text", GOLD, fallback_size=48)
         self.screen.blit(title_surf, title_surf.get_rect(center=(width // 2, 80)))
 
-        # 2. Define chapter positions and path
+        # 2. Define chapter positions and path - moved lower on the screen
         chapter_positions = [
-            (width * 0.2, height * 0.5),    # Chapter 1
-            (width * 0.35, height * 0.35),  # Chapter 2
-            (width * 0.5, height * 0.5),    # Chapter 3
-            (width * 0.65, height * 0.35),  # Chapter 4
-            (width * 0.8, height * 0.5),    # Chapter 5
-            (width * 0.9, height * 0.3)     # Bonus Chapter
+            (width * 0.2, height * 0.6),    # Chapter 1
+            (width * 0.35, height * 0.45),  # Chapter 2
+            (width * 0.5, height * 0.6),    # Chapter 3
+            (width * 0.65, height * 0.45),  # Chapter 4
+            (width * 0.8, height * 0.6),    # Chapter 5
+            (width * 0.9, height * 0.4)     # Bonus Chapter
         ]
         
         # Get current chapter index from story manager
         current_chapter_index = 0  # Default to first chapter
+        current_chapter = None
         if hasattr(self.game_controller, 'story_manager'):
             story_manager = self.game_controller.story_manager
             if story_manager:
@@ -364,11 +365,35 @@ class UIManager:
                 cursor_rect = player_cursor.get_rect(center=(pos[0], pos[1] - 30))  # Position above the icon
                 self.screen.blit(player_cursor, cursor_rect)
         
+        # Display chapter title and description in top left
+        if current_chapter:
+            # Draw chapter title
+            chapter_title_surf = self._render_text_safe(current_chapter.title, "medium_text", GOLD, fallback_size=36)
+            self.screen.blit(chapter_title_surf, (20, 20))
+            
+            # Draw chapter description
+            desc_font = self.asset_manager.get_font("ui_text", 28) or pygame.font.Font(None, 28)
+            wrapped_desc = self._wrap_text_with_font_obj(current_chapter.description, desc_font, width/2 - 40)
+            for i, line in enumerate(wrapped_desc):
+                desc_surf = desc_font.render(line, True, WHITE)
+                self.screen.blit(desc_surf, (20, 60 + i * 30))
+            
+            # Draw objectives as bullet points
+            obj_y = 60 + len(wrapped_desc) * 30 + 10
+            obj_font = self.asset_manager.get_font("ui_text", 24) or pygame.font.Font(None, 24)
+            
+            for obj in current_chapter.objectives:
+                obj_color = GREEN if obj.is_complete else WHITE
+                obj_text = f"• {obj.description}"
+                obj_surf = obj_font.render(obj_text, True, obj_color)
+                self.screen.blit(obj_surf, (30, obj_y))
+                obj_y += 30
+        
         # Draw instruction at bottom
         instruction = "Press SPACE or ENTER to continue"
         # Use a font size that's already loaded (28 instead of 24)
         instruction_surf = self._render_text_safe(instruction, "ui_text", CYAN, fallback_size=28)
-        self.screen.blit(instruction_surf, instruction_surf.get_rect(center=(width // 2, height - 50)))
+        self.screen.blit(instruction_surf, instruction_surf.get_rect(center=(width // 2, height - 30)))
 
     def draw_architect_vault_hud_elements(self):
         title_surf = self._render_text_safe("Architect's Vault", "large_text", GOLD, fallback_size=48)
@@ -530,8 +555,9 @@ class UIManager:
         panel_surface.fill(panel_bg_color)
         self.screen.blit(panel_surface, (0, panel_y))
         pygame.draw.line(self.screen, CYAN, (0, panel_y), (width, panel_y), 2)
-        font_ui, font_small, font_large_val = self.asset_manager.get_font("ui_text", 28), self.asset_manager.get_font("ui_text", 24), self.asset_manager.get_font("ui_values", 30)
+        font_ui, font_small = self.asset_manager.get_font("ui_text", 28), self.asset_manager.get_font("ui_text", 24)
         
+        # Left side - Weapon and lives
         wpn_x, wpn_y = 30, panel_y + 20
         icon_height = 0
         
@@ -540,8 +566,7 @@ class UIManager:
             rotated_icon = pygame.transform.rotate(weapon_icon, 90)
             icon_width, icon_height = rotated_icon.get_size()
             
-            weapon_label = font_ui.render("Weapon", True, CYAN)
-            self.screen.blit(weapon_label, (wpn_x, wpn_y - 20))
+            # Removed weapon label
             
             self.screen.blit(rotated_icon, (wpn_x, wpn_y))
             
@@ -550,44 +575,35 @@ class UIManager:
                 icon_spacing = 10
                 lives_start_x = wpn_x + icon_width + 20
                 
-                # --- FIX: Use the game_controller's current lives count ---
-                # The number of extra icons is the current lives minus the one being displayed.
                 actual_lives = self.game_controller.lives - 1
-                # --- END OF FIX ---
 
                 for i in range(actual_lives):
                     icon_x = lives_start_x + (i * (icon_width + icon_spacing))
                     self.screen.blit(rotated_icon, (icon_x, panel_y + 20))
         
-        score_label = font_ui.render("Score:", True, CYAN)
-        self.screen.blit(score_label, (30, panel_y + 65))
-        self.screen.blit(font_large_val.render(f"{self.game_controller.level_manager.score}", True, WHITE), (30 + score_label.get_width() + 10, panel_y + 65))
-        
+        # Weapon cooldown bar
         wpn_mode = player.current_weapon_mode
         from constants import WEAPON_MODE_NAMES
         wpn_name = WEAPON_MODE_NAMES.get(wpn_mode, "N/A")
         
         self.update_weapon_icon_surface(wpn_mode)
         
-        weapon_label_center = font_ui.render("Weapon", True, CYAN)
-        self.screen.blit(weapon_label_center, ((width / 2) - (weapon_label_center.get_width() / 2), wpn_y - 20))
-        
         icon_surf = self.ui_asset_surfaces.get("current_weapon_icon")
         if icon_surf:
             rotated_icon = pygame.transform.rotate(icon_surf, 90)
-            icon_rect = rotated_icon.get_rect(topleft=(wpn_x, wpn_y))
-            # This logic seems duplicated, but we'll focus on the lives bug for now.
-            # self.screen.blit(rotated_icon, icon_rect) 
+            icon_width, icon_height = rotated_icon.get_size()
+            icon_rect = pygame.Rect(wpn_x, wpn_y, icon_width, icon_height)
             text_x = icon_rect.right + 15
             cooldown_bar_y = wpn_y + icon_height + 10
-            self.screen.blit(font_small.render(wpn_name, True, WHITE), (text_x, wpn_y + 5))
+            # Extend weapon bar to the left of the screen
             time_since = pygame.time.get_ticks() - player.last_shot_time
             progress = min(1.0, time_since / player.current_shoot_cooldown) if player.current_shoot_cooldown > 0 else 1.0
-            cooldown_width = 120
-            pygame.draw.rect(self.screen, DARK_GREY, (text_x, cooldown_bar_y, cooldown_width, 10))
-            pygame.draw.rect(self.screen, YELLOW, (text_x, cooldown_bar_y, cooldown_width * progress, 10))
-            pygame.draw.rect(self.screen, WHITE, (text_x, cooldown_bar_y, cooldown_width, 10), 1)
+            cooldown_width = 200
+            pygame.draw.rect(self.screen, DARK_GREY, (wpn_x, cooldown_bar_y, cooldown_width, 10))
+            pygame.draw.rect(self.screen, YELLOW, (wpn_x, cooldown_bar_y, cooldown_width * progress, 10))
+            pygame.draw.rect(self.screen, WHITE, (wpn_x, cooldown_bar_y, cooldown_width, 10), 1)
 
+        # Right side - Rings and fragments
         hud_ring_icon_area_x_offset = get_setting("display", "HUD_RING_ICON_AREA_X_OFFSET", 150)
         hud_ring_icon_area_y_offset = get_setting("display", "HUD_RING_ICON_AREA_Y_OFFSET", 30)
         hud_ring_icon_size = get_setting("display", "HUD_RING_ICON_SIZE", 24)

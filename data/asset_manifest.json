@@ -79,7 +79,7 @@
     "fragment_earth": {
       "id": "cf_earth",
       "name": "Earth Core Fragment",
-      "icon_filename": "images/collectibles/core_fragment_alpha.png",
+      "icon_filename": "images/collectibles/core_fragment_earth.png",
       "description": "Solid and foundational, the first step on your journey.",
       "spawn_info": {"level": 3},
       "buff": {"type": "speed", "value": 1.05},
@@ -97,7 +97,7 @@
     "fragment_air": {
       "id": "cf_air",
       "name": "Air Core Fragment",
-      "icon_filename": "images/collectibles/core_fragment_gamma.png",
+      "icon_filename": "images/collectibles/core_fragment_air.png",
       "description": "Represents thought, intellect, and elusiveness.",
       "spawn_info": {"level": 9},
       "buff_alt": {"type": "damage_reduction", "value": 0.05},
@@ -106,7 +106,7 @@
     "fragment_water": {
       "id": "cf_water",
       "name": "Water Core Fragment",
-      "icon_filename": "images/collectibles/core_fragment_beta.png",
+      "icon_filename": "images/collectibles/core_fragment_water.png",
       "description": "Represents the deep, hidden secrets of the Vault and the flow of harvested materials.",
       "spawn_info": {"level": 12},
       "buff": {"type": "health_regen", "value": 0.01},

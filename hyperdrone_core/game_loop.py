@@ -138,7 +138,7 @@ class GameController:
         self.story_manager = StoryManager(state_manager_ref=self.state_manager, drone_system_ref=self.drone_system)
 
         # -- Define Chapter 1: The Anomaly --
-        ch1_obj1 = Objective(objective_id="c1_collect_rings", description="Gather energy signatures (Collect 5 Rings)", obj_type="collect_all", target="rings")
+        ch1_obj1 = Objective(objective_id="c1_collect_rings", description="Gather energy signatures (Collect all Rings)", obj_type="collect_all", target="rings")
         ch1_obj2 = Objective(objective_id="c1_clear_hostiles", description="Neutralize initial defense drones", obj_type="kill_all", target="standard_enemies")
         chapter1 = Chapter(chapter_id="chapter_1", title="Chapter 1: The Anomaly", 
                            description="A strange energy signature requires investigation. Enter the Vault and assess the situation.", 
@@ -331,7 +331,16 @@ class GameController:
         if self.maze and hasattr(self.maze, 'get_walkable_tiles_abs'):
             walkable = self.maze.get_walkable_tiles_abs()
             if walkable:
-                return random.choice(walkable)
+                # Get screen dimensions to ensure enemies are within visible area
+                screen_width = get_setting("display", "WIDTH", 1920)
+                screen_height = get_setting("display", "GAME_PLAY_AREA_HEIGHT", 960)
+                
+                # Filter walkable tiles to only include those within screen bounds
+                visible_walkable = [pos for pos in walkable if 0 < pos[0] < screen_width and 0 < pos[1] < screen_height]
+                
+                if visible_walkable:
+                    return random.choice(visible_walkable)
+                return random.choice(walkable)  # Fallback to any walkable tile
         return (200, 200)
         
     def _respawn_player(self):
@@ -617,22 +626,7 @@ class GameController:
                 self.screen.blit(scaled_icon, icon_rect)
     
     def _draw_story_overlay(self, surface):
-        current_chapter = self.story_manager.get_current_chapter()
-
-        if not current_chapter:
+        # Only draw chapter information on the StoryMapState
+        current_state = self.state_manager.get_current_state_id()
+        if current_state != "StoryMapState":
             return
-
-        title_surface = self.STORY_FONT_TITLE.render(current_chapter.title, True, self.STORY_TITLE_COLOR)
-        surface.blit(title_surface, (20, 20))
-
-        desc_surface = self.STORY_FONT_BODY.render(current_chapter.description, True, self.STORY_TEXT_COLOR)
-        surface.blit(desc_surface, (20, 80))
-
-        obj_y_pos = 150
-        for obj in current_chapter.objectives:
-            status = "[X]" if obj.is_complete else "[ ]"
-            obj_text = f"{status} {obj.description}"
-
-            obj_surface = self.STORY_FONT_BODY.render(obj_text, True, self.STORY_TEXT_COLOR)
-            surface.blit(obj_surface, (40, obj_y_pos))
-            obj_y_pos += 40

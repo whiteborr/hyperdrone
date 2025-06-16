@@ -118,6 +118,11 @@ class PlayingState(State):
             self.game.item_manager.reset_for_level()
             # Force immediate spawn of rings
             self.game.item_manager._spawn_all_rings(self.game.maze)
+            
+        # Display Chapter 1 level information if applicable
+        current_chapter = self.game.story_manager.get_current_chapter()
+        if current_chapter and current_chapter.chapter_id == "chapter_1":
+            self.game.set_story_message(f"Chapter 1 - Level {self.game.level_manager.chapter1_level} of {self.game.level_manager.chapter1_max_levels}", 3000)
     
     def handle_events(self, events):
         """Handle input events specific to playing state"""
@@ -156,21 +161,27 @@ class PlayingState(State):
         self.game._handle_collectible_collisions()
         self._handle_bullet_enemy_collisions()
         
+        # Check for level completion
+        if self.game._check_level_clear_condition():
+            return  # Level advanced, stop further updates
+        
         # Check story objectives for Chapter 1
         current_chapter = self.game.story_manager.get_current_chapter()
         if current_chapter and current_chapter.chapter_id == "chapter_1":
-            # Check if all rings for the level have been collected
-            if self.game.level_manager.collected_rings_count >= self.game.level_manager.total_rings_per_level:
-                self.game.story_manager.complete_objective_by_id("c1_collect_rings")
+            # Only complete chapter objectives when we've finished all 4 levels
+            if self.game.level_manager.chapter1_level >= self.game.level_manager.chapter1_max_levels:
+                # Check if all rings for the level have been collected
+                if self.game.level_manager.collected_rings_count >= self.game.level_manager.total_rings_per_level:
+                    self.game.story_manager.complete_objective_by_id("c1_collect_rings")
 
-            # Check if all enemies on the level have been defeated
-            if self.game.combat_controller.enemy_manager.get_active_enemies_count() == 0:
-                 self.game.story_manager.complete_objective_by_id("c1_clear_hostiles")
+                # Check if all enemies on the level have been defeated
+                if self.game.combat_controller.enemy_manager.get_active_enemies_count() == 0:
+                    self.game.story_manager.complete_objective_by_id("c1_clear_hostiles")
 
-            # If all objectives for chapter 1 are done, advance the story
-            if current_chapter.is_complete():
-                self.game.story_manager.advance_chapter()
-                return # Stop further updates in this state as a transition is happening
+                # If all objectives for chapter 1 are done, advance the story
+                if current_chapter.is_complete():
+                    self.game.story_manager.advance_chapter()
+                    return # Stop further updates in this state as a transition is happening
 
         self.game.player_actions.update_player_movement_and_actions(current_time_ms)
     

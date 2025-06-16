@@ -20,6 +20,10 @@ class LevelManager:
         self.level = 1
         self.score = 0
         
+        # Chapter 1 specific tracking
+        self.chapter1_level = 1
+        self.chapter1_max_levels = 4
+        
         # Ring collection variables
         self.collected_rings_count = 0
         self.displayed_collected_rings_count = 0
@@ -58,6 +62,7 @@ class LevelManager:
         """Reset level manager state for a new game"""
         self.level = 1
         self.score = 0
+        self.chapter1_level = 1
         self.collected_rings_count = 0
         self.displayed_collected_rings_count = 0
         self.animating_rings_to_hud = []
@@ -246,8 +251,15 @@ class LevelManager:
             if rings_animating or fragments_animating:
                 return False  # Wait for animations to finish before advancing
 
+            # Log level completion for debugging
+            logger.info(f"Level {self.level} cleared! Advancing to next level.")
+            
             # All clear! Advance to the next level.
             return self._advance_to_next_level()
+            
+        # Log the current state for debugging
+        if current_game_state == "PlayingState":
+            logger.debug(f"Level clear check: enemies={all_enemies_defeated}, items={all_items_collected}")
             
         return False
     
@@ -259,6 +271,15 @@ class LevelManager:
         # Progress to the next level
         self.level += 1
         self.score += 100  # Bonus for clearing the level
+        
+        # Track Chapter 1 level progression
+        current_chapter = self.game_controller.story_manager.get_current_chapter()
+        if current_chapter and current_chapter.chapter_id == "chapter_1":
+            self.chapter1_level += 1
+            # If we've completed all 4 levels of Chapter 1, mark objectives as complete
+            if self.chapter1_level > self.chapter1_max_levels:
+                self.game_controller.story_manager.complete_objective_by_id("c1_collect_rings")
+                self.game_controller.story_manager.complete_objective_by_id("c1_clear_hostiles")
         
         # Reset for the next level
         self.collected_rings_count = 0
@@ -306,7 +327,11 @@ class LevelManager:
             self.game_controller.item_manager.reset_for_level()
         
         # Display a message
-        self.game_controller.set_story_message(f"Level {self.level} - Collect all rings!", 3000)
+        current_chapter = self.game_controller.story_manager.get_current_chapter()
+        if current_chapter and current_chapter.chapter_id == "chapter_1":
+            self.game_controller.set_story_message(f"Chapter 1 - Level {self.chapter1_level} of {self.chapter1_max_levels}", 3000)
+        else:
+            self.game_controller.set_story_message(f"Level {self.level} - Collect all rings!", 3000)
         
         # Play a sound
         self.game_controller.play_sound('level_up')

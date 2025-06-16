@@ -180,6 +180,13 @@ class ItemManager:
             logger.warning("Cannot spawn core fragment: maze is None")
             return False
 
+        # Check if we're in Chapter 1 and not on the 4th level yet
+        current_chapter = self.game_controller.story_manager.get_current_chapter()
+        if current_chapter and current_chapter.chapter_id == "chapter_1":
+            if self.game_controller.level_manager.chapter1_level < self.game_controller.level_manager.chapter1_max_levels:
+                logger.info(f"Skipping core fragment spawn - Chapter 1 Level {self.game_controller.level_manager.chapter1_level} (fragment only appears on level 4)")
+                return False
+
         # 1. Get all fragment configs and the IDs of already collected fragments
         all_fragments = settings_manager.get_core_fragment_details()
         collected_ids = self.game_controller.drone_system.get_collected_fragments_ids()

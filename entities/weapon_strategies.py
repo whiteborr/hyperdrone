@@ -192,11 +192,13 @@ class HeatseekerPlusBulletsWeaponStrategy(BaseWeaponStrategy):
     def __init__(self, player_drone):
         super().__init__(player_drone)
         self.shoot_cooldown = get_setting("weapons", "MISSILE_COOLDOWN", 3000)  # 3 seconds cooldown
-        # Use rapid fire bullet speed for this mode
         self.rapid_fire_cooldown = get_setting("weapons", "PLAYER_RAPID_FIRE_COOLDOWN", 250)
+        self.last_bullet_time = 0  # Separate tracking for bullet firing
     
     def _create_projectile(self, spawn_x, spawn_y, missile_sound_asset_key=None):
-        # Create heatseeker missile
+        current_time_ms = pygame.time.get_ticks()
+        
+        # Create heatseeker missile (on missile cooldown)
         if missile_sound_asset_key and self.asset_manager:
             missile_sound = self.asset_manager.get_sound(missile_sound_asset_key)
             if missile_sound: missile_sound.play()
@@ -205,17 +207,52 @@ class HeatseekerPlusBulletsWeaponStrategy(BaseWeaponStrategy):
         new_missile = Missile(spawn_x, spawn_y, self.player.angle, missile_damage, self.enemies_group)
         self.player.missiles_group.add(new_missile)
         
-        # Add rapid fire bullet (same as RAPID_SINGLE mode)
-        current_time_ms = pygame.time.get_ticks()
-        
         # Create rapid fire bullet
         new_bullet = Bullet(spawn_x, spawn_y, self.player.angle, self.bullet_speed, 
                            self.bullet_lifetime, self.bullet_size, 
                            self.bullet_color, self.bullet_damage)
         self.player.bullets_group.add(new_bullet)
         
-        # Schedule next rapid fire bullet
-        self.player.last_shot_time = current_time_ms - (self.shoot_cooldown - self.rapid_fire_cooldown)
+        # Update last bullet time for rapid fire rate
+        self.last_bullet_time = current_time_ms
+    
+    def fire(self, sound_asset_key=None, missile_sound_asset_key=None):
+        """Override fire method to handle separate cooldowns for missiles and bullets"""
+        current_time_ms = pygame.time.get_ticks()
+        
+        # Check if we can fire a missile (using the main cooldown)
+        can_fire_missile = current_time_ms - self.last_shot_time > self.shoot_cooldown
+        
+        # Check if we can fire a bullet (using rapid fire cooldown)
+        can_fire_bullet = current_time_ms - self.last_bullet_time > self.rapid_fire_cooldown
+        
+        # If we can fire a missile, do the full firing sequence
+        if can_fire_missile:
+            return super().fire(sound_asset_key, missile_sound_asset_key)
+        
+        # If we can only fire a bullet, do that
+        elif can_fire_bullet:
+            # Calculate spawn position
+            rad_angle = math.radians(self.player.angle)
+            spawn_x = self.player.x + math.cos(rad_angle) * (self.player.rect.width / 2)
+            spawn_y = self.player.y + math.sin(rad_angle) * (self.player.rect.height / 2)
+            
+            # Play sound if provided
+            if sound_asset_key and self.asset_manager:
+                sound = self.asset_manager.get_sound(sound_asset_key)
+                if sound: sound.play()
+            
+            # Create just a bullet
+            new_bullet = Bullet(spawn_x, spawn_y, self.player.angle, self.bullet_speed, 
+                               self.bullet_lifetime, self.bullet_size, 
+                               self.bullet_color, self.bullet_damage)
+            self.player.bullets_group.add(new_bullet)
+            
+            # Update last bullet time
+            self.last_bullet_time = current_time_ms
+            return True
+            
+        return False
 
 class LightningWeaponStrategy(BaseWeaponStrategy):
     def _create_projectile(self, spawn_x, spawn_y, missile_sound_asset_key=None):
