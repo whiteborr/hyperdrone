@@ -5,8 +5,7 @@
     "selected_drone_id": "DRONE",
     "player_cores": 0,
     "unlocked_lore_ids": [],
-    "collected_core_fragments": [
-    ],
+    "collected_core_fragments": [],
     "architect_vault_completed": false,
     "collected_glyph_tablets": [],
     "solved_puzzle_terminals": [],

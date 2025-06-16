@@ -113,7 +113,7 @@ As you reach the final decision point of the game, the Architect's voice returns
 |                  | Without the Vault’s veil, the Guardians will surely take notice.                   |
 | Merge (Hidden)   | You integrate the Architect’s code and MH370’s neural lattice.                     |
 |                  | The Vault awakens — reborn as a sentient intelligence with you as its conduit.     |
-|                  |Earth becomes a curated world… shaped by your will.                                 |
+|                  | Earth becomes a curated world… shaped by your will.                                |
 
 ✅ **Summary of the MH370 Integration**
 
@@ -130,39 +130,48 @@ As you reach the final decision point of the game, the Architect's voice returns
 
 📚 **CHAPTERS** — High-Level Narrative Arc (5 Chapters)
 
-**Chapter 1: The Anomaly (Top-Down Maze Shooter)**
-Story: Discover the Vault's entrance.
-Gameplay: Navigate maze, collect rings, fight enemies. Introduces energy rings and threat detection.
-Reward: Earth Fragment - The most foundational fragment, representing the first step on your journey.
+## **Chapter 1: The Entrance (Earth Core – Top-Down Puzzle Maze)**
 
-**Chapter 2: The Guardian (Top-Down Boss Fight)**
-Story: Fight MazeGuardian.
-Gameplay: Drone combat test.
-Reward: Fire Fragment - Represents raw power and energy, earned by overcoming this intense combat challenge.
+* Story: The drone answers a mysterious signal and discovers the sealed Vault entrance. Inside, it finds the ancient Cipher Core artifact (the Architect’s key) and the Earth elemental core. This core acts as the “anchor” for the mission – symbolizing stability and the beginning of understanding the Vault’s purpose. The chamber’s crumbling corridors and naturalistic glyphs hint that the Vault is failing and needs repairs
+* Gameplay: Navigate a collapsing maze, collect energy rings, avoid collapsing floors, and fend off basic drone defenses. Unlock new areas by using gravity-based puzzles enabled by the Earth core (stabilizing loose platforms).
+* Reward: Earth Fragment - The most foundational fragment, representing the first step on your journey.
+* Emotion: Awe and trepidation at entering an ancient protector of Earth; wonder at the glowing Cipher Core; anxiety as the Vault’s instability becomes obvious (rumbles, flickering lights). The Earth core’s acquisition feels like gaining a “footing” in the unknown – a foundation for the journey.
 
-**Chapter 3: The Corrupted Sector (Top-Down Puzzle Maze)**
-Story: Explore a decaying Vault sector.
-Gameplay: Puzzle-heavy.
-Reward: Air Fragment - Represents thought, intellect, and elusiveness, the reward for navigating the corrupted, mind-bending logic of this sector.
+## **Chapter 2: The Guardian (Fire Core - Top-Down Boss Fight)**
 
-**Chapter 4: The Harvest Chamber (Vertical Scrolling Shmup)**
-Story: Dive into the Vault's intake chamber filled with MH370 debris.
-Gameplay: Dodge wreckage, battle tech drones. Boss: Corrupted Observer.
-Reward: Water Fragment - Represents the deep, hidden secrets of the Vault and the flow of harvested materials.
+* Story:  Deeper in the Vault, the drone triggers a defense system. A colossal MazeGuardian (AI sentinel) awakens to test intruders. The drone must battle this guardian, earning the Fire elemental core by prevailing. Narrative clues suggest the Guardian was once a protector but now attacks intruders aggressively – mirroring the Vault’s hostile stance. The fiery core symbolizes raw power and the cleansing (purging) of corruption inside the Vault
+* Gameplay: Engage in a top-down boss fight against the MazeGuardian. Dodge powerful attacks and strike at its weak points. Acquire combat upgrades (overloads) unlocked by the Fire core once the guardian falls.
+* Reward: Fire Fragment - Represents raw power and energy, earned by overcoming this intense combat challenge.
+* Emotion: Tension and exhilaration in combat; respect for the guardian’s ancient purpose clashing with fear as it nearly destroys the drone. The Fire core’s acquisition feels earned through sacrifice, imbuing the player with strength but also foreshadowing that this power comes from a system tearing itself apart.
 
-**Chapter 5: The Orichalc Core (Tower Defense + Boss Fight)**
-Story: Reach the Vault's core and decide its fate.
-Gameplay: Tower defense, final boss, choose ending.
+## **Chapter 3: Corruption Sector (Air Core - Top-Down Puzzle Maze)**
+
+* Story: The drone proceeds into a decaying Vault sector, where corridors shift and puzzles twist – evidence of corrupt, glitching logic. Here it uncovers fragmented data logs and AI echoes of the Architect’s once-precise reasoning. By solving intricate spatial puzzles it gains the Air elemental core. This core represents intellect and adaptability (“cognition cascade”), symbolizing how the drone must outthink the Vault’s failures. Throughout, subtle hints appear (e.g. intercepted transcripts) that something outside is aware of the Vault’s activity
+* Gameplay: Navigate a shifting maze with moving walls and time-based puzzles. Use enhanced drone sensors and logic-based abilities unlocked by the Air core to decode glyph patterns and open sealed chambers
+* Reward: Air Fragment - Represents thought, intellect, and elusiveness, the reward for navigating the corrupted, mind-bending logic of this sector.
+* Emotion: Increasing unease as the Vault’s corrupted AI glitches around you (echoes of laughter, static). Empathy for the Vault’s lost “mind” as you see holographic memories of its purpose. Curiosity and dread rise – the drone senses that the Vault’s decline is a danger to Earth (building on the narrative that “the Vault is eating the world to survive”)
+
+## **Chapter 4: The Harvest Chamber (Water Core - Vertical Scrolling Shmup)**
+
+* Story: Back inside the Vault, the drone descends into its deep intake chamber – a flooded catacomb where harvested wreckage has been repurposed. Here MH370’s remains (aircraft parts, electronics) line the walls, and faint flight recordings play. The player realizes the Vault has been “harvesting” Earth’s technology to repair itself. In this vertical shooter sequence, the drone dodges debris and corrupted tech drones while searching for the Water elemental core. This core ties to “memory flow” – unlocking submerged archives and the Vault’s secret history.
+* Gameplay: Navigate downwards through wreckage in a vertical scrolling arena, blasting corrupted drones. Rescue and insert the Water core to access flooded archives. Use its ability to reroute hydro-power to open the way.
+* Reward: Water Fragment - Represents the deep, hidden secrets of the Vault and the flow of harvested materials.
+* Emotion: Shock and horror at discovering the plane wreckage (human tragedy now serving the Vault’s needs). Sorrow for lost lives and anger at the Vault’s cold utilitarianism. Determination, as revealing this atrocity underscores the need to decide the Vault’s fate. The Water core feels like releasing hidden memories, aiding the drone’s understanding of the Vault’s true motives.
+
+## **Chapter 5: The Orichalc Core (Tower Defense + Boss Fight)**
+
+* Story: Fully equipped with Earth, Fire, Air, and Water cores, the drone reaches the Orichalc Core chamber, the Vault’s heart. By inserting each fragment into the Cipher Core artifact, the drone rebuilds the Architect’s encryption key and unlocks the final protocols. The corrupted Vault AI resists (launching waves of defenses), leading to a climactic tower-defense battle against the core itself. As the last core slots in, the Architect’s voice returns, asking the ultimate question: “Would you let it die… or evolve?”. The player’s choices here determine the ending (Preserve, Erase, or hidden Merge).
+* Gameplay: Defend the Orichalc Core pedestal with turrets and the drone’s own abilities. Face a final boss embodiment of the Vault’s core. Make the narrative choice after surviving the assault.
+* Emotion: Tense resolve and reflection. The drone embodies humanity’s last hope; the choice carries the weight of protecting Earth versus playing god. The Architect’s poignant plea (cited above) frames the emotional climax: has the Vault earned a second chance, or must it end? Each ending resonates differently – from bittersweet preservation (using MH370 tech to stabilize, but vigilant watch needed) to liberating Earth but risking Guardian attention, to the hubristic Merge where the drone becomes a new Architect.
 
 ---
 
-🌟 **Bonus Chapter: The Skyward Grid (Horizontal Scrolling Shmup)**
+## 🌟 **Bonus Chapter: The Skyward Grid (Horizontal Scrolling Shmup)**
 
-Story: Outside the Vault, CRUCIBLE sends Gorgon drones to intercept.
-Gameplay: Aerial shmup. Optional but important for "true ending."
-
-Structure:
-
+* Story: Venturing above ground, the drone encounters CRUCIBLE’s Gorgon drones sent to intercept it. In the stormy skies above the Vault, the player must repel a wave of military drones. This side-mission reveals the global stakes: the outside world has noticed anomalies (e.g. the MH370 event) and is preparing to act. Though optional, succeeding here is hinted to be vital for understanding the “true” ending.
+* Gameplay: Survive a horizontal shmup segment: dodge missiles and shoot CRUCIBLE drones, culminating in destroying a sky-fortress boss."
+* Emotion: Anxiety and action as the drone fights humans who think it’s a threat. A moment of pride in defending itself but also foreboding – the Vault’s secrets are attracting lethal attention. If failed, the drone may lose crucial intel for the ending (raising tension about whether it should risk confrontation).
+* Structure:
 * Stormy skies, orbital grid
 * Enemies: CRUCIBLE drones, mines
 * Boss: Sky Fortress Drone
@@ -174,54 +183,52 @@ Structure:
 
 ## 🧩Elemental Cipher Core: The Architect's Key
 
-🔐 Concept:
-The Architect's Vault is sealed not with brute force, but through glyphic encryption layered across four dimensions — each aligned with a classical element (Earth, Fire, Air, Water). The player doesn't just collect raw elemental fragments — they gather encoded cores which, when inserted into a Cipher Core Artifact, begin decrypting layers of the Vault's internal architecture.
+🔐 Concept: The Vault was never meant to be unlocked by force — only by thought. Its true defense is an encryption lattice woven through four elemental logic layers: Earth, Fire, Air, and Water. These aren’t mere fragments — they are encoded consciousness fragments of the Architect’s original logic, scattered to prevent misuse.
 
-The Cipher Core is a multi-faceted, ancient AI artifact — shaped like a floating prism or obsidian monolith — discovered in Chapter 1. It can be slotted with Elemental Keys, each awakening a deeper layer of logic in the Vault system.
+In Chapter 1, the player discovers the Cipher Core, a dormant artifact shaped like a floating obsidian monolith. It is inert — until the first elemental core (Earth) is slotted. Each new core awakens deeper glyphic systems, drone enhancements, and access to sealed Vault sectors. As the cores accumulate, the Vault begins to recognize the drone as a successor — or invader.
+
+Each core represents a dimension of the Vault's mind — rebuilding them is not just progress, it is resuscitation.
 
 🔑 Artifact System: The Cipher Core
-Visual: A sleek, levitating crystalline device, with dormant channels running across it.
 
-Function: It does nothing at first — but each elemental core inserted into it activates a new glyph pattern, drone capability, or access point inside the Vault.
+Visual: A levitating crystalline prism-like structure, etched with dormant pathways and ancient glyphs. As cores are inserted, glowing elemental circuits begin to weave outward across its facets — roots (Earth), firelines (Fire), fractals (Air), and ripples (Water).
+Function: Starts inert. Each inserted core unlocks:
 
-Location: Held by the player drone or stored in a drone-specific inventory screen.
+A new glyphic pattern
+A drone upgrade or ability
+Deeper access into Vault subsystems and encrypted Architect memory nodes
+
+Narrative insight: the Vault “responds” more, recognizing the drone's growing authority
+Location: Displayed prominently in the drone’s interface. Can be accessed at key Vault terminals for puzzle input, memory playback, and environmental interaction.
 
 🌍 EARTH CORE — "Anchor Protocol"
-From: Chapter 1 (The Anomaly)
-
-Unlocks: Stabilizes corrupted pathways and solidifies collapsing maze structures. Grants access to grounded vault sectors and enables gravity-based puzzle solving.
-
-Visual on Core: Glyphs spread like branching roots into the base.
+Chapter: 1 – Threshold of the Vault
+Unlocks: Stabilizes collapsing structures and crumbling floors. Grants access to unstable sectors.
+Narrative Role: The foundation — represents discovery, grounding, and the first handshake with the ancient system.
+Visual: Glyphs spread like branching roots into the base of the Cipher Core.
 
 🔥 FIRE CORE — "Purge Logic"
-From: Chapter 2 (The Guardian)
-
-Unlocks: Burns corrupted code and hostile logic nodes. Lets player breach firewall zones in Vault terminals. Grants weapon/overload upgrade.
-
-Visual on Core: Glowing red filaments arc along sharp, angular glyph paths.
+Chapter: 2 – Guardian’s Trial
+Unlocks: Burns corrupted logic and clears blocked firewall zones. Boosts weapon systems.
+Narrative Role: The test — won through combat, it represents power, sacrifice, and the first signs that the Vault is hostile.
+Visual: Angular glyphs etched in molten red trace through the core like veins.
 
 💨 AIR CORE — "Cognition Cascade"
-From: Chapter 3 (The Corrupted Sector)
-
-Unlocks: Enables dynamic vault section shifts — sliding walls, changing puzzles. Also enhances drone logic to decode Architect’s thought loops.
-
-Visual on Core: Soft blue-white lights spiraling across the cipher in fractal shapes.
+Chapter: 3 – Corruption Sector
+Unlocks: Enables logic-shifting puzzles, dynamic maze layouts, and higher-tier Vault interpretation.
+Narrative Role: The mind — represents thought, clarity, and the fractured reasoning of the Vault’s fading AI.
+Visual: Fractal spiral glyphs swirl outward in pale blue-white.
 
 🌊 WATER CORE — "Memory Flow"
-From: Chapter 4 (The Harvest Chamber)
+Chapter: 4 – Harvest Chamber
+Unlocks: Unlocks submerged archives, reroutes liquid-energy channels, accesses sealed memory fragments.
+Narrative Role: The past — reveals what the Vault has done to survive, including the truth behind MH370.
+Visual: Pulsing fluidic lines ripple gently across the core, like deep ocean currents.
 
-Unlocks: Accesses memory archives sealed in submerged vaults. Also lets you redirect Vault liquid-energy currents to solve hydro-electric puzzles.
+🧠 The Cipher Core is not just a gameplay device — it’s the brainstem of the Vault, slowly reawakening. Each core is a neuron. Each unlock isn’t just new tech — it’s a part of the Vault’s original soul. As the final core is inserted, the Vault’s logic pathways converge — and the Architect’s voice returns.
 
-Visual on Core: Flowing glyphs pulse and ripple across the cipher.
-
-🧠 Why This Works Narratively
-The Vault isn’t sealed physically — it's locked through ancient thought-encryption only the Architect could decipher.
-
-Each elemental core represents a lost piece of that original logic network, scattered to prevent tampering.
-
-By recombining them inside the Cipher Core, you're rebuilding the Architect’s original logic structure — awakening the Vault's deepest protocols and its decision engine.
-
-Inserting the final (fourth) core triggers the appearance of the Architect's voice and unlocks the Merge ending path.
+The cores are your keys. The Vault is your question.
+And you are the answer it’s waiting for.
 
 🎮 Gameplay Effects
 Core    Unlocks
