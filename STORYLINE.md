@@ -102,15 +102,18 @@ As you reach the final decision point of the game, the Architect's voice returns
 
 ---
 
-🎬 **Updated Ending Themes**
+🎬 **Ending Themes**
 
-| Ending         | Updated Narrative                                                                                                                                                                                      |
-| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Preserve       | You stabilize the Orichalc Core with what remains of MH370's tech. The Vault becomes passive again — but its hunger will return unless humanity learns to repair it.                                   |
-| Erase          | You destroy the Vault and the Orichalc Core. Earth is free… but unshielded. Guardian attention is now inevitable.                                                                                      |
-| Merge (Hidden) | You absorb the Architect's code and the harvested neural lattice from MH370. The Vault evolves into a sentient overseer — and you are now its voice. Earth becomes a curated system… under your watch. |
-
----
+| Ending           | Narrative                                                                          |
+| ---------------- | ---------------------------------------------------------------------------------- |
+| Preserved        | Using the remnants of MH370’s technology, you stabilize the Orichalc Core.         |
+|                  | The Vault enters dormancy once more — but its appetite remains.                    |
+|                  | Only through human effort can it be kept in balance.                               |
+| Erase            | The Vault and Orichalc Core are annihilated. Earth is liberated… yet left exposed. |
+|                  | Without the Vault’s veil, the Guardians will surely take notice.                   |
+| Merge (Hidden)   | You integrate the Architect’s code and MH370’s neural lattice.                     |
+|                  | The Vault awakens — reborn as a sentient intelligence with you as its conduit.     |
+|                  |Earth becomes a curated world… shaped by your will.                                 |
 
 ✅ **Summary of the MH370 Integration**
 
@@ -125,9 +128,51 @@ As you reach the final decision point of the game, the Architect's voice returns
 
 ---
 
+📚 **CHAPTERS** — High-Level Narrative Arc (5 Chapters)
+
+**Chapter 1: The Anomaly (Top-Down Maze Shooter)**
+Story: Discover the Vault's entrance.
+Gameplay: Navigate maze, collect rings, fight enemies. Introduces energy rings and threat detection.
+Reward: Earth Fragment - The most foundational fragment, representing the first step on your journey.
+
+**Chapter 2: The Guardian (Top-Down Boss Fight)**
+Story: Fight MazeGuardian.
+Gameplay: Drone combat test.
+Reward: Fire Fragment - Represents raw power and energy, earned by overcoming this intense combat challenge.
+
+**Chapter 3: The Corrupted Sector (Top-Down Puzzle Maze)**
+Story: Explore a decaying Vault sector.
+Gameplay: Puzzle-heavy.
+Reward: Air Fragment - Represents thought, intellect, and elusiveness, the reward for navigating the corrupted, mind-bending logic of this sector.
+
+**Chapter 4: The Harvest Chamber (Vertical Scrolling Shmup)**
+Story: Dive into the Vault's intake chamber filled with MH370 debris.
+Gameplay: Dodge wreckage, battle tech drones. Boss: Corrupted Observer.
+Reward: Water Fragment - Represents the deep, hidden secrets of the Vault and the flow of harvested materials.
+
+**Chapter 5: The Orichalc Core (Tower Defense + Boss Fight)**
+Story: Reach the Vault's core and decide its fate.
+Gameplay: Tower defense, final boss, choose ending.
+
+---
+
+🌟 **Bonus Chapter: The Skyward Grid (Horizontal Scrolling Shmup)**
+
+Story: Outside the Vault, CRUCIBLE sends Gorgon drones to intercept.
+Gameplay: Aerial shmup. Optional but important for "true ending."
+
+Structure:
+
+* Stormy skies, orbital grid
+* Enemies: CRUCIBLE drones, mines
+* Boss: Sky Fortress Drone
+
+> Placement: Between Chapters 3–4 or post-game for full narrative unlock.
 🔓 **In-Game Function: Drone-Specific Progression**
 
-## 🧩lemental Cipher Core: The Architect's Key
+---
+
+## 🧩Elemental Cipher Core: The Architect's Key
 
 🔐 Concept:
 The Architect's Vault is sealed not with brute force, but through glyphic encryption layered across four dimensions — each aligned with a classical element (Earth, Fire, Air, Water). The player doesn't just collect raw elemental fragments — they gather encoded cores which, when inserted into a Cipher Core Artifact, begin decrypting layers of the Vault's internal architecture.
@@ -210,46 +255,3 @@ Drones = Keys to the Vault. Each drone was designed for a purpose and unlocks ce
 
 * Some Vault sectors are inaccessible without the correct drone.
 * Certain traps and puzzles only respond to specific drone traits.
-
----
-
-📚 **CHAPTERS** — High-Level Narrative Arc (5 Chapters)
-
-**Chapter 1: The Anomaly (Top-Down Maze Shooter)**
-Story: Discover the Vault's entrance.
-Gameplay: Navigate maze, collect rings, fight enemies. Introduces energy rings and threat detection.
-Reward: Earth Fragment - The most foundational fragment, representing the first step on your journey.
-
-**Chapter 2: The Guardian (Top-Down Boss Fight)**
-Story: Fight MazeGuardian.
-Gameplay: Drone combat test.
-Reward: Fire Fragment - Represents raw power and energy, earned by overcoming this intense combat challenge.
-
-**Chapter 3: The Corrupted Sector (Top-Down Puzzle Maze)**
-Story: Explore a decaying Vault sector.
-Gameplay: Puzzle-heavy.
-Reward: Air Fragment - Represents thought, intellect, and elusiveness, the reward for navigating the corrupted, mind-bending logic of this sector.
-
-**Chapter 4: The Harvest Chamber (Vertical Scrolling Shmup)**
-Story: Dive into the Vault's intake chamber filled with MH370 debris.
-Gameplay: Dodge wreckage, battle tech drones. Boss: Corrupted Observer.
-Reward: Water Fragment - Represents the deep, hidden secrets of the Vault and the flow of harvested materials.
-
-**Chapter 5: The Orichalc Core (Tower Defense + Boss Fight)**
-Story: Reach the Vault's core and decide its fate.
-Gameplay: Tower defense, final boss, choose ending.
-
----
-
-🌟 **Bonus Chapter: The Skyward Grid (Horizontal Scrolling Shmup)**
-
-Story: Outside the Vault, CRUCIBLE sends Gorgon drones to intercept.
-Gameplay: Aerial shmup. Optional but important for "true ending."
-
-Structure:
-
-* Stormy skies, orbital grid
-* Enemies: CRUCIBLE drones, mines
-* Boss: Sky Fortress Drone
-
-> Placement: Between Chapters 3–4 or post-game for full narrative unlock.
