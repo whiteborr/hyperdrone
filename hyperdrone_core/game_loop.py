@@ -21,7 +21,7 @@ from .asset_manager import AssetManager
 from story import StoryManager, Chapter, Objective 
 
 from entities import PlayerDrone, CoreReactor, Turret, LightningZap, Missile, Particle
-from entities import MazeGuardian, SentinelDrone, EscapeZone, Maze, MazeChapter2, Bullet
+from entities import MazeGuardian, SentinelDrone, EscapeZone, Maze, MazeChapter3, Bullet
 from entities.collectibles import (
     Ring as CollectibleRing, WeaponUpgradeItem, ShieldItem, SpeedBoostItem,
     CoreFragmentItem, GlyphTabletItem, AncientAlienTerminal, 
@@ -37,6 +37,9 @@ class GameController:
     def __init__(self):
         pygame.init()
         pygame.mixer.init()
+        
+        # Hide the mouse cursor
+        pygame.mouse.set_visible(False)
 
         try:
             info = pygame.display.Info()

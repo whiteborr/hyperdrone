@@ -178,9 +178,11 @@ class PlayingState(State):
                 if self.game.combat_controller.enemy_manager.get_active_enemies_count() == 0:
                     self.game.story_manager.complete_objective_by_id("c1_clear_hostiles")
 
-                # If all objectives for chapter 1 are done, advance the story
+                # If all objectives for chapter 1 are done, advance the story and go to story map
                 if current_chapter.is_complete():
                     self.game.story_manager.advance_chapter()
+                    # Transition to the story map to show Chapter 2
+                    self.game.state_manager.set_state("StoryMapState")
                     return # Stop further updates in this state as a transition is happening
 
         self.game.player_actions.update_player_movement_and_actions(current_time_ms)

@@ -137,7 +137,7 @@ class MazeGuardian(BaseDrone):
             attempts += 1
         self.target_pos = random.choice(path_cells)
 
-    def update(self, player_pos, maze, current_time_ms, game_area_x_offset=0, is_defense_mode=False):
+    def update(self, player_pos, maze, current_time_ms, delta_time_ms=0, game_area_x_offset=0, is_defense_mode=False):
         if not self.alive: return
         if self.target_pos is None or current_time_ms > self.move_timer:
             self._choose_new_target_position(maze, game_area_x_offset)
@@ -168,17 +168,57 @@ class MazeGuardian(BaseDrone):
             self.last_laser_time = current_time_ms
             self.shoot_laser()
 
-        if current_time_ms - self.last_minion_spawn_time > self.minion_spawn_cooldown:
-            self.last_minion_spawn_time = current_time_ms
-            self.spawn_minions(2)
+        # Disable minion spawning
+        # if current_time_ms - self.last_minion_spawn_time > self.minion_spawn_cooldown:
+        #     self.last_minion_spawn_time = current_time_ms
+        #     self.spawn_minions(2)
 
         if all(c['status'] == 'destroyed' for c in self.corners):
             self.alive = False
             if self.combat_controller_ref.game_controller:
+                # Play boss death sound
                 self.combat_controller_ref.game_controller.play_sound('boss_death', 1.0)
+                
+                # Create a big explosion animation
+                self._create_death_explosion()
+                
+                # Dispatch boss defeated event
                 from hyperdrone_core.game_events import BossDefeatedEvent
                 event = BossDefeatedEvent(boss_id="MAZE_GUARDIAN")
                 self.combat_controller_ref.game_controller.event_manager.dispatch(event)
+                
+    def _create_death_explosion(self):
+        """Create a large explosion animation when the boss is defeated"""
+        if not self.combat_controller_ref.game_controller:
+            return
+            
+        # Create a large central explosion
+        self.combat_controller_ref.game_controller._create_explosion(
+            self.rect.centerx, 
+            self.rect.centery, 
+            num_particles=50, 
+            specific_sound_key='boss_death'
+        )
+        
+        # Create explosions at each corner
+        for corner in self.corners:
+            self.combat_controller_ref.game_controller._create_explosion(
+                corner['rect'].centerx,
+                corner['rect'].centery,
+                num_particles=30,
+                specific_sound_key=None
+            )
+            
+        # Create additional explosions around the boss
+        for _ in range(8):
+            offset_x = random.randint(-self.rect.width//2, self.rect.width//2)
+            offset_y = random.randint(-self.rect.height//2, self.rect.height//2)
+            self.combat_controller_ref.game_controller._create_explosion(
+                self.rect.centerx + offset_x,
+                self.rect.centery + offset_y,
+                num_particles=20,
+                specific_sound_key=None
+            )
 
     def shoot_laser(self):
         """Fires a laser beam towards the player."""
@@ -205,23 +245,47 @@ class MazeGuardian(BaseDrone):
                 spawn_y
             )
 
-    def draw(self, surface):
+    def draw(self, surface, camera=None):
         if not self.image or not self.rect: return
-        surface.blit(self.image, self.rect)
-        for corner in self.corners:
-            pygame.draw.rect(surface, corner['color'], corner['rect'])
-            border_color = WHITE if corner['status'] != 'destroyed' else DARK_GREY
-            pygame.draw.rect(surface, border_color, corner['rect'], 2)
-            if corner['status'] != 'destroyed' and corner['health'] < corner['max_health']:
-                bar_width = corner['rect'].width * 0.8; bar_height = 4
-                bar_x = corner['rect'].centerx - bar_width / 2
-                bar_y = corner['rect'].top - bar_height - 2
-                health_perc = corner['health'] / corner['max_health']
-                filled_width = bar_width * health_perc
-                fill_c = RED if health_perc < 0.33 else YELLOW if health_perc < 0.66 else GREEN
-                pygame.draw.rect(surface, (50,50,50), (bar_x, bar_y, bar_width, bar_height))
-                if filled_width > 0: pygame.draw.rect(surface, fill_c, (bar_x, bar_y, int(filled_width), bar_height))
-                pygame.draw.rect(surface, WHITE, (bar_x, bar_y, bar_width, bar_height), 1)
+        
+        if camera:
+            screen_rect = camera.apply_to_rect(self.rect)
+            surface.blit(self.image, screen_rect)
+            
+            for corner in self.corners:
+                corner_rect = corner['rect'].copy()
+                screen_corner_rect = camera.apply_to_rect(corner_rect)
+                pygame.draw.rect(surface, corner['color'], screen_corner_rect)
+                border_color = WHITE if corner['status'] != 'destroyed' else DARK_GREY
+                pygame.draw.rect(surface, border_color, screen_corner_rect, 2)
+                
+                if corner['status'] != 'destroyed' and corner['health'] < corner['max_health']:
+                    bar_width = screen_corner_rect.width * 0.8; bar_height = 4
+                    bar_x = screen_corner_rect.centerx - bar_width / 2
+                    bar_y = screen_corner_rect.top - bar_height - 2
+                    health_perc = corner['health'] / corner['max_health']
+                    filled_width = bar_width * health_perc
+                    fill_c = RED if health_perc < 0.33 else YELLOW if health_perc < 0.66 else GREEN
+                    pygame.draw.rect(surface, (50,50,50), (bar_x, bar_y, bar_width, bar_height))
+                    if filled_width > 0: pygame.draw.rect(surface, fill_c, (bar_x, bar_y, int(filled_width), bar_height))
+                    pygame.draw.rect(surface, WHITE, (bar_x, bar_y, bar_width, bar_height), 1)
+        else:
+            surface.blit(self.image, self.rect)
+            for corner in self.corners:
+                pygame.draw.rect(surface, corner['color'], corner['rect'])
+                border_color = WHITE if corner['status'] != 'destroyed' else DARK_GREY
+                pygame.draw.rect(surface, border_color, corner['rect'], 2)
+                if corner['status'] != 'destroyed' and corner['health'] < corner['max_health']:
+                    bar_width = corner['rect'].width * 0.8; bar_height = 4
+                    bar_x = corner['rect'].centerx - bar_width / 2
+                    bar_y = corner['rect'].top - bar_height - 2
+                    health_perc = corner['health'] / corner['max_health']
+                    filled_width = bar_width * health_perc
+                    fill_c = RED if health_perc < 0.33 else YELLOW if health_perc < 0.66 else GREEN
+                    pygame.draw.rect(surface, (50,50,50), (bar_x, bar_y, bar_width, bar_height))
+                    if filled_width > 0: pygame.draw.rect(surface, fill_c, (bar_x, bar_y, int(filled_width), bar_height))
+                    pygame.draw.rect(surface, WHITE, (bar_x, bar_y, bar_width, bar_height), 1)
+                    
         self.laser_beams.draw(surface)
         self.bullets.draw(surface)
 

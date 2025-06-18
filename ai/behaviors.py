@@ -19,6 +19,81 @@ class BaseBehavior:
         """Execute the behavior logic"""
         raise NotImplementedError("Subclasses must implement this method.")
 
+class WallFollowBehavior(BaseBehavior):
+    """Behavior for sentinel drones to follow walls when not chasing the player"""
+    def __init__(self, enemy):
+        super().__init__(enemy)
+        self.wall_follow_target = None
+        self.last_target_update = 0
+        self.target_update_interval = 2000  # Update target every 2 seconds
+        self.direction_changed = False
+        self.wall_follow_distance = get_setting("gameplay", "TILE_SIZE", 80) * 0.8
+        
+    def execute(self, maze, current_time_ms, delta_time_ms, game_area_x_offset=0):
+        # Check if player is in range and switch to chase behavior if so
+        if self.enemy.player_ref and self.enemy.player_ref.alive:
+            player_dist = math.hypot(self.enemy.x - self.enemy.player_ref.x, self.enemy.y - self.enemy.player_ref.y)
+            if player_dist < self.enemy.aggro_radius:
+                self.enemy.set_behavior(ChasePlayerBehavior(self.enemy))
+                return
+        
+        # Update wall follow target periodically or if we've reached the current target
+        if (current_time_ms - self.last_target_update > self.target_update_interval or 
+            not self.wall_follow_target or 
+            (self.enemy.pathfinder.path and self.enemy.pathfinder.current_path_index >= len(self.enemy.pathfinder.path))):
+            
+            self._find_wall_follow_target(maze, current_time_ms, game_area_x_offset)
+            self.last_target_update = current_time_ms
+        
+        # Move along the wall
+        if self.wall_follow_target:
+            self.enemy.pathfinder.update_movement(maze, current_time_ms, delta_time_ms, game_area_x_offset)
+    
+    def _find_wall_follow_target(self, maze, current_time_ms, game_area_x_offset):
+        """Find a target position along a nearby wall"""
+        if not maze or not hasattr(maze, 'grid'):
+            return
+            
+        # Get current position in grid coordinates
+        current_grid_pos = self._pixel_to_grid(self.enemy.x, self.enemy.y, game_area_x_offset)
+        
+        # Find a target position along the wall
+        wall_target = find_wall_follow_target(
+            maze, 
+            current_grid_pos, 
+            maze.actual_maze_rows, 
+            maze.actual_maze_cols
+        )
+        
+        if wall_target:
+            # Convert target back to pixel coordinates
+            target_pixel = self._grid_to_pixel_center(wall_target[0], wall_target[1], game_area_x_offset)
+            self.wall_follow_target = target_pixel
+            self.enemy.pathfinder.set_target(target_pixel, maze, current_time_ms, game_area_x_offset)
+        else:
+            # Fallback: find any walkable tile near a wall
+            walkable_tiles = []
+            if hasattr(maze, 'get_walkable_tiles_abs'):
+                walkable_tiles = maze.get_walkable_tiles_abs()
+            
+            if walkable_tiles:
+                # Choose a random walkable tile that's not too close to current position
+                tile_size = get_setting("gameplay", "TILE_SIZE", 80)
+                viable_tiles = [p for p in walkable_tiles if tile_size * 3 < math.hypot(p[0] - self.enemy.x, p[1] - self.enemy.y) < tile_size * 8]
+                if viable_tiles:
+                    self.wall_follow_target = random.choice(viable_tiles)
+                    self.enemy.pathfinder.set_target(self.wall_follow_target, maze, current_time_ms, game_area_x_offset)
+    
+    def _pixel_to_grid(self, px, py, offset=0):
+        """Convert pixel coordinates to grid coordinates"""
+        tile_size = get_setting("gameplay", "TILE_SIZE", 80)
+        return int(py / tile_size), int((px - offset) / tile_size)
+        
+    def _grid_to_pixel_center(self, r, c, offset=0):
+        """Convert grid coordinates to pixel coordinates (center of cell)"""
+        tile_size = get_setting("gameplay", "TILE_SIZE", 80)
+        return (c*tile_size)+(tile_size/2)+offset, (r*tile_size)+(tile_size/2)
+
 class ChasePlayerBehavior(BaseBehavior):
     """Behavior for chasing the player using A* pathfinding"""
     def execute(self, maze, current_time_ms, delta_time_ms, game_area_x_offset=0):
@@ -27,18 +102,31 @@ class ChasePlayerBehavior(BaseBehavior):
             
         player_dist = math.hypot(self.enemy.x - self.enemy.player_ref.x, self.enemy.y - self.enemy.player_ref.y)
         
-        # If player gets too far away, switch back to default behavior if available
-        if player_dist > self.enemy.aggro_radius * 1.2 and hasattr(self.enemy, 'default_behavior'):
-            self.enemy.set_behavior(self.enemy.default_behavior(self.enemy))
+        # If player gets too far away, switch to wall following behavior
+        if player_dist > self.enemy.aggro_radius * 1.2:
+            # Check enemy class name instead of using isinstance
+            if self.enemy.__class__.__name__ == "SentinelDrone":
+                self.enemy.set_behavior(WallFollowBehavior(self.enemy))
+            elif hasattr(self.enemy, 'default_behavior'):
+                self.enemy.set_behavior(self.enemy.default_behavior(self.enemy))
             return
             
         # Set target and update movement using pathfinder component
         target_pos = self.enemy.player_ref.rect.center
         self.enemy.pathfinder.set_target(target_pos, maze, current_time_ms, game_area_x_offset)
-        self.enemy.pathfinder.update_movement(maze, current_time_ms, delta_time_ms, game_area_x_offset)
         
-        # Handle shooting if in range
-        if player_dist < self.enemy.aggro_radius and (current_time_ms - self.enemy.last_shot_time > self.enemy.shoot_cooldown):
+        # For SentinelDrones, increase speed when close to player for ramming attack
+        if self.enemy.__class__.__name__ == "SentinelDrone" and player_dist < self.enemy.aggro_radius * 0.5:
+            # Use higher speed for ramming
+            speed_boost = 1.5
+            self.enemy.pathfinder.update_movement(maze, current_time_ms, delta_time_ms, game_area_x_offset, 
+                                                 speed_override=self.enemy.speed * speed_boost)
+        else:
+            # Normal movement
+            self.enemy.pathfinder.update_movement(maze, current_time_ms, delta_time_ms, game_area_x_offset)
+        
+        # Handle shooting if in range (only for non-SentinelDrone enemies)
+        if self.enemy.__class__.__name__ != "SentinelDrone" and player_dist < self.enemy.aggro_radius and (current_time_ms - self.enemy.last_shot_time > self.enemy.shoot_cooldown):
             dx = self.enemy.player_ref.rect.centerx - self.enemy.x
             dy = self.enemy.player_ref.rect.centery - self.enemy.y
             self.enemy.shoot(math.degrees(math.atan2(dy, dx)), maze)

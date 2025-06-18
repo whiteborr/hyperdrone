@@ -12,8 +12,8 @@ class MazeDefenseState(State):
         self.game.puzzle_controller.reset_puzzles_state()
         
         # Create maze for defense mode
-        from entities.maze_chapter2 import MazeChapter2
-        self.game.maze = MazeChapter2(game_area_x_offset=300)
+        from entities.maze_chapter3 import MazeChapter3
+        self.game.maze = MazeChapter3(game_area_x_offset=300)
         
         # Get tile size from settings
         tile_size = get_setting("gameplay", "TILE_SIZE", 80)

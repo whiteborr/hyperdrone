@@ -275,9 +275,7 @@ class UIManager:
         else:
             self.screen.fill((10, 20, 40))  # Dark blue fallback color
             
-        # Draw title
-        title_surf = self._render_text_safe("CHAPTER MAP", "large_text", GOLD, fallback_size=48)
-        self.screen.blit(title_surf, title_surf.get_rect(center=(width // 2, 80)))
+        # Title removed from minimap as requested
 
         # 2. Define chapter positions and path - moved lower on the screen
         chapter_positions = [
@@ -299,10 +297,15 @@ class UIManager:
                 if current_chapter:
                     # Map chapter IDs to indices (0-based)
                     chapter_id_map = {
+                        "chapter_1": 0,
                         "chapter1": 0,
+                        "chapter_2": 1,
                         "chapter2": 1,
+                        "chapter_3": 2,
                         "chapter3": 2,
+                        "chapter_4": 3,
                         "chapter4": 3,
+                        "chapter_5": 4,
                         "chapter5": 4,
                         "bonus": 5
                     }
@@ -731,8 +734,32 @@ class UIManager:
         self.screen.blit(overlay, (0,0))
         title_surf = self._render_text_safe("DRONE DESTROYED", "title_text", RED, fallback_size=90)
         self.screen.blit(title_surf, title_surf.get_rect(center=(width // 2, height // 2 - 100)))
-        prompt_surf = self._render_text_safe("Press 'R' to Restart or 'M' for Menu", "medium_text", WHITE, fallback_size=48)
-        self.screen.blit(prompt_surf, prompt_surf.get_rect(center=(width//2, height//2 + 50)))
+        
+        # Get the current state from the game controller
+        current_state = self.game_controller.state_manager.get_current_state()
+        
+        # Check if the current state has the options and selected_option attributes
+        if hasattr(current_state, 'options') and hasattr(current_state, 'selected_option'):
+            options = current_state.options
+            selected_option = current_state.selected_option
+            
+            # Draw the options
+            option_y_start = height // 2 + 20
+            option_spacing = 50
+            font = self.asset_manager.get_font("medium_text", 36) or pygame.font.Font(None, 36)
+            
+            for i, option in enumerate(options):
+                color = GOLD if i == selected_option else WHITE
+                option_surf = font.render(option, True, color)
+                self.screen.blit(option_surf, option_surf.get_rect(center=(width // 2, option_y_start + i * option_spacing)))
+            
+            # Draw navigation instructions
+            instruction_surf = self._render_text_safe("Use UP/DOWN arrows and ENTER to select", "ui_text", CYAN, fallback_size=24)
+            self.screen.blit(instruction_surf, instruction_surf.get_rect(center=(width // 2, height // 2 + 150)))
+        else:
+            # Fallback to old prompt if the state doesn't have the new attributes
+            prompt_surf = self._render_text_safe("Press 'R' to Restart or 'M' for Menu", "medium_text", WHITE, fallback_size=48)
+            self.screen.blit(prompt_surf, prompt_surf.get_rect(center=(width//2, height//2 + 50)))
 
     def draw_enter_name_overlay(self):
         width = get_setting("display", "WIDTH", 1920)

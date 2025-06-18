@@ -1,5 +1,28 @@
 {
   "enemies": {
+    "prototype_enemy": {
+      "name": "Prototype Enemy",
+      "class_name": "Enemy",
+      "stats": {
+        "health": 80,
+        "speed": 1.8,
+        "contact_damage": 20,
+        "aggro_radius_tiles": 10
+      },
+      "ai": {
+        "initial_behavior": "ChasePlayerBehavior"
+      },
+      "assets": {
+        "sprite_asset_key": "images/enemies/defense_drone_1.png",
+        "shoot_sound_key": "enemy_shoot"
+      },
+      "weapon": {
+        "shoot_cooldown": 1200,
+        "bullet_size_ratio": 0.67,
+        "bullet_damage": 8,
+        "bullet_speed": 6
+      }
+    },
     "regular_enemy": {
       "name": "Regular Enemy",
       "class_name": "Enemy",

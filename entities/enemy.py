@@ -197,6 +197,38 @@ class DefenseDrone(Enemy):
 class SentinelDrone(Enemy): 
     def __init__(self, x, y, asset_manager, config, target_player_ref=None):
         super().__init__(x, y, asset_manager, config, target_player_ref)
+        # Set wall following behavior after a short delay to avoid circular import
+        self._set_wall_follow_behavior()
+        
+        # Increase contact damage since this is the primary attack method
+        self.contact_damage = get_setting("enemies", "SENTINEL_CONTACT_DAMAGE", 40)
+        
+        # Increase speed for better chase capability
+        self.speed = get_setting("enemies", "SENTINEL_SPEED", 2.5)
+        
+        # Disable shooting by setting cooldown to infinity
+        self.shoot_cooldown = float('inf')
+
+    def _set_wall_follow_behavior(self):
+        """Set wall following behavior after initialization to avoid circular import"""
+        # Use a timer to delay behavior setting
+        self._behavior_timer = pygame.time.get_ticks()
+        self._behavior_set = False
+
+    def update(self, primary_target_pos_pixels, maze, current_time_ms, delta_time_ms, game_area_x_offset=0, is_defense_mode=False):
+        # Set wall following behavior if not already set
+        if not getattr(self, '_behavior_set', False) and current_time_ms - getattr(self, '_behavior_timer', 0) > 100:
+            from ai.behaviors import WallFollowBehavior
+            self.default_behavior = WallFollowBehavior
+            self.set_behavior(WallFollowBehavior(self))
+            self._behavior_set = True
+            
+        # Call parent update method
+        super().update(primary_target_pos_pixels, maze, current_time_ms, delta_time_ms, game_area_x_offset, is_defense_mode)
+    
+    # Override shoot method to do nothing
+    def shoot(self, direct_angle_to_target, maze):
+        pass
 
     def _load_sprite(self): 
         tile_size = get_setting("gameplay", "TILE_SIZE", 80)

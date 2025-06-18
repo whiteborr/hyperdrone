@@ -17,7 +17,7 @@ from .escape_zone import EscapeZone
 from .core_reactor import CoreReactor
 from .turret import Turret
 from .maze import Maze
-from .maze_chapter2 import MazeChapter2
+from .maze_chapter3 import MazeChapter3
 
 __all__ = [
     "AncientAlienTerminal",
@@ -34,7 +34,7 @@ __all__ = [
     "LaserBeam",
     "LightningZap",
     "Maze", 
-    "MazeChapter2", 
+    "MazeChapter3", 
     "MazeGuardian",
     "Missile",
     "Particle",

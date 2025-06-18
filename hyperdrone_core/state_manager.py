@@ -179,6 +179,11 @@ class StateManager:
         self.registry.register_transition("GameOverState", "MainMenuState")
         self.registry.register_transition("GameOverState", "EnterNameState")
         self.registry.register_transition("GameOverState", "StoryMapState")
+        self.registry.register_transition("GameOverState", "PlayingState")
+        self.registry.register_transition("GameOverState", "MazeDefenseState")
+        self.registry.register_transition("GameOverState", "BossFightState")
+        self.registry.register_transition("GameOverState", "CorruptedSectorState")
+        self.registry.register_transition("GameOverState", "HarvestChamberState")
         
         # Enter name transitions
         self.registry.register_transition("EnterNameState", "LeaderboardState")
@@ -207,6 +212,7 @@ class StateManager:
         # Boss fight transitions
         self.registry.register_transition("BossFightState", "GameOverState")
         self.registry.register_transition("BossFightState", "CorruptedSectorState")
+        self.registry.register_transition("BossFightState", "StoryMapState")
 
         # Corrupted Sector transitions
         self.registry.register_transition("CorruptedSectorState", "GameOverState")

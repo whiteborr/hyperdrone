@@ -9,9 +9,9 @@ try:
 except ImportError:
     class Turret: TURRET_COST, UPGRADE_COST, MAX_UPGRADE_LEVEL, MAX_TURRETS = 50, 100, 3, 5
 try:
-    from entities.maze_chapter2 import MazeChapter2
+    from entities.maze_chapter3 import MazeChapter3
 except ImportError:
-    MazeChapter2 = None
+    MazeChapter3 = None
 
 class BuildMenu:
     def __init__(self, game_controller_ref, ui_manager_ref, asset_manager):
@@ -56,9 +56,9 @@ class BuildMenu:
 
             if 0 <= grid_row < self.game_controller.maze.actual_maze_rows and 0 <= grid_col < self.game_controller.maze.actual_maze_cols:
                 tile_world_x, tile_world_y = grid_col * tile_size + offset, grid_row * tile_size
-                self.hover_tile_rect = pygame.Rect(tile_world_x, tile_world_y, TILE_SIZE, TILE_SIZE)
+                self.hover_tile_rect = pygame.Rect(tile_world_x, tile_world_y, tile_size, tile_size)
                 
-                is_valid = isinstance(self.game_controller.maze, MazeChapter2) and self.game_controller.maze.grid[grid_row][grid_col] == 'T'
+                is_valid = isinstance(self.game_controller.maze, MazeChapter3) and self.game_controller.maze.grid[grid_row][grid_col] == 'T'
                 self.current_hover_color = self.hover_tile_color if is_valid else self.invalid_hover_tile_color
             else: self.hover_tile_rect = None
         else: self.hover_tile_rect = None

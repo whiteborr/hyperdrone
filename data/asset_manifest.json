@@ -1,27 +1,27 @@
 {
   "sounds": {
-    "COLLECT_RING_SOUND": "sounds/collect_ring.wav",
-    "WEAPON_UPGRADE_COLLECT_SOUND": "sounds/weapon_upgrade_collect.wav",
-    "COLLECT_FRAGMENT_SOUND": "sounds/collect_fragment.wav",
-    "SHOOT_SOUND": "sounds/shoot.wav",
-    "ENEMY_SHOOT_SOUND": "sounds/enemy_shoot.wav",
-    "CRASH_SOUND": "sounds/crash.wav",
-    "LEVEL_UP_SOUND": "sounds/level_up.wav",
-    "UI_SELECT_SOUND": "sounds/ui_select.wav",
-    "UI_CONFIRM_SOUND": "sounds/ui_confirm.wav",
-    "UI_DENIED_SOUND": "sounds/ui_denied.wav",
-    "MISSILE_LAUNCH_SOUND": "sounds/missile_launch.wav",
-    "PROTOTYPE_DRONE_EXPLODE_SOUND": "sounds/prototype_drone_explode.wav",
-    "TURRET_PLACE_SOUND": "sounds/turret_placement.wav"
+    "COLLECT_RING_SOUND": "sounds/collect_ring.ogg",
+    "WEAPON_UPGRADE_COLLECT_SOUND": "sounds/weapon_upgrade_collect.ogg",
+    "COLLECT_FRAGMENT_SOUND": "sounds/collect_fragment.ogg",
+    "SHOOT_SOUND": "sounds/shoot.ogg",
+    "ENEMY_SHOOT_SOUND": "sounds/enemy_shoot.ogg",
+    "CRASH_SOUND": "sounds/crash.ogg",
+    "LEVEL_UP_SOUND": "sounds/level_up.ogg",
+    "UI_SELECT_SOUND": "sounds/ui_select.ogg",
+    "UI_CONFIRM_SOUND": "sounds/ui_confirm.ogg",
+    "UI_DENIED_SOUND": "sounds/ui_denied.ogg",
+    "MISSILE_LAUNCH_SOUND": "sounds/missile_launch.ogg",
+    "PROTOTYPE_DRONE_EXPLODE_SOUND": "sounds/prototype_drone_explode.ogg",
+    "TURRET_PLACE_SOUND": "sounds/turret_placement.ogg"
   },
   "music": {
-    "MENU_THEME_MUSIC": "sounds/menu_music.wav",
-    "GAMEPLAY_THEME_MUSIC": "sounds/gameplay_music.wav",
-    "DEFENSE_THEME_MUSIC": "sounds/defense_mode_music.wav",
-    "BOSS_THEME_MUSIC": "sounds/gameplay_music.wav",
-    "CORRUPTED_THEME_MUSIC": "sounds/gameplay_music.wav",
-    "SHMUP_THEME_MUSIC": "sounds/gameplay_music.wav",
-    "ARCHITECT_VAULT_THEME_MUSIC": "sounds/defense_mode_music.wav"
+    "MENU_THEME_MUSIC": "sounds/menu_music.ogg",
+    "GAMEPLAY_THEME_MUSIC": "sounds/gameplay_music.ogg",
+    "DEFENSE_THEME_MUSIC": "sounds/defense_mode_music.ogg",
+    "BOSS_THEME_MUSIC": "sounds/gameplay_music.ogg",
+    "CORRUPTED_THEME_MUSIC": "sounds/gameplay_music.ogg",
+    "SHMUP_THEME_MUSIC": "sounds/gameplay_music.ogg",
+    "ARCHITECT_VAULT_THEME_MUSIC": "sounds/defense_mode_music.ogg"
   },
   "images": {
     "RING_UI_ICON": "images/collectibles/ring_ui_icon.png",

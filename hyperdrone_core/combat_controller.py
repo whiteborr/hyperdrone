@@ -307,3 +307,25 @@ class CombatController:
         # This is a stub method that will be implemented later
         # For now, just return False to prevent errors
         return False
+        
+    def _handle_maze_guardian_defeated(self):
+        """Handle the defeat of the Maze Guardian boss"""
+        if self.maze_guardian_defeat_processed:
+            return
+            
+        # Mark as processed to prevent multiple rewards
+        self.maze_guardian_defeat_processed = True
+        
+        # Add score and cores for defeating the boss
+        if hasattr(self.game_controller, 'level_manager'):
+            self.game_controller.level_manager.add_score(1000)
+            
+        if hasattr(self.game_controller, 'drone_system'):
+            self.game_controller.drone_system.add_player_cores(100)
+            
+        # Set a message for the player
+        if hasattr(self.game_controller, 'set_story_message'):
+            self.game_controller.set_story_message("Maze Guardian defeated!", 3000)
+            
+        # Log the event
+        logger.info("Maze Guardian defeated!")
