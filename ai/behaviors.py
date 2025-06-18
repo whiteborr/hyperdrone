@@ -71,7 +71,7 @@ class WallFollowBehavior(BaseBehavior):
             self.wall_follow_target = target_pixel
             self.enemy.pathfinder.set_target(target_pixel, maze, current_time_ms, game_area_x_offset)
         else:
-            # Fallback: find any walkable tile near a wall
+            # Fallback: find any walkable tile near current position
             walkable_tiles = []
             if hasattr(maze, 'get_walkable_tiles_abs'):
                 walkable_tiles = maze.get_walkable_tiles_abs()
@@ -304,3 +304,124 @@ class TRBDashBehavior(BaseBehavior):
                                            game_play_area_height))
         self.enemy.x, self.enemy.y = self.enemy.rect.centerx, self.enemy.rect.centery
         self.enemy.collision_rect.center = self.enemy.rect.center
+
+
+class RetreatBehavior(BaseBehavior):
+    """
+    Behavior for an enemy to retreat when health is low.
+    It will attempt to find a safe, distant spot from the player.
+    """
+    def __init__(self, enemy):
+        super().__init__(enemy)
+        self.retreat_target = None
+        self.last_retreat_attempt_time = 0
+        self.retreat_recalc_interval = get_setting("enemies", "RETREAT_RECALC_INTERVAL_MS", 1000) # How often to recalculate retreat path
+        self.min_retreat_distance = get_setting("enemies", "MIN_RETREAT_DISTANCE_TILES", 8) * get_setting("gameplay", "TILE_SIZE", 80) # Distance to retreat
+        self.retreat_speed_multiplier = get_setting("enemies", "RETREAT_SPEED_MULTIPLIER", 1.2) # Faster movement when retreating
+
+    def execute(self, maze, current_time_ms, delta_time_ms, game_area_x_offset=0):
+        # If player is gone or enemy healed, revert to default behavior
+        if not self.enemy.player_ref or not self.enemy.player_ref.alive or \
+           self.enemy.health > self.enemy.max_health * get_setting("enemies", "RETREAT_HEALTH_THRESHOLD", 0.3):
+            self.enemy.set_behavior(self.enemy.default_behavior(self.enemy))
+            return
+
+        # Recalculate retreat path periodically or if current path is invalid/finished
+        if current_time_ms - self.last_retreat_attempt_time > self.retreat_recalc_interval or \
+           not self.retreat_target or \
+           not self.enemy.pathfinder.path or \
+           self.enemy.pathfinder.current_path_index >= len(self.enemy.pathfinder.path):
+            
+            self._find_retreat_target(maze, current_time_ms, game_area_x_offset)
+            self.last_retreat_attempt_time = current_time_ms
+        
+        # Move towards the retreat target
+        if self.retreat_target:
+            self.enemy.pathfinder.update_movement(
+                maze, 
+                current_time_ms, 
+                delta_time_ms, 
+                game_area_x_offset, 
+                speed_override=self.enemy.speed * self.retreat_speed_multiplier
+            )
+        else:
+            # If no retreat target found, just try to move away directly from player
+            if self.enemy.player_ref:
+                dx = self.enemy.x - self.enemy.player_ref.x
+                dy = self.enemy.y - self.enemy.player_ref.y
+                dist = math.hypot(dx, dy)
+                if dist > 0:
+                    self.enemy.angle = math.degrees(math.atan2(dy, dx))
+                    self.enemy.pathfinder.update_movement(
+                        maze, 
+                        current_time_ms, 
+                        delta_time_ms, 
+                        game_area_x_offset, 
+                        speed_override=self.enemy.speed * self.retreat_speed_multiplier
+                    )
+
+    def _find_retreat_target(self, maze, current_time_ms, game_area_x_offset):
+        """Finds a distant, walkable target away from the player."""
+        if not maze or not self.enemy.player_ref:
+            self.retreat_target = None
+            return
+
+        walkable_tiles = maze.get_walkable_tiles_abs()
+        if not walkable_tiles:
+            self.retreat_target = None
+            return
+
+        # Sort walkable tiles by distance to player (farthest first)
+        player_x, player_y = self.enemy.player_ref.x, self.enemy.player_ref.y
+        
+        # Consider a wider area for retreat targets
+        search_radius_tiles = get_setting("enemies", "RETREAT_SEARCH_RADIUS_TILES", 20)
+        search_radius_pixels = search_radius_tiles * get_setting("gameplay", "TILE_SIZE", 80)
+
+        potential_targets = []
+        for tile_x, tile_y in walkable_tiles:
+            dist_to_player = math.hypot(tile_x - player_x, tile_y - player_y)
+            # Only consider tiles that are sufficiently far from the player
+            if dist_to_player > self.min_retreat_distance:
+                # Prioritize tiles that are further away, and within a reasonable search area
+                if dist_to_player < search_radius_pixels:
+                    potential_targets.append((tile_x, tile_y, dist_to_player))
+        
+        if not potential_targets:
+            self.retreat_target = None
+            return
+
+        # Sort by distance (farthest first)
+        potential_targets.sort(key=lambda x: x[2], reverse=True)
+
+        # Try to find a path to the farthest viable target
+        found_path = False
+        for target_x, target_y, _ in potential_targets:
+            target_grid_pos = self._pixel_to_grid(target_x, target_y, game_area_x_offset)
+            enemy_grid_pos = self._pixel_to_grid(self.enemy.x, self.enemy.y, game_area_x_offset)
+            
+            # Ensure target is walkable
+            if not maze.is_wall(target_x, target_y, 1, 1): # Check a 1x1 area for wall
+                path = a_star_search(
+                    maze.grid, 
+                    enemy_grid_pos, 
+                    target_grid_pos, 
+                    maze.actual_maze_rows, 
+                    maze.actual_maze_cols
+                )
+                if path and len(path) > 1:
+                    self.retreat_target = (target_x, target_y)
+                    self.enemy.pathfinder.set_target(self.retreat_target, maze, current_time_ms, game_area_x_offset)
+                    found_path = True
+                    break
+        
+        if not found_path:
+            self.retreat_target = None # No viable retreat path found
+
+    def _pixel_to_grid(self, px, py, offset=0):
+        tile_size = get_setting("gameplay", "TILE_SIZE", 80)
+        return int(py / tile_size), int((px - offset) / tile_size)
+        
+    def _grid_to_pixel_center(self, r, c, offset=0):
+        tile_size = get_setting("gameplay", "TILE_SIZE", 80)
+        return (c*tile_size)+(tile_size/2)+offset, (r*tile_size)+(tile_size/2)

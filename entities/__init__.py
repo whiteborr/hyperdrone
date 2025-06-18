@@ -18,6 +18,7 @@ from .core_reactor import CoreReactor
 from .turret import Turret
 from .maze import Maze
 from .maze_chapter3 import MazeChapter3
+from .temporary_barricade import TemporaryBarricade
 
 __all__ = [
     "AncientAlienTerminal",
@@ -45,6 +46,7 @@ __all__ = [
     "SentinelDrone",
     "ShieldItem",
     "SpeedBoostItem",
+    "TemporaryBarricade",
     "Turret",
     "VaultLogItem",
     "WeaponUpgradeItem"

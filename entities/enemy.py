@@ -17,7 +17,7 @@ from settings_manager import get_setting
 from constants import GREEN, YELLOW, RED, WHITE, DARK_PURPLE
 
 # Import behaviors and pathfinding component
-from ai.behaviors import ChasePlayerBehavior
+from ai.behaviors import ChasePlayerBehavior, RetreatBehavior # NEW: Import RetreatBehavior
 from ai.pathfinding_component import PathfinderComponent
 
 logger = logging.getLogger(__name__)
@@ -80,6 +80,11 @@ class Enemy(pygame.sprite.Sprite):
         self.default_behavior = ChasePlayerBehavior
         self.set_behavior(ChasePlayerBehavior(self))
 
+        # NEW: Retreat behavior attributes
+        self.retreat_health_threshold = self.max_health * get_setting("enemies", "RETREAT_HEALTH_THRESHOLD", 0.3)
+        self.can_retreat = get_setting("enemies", "CAN_RETREAT", True) # Global setting for enemy retreat behavior
+
+
     def _load_sprite(self):
         tile_size = get_setting("gameplay", "TILE_SIZE", 80)
         default_size = (int(tile_size * 0.7), int(tile_size * 0.7)) 
@@ -92,7 +97,9 @@ class Enemy(pygame.sprite.Sprite):
 
     def set_behavior(self, new_behavior):
         """Change the current behavior of the enemy"""
-        self.behavior = new_behavior
+        # Only change behavior if it's different from the current one
+        if not isinstance(self.behavior, type(new_behavior)):
+            self.behavior = new_behavior
         
     def update(self, primary_target_pos_pixels, maze, current_time_ms, delta_time_ms, game_area_x_offset=0, is_defense_mode=False):
         if not self.alive:
@@ -100,6 +107,14 @@ class Enemy(pygame.sprite.Sprite):
             if not self.bullets: self.kill()
             return
 
+        # NEW: Retreat Logic - check before executing current behavior
+        if self.can_retreat and self.player_ref and self.player_ref.alive:
+            player_dist = math.hypot(self.x - self.player_ref.x, self.y - self.player_ref.y)
+            if self.health <= self.retreat_health_threshold and player_dist < self.aggro_radius * 1.5:
+                if not isinstance(self.behavior, RetreatBehavior):
+                    self.set_behavior(RetreatBehavior(self))
+                    logger.debug(f"Enemy {self.config.get('name')} (ID: {id(self)}) switching to RETREAT behavior.")
+        
         # Execute current behavior
         if self.behavior:
             self.behavior.execute(maze, current_time_ms, delta_time_ms, game_area_x_offset)
@@ -153,12 +168,11 @@ class Enemy(pygame.sprite.Sprite):
                 self.health = 0
                 self.alive = False
                 # Create explosion effect when enemy dies
-                if hasattr(self, 'rect') and self.rect:
-                    x, y = self.rect.center
-                    if hasattr(self.asset_manager, 'game_controller') and self.asset_manager.game_controller:
-                        # Create explosions for enemy death
-                        self.asset_manager.game_controller._create_explosion(x, y, 40, 'enemy_shoot')
-                        self.asset_manager.game_controller._create_explosion(x, y, 15, None, True)
+                if hasattr(self.asset_manager, 'game_controller') and self.asset_manager.game_controller:
+                        self.asset_manager.game_controller.on_enemy_defeated_effects(
+                            type('EnemyDefeatedEvent', (object,), {'score_value': 0, 'position': (self.x, self.y), 'enemy_id': id(self)})()
+                        )
+
 
     def draw(self, surface, camera=None):
         if self.alive and self.image:

@@ -80,6 +80,16 @@ class PlayerDrone(BaseDrone):
         self.set_weapon_mode(self.current_weapon_mode)
         self._load_sprite()
 
+        # NEW: Active Abilities System
+        self.active_abilities = {} # {ability_id: {'cooldown_end_time': int, 'is_active': bool}}
+        self.ability_cooldowns = {
+            "temporary_barricade": get_setting("abilities", "TEMPORARY_BARRICADE_COOLDOWN_MS", 10000)
+        }
+        self.ability_durations = {
+            "temporary_barricade": get_setting("abilities", "TEMPORARY_BARRICADE_DURATION_MS", 3000)
+        }
+        self.spawned_barricades_group = pygame.sprite.Group() # NEW: Group for spawned barricades
+
     def _load_sprite(self):
         # Always use the base drone sprite first
         loaded_image = self.asset_manager.get_image(self.sprite_asset_key)
@@ -95,7 +105,7 @@ class PlayerDrone(BaseDrone):
         current_center = self.rect.center if hasattr(self, 'rect') and self.rect else (int(self.x), int(self.y))
         self.rect = self.image.get_rect(center=current_center)
         self.collision_rect = self.rect.inflate(-self.rect.width * 0.3, -self.rect.height * 0.3)
-        
+                
     def _update_drone_sprite(self):
         """Update the drone sprite based on the current weapon mode"""
         # Get the drone ID and weapon mode
@@ -169,7 +179,100 @@ class PlayerDrone(BaseDrone):
         self.missiles_group.update(enemies_group, maze, game_area_x_offset)
         if hasattr(self, 'lightning_zaps_group'):
             self.lightning_zaps_group.update(current_time_ms)
+        
+        # NEW: Update active abilities
+        self.update_active_abilities(current_time_ms)
+        self.spawned_barricades_group.update()
 
+    def update_active_abilities(self, current_time_ms):
+        """Updates the state and cooldowns of active abilities."""
+        for ability_id, status in list(self.active_abilities.items()):
+            if status.get('is_active') and current_time_ms > status['active_end_time']:
+                status['is_active'] = False
+                logger.info(f"Ability '{ability_id}' deactivated.")
+            if current_time_ms > status['cooldown_end_time']:
+                # Ability is off cooldown, remove 'cooldown_end_time' to indicate ready
+                if 'cooldown_end_time' in status:
+                    del status['cooldown_end_time']
+
+    def unlock_ability(self, ability_id):
+        """Unlocks an active ability for the player."""
+        if ability_id not in self.active_abilities:
+            self.active_abilities[ability_id] = {} # Initialize status
+            logger.info(f"Player unlocked active ability: {ability_id}")
+
+    def activate_ability(self, ability_id, game_controller_ref):
+        """Activates an unlocked ability."""
+        if not self.drone_system.has_ability_unlocked(ability_id):
+            game_controller_ref.set_story_message(f"Ability '{ability_id}' is not unlocked!", 2000)
+            game_controller_ref.play_sound('ui_denied')
+            return False
+
+        current_time_ms = pygame.time.get_ticks()
+        ability_status = self.active_abilities.get(ability_id, {})
+        
+        # Check if on cooldown
+        if 'cooldown_end_time' in ability_status and current_time_ms < ability_status['cooldown_end_time']:
+            remaining_cooldown = (ability_status['cooldown_end_time'] - current_time_ms) / 1000.0
+            game_controller_ref.set_story_message(f"{ability_id.replace('_', ' ').title()} on cooldown: {remaining_cooldown:.1f}s", 2000)
+            game_controller_ref.play_sound('ui_denied')
+            return False
+
+        # Activate the ability
+        if ability_id == "temporary_barricade":
+            self._activate_temporary_barricade(game_controller_ref)
+        # Add more ability activations here
+        
+        ability_status['is_active'] = True
+        ability_status['active_end_time'] = current_time_ms + self.ability_durations.get(ability_id, 0)
+        ability_status['cooldown_end_time'] = current_time_ms + self.ability_cooldowns.get(ability_id, 0)
+        self.active_abilities[ability_id] = ability_status # Update the dictionary
+        
+        game_controller_ref.set_story_message(f"{ability_id.replace('_', ' ').title()} Activated!", 2000)
+        game_controller_ref.play_sound('ui_confirm') # Play a generic ability activation sound
+        return True
+
+    def _activate_temporary_barricade(self, game_controller_ref):
+        """Logic for spawning temporary barricades."""
+        from entities.temporary_barricade import TemporaryBarricade # NEW import
+        
+        barricade_count = get_setting("abilities", "TEMPORARY_BARRICADE_COUNT", 3)
+        barricade_health = get_setting("abilities", "TEMPORARY_BARRICADE_HEALTH", 50)
+        barricade_lifetime = get_setting("abilities", "TEMPORARY_BARRICADE_DURATION_MS", 3000)
+        barricade_size = get_setting("abilities", "TEMPORARY_BARRICADE_SIZE", 40)
+
+        # Calculate spawn points in an arc in front of the player
+        player_angle_rad = math.radians(self.angle)
+        spawn_distance = self.rect.width * 1.2 # Distance from player center
+        
+        # Clear existing player-spawned barricades to prevent clutter
+        self.spawned_barricades_group.empty()
+
+        for i in range(barricade_count):
+            # Distribute barricades in a slight arc
+            angle_offset = (i - (barricade_count - 1) / 2) * 20 # -20, 0, 20 for 3 barricades
+            barricade_angle_rad = math.radians(self.angle + angle_offset)
+
+            spawn_x = self.x + math.cos(barricade_angle_rad) * spawn_distance
+            spawn_y = self.y + math.sin(barricade_angle_rad) * spawn_distance
+            
+            # Ensure barricade is not spawned inside a wall
+            maze = game_controller_ref.maze # Access maze from game_controller
+            if maze and maze.is_wall(spawn_x, spawn_y, barricade_size, barricade_size):
+                # If intended spawn point is inside a wall, try to adjust slightly or skip
+                logger.warning(f"Attempted to spawn barricade in wall at ({spawn_x:.1f}, {spawn_y:.1f})")
+                continue 
+
+            new_barricade = TemporaryBarricade(
+                spawn_x, spawn_y,
+                size=barricade_size,
+                health=barricade_health,
+                lifetime_ms=barricade_lifetime,
+                asset_manager=self.asset_manager # Pass asset_manager
+            )
+            self.spawned_barricades_group.add(new_barricade)
+            game_controller_ref.combat_controller.spawned_barricades_group.add(new_barricade) # Add to combat controller's group as well
+                
     def rotate(self, direction):
         super().rotate(direction, self.rotation_speed)
             
@@ -190,14 +293,14 @@ class PlayerDrone(BaseDrone):
                 self.last_shot_time = pygame.time.get_ticks()
                 # Ensure the drone sprite matches the current weapon mode
                 self._update_drone_sprite()
-            
+
     def cycle_weapon_state(self):
         weapon_modes_sequence = get_setting("gameplay", "WEAPON_MODES_SEQUENCE", [0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
         self.weapon_mode_index = (self.weapon_mode_index + 1) % len(weapon_modes_sequence)
         self.current_weapon_mode = weapon_modes_sequence[self.weapon_mode_index]
         self.set_weapon_mode(self.current_weapon_mode)
         self._update_drone_sprite()
-        
+
     def set_weapon_mode(self, mode):
         """Set the current weapon strategy based on the weapon mode"""
         from .weapon_strategies import create_weapon_strategy
@@ -238,11 +341,14 @@ class PlayerDrone(BaseDrone):
         if self.health <= 0:
             self.health = 0
             self.alive = False
-            
+
     def draw(self, surface, camera=None):
         # Draw power-up effects first (behind the drone)
         self.powerup_manager.draw(surface, camera)
         
+        # NEW: Draw spawned barricades
+        self.spawned_barricades_group.draw(surface, camera)
+
         if self.alive and self.original_image:
             rotated_image = pygame.transform.rotate(self.original_image, -self.angle)
             draw_rect = rotated_image.get_rect(center=self.rect.center)
@@ -258,7 +364,7 @@ class PlayerDrone(BaseDrone):
         for zap in self.lightning_zaps_group:
             if hasattr(zap, 'draw'):
                 zap.draw(surface, camera)
-                
+
     def draw_health_bar(self, surface, camera=None):
         if not self.alive or not self.rect: return
         bar_width = self.rect.width * 0.8

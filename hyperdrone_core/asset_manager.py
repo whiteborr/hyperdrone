@@ -229,6 +229,7 @@ class AssetManager:
                 "images/lore/scene2.png": {"path": get_asset_path("images", "LORE_SCENE_2"), "alpha": True},
                 "images/lore/scene3.png": {"path": get_asset_path("images", "LORE_SCENE_3"), "alpha": True},
                 "images/lore/scene4.png": {"path": get_asset_path("images", "LORE_SCENE_4"), "alpha": True},
+                "ability_icon_placeholder": {"path": "images/ui/ability_icon_placeholder.png", "alpha": True},
                 
                 # Add weapon-specific drone sprites
                 "drone_default": {"path": "images/drones/drone_default.png", "alpha": True},
@@ -270,7 +271,7 @@ class AssetManager:
                 'turret_placement': get_asset_path("sounds", "TURRET_PLACE_SOUND"),
             },
             "fonts": {
-                "ui_text": {"path": get_asset_path("fonts", "UI_TEXT_FONT"), "sizes": [28, 24, 20, 16, 32]},
+                "ui_text": {"path": get_asset_path("fonts", "UI_TEXT_FONT"), "sizes": [28, 24, 20, 16, 32, 56]},
                 "ui_values": {"path": get_asset_path("fonts", "UI_TEXT_FONT"), "sizes": [30]},
                 "small_text": {"path": get_asset_path("fonts", "UI_TEXT_FONT"), "sizes": [24]},
                 "medium_text": {"path": get_asset_path("fonts", "UI_TEXT_FONT"), "sizes": [48, 36]},

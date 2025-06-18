@@ -9,5 +9,6 @@
     "architect_vault_completed": false,
     "collected_glyph_tablets": [],
     "solved_puzzle_terminals": [],
-    "defeated_bosses": []
+    "defeated_bosses": [],
+    "unlocked_abilities": []
 }

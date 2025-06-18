@@ -96,9 +96,6 @@ class PlayingState(State):
             power_ups_group=self.game.power_ups_group
         )
         
-        # Spawn enemies
-        self.game.combat_controller.enemy_manager.spawn_enemies_for_level(self.game.level_manager.level)
-        
         # Set up puzzle controller
         self.game.puzzle_controller.set_active_entities(
             player=self.game.player, 
@@ -201,7 +198,8 @@ class PlayingState(State):
             self.game.core_fragments_group, 
             self.game.vault_logs_group,
             self.game.glyph_tablets_group, 
-            self.game.architect_echoes_group
+            self.game.architect_echoes_group,
+            self.game.spawned_barricades_group # NEW: Add this group here
         ]:
             for item in item_group:
                 item.draw(surface, self.game.camera)
@@ -220,6 +218,3 @@ class PlayingState(State):
         
         # Draw fragment animations
         self.game._draw_fragment_animations()
-        
-
-

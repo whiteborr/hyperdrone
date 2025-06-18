@@ -1,4 +1,4 @@
-# hyperdrone/ui/ui.py
+# ui/ui.py
 import os
 import math
 import random
@@ -25,6 +25,7 @@ if not logging.getLogger().hasHandlers():
 
 
 class UIManager:
+    # NEW: Add player_active_abilities_data parameter to draw_current_scene_ui
     def __init__(self, screen, asset_manager, game_controller_ref, scene_manager_ref, drone_system_ref):
         self.screen = screen
         self.asset_manager = asset_manager
@@ -35,12 +36,14 @@ class UIManager:
         self.ui_asset_surfaces = {
             "ring_icon": None, "ring_icon_empty": None, "menu_background": None,
             "current_drone_life_icon": None, "core_fragment_icons": {},
-            "core_fragment_empty_icon": None, "reactor_icon_placeholder": None
+            "core_fragment_empty_icon": None, "reactor_icon_placeholder": None,
+            "ability_icon_placeholder": None # NEW: Placeholder for ability icon
         }
         self.ui_icon_size_lives = (30, 30)
         self.ui_icon_size_rings = (20, 20)
         self.ui_icon_size_fragments = (28, 28)
         self.ui_icon_size_reactor = (32, 32)
+        self.ui_icon_size_ability = (get_setting("display", "HUD_ABILITY_ICON_SIZE", 60), get_setting("display", "HUD_ABILITY_ICON_SIZE", 60)) # NEW
 
         self.codex_list_item_height = 0
         self.codex_max_visible_items_list = 0
@@ -100,6 +103,13 @@ class UIManager:
         reactor_icon_asset = self.asset_manager.get_image("reactor_hud_icon_key", scale_to_size=self.ui_icon_size_reactor)
         if reactor_icon_asset: self.ui_asset_surfaces["reactor_icon_placeholder"] = reactor_icon_asset
         else: self.ui_asset_surfaces["reactor_icon_placeholder"] = self._create_fallback_icon_surface(self.ui_icon_size_reactor, "R", (50,50,200))
+
+        # NEW: Load ability icon
+        self.ui_asset_surfaces["ability_icon_placeholder"] = self.asset_manager.get_image("ability_icon_placeholder", scale_to_size=self.ui_icon_size_ability)
+        if not self.ui_asset_surfaces["ability_icon_placeholder"]:
+            logger.warning("UIManager: Ability icon placeholder not found. Using fallback.")
+            self.ui_asset_surfaces["ability_icon_placeholder"] = self._create_fallback_icon_surface(self.ui_icon_size_ability, "A", (100, 200, 255))
+
 
     def update_player_life_icon_surface(self):
         selected_drone_id = self.drone_system.get_selected_drone_id()
@@ -196,7 +206,8 @@ class UIManager:
                 current_line = word + " "
         lines.append(current_line.strip()); return lines
 
-    def draw_current_scene_ui(self):
+    # NEW: Add player_active_abilities_data parameter
+    def draw_current_scene_ui(self, player_active_abilities_data=None):
         # Use state_manager instead of scene_manager
         if not hasattr(self, 'state_manager') or self.state_manager is None:
             return
@@ -239,7 +250,7 @@ class UIManager:
             if self.game_controller.paused: self.draw_pause_overlay()
         
         elif current_state in ["PlayingState", "BonusLevelPlayingState"]:
-            self.draw_gameplay_hud()
+            self.draw_gameplay_hud(player_active_abilities_data) # NEW: Pass data
             if self.game_controller.paused: self.draw_pause_overlay()
         
         elif current_state == "MazeDefenseState": 
@@ -546,7 +557,8 @@ class UIManager:
             unlock_surf = self._render_text_safe(unlock_desc, "ui_text", RED, fallback_size=28)
             self.screen.blit(unlock_surf, unlock_surf.get_rect(center=(width/2, height/2 + 200)))
 
-    def draw_gameplay_hud(self):
+    # NEW: Add player_active_abilities_data parameter
+    def draw_gameplay_hud(self, player_active_abilities_data=None):
         player = self.game_controller.player
         if not player: return
         panel_height = get_setting("display", "BOTTOM_PANEL_HEIGHT", 120)
@@ -635,6 +647,11 @@ class UIManager:
             show_filled_icon = (frag_id in collected) and (frag_id not in animating_ids)
             icon = self.ui_asset_surfaces["core_fragment_icons"].get(frag_id) if show_filled_icon else self.ui_asset_surfaces["core_fragment_empty_icon"]
             if icon: self.screen.blit(icon, (frags_x + i * (self.ui_icon_size_fragments[0] + 5), frags_y))
+        
+        # NEW: Draw active abilities (if player_active_abilities_data is passed)
+        if player_active_abilities_data:
+            self._draw_active_abilities_hud(player_active_abilities_data)
+
 
     def get_scaled_fragment_icon_surface(self, fragment_id):
         # First check if it's a level fragment (fragment_level_1, etc.)
@@ -663,6 +680,55 @@ class UIManager:
         
         logger.warning(f"UIManager: Scaled icon surface for fragment_id '{fragment_id}' not found. Using fallback.")
         return self._create_fallback_icon_surface(self.ui_icon_size_fragments, "?", PURPLE)
+
+    # NEW: Method to draw active abilities HUD
+    def _draw_active_abilities_hud(self, active_abilities_data):
+        ability_icon_x = get_setting("display", "HUD_ABILITY_ICON_X_OFFSET", 100)
+        ability_icon_y = get_setting("display", "HUD_ABILITY_ICON_Y_OFFSET", 20)
+        ability_icon_size = self.ui_icon_size_ability
+        font_small = self.asset_manager.get_font("small_text", 24) or pygame.font.Font(None, 24)
+        current_time_ms = pygame.time.get_ticks()
+
+        # Assuming only one active ability is tracked for now for simplicity in UI placement
+        # If multiple abilities are to be displayed, this loop would iterate over them
+        for ability_id, status in active_abilities_data.items():
+            if not self.drone_system.has_ability_unlocked(ability_id):
+                continue
+
+            icon = self.ui_asset_surfaces["ability_icon_placeholder"]
+            icon_rect = icon.get_rect(topleft=(ability_icon_x, ability_icon_y))
+            self.screen.blit(icon, icon_rect)
+
+            # Draw cooldown overlay
+            if 'cooldown_end_time' in status:
+                total_cooldown = self.game_controller.player.ability_cooldowns.get(ability_id, 1) # Get total cooldown
+                time_remaining = status['cooldown_end_time'] - current_time_ms
+                
+                if time_remaining > 0:
+                    cooldown_ratio = time_remaining / total_cooldown
+                    
+                    # Darken the icon for cooldown
+                    cooldown_overlay = pygame.Surface(icon_rect.size, pygame.SRCALPHA)
+                    cooldown_overlay.fill((0, 0, 0, 150)) # Dark transparent overlay
+                    self.screen.blit(cooldown_overlay, icon_rect)
+
+                    # Draw cooldown number
+                    cooldown_text = f"{math.ceil(time_remaining / 1000)}s"
+                    text_surf = font_small.render(cooldown_text, True, WHITE)
+                    self.screen.blit(text_surf, text_surf.get_rect(center=icon_rect.center))
+
+                    # Draw a radial cooldown (optional, more complex)
+                    # For simplicity, a simple overlay and number is sufficient for now.
+                else:
+                    # Not on cooldown, but ensure it's not partially active
+                    pass # Icon is drawn normally
+
+            # Draw key reminder
+            key_text_y_offset = ability_icon_size[1] + 5 # Below the icon
+            key_text = f"F: {ability_id.replace('_', ' ').title()}"
+            key_surf = font_small.render(key_text, True, WHITE)
+            self.screen.blit(key_surf, (ability_icon_x, ability_icon_y + key_text_y_offset))
+
 
     def draw_settings_menu(self):
         title_surf = self._render_text_safe("Settings", "large_text", GOLD, fallback_size=48)

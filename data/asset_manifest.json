@@ -12,7 +12,8 @@
     "UI_DENIED_SOUND": "sounds/ui_denied.ogg",
     "MISSILE_LAUNCH_SOUND": "sounds/missile_launch.ogg",
     "PROTOTYPE_DRONE_EXPLODE_SOUND": "sounds/prototype_drone_explode.ogg",
-    "TURRET_PLACE_SOUND": "sounds/turret_placement.ogg"
+    "TURRET_PLACE_SOUND": "sounds/turret_placement.ogg",
+    "BARRICADE_DESTROT_SOUND": "sounds/barricade_destroy.ogg"
   },
   "music": {
     "MENU_THEME_MUSIC": "sounds/menu_music.ogg",
@@ -82,7 +83,7 @@
       "icon_filename": "images/collectibles/core_fragment_earth.png",
       "description": "Solid and foundational, the first step on your journey.",
       "spawn_info": {"level": 3},
-      "buff": {"type": "speed", "value": 1.05},
+      "associated_ability": "temporary_barricade",
       "required_for_vault": true
     },
     "fragment_fire": {

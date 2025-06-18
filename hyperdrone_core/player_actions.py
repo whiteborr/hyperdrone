@@ -53,6 +53,11 @@ class PlayerActions:
                     if hasattr(self.game_controller, 'play_sound'):
                         self.game_controller.play_sound('cloak_activate')
                         
+        # NEW: Key binding for active abilities (e.g., 'F' key)
+        elif event.key == pygame.K_f:
+            if hasattr(player, 'activate_ability'):
+                player.activate_ability("temporary_barricade", self.game_controller) # Pass game_controller_ref
+
         # Emergency key to eliminate stuck enemies (F1)
         elif event.key == pygame.K_F1:
             if hasattr(self.game_controller, 'combat_controller') and hasattr(self.game_controller.combat_controller, 'enemy_manager'):

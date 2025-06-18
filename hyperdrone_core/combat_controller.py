@@ -17,6 +17,7 @@ from entities import (
     WeaponUpgradeItem, ShieldItem, SpeedBoostItem,
     Turret, CoreReactor
 )
+from entities.temporary_barricade import TemporaryBarricade # NEW IMPORT
 
 from .enemy_manager import EnemyManager
 from .wave_manager import WaveManager
@@ -43,6 +44,7 @@ class CombatController:
         self.turrets_group = pygame.sprite.Group() 
         self.power_ups_group = pygame.sprite.Group()
         self.explosion_particles_group = pygame.sprite.Group()
+        self.spawned_barricades_group = pygame.sprite.Group() # NEW: Initialize group for barricades
 
         self.maze_guardian = None
         self.boss_active = False
@@ -58,7 +60,12 @@ class CombatController:
         self.turrets_group = turrets_group if turrets_group is not None else pygame.sprite.Group()
         self.power_ups_group = power_ups_group if power_ups_group is not None else pygame.sprite.Group()
         self.explosion_particles_group = explosion_particles_group if explosion_particles_group is not None else pygame.sprite.Group()
-        
+        # NEW: Ensure barricades group is active
+        if self.player and hasattr(self.player, 'spawned_barricades_group'):
+            self.spawned_barricades_group = self.player.spawned_barricades_group
+        else:
+            self.spawned_barricades_group = pygame.sprite.Group()
+
         self.maze_guardian = None
         self.boss_active = False
         self.maze_guardian_defeat_processed = False
@@ -98,6 +105,7 @@ class CombatController:
         self._update_power_ups(current_time_ms)
         self._handle_collisions(current_game_state)
         self.explosion_particles_group.update()
+        self.spawned_barricades_group.update() # NEW: Update barricades
 
     def _handle_collisions(self, current_game_state):
         if not self.player and current_game_state != GAME_STATE_MAZE_DEFENSE:
@@ -143,6 +151,20 @@ class CombatController:
                             projectile.pierces_done += 1
                         
                         if not projectile.alive: break
+            
+            # NEW: Turret projectiles hitting barricades
+            hits_barricades = pygame.sprite.groupcollide(turret_projectiles, self.spawned_barricades_group, False, False, collision_func)
+            for projectile, barricades_hit in hits_barricades.items():
+                if not projectile.alive: continue
+                for barricade in barricades_hit:
+                    if barricade.alive:
+                        barricade.take_damage(projectile.damage)
+                        if not (hasattr(projectile, 'max_pierces') and projectile.pierces_done < projectile.max_pierces):
+                            projectile.kill()
+                        elif hasattr(projectile, 'pierces_done'):
+                            projectile.pierces_done += 1
+                        if not projectile.alive: break
+
 
     def _handle_player_projectile_collisions(self):
         player_projectiles = pygame.sprite.Group()
@@ -186,6 +208,20 @@ class CombatController:
                         projectile.pierces_done += 1
                     
                     if not projectile.alive: break
+        
+        # NEW: Player projectiles hitting barricades
+        hits_barricades = pygame.sprite.groupcollide(player_projectiles, self.spawned_barricades_group, False, False, collision_func)
+        for projectile, barricades_hit in hits_barricades.items():
+            if not projectile.alive: continue
+            for barricade in barricades_hit:
+                if barricade.alive:
+                    barricade.take_damage(projectile.damage)
+                    if not (hasattr(projectile, 'max_pierces') and projectile.pierces_done < projectile.max_pierces):
+                        projectile.kill()
+                    elif hasattr(projectile, 'pierces_done'):
+                        projectile.pierces_done += 1
+                    if not projectile.alive: break
+
 
     def _handle_enemy_projectile_collisions(self, current_game_state):
         all_hostile_projectiles = pygame.sprite.Group()
@@ -201,6 +237,17 @@ class CombatController:
             for projectile in player_hits:
                 self.player.take_damage(projectile.damage, sound_key_on_hit='crash')
                 if not self.player.alive: self.game_controller._handle_player_death_or_life_loss("Drone Destroyed!")
+        
+        # NEW: Hostile projectiles hitting barricades
+        hits_barricades = pygame.sprite.groupcollide(all_hostile_projectiles, self.spawned_barricades_group, True, False, pygame.sprite.collide_rect_ratio(0.7))
+        for projectile, barricades_hit in hits_barricades.items():
+            if not projectile.alive: continue
+            for barricade in barricades_hit:
+                if barricade.alive:
+                    barricade.take_damage(projectile.damage)
+                    if not barricade.alive:
+                        self.game_controller._create_explosion(barricade.rect.centerx, barricade.rect.centery, 5, None, False)
+
 
         # Turret and Reactor collision in Defense Mode
         if current_game_state == GAME_STATE_MAZE_DEFENSE:
@@ -232,6 +279,25 @@ class CombatController:
                 if self.player.collision_rect.colliderect(self.maze_guardian.collision_rect):
                     self.player.take_damage(50, sound_key_on_hit='crash') 
                     if not self.player.alive: self.game_controller._handle_player_death_or_life_loss("Drone Destroyed!")
+        
+        # NEW: Player-barricade collisions (prevent player from passing through)
+        if self.player and self.player.alive:
+            player_barricade_hits = pygame.sprite.spritecollide(self.player, self.spawned_barricades_group, False, pygame.sprite.collide_rect_ratio(0.9))
+            for barricade in player_barricade_hits:
+                if barricade.alive:
+                    # Simple push-back or stop movement
+                    # This is basic; more advanced physics-based solutions exist.
+                    dx = self.player.x - barricade.x
+                    dy = self.player.y - barricade.y
+                    dist = math.hypot(dx, dy)
+                    if dist > 0:
+                        overlap = (self.player.rect.width / 2 + barricade.rect.width / 2) - dist
+                        if overlap > 0:
+                            self.player.x += (dx / dist) * overlap
+                            self.player.y += (dy / dist) * overlap
+                            self.player.rect.center = (int(self.player.x), int(self.player.y))
+                            self.player.collision_rect.center = self.player.rect.center
+                            self.player.take_damage(5, 'crash') # Minor damage for bumping into it
 
         # Enemy-reactor collisions
         if current_game_state == GAME_STATE_MAZE_DEFENSE and self.core_reactor and self.core_reactor.alive:
@@ -240,6 +306,27 @@ class CombatController:
                 self.core_reactor.take_damage(getattr(enemy, 'contact_damage', 25), self.game_controller) 
                 self.game_controller._create_enemy_explosion(enemy.rect.centerx, enemy.rect.centery)
                 if not self.core_reactor.alive: self.game_controller.state_manager.set_state(GAME_STATE_GAME_OVER)
+        
+        # NEW: Enemy-barricade collisions (enemies take damage/stop if they hit)
+        for enemy in list(self.enemy_manager.get_sprites()):
+            if enemy.alive:
+                enemy_barricade_hits = pygame.sprite.spritecollide(enemy, self.spawned_barricades_group, False, pygame.sprite.collide_rect_ratio(0.7))
+                for barricade in enemy_barricade_hits:
+                    if barricade.alive:
+                        enemy.take_damage(10) # Small damage for crashing into barricade
+                        barricade.take_damage(enemy.contact_damage) # Barricade takes damage
+                        # Simple push-back for enemy (similar to player collision)
+                        dx = enemy.x - barricade.x
+                        dy = enemy.y - barricade.y
+                        dist = math.hypot(dx, dy)
+                        if dist > 0:
+                            overlap = (enemy.rect.width / 2 + barricade.rect.width / 2) - dist
+                            if overlap > 0:
+                                enemy.x += (dx / dist) * overlap
+                                enemy.y += (dy / dist) * overlap
+                                enemy.rect.center = (int(enemy.x), int(enemy.y))
+                                enemy.collision_rect.center = enemy.rect.center
+
 
     def _handle_player_power_up_collisions(self):
         powerup_hits = pygame.sprite.spritecollide(self.player, self.power_ups_group, True, pygame.sprite.collide_rect_ratio(0.7))
@@ -281,10 +368,12 @@ class CombatController:
         self.turrets_group.empty()
         self.power_ups_group.empty()
         self.explosion_particles_group.empty()
+        self.spawned_barricades_group.empty() # NEW: Clear barricades
         if self.player:
             if hasattr(self.player, 'bullets_group'): self.player.bullets_group.empty()
             if hasattr(self.player, 'missiles_group'): self.player.missiles_group.empty()
             if hasattr(self.player, 'lightning_zaps_group'): self.player.lightning_zaps_group.empty()
+            if hasattr(self.player, 'spawned_barricades_group'): self.player.spawned_barricades_group.empty() # Also clear player's group
         self.maze_guardian = None
         self.boss_active = False
         self.maze_guardian_defeat_processed = False

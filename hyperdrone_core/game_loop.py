@@ -15,8 +15,8 @@ from . import leaderboard
 from .combat_controller import CombatController
 from .puzzle_controller import PuzzleController
 from .ui_flow_controller import UIFlowController
-from .level_manager import LevelManager
-from ui import UIManager
+from ui import UIManager 
+from .level_manager import LevelManager 
 from .asset_manager import AssetManager
 from story import StoryManager, Chapter, Objective 
 
@@ -27,6 +27,7 @@ from entities.collectibles import (
     CoreFragmentItem, GlyphTabletItem, AncientAlienTerminal, 
     ArchitectEchoItem, CorruptedLogItem
 )
+from entities.temporary_barricade import TemporaryBarricade
 from drone_management import DroneSystem, DRONE_DATA
 from settings_manager import get_setting, set_setting, save_settings, settings_manager
 from hyperdrone_core.camera import Camera
@@ -68,6 +69,7 @@ class GameController:
         self.combat_controller = CombatController(self, self.asset_manager)
         self.puzzle_controller = PuzzleController(self, self.asset_manager)
         self.ui_flow_controller = UIFlowController(self)
+        # Pass self (GameController) and drone_system directly
         self.ui_manager = UIManager(self.screen, self.asset_manager, self, None, self.drone_system)
         
         self.state_manager = StateManager(self)
@@ -94,6 +96,7 @@ class GameController:
         self.turrets_group = pygame.sprite.Group()
         self.corrupted_logs_group = pygame.sprite.Group() # New group for logs
         self.quantum_circuitry_group = pygame.sprite.GroupSingle() # For Chapter 4
+        self.spawned_barricades_group = pygame.sprite.Group() # Group for barricades
 
         from .item_manager import ItemManager
         self.item_manager = ItemManager(self, self.asset_manager)
@@ -222,7 +225,12 @@ class GameController:
             if current_state:
                 current_state.draw(self.screen)
             
-            self.ui_manager.draw_current_scene_ui()
+            # Pass player's active ability data to UI manager
+            active_abilities_data = {}
+            if self.player and hasattr(self.player, 'active_abilities') and self.player.active_abilities:
+                active_abilities_data = self.player.active_abilities
+            
+            self.ui_manager.draw_current_scene_ui(player_active_abilities_data=active_abilities_data)
             self._draw_story_overlay(self.screen)
 
             pygame.display.flip()
@@ -314,6 +322,8 @@ class GameController:
             {"label":"Start Chapter","key":"START_CHAPTER","category":"testing","type":"choice",
              "choices":chapter_choices, "get_display":lambda val:chapter_display_names.get(val,"Unknown"),
              "note":"For testing - sets prerequisites for chapter", "action":"start_chapter"},
+            # NEW: Add entry for Core Fragment Abilities
+            {"label":"Core Abilities","key":"CORE_ABILITIES_KEY","category":"controls","type":"info", "get_display":lambda val:"'F' Key", "note":"Activate collected Core Fragment Abilities."},
             {"label":"Missile Damage","key":"weapons","type":"numeric","min":10,"max":100,"step":5},
             {"label":"Enemy Speed","key":"ENEMY_SPEED","category":"enemies","type":"numeric","min":0.5,"max":5,"step":0.5},
             {"label":"Enemy Health","key":"ENEMY_HEALTH","category":"enemies","type":"numeric","min":25,"max":300,"step":25},
@@ -328,8 +338,7 @@ class GameController:
              "note": "Player does not take damage."},
             {"label":"Fullscreen", "key":"FULLSCREEN_MODE","category":"display", "type":"choice", "choices":[False,True], "get_display":lambda v: "ON" if v else "OFF", "note":"Restart may be needed"},
             {"label":"Reset to Defaults","key":"RESET_SETTINGS_ACTION","type":"action"},
-        ]
-    
+        ] 
     def _get_safe_spawn_point(self, width, height):
         if self.maze and hasattr(self.maze, 'get_walkable_tiles_abs'):
             walkable = self.maze.get_walkable_tiles_abs()
@@ -472,7 +481,8 @@ class GameController:
         for item_group in [self.collectible_rings_group, self.power_ups_group, 
                           self.core_fragments_group, self.vault_logs_group,
                           self.glyph_tablets_group, self.architect_echoes_group,
-                          self.corrupted_logs_group, self.quantum_circuitry_group]: # Add new group to drawing
+                          self.corrupted_logs_group, self.quantum_circuitry_group,
+                          self.spawned_barricades_group]: # Add barricades to draw loop
             for item in item_group:
                 item.draw(self.screen, self.camera)
         
@@ -531,6 +541,12 @@ class GameController:
             # Add to collected fragments
             self.drone_system.collect_core_fragment(fragment_id)
             
+            # Apply ability effect if available
+            if hasattr(fragment, 'associated_ability') and fragment.associated_ability:
+                if hasattr(self.player, 'unlock_ability'):
+                    # The unlock_ability method on player will also handle the drone_system unlock and story message
+                    self.player.unlock_ability(fragment.associated_ability)
+
             # Play sound
             self.play_sound('collect_fragment')
             
@@ -571,7 +587,7 @@ class GameController:
                 'fragment_id': fragment_id
             })
             
-            self.set_story_message(f"Core Fragment collected!", 2000)
+            # No longer setting story message here directly; it's handled by player.unlock_ability now.
             from .game_events import ItemCollectedEvent
             event = ItemCollectedEvent(item_id=fragment_id, item_type='core_fragment')
             self.event_manager.dispatch(event)

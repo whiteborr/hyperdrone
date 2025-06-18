@@ -32,11 +32,15 @@ class DroneSystem:
         # Track defeated bosses for unlocks
         self.defeated_bosses = set()
 
+        # NEW: Track unlocked active abilities
+        self.unlocked_abilities = set()
+
         # Vault status
         self.architect_vault_completed = False
 
         self._load_unlocks()
         logger.info(f"DroneSystem initialized. Unlocked: {self.unlocked_drones}. Selected: {self.selected_drone_id}")
+
 
     def _load_all_lore_entries(self):
         """Loads all possible lore entries from the JSON file and converts the list to a dictionary."""
@@ -57,7 +61,7 @@ class DroneSystem:
         except (IOError, json.JSONDecodeError, TypeError, KeyError) as e:
             logger.error(f"Error loading or parsing lore file '{self.LORE_FILE}': {e}")
             return {}
-
+        
     def _load_unlocks(self):
         """Loads player progress from the save file."""
         from constants import (
@@ -80,6 +84,7 @@ class DroneSystem:
                     self.collected_glyph_tablets.update(data.get(KEY_COLLECTED_GLYPH_TABLETS, []))
                     self.solved_puzzle_terminals.update(data.get(KEY_SOLVED_PUZZLE_TERMINALS, []))
                     self.defeated_bosses.update(data.get(KEY_DEFEATED_BOSSES, []))
+                    self.unlocked_abilities.update(data.get('unlocked_abilities', [])) # NEW
             except (IOError, json.JSONDecodeError) as e:
                 logger.error(f"Error loading save file '{self.SAVE_FILE}': {e}")
         else:
@@ -104,7 +109,8 @@ class DroneSystem:
             KEY_ARCHITECT_VAULT_COMPLETED: self.architect_vault_completed,
             KEY_COLLECTED_GLYPH_TABLETS: list(self.collected_glyph_tablets),
             KEY_SOLVED_PUZZLE_TERMINALS: list(self.solved_puzzle_terminals),
-            KEY_DEFEATED_BOSSES: list(self.defeated_bosses)
+            KEY_DEFEATED_BOSSES: list(self.defeated_bosses),
+            'unlocked_abilities': list(self.unlocked_abilities) # NEW
         }
         try:
             os.makedirs(os.path.dirname(self.SAVE_FILE), exist_ok=True)
@@ -180,7 +186,7 @@ class DroneSystem:
             # For now, it remains as a potential unlock method.
             pass
         return False
-
+    
     def add_player_cores(self, amount):
         self.player_cores += amount
         self._save_unlocks()
@@ -195,7 +201,6 @@ class DroneSystem:
             return True
         return False
 
-    # --- Lore and Progression Methods ---
     def unlock_lore_entry_by_id(self, lore_id):
         """Unlocks a specific lore entry if it's not already unlocked."""
         if lore_id in self.all_lore_entries and lore_id not in self.unlocked_lore_ids:
@@ -269,6 +274,17 @@ class DroneSystem:
     def get_collected_fragments_ids(self):
         return self.collected_core_fragments
 
+    def unlock_ability(self, ability_id):
+        if ability_id not in self.unlocked_abilities:
+            self.unlocked_abilities.add(ability_id)
+            self._save_unlocks()
+            logger.info(f"Ability '{ability_id}' unlocked!")
+            return True
+        return False
+    
+    def has_ability_unlocked(self, ability_id):
+        return ability_id in self.unlocked_abilities
+    
     def are_all_core_fragments_collected(self):
         """Checks if all fragments *required for the vault* are collected."""
         from constants import KEY_FRAGMENT_ID, KEY_FRAGMENT_REQUIRED_FOR_VAULT
@@ -279,7 +295,7 @@ class DroneSystem:
         if not required_fragments:
             logger.warning(f"No fragments marked as '{KEY_FRAGMENT_REQUIRED_FOR_VAULT}'. Vault may be permanently locked.")
             return False
-        return required_fragments.issubset(self.collected_core_fragments)
+        return required_fragments.issubset(self.collected_core_fragments)   
         
     def reset_collected_fragments_in_storage(self):
         self.collected_core_fragments.clear()

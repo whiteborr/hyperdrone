@@ -2,7 +2,7 @@
 
 This document outlines potential improvements, new features, and modding ideas for the HYPERDRONE game. It builds upon the existing features and aims to expand the gameplay experience.
 
-**Current Major Implemented Features (as of May 28, 2025):**
+**Current Major Implemented Features (as of June 18, 2025):**
 
 * Multiple playable drones with unique stats and some special abilities.  
 * Drone unlock system (level, cores, boss defeats, blueprints).  
@@ -18,8 +18,7 @@ This document outlines potential improvements, new features, and modding ideas f
 * Sound effects and music.  
 * Comprehensive Lore Codex system with multiple categories and image support.  
 * Story Beat system for narrative progression.  
-* **Sliding Ring Puzzle Minigame:**  
-  * Triggered by interacting with a new "Ancient Alien Terminal" entity.  
+* **Sliding Ring Puzzle Minigame:** * Triggered by interacting with a new "Ancient Alien Terminal" entity.  
   * Features 3 concentric, rotatable rings with image-based symbols.  
   * Player uses keys 1, 2, 3 to rotate rings.  
   * Solved by aligning rings to their original 0-degree rotation.  
@@ -27,6 +26,12 @@ This document outlines potential improvements, new features, and modding ideas f
   * Post-solve rewards (cores, lore unlock for "Element-115 Casing") are functional.  
   * Triggering terminal is correctly removed after puzzle completion.  
   * *Known minor issue: Visual layering of ring images requires asset adjustment by the developer for optimal appearance.*
+* **Core Fragment Active Abilities: Temporary Barricade (Earth Core)**: ✅ **Implemented**
+  * Collecting the Earth Core Fragment now unlocks an active "Temporary Barricade" ability.
+  * Player can activate this ability using the 'F' key during gameplay.
+  * Spawns temporary, destructible walls that block enemy movement and projectiles.
+  * Includes a cooldown system visible on the HUD.
+  * Integrated into the game's settings menu and has a destruction sound effect.
 
 ## **I. Storyline**
 
@@ -34,14 +39,14 @@ This document outlines potential improvements, new features, and modding ideas f
 These are narrative frameworks that can tie the game together:
 
 1. The Architect’s Legacy  
-   * The Architect (creator of the Vault and all drone tech) has vanished, leaving behind mazes full of defense drones. You're exploring this cryptic AI's creations, unraveling the reason for their disappearance and possibly stopping a system-wide fail-safe.  
-   * The Architect’s Vault becomes the central mystery.  
+    * The Architect (creator of the Vault and all drone tech) has vanished, leaving behind mazes full of defense drones. You're exploring this cryptic AI's creations, unraveling the reason for their disappearance and possibly stopping a system-wide fail-safe.  
+    * The Architect’s Vault becomes the central mystery.  
 2. Drone Rebellion or Evolution  
-   * Once obedient war machines, the drones have become sentient. You are a rogue drone trying to escape the maze-labyrinth to warn the world or liberate others.  
+    * Once obedient war machines, the drones have become sentient. You are a rogue drone trying to escape the maze-labyrinth to warn the world or liberate others.  
 3. Interdimensional Simulation  
-   * The mazes are training simulations across timelines/dimensions. You're a test pilot (or AI instance) trying to survive long enough to reach “stable existence” or ascend beyond drone form.  
+    * The mazes are training simulations across timelines/dimensions. You're a test pilot (or AI instance) trying to survive long enough to reach “stable existence” or ascend beyond drone form.  
 4. Corporate AI Espionage  
-   * Competing megacorps have unleashed combat AI into a hidden testing ground. Each drone represents a faction’s prototype. You battle to be the last functioning model—and to retrieve a central AI core.
+    * Competing megacorps have unleashed combat AI into a hidden testing ground. Each drone represents a faction’s prototype. You battle to be the last functioning model—and to retrieve a central AI core.
 
 🛠️ Implementation Approaches
 
@@ -89,21 +94,21 @@ Now, something has reawakened in the mazes. A new signal is broadcasting from de
 * In this universe, TR-3Bs were not human inventions—but reverse-engineered extraterrestrial drones.  
 * Your drones are built using "borrowed tech" from these designs. That’s why they have odd powers (cloaking, energy pulsing, etc).  
 * The Architect’s Vault is theorized to contain the original TR-3B core AI.  
-  Visual Integration: Triangular black stealth drone skins with anti-gravity shimmer. Hovering, silent operation.
+    Visual Integration: Triangular black stealth drone skins with anti-gravity shimmer. Hovering, silent operation.
 
 🌐 UFOs & MH370 Orbs (Mystery & Myth)
 
 * The "MH370 orbs" were early drone-interceptors—prototypes designed to erase aerospace anomalies.  
 * They appear in-game as Orb Swarms—tiny, perfect spheres that warp space/time around them. A miniboss encounter.  
 * Hidden lore reveals they were deployed to cover up "dimensional fractures" left behind by black project experiments.  
-  Gameplay Tie-In: Avoid detection from Orb Swarms or risk instant "quantum displacement" (teleport to random vault sector).
+    Gameplay Tie-In: Avoid detection from Orb Swarms or risk instant "quantum displacement" (teleport to random vault sector).
 
 🪐 Space Force (Shadow Protocols)
 
 * The Space Force runs an off-the-books AI command called Project CRUCIBLE, managing rogue drone activity from lunar orbit.  
 * They periodically drop encrypted kill codes into the maze system via satellites.  
 * You're unknowingly triggering their interest—and they might send human-piloted interceptor drones to eliminate you.  
-  Mission Layer: A rare event spawns "Sentinel-X" with Space Force insignia. They chase you across levels if you collect too much forbidden tech.
+    Mission Layer: A rare event spawns "Sentinel-X" with Space Force insignia. They chase you across levels if you collect too much forbidden tech.
 
 💡 Gameplay Features From This Lore
 
@@ -114,30 +119,30 @@ Now, something has reawakened in the mazes. A new signal is broadcasting from de
 * Orb Boss: "The Veil" – A silent, massive orb that distorts vision and weapon tracking.  
 
 1. Codex Entries  
-   These are in-game lore documents the player can read—usually unlocked as you progress, discover artifacts, defeat enemies, or complete missions. They add backstory without forcing cutscenes or dialogue. (✅ Implemented)  
-   Example Codex Entry:  
-   Codex Entry: TR-3B Propulsion Core  
-   Recovered From: Vault Sector Theta-3  
-   Notes:  
-   A triangular alloy housing a dense, unknown element believed to warp local gravity fields. Similar designs appear in classified reports from Area 51 and sightings across NATO bases.  
-   Impact: Enabled reverse engineering of PHANTOM-class cloaking tech. Further study restricted.  
-   You can group Codex entries by:  
-   * Drone Blueprints  
-   * Alien Tech  
-   * Human Programs (e.g., EXODYN, ARCHANGEL)  
-   * Vault Events or Expeditions  
-   * Theories (e.g., “Breakaway Civilizations” or “Non-Human Custodians”)  
+    These are in-game lore documents the player can read—usually unlocked as you progress, discover artifacts, defeat enemies, or complete missions. They add backstory without forcing cutscenes or dialogue. (✅ Implemented)  
+    Example Codex Entry:  
+    Codex Entry: TR-3B Propulsion Core  
+    Recovered From: Vault Sector Theta-3  
+    Notes:  
+    A triangular alloy housing a dense, unknown element believed to warp local gravity fields. Similar designs appear in classified reports from Area 51 and sightings across NATO bases.  
+    Impact: Enabled reverse engineering of PHANTOM-class cloaking tech. Further study restricted.  
+    You can group Codex entries by:  
+    * Drone Blueprints  
+    * Alien Tech  
+    * Human Programs (e.g., EXODYN, ARCHANGEL)  
+    * Vault Events or Expeditions  
+    * Theories (e.g., “Breakaway Civilizations” or “Non-Human Custodians”)  
 2. Story Beats  
-   These are major narrative events that the player experiences during gameplay. They mark turning points or reveal key parts of the story through gameplay, logs, environmental design, or boss encounters. (✅ Implemented)  
-   Example Story Beat Progression:
+    These are major narrative events that the player experiences during gameplay. They mark turning points or reveal key parts of the story through gameplay, logs, environmental design, or boss encounters. (✅ Implemented)  
+    Example Story Beat Progression:
 
-| Story Beat \# | Trigger | Description |
-| :---- | :---- | :---- |
-| **SB01** | Defeat first boss | **"Echo in the Code"**: After defeating the Maze Guardian, you discover a terminal that isn’t human-made. It plays back a voice in unknown patterns. Codex Entry unlocked: *Vault Fragment 001*. |
-| **SB02** | Unlock PHANTOM drone | **"The Cloak That Sees"**: The new drone’s abilities appear pre-coded. A recovered lab log suggests the drone mimicked its own movement during testing. You realize the drone may be learning independently. |
-| **SB03** | Reach Vault Beta | **"The Black Triangle"**: The room contains a partial TR-3B schematic. Holographic glyphs light up as you approach. Surveillance drones appear to scan you. You are no longer the only one exploring the Vault. |
-| **SB04** | Fail to destroy Vault Beacon | **"Sentinel Protocol"**: Space Force interceptors begin appearing in regular waves. They're targeting Vault technology, not just you. Codex unlocked: *Sentinel-X Directive*. |
-| **SB05 (Final)** | Complete Architect’s Vault | **"The Exodus Engine"**: You find a non-human propulsion device suspended in a zero-gravity chamber. It's a *ship fragment*. The Architect AI has been guiding you toward activating it. |
+| Story Beat # | Trigger                 | Description                                                                                                                                                                                                                                                        |
+| :----------- | :---------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **SB01** | Defeat first boss       | **"Echo in the Code"**: After defeating the Maze Guardian, you discover a terminal that isn’t human-made. It plays back a voice in unknown patterns. Codex Entry unlocked: *Vault Fragment 001*.                                                                      |
+| **SB02** | Unlock PHANTOM drone    | **"The Cloak That Sees"**: The new drone’s abilities appear pre-coded. A recovered lab log suggests the drone mimicked its own movement during testing. You realize the drone may be learning independently.                                                         |
+| **SB03** | Reach Vault Beta        | **"The Black Triangle"**: The room contains a partial TR-3B schematic. Holographic glyphs light up as you approach. Surveillance drones appear to scan you. You are no longer the only one exploring the Vault.                                                        |
+| **SB04** | Fail to destroy Vault Beacon | **"Sentinel Protocol"**: Space Force interceptors begin appearing in regular waves. They're targeting Vault technology, not just you. Codex unlocked: *Sentinel-X Directive*.                                                                                      |
+| **SB05 (Final)** | Complete Architect’s Vault | **"The Exodus Engine"**: You find a non-human propulsion device suspended in a zero-gravity chamber. It's a *ship fragment*. The Architect AI has been guiding you toward activating it.                                                                          |
 
 How They Work Together  
 Codex entries enrich the world and give optional depth.  
@@ -157,8 +162,13 @@ Story beats give structure to your campaign mode or progression path.
 
 **Smarter Pathfinding & Tactics:** (A\* pathfinding ✅ **Implemented** for standard enemies)
 
-* Implement more sophisticated A\* pathfinding variations or influence maps for more dynamic navigation.  
 * Enemies could attempt to flank the player, retreat when damaged, or coordinate attacks.  
+* **Retreat Behavior**: ✅ **Implemented**
+  * Enemies now check their health against a configurable `RETREAT_HEALTH_THRESHOLD`.
+  * If below the threshold and the player is within aggro range, they will switch to a `RetreatBehavior`.
+  * `RetreatBehavior` uses pathfinding to find a distant, safe location away from the player.
+  * Includes configurable speed multiplier, retreat distance, and path recalculation interval.
+* Implement more sophisticated A\* pathfinding variations or influence maps for more dynamic navigation.  
 * Enemies could react to sound or player's weapon fire.
 
 ### **Expanded Maze & Level Design**
@@ -224,8 +234,8 @@ Story beats give structure to your campaign mode or progression path.
 * Mine Layers: Drop proximity mines.  
 * Railgun: High-damage, charge-up piercing shot.  
 * Grenade Launcher: Lobs explosive projectiles.  
-  (✅ Multiple weapon modes implemented, including missiles and lightning)
-  (✅ Weapon Strategy pattern implemented for easy addition of new weapons)
+    (✅ Multiple weapon modes implemented, including missiles and lightning)
+    (✅ Weapon Strategy pattern implemented for easy addition of new weapons)
 
 ### **Expanded Power-Ups & Collectibles**
 
@@ -234,8 +244,8 @@ Story beats give structure to your campaign mode or progression path.
 * Ammo/Charge Refill: Recharges weapon cooldowns.  
 * Temporary Ally Drone: Assists briefly.  
 * Rare Crafting Materials: For permanent upgrades.  
-  (✅ Shield, Speed Boost, Weapon Upgrade power-ups implemented)  
-  (✅ Core Fragments, Vault Logs, Glyph Tablets implemented as lore/objective collectibles)
+    (✅ Shield, Speed Boost, Weapon Upgrade power-ups implemented)  
+    (✅ Core Fragments, Vault Logs, Glyph Tablets implemented as lore/objective collectibles)
 
 ### **Weapon Modifiers**
 
@@ -273,4 +283,4 @@ Story beats give structure to your campaign mode or progression path.
 * **Online Leaderboards**: Global score tracking.  
 * **Cloud Saves**: Sync progress online.
 
-This list provides a broad range of ideas. Prioritization would depend on development goals and community feedback.
+This list provides a broad range of ideas. Prioritization would depend on development goals and the latest feedback.

@@ -97,7 +97,6 @@ class Collectible(pygame.sprite.Sprite):
         else:
             surface.blit(self.image, self.rect)
 
-
 class Ring(Collectible):
     def __init__(self, x, y):
         tile_size = get_setting("gameplay", "TILE_SIZE", 80)
@@ -165,6 +164,7 @@ class CoreFragmentItem(Collectible):
     def __init__(self, x, y, fragment_id, fragment_config_details, *, asset_manager):
         self.fragment_id = fragment_id
         self.fragment_name = fragment_config_details.get("name", "Core Fragment")
+        self.associated_ability = fragment_config_details.get("associated_ability", None) # NEW: Store associated ability
         icon_filename = fragment_config_details.get("icon_filename")
         fragment_size = 32
         loaded_original_icon = None
@@ -194,8 +194,18 @@ class CoreFragmentItem(Collectible):
 
     def apply_effect(self, player_drone, game_controller_instance):
         if not self.collected and hasattr(game_controller_instance, 'drone_system'):
-            if game_controller_instance.drone_system.collect_core_fragment(self.fragment_id): 
+            if game_controller_instance.drone_system.collect_core_fragment(self.fragment_id):
                 self.collected = True
+                # NEW: Unlock the associated ability
+                if self.associated_ability and hasattr(player_drone, 'unlock_ability'):
+                    # Call player_drone's method to unlock ability, which also checks drone_system
+                    if player_drone.unlock_ability(self.associated_ability):
+                        # This means it's the *first time* this ability is unlocked for the player session
+                        game_controller_instance.set_story_message(
+                            f"{self.fragment_name} collected! Press 'F' to activate {self.associated_ability.replace('_', ' ').title()}.",
+                            5000 # Message duration
+                        )
+
                 # Play collection sound
                 if hasattr(game_controller_instance, 'play_sound'):
                     game_controller_instance.play_sound('collect_fragment')
