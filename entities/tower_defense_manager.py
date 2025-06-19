@@ -52,12 +52,15 @@ class TowerDefenseManager:
             self.path_manager.set_grid(grid_copy)
             
         # Set goal point (core reactor position)
-        if hasattr(maze, 'core_reactor_grid_pos') and maze.core_reactor_grid_pos:
+        if hasattr(maze, 'CORE_GRID_POSITION') and maze.CORE_GRID_POSITION:
+            self.path_manager.set_goal_point(maze.CORE_GRID_POSITION)
+        elif hasattr(maze, 'core_reactor_grid_pos') and maze.core_reactor_grid_pos:
             self.path_manager.set_goal_point(maze.core_reactor_grid_pos)
             
-        # Set spawn points
-        if hasattr(maze, 'ENEMY_SPAWN_GRID_POSITIONS'):
-            self.path_manager.set_spawn_points(maze.ENEMY_SPAWN_GRID_POSITIONS)
+        # Use hardcoded valid spawn points within 20x15 grid bounds (row, col)
+        valid_spawn_points = [(1, 1), (1, 18), (13, 1), (13, 18)]  # All within 0-14 rows, 0-19 cols
+        self.path_manager.set_spawn_points(valid_spawn_points)
+        logger.info(f"Using hardcoded valid spawn points: {valid_spawn_points}")
             
         # Log initialization status
         logger.info(f"TowerDefenseManager initialized with grid size: {self.grid_width}x{self.grid_height}")
@@ -123,8 +126,16 @@ class TowerDefenseManager:
             logger.error("No spawn points defined")
             return None
             
-        # Choose a random spawn point
-        spawn_point = random.choice(self.path_manager.spawn_points)
+        # Choose a random spawn point and validate it
+        original_spawn_point = random.choice(self.path_manager.spawn_points)
+        
+        # Ensure spawn point is within grid bounds
+        if (original_spawn_point[0] >= self.grid_height or original_spawn_point[1] >= self.grid_width or 
+            original_spawn_point[0] < 0 or original_spawn_point[1] < 0):
+            logger.warning(f"Spawn point {original_spawn_point} is out of bounds (grid: {self.grid_height}x{self.grid_width}), using (1, 1)")
+            spawn_point = (1, 1)  # Use a safe position that's definitely walkable
+        else:
+            spawn_point = original_spawn_point
         
         # Import the DefenseDronePathfinder class
         from entities.defense_drone_pathfinder import DefenseDronePathfinder
@@ -137,32 +148,27 @@ class TowerDefenseManager:
             drone_number = enemy_type.split("_")[-1]
             sprite_key = f"defense_drone_{drone_number}_sprite_key"
             
-            # Create appropriate defense drone with proper sprite
+            # Create appropriate defense drone with proper sprite using validated spawn point
             if drone_number == "1":
                 health = get_setting("gameplay", "DEFENSE_DRONE_1_HEALTH", 100)
                 speed = get_setting("gameplay", "DEFENSE_DRONE_1_SPEED", 1.0)
                 enemy = DefenseDronePathfinder(spawn_point, self.path_manager, asset_manager, sprite_key, speed=speed, health=health)
-                enemy.path_manager.goal_point = self.path_manager.goal_point
             elif drone_number == "2":
                 health = get_setting("gameplay", "DEFENSE_DRONE_2_HEALTH", 200)
                 speed = get_setting("gameplay", "DEFENSE_DRONE_2_SPEED", 0.7)
                 enemy = DefenseDronePathfinder(spawn_point, self.path_manager, asset_manager, sprite_key, speed=speed, health=health)
-                enemy.path_manager.goal_point = self.path_manager.goal_point
             elif drone_number == "3":
                 health = get_setting("gameplay", "DEFENSE_DRONE_3_HEALTH", 80)
                 speed = get_setting("gameplay", "DEFENSE_DRONE_3_SPEED", 1.5)
                 enemy = DefenseDronePathfinder(spawn_point, self.path_manager, asset_manager, sprite_key, speed=speed, health=health)
-                enemy.path_manager.goal_point = self.path_manager.goal_point
             elif drone_number == "4":
                 health = get_setting("gameplay", "DEFENSE_DRONE_4_HEALTH", 300)
                 speed = get_setting("gameplay", "DEFENSE_DRONE_4_SPEED", 0.5)
                 enemy = DefenseDronePathfinder(spawn_point, self.path_manager, asset_manager, sprite_key, speed=speed, health=health)
-                enemy.path_manager.goal_point = self.path_manager.goal_point
             elif drone_number == "5":
                 health = get_setting("gameplay", "DEFENSE_DRONE_5_HEALTH", 150)
                 speed = get_setting("gameplay", "DEFENSE_DRONE_5_SPEED", 1.2)
                 enemy = DefenseDronePathfinder(spawn_point, self.path_manager, asset_manager, sprite_key, speed=speed, health=health)
-                enemy.path_manager.goal_point = self.path_manager.goal_point
         else:
             # Create basic enemy types
             if enemy_type == 'basic':
@@ -196,16 +202,12 @@ class TowerDefenseManager:
         """Update game state"""
         # Update enemies
         for enemy in self.enemies_group:
-            old_pos = (enemy.x, enemy.y)
             enemy.update()
-            new_pos = (enemy.x, enemy.y)
-            if old_pos != new_pos:
-                logger.info(f"Enemy moved from {old_pos} to {new_pos}")
             # Remove dead enemies
             if not enemy.alive:
                 enemy.kill()
         
-        # Update towers
+        # Update towers - pass enemies group for targeting
         self.towers_group.update(self.enemies_group, None, self.game_area_x_offset)
         
         # Handle enemy spawning for active wave

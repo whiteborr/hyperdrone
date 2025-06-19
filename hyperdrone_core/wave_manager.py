@@ -78,21 +78,12 @@ class WaveManager:
                 group = self.current_wave_enemy_groups[self.current_group_index]
                 self.time_since_last_spawn_ms += delta_time_ms
                 if self.enemies_spawned_in_current_group < group["count"] and self.time_since_last_spawn_ms >= group["spawn_delay_ms"]:
+                    # Use tower defense manager to spawn enemies
+                    if hasattr(self.game_controller, 'tower_defense_manager'):
+                        spawned = self.game_controller.tower_defense_manager.spawn_enemy(group["enemy_type"], self.game_controller.asset_manager)
+                        if spawned:
+                            logger.info(f"Wave manager spawned {group['enemy_type']} at {spawned.x}, {spawned.y}")
                     
-                    spawn_grid_positions = self.game_controller.maze.ENEMY_SPAWN_GRID_POSITIONS
-                    if not spawn_grid_positions: return
-
-                    spawn_grid_pos = random.choice(spawn_grid_positions)
-                    path = self.game_controller.maze.get_enemy_path_to_core(spawn_grid_pos)
-                    if not path:
-                        logger.error(f"WaveManager: Could not get path for spawn {spawn_grid_pos}. Skipping spawn.")
-                        return
-
-                    self.game_controller.combat_controller.enemy_manager.spawn_enemy_for_defense(
-                        group["enemy_type"], 
-                        spawn_grid_pos,
-                        path
-                    )
                     self.enemies_spawned_in_current_group += 1
                     self.time_since_last_spawn_ms = 0 
 
@@ -162,27 +153,18 @@ class WaveManager:
         self.time_since_last_spawn_ms = 0
         self.time_until_next_group_ms = 0
         
+        # Start wave in tower defense manager
+        if hasattr(self.game_controller, 'tower_defense_manager'):
+            total_enemies = sum(group["count"] for group in self.current_wave_enemy_groups)
+            enemy_types = [group["enemy_type"] for group in self.current_wave_enemy_groups for _ in range(group["count"])]
+            self.game_controller.tower_defense_manager.start_wave(self.current_wave_number, total_enemies, 1000, enemy_types)
+        
         # Debug output
         logger.info(f"Starting combat wave {self.current_wave_number}")
         logger.debug(f"Wave definition: {self.current_wave_enemy_groups}")
         logger.debug(f"Maze has spawn positions: {self.game_controller.maze.ENEMY_SPAWN_GRID_POSITIONS}")
         
-        # Force immediate spawn of first enemy for testing
-        if self.current_group_index < len(self.current_wave_enemy_groups):
-            group = self.current_wave_enemy_groups[self.current_group_index]
-            if self.game_controller.maze.ENEMY_SPAWN_GRID_POSITIONS:
-                spawn_grid_pos = random.choice(self.game_controller.maze.ENEMY_SPAWN_GRID_POSITIONS)
-                path = self.game_controller.maze.get_enemy_path_to_core(spawn_grid_pos)
-                if path:
-                    logger.debug(f"Forcing immediate spawn of {group['enemy_type']} at {spawn_grid_pos}")
-                    self.game_controller.combat_controller.enemy_manager.spawn_enemy_for_defense(
-                        group["enemy_type"], 
-                        spawn_grid_pos,
-                        path
-                    )
-                    self.enemies_spawned_in_current_group += 1
-                else:
-                    logger.warning(f"No path found for spawn position {spawn_grid_pos}")
+        # Tower defense manager will handle spawning
         
         self.game_controller.set_story_message(f"Wave {self.current_wave_number}/{self.total_waves} Incoming!")
         logger.info(f"WaveManager: Starting Combat Wave {self.current_wave_number} of {self.total_waves}")

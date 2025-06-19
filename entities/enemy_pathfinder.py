@@ -21,9 +21,12 @@ class PathfindingEnemy(pygame.sprite.Sprite):
         self.damage = damage
         self.alive = True
         
-        # Position in pixels
+        # Position in pixels (add game area offset)
         pixel_pos = path_manager.grid_to_pixel(*grid_pos)
-        self.x, self.y = float(pixel_pos[0]), float(pixel_pos[1])
+        self.x, self.y = float(pixel_pos[0] + 300), float(pixel_pos[1])
+        
+        # Debug: log the actual grid position being used
+        logger.info(f"Enemy created at grid {grid_pos}, pixel ({self.x}, {self.y})")
         
         # Create a simple sprite
         self.size = path_manager.tile_size // 2
@@ -43,8 +46,9 @@ class PathfindingEnemy(pygame.sprite.Sprite):
             logger.error("Goal point not set in path manager")
             return
             
-        # Convert pixel position to grid position
-        current_grid_pos = self.path_manager.pixel_to_grid(int(self.x), int(self.y))
+        # Convert pixel position to grid position (subtract game area offset first)
+        adjusted_x = int(self.x - 300)  # Remove the game area offset
+        current_grid_pos = self.path_manager.pixel_to_grid(adjusted_x, int(self.y))
         
         # Find path to goal
         self.path = self.path_manager.find_path(current_grid_pos, self.path_manager.goal_point)
@@ -59,12 +63,20 @@ class PathfindingEnemy(pygame.sprite.Sprite):
         # Check if we need to recalculate the path
         if self.needs_path_recalculation or not self.path:
             self.calculate_path()
+            # If still no path after calculation, stop trying to recalculate
+            if not self.path:
+                self.needs_path_recalculation = False
+                return
             
         # If we have a path, follow it
         if self.path and self.current_target_index < len(self.path):
             # Get current target tile center in pixels
             target_grid_pos = self.path[self.current_target_index]
             target_pixel_pos = self.path_manager.grid_to_pixel(*target_grid_pos)
+            # Add game area offset
+            target_pixel_pos = (target_pixel_pos[0] + 300, target_pixel_pos[1])
+            
+
             
             # Calculate direction to target
             dx = target_pixel_pos[0] - self.x
@@ -72,7 +84,7 @@ class PathfindingEnemy(pygame.sprite.Sprite):
             distance = (dx**2 + dy**2)**0.5
             
             # If we're close enough to the target, move to the next one
-            if distance < self.speed:
+            if distance < self.speed * 2:  # Increased threshold
                 self.current_target_index += 1
                 # If we've reached the goal
                 if self.current_target_index >= len(self.path):
@@ -82,8 +94,8 @@ class PathfindingEnemy(pygame.sprite.Sprite):
                 # Move towards target
                 if distance > 0:
                     dx, dy = dx / distance, dy / distance
-                self.x += dx * self.speed
-                self.y += dy * self.speed
+                self.x += dx * self.speed * 2  # Increased speed multiplier
+                self.y += dy * self.speed * 2
                 
             # Update rect position
             self.rect.center = (int(self.x), int(self.y))
@@ -99,6 +111,13 @@ class PathfindingEnemy(pygame.sprite.Sprite):
     def reach_goal(self):
         """Called when enemy reaches the goal"""
         logger.info("Enemy reached the goal!")
+        # Damage the core reactor directly when reaching goal
+        if hasattr(self, 'path_manager') and hasattr(self.path_manager, 'game_controller'):
+            game_controller = self.path_manager.game_controller
+            if hasattr(game_controller, 'combat_controller') and game_controller.combat_controller.core_reactor:
+                damage = getattr(self, 'damage', 25)
+                logger.info(f"Enemy damaging core for {damage} damage")
+                game_controller.combat_controller.core_reactor.take_damage(damage, game_controller)
         self.alive = False
         
     def trigger_path_recalculation(self):

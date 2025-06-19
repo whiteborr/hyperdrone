@@ -71,7 +71,7 @@ class CombatController:
 
     def update(self, current_time_ms, delta_time_ms):
         current_game_state = self.game_controller.state_manager.get_current_state_id()
-        if current_game_state != GAME_STATE_MAZE_DEFENSE and (not self.player or not self.maze):
+        if current_game_state not in [GAME_STATE_MAZE_DEFENSE, "MazeDefenseState"] and (not self.player or not self.maze):
             return 
         if current_game_state == GAME_STATE_MAZE_DEFENSE and (not self.maze or not self.core_reactor):
             return
@@ -111,7 +111,7 @@ class CombatController:
         self.game_controller.glitching_walls_group.update() # Update glitching walls
 
     def _handle_collisions(self, current_game_state):
-        if not self.player and current_game_state != GAME_STATE_MAZE_DEFENSE:
+        if not self.player and current_game_state not in [GAME_STATE_MAZE_DEFENSE, "MazeDefenseState"]:
             return
 
         player_is_alive = self.player and self.player.alive
@@ -121,15 +121,21 @@ class CombatController:
         
         self._handle_enemy_projectile_collisions(current_game_state)
 
-        if current_game_state == GAME_STATE_MAZE_DEFENSE:
+        if current_game_state in [GAME_STATE_MAZE_DEFENSE, "MazeDefenseState"]:
             self._handle_turret_projectile_collisions()
 
         self._handle_physical_collisions(current_game_state)
 
     def _handle_turret_projectile_collisions(self):
-        if not self.turrets_group or not self.enemy_manager: return
-        enemies_to_check = self.enemy_manager.get_sprites()
-        if not enemies_to_check: return
+        if not self.turrets_group: 
+            return
+        # Use tower defense manager enemies in defense mode
+        if hasattr(self.game_controller, 'tower_defense_manager'):
+            enemies_to_check = self.game_controller.tower_defense_manager.enemies_group
+        else:
+            enemies_to_check = self.enemy_manager.get_sprites()
+        if not enemies_to_check: 
+            return
 
         for turret in self.turrets_group:
             turret_projectiles = pygame.sprite.Group()
@@ -137,7 +143,7 @@ class CombatController:
             if hasattr(turret, 'missiles'): turret_projectiles.add(turret.missiles)
             if hasattr(turret, 'lightning_zaps'): turret_projectiles.add(turret.lightning_zaps)
 
-            collision_func = lambda proj, enemy: proj.rect.colliderect(getattr(enemy, 'collision_rect', enemy.rect))
+            collision_func = lambda proj, enemy: proj.rect.colliderect(enemy.rect)
             hits = pygame.sprite.groupcollide(turret_projectiles, enemies_to_check, False, False, collision_func)
             
             for projectile, enemies_hit in hits.items():
@@ -146,7 +152,7 @@ class CombatController:
                     if enemy.alive:
                         enemy.take_damage(projectile.damage)
                         if not enemy.alive:
-                            self.game_controller._create_enemy_explosion(enemy.rect.centerx, enemy.rect.centery)
+                            self.game_controller._create_explosion(enemy.rect.centerx, enemy.rect.centery, 15, None, True)
                         
                         if not isinstance(projectile, LightningZap) and not (hasattr(projectile, 'max_pierces') and projectile.pierces_done < projectile.max_pierces):
                             projectile.kill()
@@ -316,11 +322,17 @@ class CombatController:
 
         # Enemy-reactor collisions
         if current_game_state == GAME_STATE_MAZE_DEFENSE and self.core_reactor and self.core_reactor.alive:
-            reactor_hits = pygame.sprite.spritecollide(self.core_reactor, self.enemy_manager.get_sprites(), True, pygame.sprite.collide_rect_ratio(0.7))
+            # Check tower defense manager enemies instead of enemy manager
+            enemies_to_check = self.game_controller.tower_defense_manager.enemies_group if hasattr(self.game_controller, 'tower_defense_manager') else self.enemy_manager.get_sprites()
+            reactor_hits = pygame.sprite.spritecollide(self.core_reactor, enemies_to_check, True, pygame.sprite.collide_rect_ratio(0.7))
             for enemy in reactor_hits:
-                self.core_reactor.take_damage(getattr(enemy, 'contact_damage', 25), self.game_controller) 
+                damage = getattr(enemy, 'contact_damage', 25)
+                logger.info(f"Enemy hit core reactor for {damage} damage")
+                self.core_reactor.take_damage(damage, self.game_controller) 
                 self.game_controller._create_enemy_explosion(enemy.rect.centerx, enemy.rect.centery)
-                if not self.core_reactor.alive: self.game_controller.state_manager.set_state(GAME_STATE_GAME_OVER)
+                if not self.core_reactor.alive: 
+                    logger.info("Core reactor destroyed!")
+                    self.game_controller.state_manager.set_state(GAME_STATE_GAME_OVER)
         
         for enemy in list(self.enemy_manager.get_sprites()):
             if enemy.alive:

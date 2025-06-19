@@ -3,7 +3,7 @@
         "DRONE"
     ],
     "selected_drone_id": "DRONE",
-    "player_cores": 3800,
+    "player_cores": 10,
     "unlocked_lore_ids": [],
     "collected_core_fragments": [
         "gamma",

@@ -1,7 +1,10 @@
 # hyperdrone_core/maze_defense_state.py
 import pygame
+import logging
 from .state import State
 from settings_manager import get_setting
+
+logger = logging.getLogger(__name__)
 
 class MazeDefenseState(State):
     """State for the maze defense gameplay mode"""
@@ -100,11 +103,16 @@ class MazeDefenseState(State):
         # Update combat controller
         self.game.combat_controller.update(current_time_ms, delta_time)
         
+        # Update tower defense manager directly (even during build phase)
+        if hasattr(self.game, 'tower_defense_manager'):
+    
+            self.game.tower_defense_manager.update(delta_time)
+        
         # Update build menu if available
         if hasattr(self.game.ui_manager, 'build_menu') and self.game.ui_manager.build_menu:
             self.game.ui_manager.build_menu.update(
                 pygame.mouse.get_pos(), 
-                "maze_defense", 
+                "maze_defense_mode", 
                 None
             )
     
