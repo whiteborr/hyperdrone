@@ -46,6 +46,21 @@ logger = logging.getLogger(__name__)
 class StateManager:
     """
     Manages game states using the State Design Pattern.
+    
+    Provides centralized state management with validation, transition history,
+    and automatic music management. Supports complex state transitions with
+    parameter passing and maintains a registry of allowed transitions.
+    
+    Key Features:
+    - State validation and transition control
+    - Automatic music management per state
+    - State transition history tracking
+    - Legacy state mapping for backward compatibility
+    
+    Attributes:
+        current_state (State): Currently active game state
+        registry (StateRegistry): Manages state registration and transitions
+        state_classes (dict): Maps state IDs to their implementation classes
     """
     def __init__(self, game_controller_ref):
         """
@@ -148,6 +163,10 @@ class StateManager:
         
         # Settings transitions
         self.registry.register_transition("SettingsState", "MainMenuState")
+        self.registry.register_transition("SettingsState", "CorruptedSectorState")
+        self.registry.register_transition("SettingsState", "PlayingState")
+        self.registry.register_transition("SettingsState", "BossFightState")
+        self.registry.register_transition("SettingsState", "HarvestChamberState")
         
         # Leaderboard transitions
         self.registry.register_transition("LeaderboardState", "MainMenuState")
@@ -306,9 +325,22 @@ class StateManager:
     def set_state(self, state_id, **kwargs):
         """
         Sets the current game state and initializes it.
+        
+        Validates the transition, handles state cleanup, creates new state instance,
+        and updates music. Supports forced restarts for gameplay states and
+        maintains transition history.
+        
         Args:
-            state_id: The identifier of the state to set (class name or legacy string constant)
+            state_id (str): The identifier of the state to set (class name or legacy constant)
             **kwargs: Additional parameters to pass to the state's enter method
+                - force_restart (bool): Force state restart even if already active
+                - Any state-specific initialization parameters
+                
+        Returns:
+            None
+            
+        Raises:
+            Logs warning if transition is not allowed by the registry
         """
         if state_id in self.legacy_state_mapping:
             state_id = self.legacy_state_mapping[state_id]

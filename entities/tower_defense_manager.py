@@ -213,9 +213,10 @@ class TowerDefenseManager:
             
     def draw(self, surface: pygame.Surface, camera=None):
         """Draw all game elements"""
-        # Draw enemies
-        for enemy in self.enemies_group:
-            enemy.draw_path(surface, camera)  # Debug path drawing
+        # Draw enemies (path drawing disabled when camera is None)
+        if camera is not None:
+            for enemy in self.enemies_group:
+                enemy.draw_path(surface, camera)  # Debug path drawing
             
         self.enemies_group.draw(surface)
         

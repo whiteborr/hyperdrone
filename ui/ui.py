@@ -39,7 +39,7 @@ class UIManager:
             "core_fragment_empty_icon": None, "reactor_icon_placeholder": None,
             "ability_icon_placeholder": None # NEW: Placeholder for ability icon
         }
-        self.ui_icon_size_lives = (30, 30)
+        self.ui_icon_size_lives = (15, 15)
         self.ui_icon_size_rings = (20, 20)
         self.ui_icon_size_fragments = (28, 28)
         self.ui_icon_size_reactor = (32, 32)
@@ -206,14 +206,18 @@ class UIManager:
                 current_line = word + " "
         lines.append(current_line.strip()); return lines
 
-    # NEW: Add player_active_abilities_data parameter
+    def _draw_star_background(self):
+        """Helper function to draw the animated starfield background."""
+        ui_flow_ctrl = self.game_controller.ui_flow_controller
+        if ui_flow_ctrl and hasattr(ui_flow_ctrl, 'menu_stars') and ui_flow_ctrl.menu_stars:
+            for star_params in ui_flow_ctrl.menu_stars:
+                pygame.draw.circle(self.screen, WHITE, (int(star_params[0]), int(star_params[1])), star_params[3])
+
     def draw_current_scene_ui(self, player_active_abilities_data=None):
-        # Use state_manager instead of scene_manager
         if not hasattr(self, 'state_manager') or self.state_manager is None:
             return
             
         current_state = self.state_manager.get_current_state_id() if self.state_manager else None
-        ui_flow_ctrl = self.game_controller.ui_flow_controller 
         
         is_menu_like_state = current_state in [
             "MainMenuState", "DroneSelectState", "SettingsState",
@@ -224,9 +228,6 @@ class UIManager:
         
         if is_menu_like_state: 
             self.screen.fill(BLACK)
-            if ui_flow_ctrl and hasattr(ui_flow_ctrl, 'menu_stars') and ui_flow_ctrl.menu_stars:
-                 for star_params in ui_flow_ctrl.menu_stars:
-                    pygame.draw.circle(self.screen, WHITE, (int(star_params[0]), int(star_params[1])), star_params[3])
 
         state_draw_map = {
             "MainMenuState": self.draw_main_menu,
@@ -250,7 +251,7 @@ class UIManager:
             if self.game_controller.paused: self.draw_pause_overlay()
         
         elif current_state in ["PlayingState", "BonusLevelPlayingState"]:
-            self.draw_gameplay_hud(player_active_abilities_data) # NEW: Pass data
+            self.draw_gameplay_hud(player_active_abilities_data)
             if self.game_controller.paused: self.draw_pause_overlay()
         
         elif current_state == "MazeDefenseState": 
@@ -415,6 +416,7 @@ class UIManager:
         self.screen.blit(title_surf, title_surf.get_rect(center=(width // 2, 50)))
 
     def draw_game_intro_scroll(self):
+        self._draw_star_background()
         ui_flow = self.game_controller.ui_flow_controller
         if not ui_flow.intro_screens_data or ui_flow.current_intro_screen_index >= len(ui_flow.intro_screens_data):
             return
@@ -458,6 +460,7 @@ class UIManager:
         self.screen.blit(text_surf, text_surf.get_rect(center=bg_rect.center))
 
     def draw_codex_screen(self):
+        self._draw_star_background()
         ui_flow = self.game_controller.ui_flow_controller
         font_title = self.asset_manager.get_font("large_text", 52)
         font_cat = self.asset_manager.get_font("medium_text", 36)
@@ -504,6 +507,7 @@ class UIManager:
                     self.screen.blit(line_surf, (100, line_y))
 
     def draw_main_menu(self):
+        # Draw the main menu logo first.
         if self.ui_asset_surfaces["menu_background"]:
             logo_surf = self.ui_asset_surfaces["menu_background"]
             screen_width = get_setting("display", "WIDTH", 1920)
@@ -511,11 +515,11 @@ class UIManager:
             scaled_bg_surf = pygame.transform.scale(logo_surf, (screen_width, screen_height))
             self.screen.blit(scaled_bg_surf, (0, 0))
 
-        ui_flow_ctrl = self.game_controller.ui_flow_controller
-        if ui_flow_ctrl and hasattr(ui_flow_ctrl, 'menu_stars') and ui_flow_ctrl.menu_stars:
-            for star_params in ui_flow_ctrl.menu_stars:
-                pygame.draw.circle(self.screen, WHITE, (int(star_params[0]), int(star_params[1])), star_params[3])
+        # Then draw the stars on TOP of the logo.
+        self._draw_star_background()
 
+        # Draw the menu options last, on top of everything.
+        ui_flow_ctrl = self.game_controller.ui_flow_controller
         options, selected_index = ui_flow_ctrl.menu_options, ui_flow_ctrl.selected_menu_option
         height = get_setting("display", "HEIGHT", 1080)
         start_y, option_height = height * 0.55, 60
@@ -529,6 +533,7 @@ class UIManager:
             self.screen.blit(text_surf, text_rect)
 
     def draw_drone_select_menu(self):
+        self._draw_star_background()
         title_surf = self._render_text_safe("Select Drone", "large_text", GOLD, fallback_size=48)
         width = get_setting("display", "WIDTH", 1920)
         height = get_setting("display", "HEIGHT", 1080)
@@ -557,7 +562,6 @@ class UIManager:
             unlock_surf = self._render_text_safe(unlock_desc, "ui_text", RED, fallback_size=28)
             self.screen.blit(unlock_surf, unlock_surf.get_rect(center=(width/2, height/2 + 200)))
 
-    # NEW: Add player_active_abilities_data parameter
     def draw_gameplay_hud(self, player_active_abilities_data=None):
         player = self.game_controller.player
         if not player: return
@@ -579,22 +583,26 @@ class UIManager:
         weapon_icon = self.ui_asset_surfaces.get("current_weapon_icon")
         if weapon_icon:
             rotated_icon = pygame.transform.rotate(weapon_icon, 90)
-            icon_width, icon_height = rotated_icon.get_size()
+            # Scale main weapon icon to match life icon size
+            scaled_weapon_icon = pygame.transform.scale(rotated_icon, self.ui_icon_size_lives)
+            icon_width, icon_height = scaled_weapon_icon.get_size()
             
             # Removed weapon label
             
-            self.screen.blit(rotated_icon, (wpn_x, wpn_y))
+            self.screen.blit(scaled_weapon_icon, (wpn_x, wpn_y))
             
             # Display lives as multiple weapon mode icons to the right of the weapon bar
             if self.game_controller.lives > 0:
                 icon_spacing = 10
                 lives_start_x = wpn_x + icon_width + 20
                 
-                actual_lives = self.game_controller.lives - 1
+                max_lives = get_setting("gameplay", "PLAYER_LIVES", 3)
+                actual_lives = max_lives - 1
 
                 for i in range(actual_lives):
-                    icon_x = lives_start_x + (i * (icon_width + icon_spacing))
-                    self.screen.blit(rotated_icon, (icon_x, panel_y + 20))
+                    # Use the already scaled weapon icon
+                    icon_x = lives_start_x + (i * (self.ui_icon_size_lives[0] + icon_spacing))
+                    self.screen.blit(scaled_weapon_icon, (icon_x, panel_y + 20))
         
         # Weapon cooldown bar
         wpn_mode = player.current_weapon_mode
@@ -651,6 +659,9 @@ class UIManager:
         # NEW: Draw active abilities (if player_active_abilities_data is passed)
         if player_active_abilities_data:
             self._draw_active_abilities_hud(player_active_abilities_data)
+        
+        # Draw chapter objectives in the middle of the HUD
+        self._draw_chapter_objectives_hud()
 
 
     def get_scaled_fragment_icon_surface(self, fragment_id):
@@ -681,7 +692,6 @@ class UIManager:
         logger.warning(f"UIManager: Scaled icon surface for fragment_id '{fragment_id}' not found. Using fallback.")
         return self._create_fallback_icon_surface(self.ui_icon_size_fragments, "?", PURPLE)
 
-    # NEW: Method to draw active abilities HUD
     def _draw_active_abilities_hud(self, active_abilities_data):
         ability_icon_x = get_setting("display", "HUD_ABILITY_ICON_X_OFFSET", 100)
         ability_icon_y = get_setting("display", "HUD_ABILITY_ICON_Y_OFFSET", 20)
@@ -716,9 +726,6 @@ class UIManager:
                     cooldown_text = f"{math.ceil(time_remaining / 1000)}s"
                     text_surf = font_small.render(cooldown_text, True, WHITE)
                     self.screen.blit(text_surf, text_surf.get_rect(center=icon_rect.center))
-
-                    # Draw a radial cooldown (optional, more complex)
-                    # For simplicity, a simple overlay and number is sufficient for now.
                 else:
                     # Not on cooldown, but ensure it's not partially active
                     pass # Icon is drawn normally
@@ -729,8 +736,36 @@ class UIManager:
             key_surf = font_small.render(key_text, True, WHITE)
             self.screen.blit(key_surf, (ability_icon_x, ability_icon_y + key_text_y_offset))
 
+    def _draw_chapter_objectives_hud(self):
+        """Draw chapter objectives in the middle of the HUD"""
+        if not hasattr(self.game_controller, 'story_manager') or not self.game_controller.story_manager:
+            return
+            
+        current_chapter = self.game_controller.story_manager.get_current_chapter()
+        if not current_chapter or not current_chapter.objectives:
+            return
+            
+        width = get_setting("display", "WIDTH", 1920)
+        height = get_setting("display", "HEIGHT", 1080)
+        panel_height = get_setting("display", "BOTTOM_PANEL_HEIGHT", 120)
+        panel_y = height - panel_height
+        
+        # Position objectives in the center of the HUD panel
+        objectives_x = width // 2
+        objectives_y = panel_y + 30
+        
+        font = self.asset_manager.get_font("ui_text", 24) or pygame.font.Font(None, 24)
+        
+        for i, objective in enumerate(current_chapter.objectives):
+            obj_color = YELLOW if objective.is_complete else WHITE
+            obj_text = f"• {objective.description}"
+            obj_surf = font.render(obj_text, True, obj_color)
+            obj_rect = obj_surf.get_rect(center=(objectives_x, objectives_y + i * 25))
+            self.screen.blit(obj_surf, obj_rect)
+
 
     def draw_settings_menu(self):
+        self._draw_star_background()
         title_surf = self._render_text_safe("Settings", "large_text", GOLD, fallback_size=48)
         width = get_setting("display", "WIDTH", 1920)
         self.screen.blit(title_surf, title_surf.get_rect(center=(width // 2, 80)))
@@ -767,6 +802,7 @@ class UIManager:
             self.screen.blit(val_surf, (width - 200 - val_surf.get_width(), y_pos))
 
     def draw_leaderboard_overlay(self):
+        self._draw_star_background()
         title_surf = self._render_text_safe("Leaderboard", "large_text", GOLD, fallback_size=48)
         width = get_setting("display", "WIDTH", 1920)
         self.screen.blit(title_surf, title_surf.get_rect(center=(width // 2, 80)))
@@ -794,6 +830,7 @@ class UIManager:
             self.screen.blit(level_surf, level_surf.get_rect(center=(header_positions[3], y_pos)))
 
     def draw_game_over_overlay(self):
+        self._draw_star_background()
         width = get_setting("display", "WIDTH", 1920)
         height = get_setting("display", "HEIGHT", 1080)
         overlay = pygame.Surface((width, height), pygame.SRCALPHA); overlay.fill((50, 0, 0, 180))
@@ -828,6 +865,7 @@ class UIManager:
             self.screen.blit(prompt_surf, prompt_surf.get_rect(center=(width//2, height//2 + 50)))
 
     def draw_enter_name_overlay(self):
+        self._draw_star_background()
         width = get_setting("display", "WIDTH", 1920)
         height = get_setting("display", "HEIGHT", 1080)
         title_surf = self._render_text_safe("High Score!", "large_text", GOLD, fallback_size=48)
@@ -839,12 +877,14 @@ class UIManager:
         self.screen.blit(name_surf, name_surf.get_rect(center=(width//2, height//2 + 80)))
 
     def draw_architect_vault_success_overlay(self):
+        self._draw_star_background()
         width = get_setting("display", "WIDTH", 1920)
         height = get_setting("display", "HEIGHT", 1080)
         title_surf = self._render_text_safe("Vault Conquered", "large_text", GOLD, fallback_size=48)
         self.screen.blit(title_surf, title_surf.get_rect(center=(width // 2, height//2)))
 
     def draw_architect_vault_failure_overlay(self):
+        self._draw_star_background()
         width = get_setting("display", "WIDTH", 1920)
         height = get_setting("display", "HEIGHT", 1080)
         title_surf = self._render_text_safe("Mission Failed", "large_text", RED, fallback_size=48)

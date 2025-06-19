@@ -4,16 +4,17 @@ This document consolidates technical information about HYPERDRONE's game systems
 
 ## Table of Contents
 1. [AI Behavior System](#ai-behavior-system)
-2. [Collision Optimization](#collision-optimization)
-3. [Constants Update](#constants-update)
-4. [Enemy Configuration System](#enemy-configuration-system)
-5. [Event Batching System](#event-batching-system)
-6. [Event Bus System](#event-bus-system)
-7. [Pathfinding Module](#pathfinding-module)
-8. [Refactoring](#refactoring)
-9. [Settings System](#settings-system)
-10. [State Management System](#state-management-system)
-11. [Weapon System](#weapon-system)
+2. [Chapter 4 SHMUP System](#chapter-4-shmup-system)
+3. [Collision Optimization](#collision-optimization)
+4. [Constants Update](#constants-update)
+5. [Enemy Configuration System](#enemy-configuration-system)
+6. [Event Batching System](#event-batching-system)
+7. [Event Bus System](#event-bus-system)
+8. [Pathfinding Module](#pathfinding-module)
+9. [Refactoring](#refactoring)
+10. [Settings System](#settings-system)
+11. [State Management System](#state-management-system)
+12. [Weapon System](#weapon-system)
 
 ## AI Behavior System
 
@@ -65,6 +66,52 @@ To create a new enemy type with custom behaviors:
 2. Set specific attributes in `__init__`
 3. Set the default behavior
 4. Override `update()` if needed for behavior transitions
+
+## Chapter 4 SHMUP System
+
+### Overview
+Chapter 4 features a vertical scrolling shoot-em-up (SHMUP) gameplay mode with wave-based enemy spawning similar to Space Invaders.
+
+### Key Components
+
+#### ShmupEnemyManager
+Manages wave-based enemy spawning with the following features:
+- **Wave System**: Enemies spawn in organized formations (rows and columns)
+- **Progressive Difficulty**: Each wave increases enemy count and speed
+- **Formation Patterns**: 2-4 rows and 4-8 columns per wave
+- **Wave Delays**: 3-second intervals between waves
+
+#### Wave Configuration
+```python
+# Wave spawning logic
+rows = min(2 + (self.current_wave - 1) // 3, 4)  # 2-4 rows
+cols = min(4 + (self.current_wave - 1) // 2, 8)  # 4-8 columns
+enemy.speed = 2 + (self.current_wave * 0.5)      # Increasing speed
+```
+
+#### One-Shot Kill System
+All enemies in Chapter 4 die from a single bullet hit:
+- Enemy health is set to 1 during wave spawning
+- Collision handling ensures instant kills regardless of bullet damage
+- Creates explosion effects on enemy destruction
+
+### Usage
+The SHMUP system is automatically activated when entering the HarvestChamberState:
+
+```python
+# Enemy manager handles wave spawning
+self.shmup_enemy_manager = ShmupEnemyManager(self.game)
+
+# Collision system ensures one-shot kills
+enemy.health = 0
+enemy.alive = False
+```
+
+### Benefits
+- **Arcade-Style Gameplay**: Classic Space Invaders wave mechanics
+- **Escalating Challenge**: Progressive difficulty through wave progression  
+- **Satisfying Combat**: One-shot kills provide immediate feedback
+- **Visual Appeal**: Organized enemy formations create engaging patterns
 
 ## Collision Optimization
 

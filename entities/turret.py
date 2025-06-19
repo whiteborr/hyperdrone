@@ -200,29 +200,16 @@ class Turret(pygame.sprite.Sprite):
         self.lightning_zaps.update(pygame.time.get_ticks())
 
     def draw(self, surface, camera=None):
-        if camera:
-            if self.image and self.rect:
-                scaled_size = (int(self.rect.width * camera.zoom_level), int(self.rect.height * camera.zoom_level))
-                if scaled_size[0] > 0 and scaled_size[1] > 0:
-                    scaled_image = pygame.transform.smoothscale(self.image, scaled_size)
-                    screen_rect = camera.apply_to_rect(self.rect)
-                    surface.blit(scaled_image, screen_rect)
-            if self.show_range_indicator and self.rect:
-                range_color = (*CYAN[:3], 70)
-                # Draw a scaled circle directly on the screen surface
-                screen_center = camera.apply_to_pos(self.rect.center)
-                scaled_radius = self.current_range * camera.zoom_level
-                if scaled_radius > 1:
-                    pygame.draw.circle(surface, range_color, screen_center, int(scaled_radius), 2)
-        else: # Fallback for non-camera drawing
-            if self.image and self.rect: surface.blit(self.image, self.rect)
-            if self.show_range_indicator and self.rect:
-                pygame.draw.circle(surface, (*CYAN[:3], 70), self.rect.center, int(self.current_range), 2)
+        # Always use non-camera drawing
+        if self.image and self.rect: 
+            surface.blit(self.image, self.rect)
+        if self.show_range_indicator and self.rect:
+            pygame.draw.circle(surface, (*CYAN[:3], 70), self.rect.center, int(self.current_range), 2)
         
-        # Draw projectiles, passing camera down
+        # Draw projectiles, passing camera down (which is now None)
         for proj_group in [self.bullets, self.missiles, self.lightning_zaps]:
             for proj in proj_group:
-                proj.draw(surface, camera)
+                proj.draw(surface, None)
 
     def take_damage(self, amount):
         pass

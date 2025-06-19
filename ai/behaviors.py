@@ -11,12 +11,36 @@ from settings_manager import get_setting
 logger = logging.getLogger(__name__)
 
 class BaseBehavior:
-    """Base class for all enemy behaviors"""
+    """
+    Base class for all enemy AI behaviors.
+    
+    Provides the interface that all enemy behaviors must implement. Behaviors
+    define how enemies move, attack, and react to game conditions. The behavior
+    system allows for complex AI through composition and state transitions.
+    
+    Attributes:
+        enemy (Enemy): The enemy entity this behavior controls
+    """
     def __init__(self, enemy):
         self.enemy = enemy
 
     def execute(self, maze, current_time_ms, delta_time_ms, game_area_x_offset=0):
-        """Execute the behavior logic"""
+        """
+        Execute the behavior logic for this frame.
+        
+        Called every frame to update the enemy's state based on this behavior.
+        Implementations should handle movement, targeting, state transitions,
+        and any behavior-specific logic.
+        
+        Args:
+            maze (Maze): Current game maze for pathfinding and collision
+            current_time_ms (int): Current game time in milliseconds
+            delta_time_ms (int): Time elapsed since last frame
+            game_area_x_offset (int): Horizontal offset for camera/viewport
+            
+        Raises:
+            NotImplementedError: Must be implemented by subclasses
+        """
         raise NotImplementedError("Subclasses must implement this method.")
 
 class WallFollowBehavior(BaseBehavior):
@@ -95,7 +119,21 @@ class WallFollowBehavior(BaseBehavior):
         return (c*tile_size)+(tile_size/2)+offset, (r*tile_size)+(tile_size/2)
 
 class ChasePlayerBehavior(BaseBehavior):
-    """Behavior for chasing the player using A* pathfinding"""
+    """
+    Aggressive behavior that pursues the player using A* pathfinding.
+    
+    Uses sophisticated pathfinding to navigate around obstacles while chasing
+    the player. Handles shooting when in range and transitions to other behaviors
+    when the player moves out of aggro range. Includes special logic for different
+    enemy types (e.g., ramming behavior for SentinelDrones).
+    
+    Features:
+    - A* pathfinding for optimal route calculation
+    - Dynamic target updating based on player movement
+    - Range-based shooting for armed enemies
+    - Speed boosts for close-range attacks
+    - Automatic behavior transitions based on distance
+    """
     def execute(self, maze, current_time_ms, delta_time_ms, game_area_x_offset=0):
         if not self.enemy.player_ref or not self.enemy.player_ref.alive:
             return
@@ -150,8 +188,8 @@ class TRBPatrolBehavior(BaseBehavior):
                 self.enemy.set_behavior(ChasePlayerBehavior(self.enemy))
                 return
         
-        # Check if we need a new patrol point
-        if not self.current_patrol_point or not self.enemy.pathfinder.path:
+        # Always ensure we have a patrol point and start moving immediately
+        if not self.current_patrol_point:
             self._select_new_patrol_point(maze, current_time_ms, game_area_x_offset)
             self.patrol_point_reached = False
             return
@@ -211,13 +249,13 @@ class TRBPatrolBehavior(BaseBehavior):
                 self.enemy.pathfinder.set_target(self.current_patrol_point, maze, current_time_ms, game_area_x_offset)
                 return
         
-        # Fallback: use a simple point near current position
+        # Fallback: use a simple point near spawn position
         angle = random.uniform(0, 2 * math.pi)
         tile_size = get_setting("gameplay", "TILE_SIZE", 80)
-        distance = tile_size * 2  # Shorter distance for fallback
+        distance = min(self.enemy.patrol_radius, tile_size * 4)  # Use patrol radius or reasonable distance
         self.current_patrol_point = (
-            self.enemy.x + math.cos(angle) * distance,
-            self.enemy.y + math.sin(angle) * distance
+            self.enemy.spawn_point[0] + math.cos(angle) * distance,
+            self.enemy.spawn_point[1] + math.sin(angle) * distance
         )
         self.enemy.pathfinder.set_target(self.current_patrol_point, maze, current_time_ms, game_area_x_offset)
 

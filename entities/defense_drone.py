@@ -77,15 +77,12 @@ class DefenseDrone(pygame.sprite.Sprite):
         if not self.alive or not self.image:
             return
             
-        if camera:
-            screen_rect = camera.apply_to_rect(self.rect)
-            surface.blit(self.image, screen_rect)
-        else:
-            surface.blit(self.image, self.rect)
+        # Always use direct drawing without camera
+        surface.blit(self.image, self.rect)
             
         # Draw health bar
         if self.alive:
-            self._draw_health_bar(surface, camera)
+            self._draw_health_bar(surface, None)
 
     def _draw_health_bar(self, surface, camera=None):
         if not self.alive or not self.rect:
@@ -93,10 +90,8 @@ class DefenseDrone(pygame.sprite.Sprite):
             
         bar_w, bar_h = self.rect.width * 0.8, 5
         
-        if camera:
-            screen_rect = camera.apply_to_rect(self.rect)
-        else:
-            screen_rect = self.rect
+        # Always use direct rect without camera
+        screen_rect = self.rect
             
         bar_x = screen_rect.centerx - bar_w / 2
         bar_y = screen_rect.top - bar_h - 3

@@ -3,12 +3,15 @@ import pygame
 import math
 import random
 import os
+import logging
 
 from settings_manager import get_setting
 from constants import WHITE, BLACK, RED, YELLOW, ORANGE, DARK_GREY, GREEN
 from .base_drone import BaseDrone
 from .enemy import SentinelDrone
 from .bullet import LaserBeam # Import the new LaserBeam class
+
+logger = logging.getLogger(__name__)
 
 class MazeGuardian(BaseDrone):
     def __init__(self, x, y, player_ref, maze_ref, combat_controller_ref, asset_manager): # Changed game_controller_ref to combat_controller_ref
@@ -58,10 +61,10 @@ class MazeGuardian(BaseDrone):
             try:
                 self.original_image = pygame.transform.smoothscale(loaded_image, self.visual_size)
             except (ValueError, pygame.error) as e:
-                print(f"MazeGuardian: Error scaling sprite for key '{self.sprite_asset_key}': {e}")
+                logger.error(f"MazeGuardian: Error scaling sprite for key '{self.sprite_asset_key}': {e}")
                 self.original_image = None
         else:
-            print(f"MazeGuardian: Sprite for key '{self.sprite_asset_key}' not found. Using fallback.")
+            logger.warning(f"MazeGuardian: Sprite for key '{self.sprite_asset_key}' not found. Using fallback.")
             self.original_image = None
         
         if self.original_image is None:
@@ -233,7 +236,7 @@ class MazeGuardian(BaseDrone):
         """Spawns SentinelDrone minions near the boss."""
         if not self.combat_controller_ref:
             return
-        print(f"Spawning {count} minions.")
+        logger.info(f"Spawning {count} minions.")
         for _ in range(count):
             angle = random.uniform(0, 360)
             spawn_x = self.x + math.cos(math.radians(angle)) * 150

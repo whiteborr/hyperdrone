@@ -68,7 +68,7 @@ class CoreReactor(pygame.sprite.Sprite):
             if game_controller_ref and hasattr(game_controller_ref, 'play_sound'):
                 game_controller_ref.play_sound('reactor_destroyed_placeholder')
 
-    def draw_health_bar(self, surface, camera):
+    def draw_health_bar(self, surface, camera=None):
         if not self.alive and self.current_health == 0:
             return
 
@@ -76,11 +76,9 @@ class CoreReactor(pygame.sprite.Sprite):
         bar_width = self.size * 0.8
         bar_height = 8
         
-        # Get the screen position of the reactor's rect
-        screen_rect = camera.apply_to_rect(self.rect)
-        
-        bar_x = screen_rect.centerx - bar_width / 2
-        bar_y = screen_rect.bottom + self.health_bar_y_offset / camera.zoom_level # Adjust offset based on zoom
+        # Get the position directly from the rect
+        bar_x = self.rect.centerx - bar_width / 2
+        bar_y = self.rect.bottom + self.health_bar_y_offset
 
         health_percentage = self.current_health / self.max_health if self.max_health > 0 else 0
         filled_width = bar_width * health_percentage
@@ -97,20 +95,8 @@ class CoreReactor(pygame.sprite.Sprite):
     def draw(self, surface, camera=None):
         if not self.image or not self.rect: return
         
-        if camera:
-            # Get the transformed rect
-            screen_rect = camera.apply_to_rect(self.rect)
-            
-            # Scale the image based on camera zoom
-            scaled_size = (int(self.size * camera.zoom_level), int(self.size * camera.zoom_level))
-            
-            if scaled_size[0] > 0 and scaled_size[1] > 0:
-                scaled_image = pygame.transform.smoothscale(self.original_image, scaled_size)
-                surface.blit(scaled_image, screen_rect)
-            else:
-                surface.blit(self.image, screen_rect)
-        else:
-            surface.blit(self.image, self.rect)
+        # Always use direct drawing without camera
+        surface.blit(self.image, self.rect)
         
         if (self.alive or self.current_health > 0) and self.rect:
-            self.draw_health_bar(surface, camera)
+            self.draw_health_bar(surface, None)

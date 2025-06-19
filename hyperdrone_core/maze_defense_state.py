@@ -18,16 +18,8 @@ class MazeDefenseState(State):
         # Get tile size from settings
         tile_size = get_setting("gameplay", "TILE_SIZE", 80)
         
-        # Set up camera
-        from hyperdrone_core.camera import Camera
-        self.game.camera = Camera(
-            self.game.maze.actual_maze_cols * tile_size, 
-            self.game.maze.actual_maze_rows * tile_size
-        )
-        
-        # Set initial zoom level
-        if hasattr(self.game.maze, 'initial_zoom_level'):
-            self.game.camera.zoom_level = self.game.maze.initial_zoom_level
+        # Camera has been removed
+        self.game.camera = None
         
         # Initialize tower defense manager
         from entities.tower_defense_manager import TowerDefenseManager
@@ -69,17 +61,6 @@ class MazeDefenseState(State):
     
     def handle_events(self, events):
         """Handle input events specific to maze defense state"""
-        # Handle continuous key presses for camera panning
-        keys = pygame.key.get_pressed()
-        dx, dy = 0, 0
-        if keys[pygame.K_LEFT] or keys[pygame.K_a]: dx = -1
-        if keys[pygame.K_RIGHT] or keys[pygame.K_d]: dx = 1
-        if keys[pygame.K_UP] or keys[pygame.K_w]: dy = -1
-        if keys[pygame.K_DOWN] or keys[pygame.K_s]: dy = 1
-        
-        if (dx != 0 or dy != 0) and self.game.camera:
-            self.game.camera.pan(dx, dy)
-        
         # Process discrete events
         for event in events:
             if event.type == pygame.KEYDOWN:
@@ -89,23 +70,16 @@ class MazeDefenseState(State):
                     if self.game.combat_controller.wave_manager:
                         self.game.combat_controller.wave_manager.manual_start_next_wave()
             
-            # Handle mouse wheel for zoom
-            elif event.type == pygame.MOUSEWHEEL and self.game.camera:
-                if event.y > 0: 
-                    self.game.camera.zoom(1.1)
-                elif event.y < 0: 
-                    self.game.camera.zoom(0.9)
-            
             # Handle mouse button down events
-            elif event.type == pygame.MOUSEBUTTONDOWN and self.game.camera:
+            elif event.type == pygame.MOUSEBUTTONDOWN:
                 screen_pos = event.pos
                 # Check if click is on build menu
                 if (self.game.ui_manager.build_menu and 
                     self.game.ui_manager.build_menu.is_mouse_over_build_menu(screen_pos)):
                     self.game.ui_manager.build_menu.handle_input(event, screen_pos)
                 else:
-                    # Convert screen position to world position
-                    world_pos = self.game.camera.screen_to_world(screen_pos)
+                    # Use screen position directly as world position
+                    world_pos = screen_pos
                     if event.button == 1:  # Left click
                         self.game.combat_controller.try_place_turret(world_pos)
                     elif event.button == 3:  # Right click
@@ -119,12 +93,11 @@ class MazeDefenseState(State):
         self.game.combat_controller.update(current_time_ms, delta_time)
         
         # Update build menu if available
-        if (self.game.camera and hasattr(self.game.ui_manager, 'build_menu') and 
-            self.game.ui_manager.build_menu):
+        if hasattr(self.game.ui_manager, 'build_menu') and self.game.ui_manager.build_menu:
             self.game.ui_manager.build_menu.update(
                 pygame.mouse.get_pos(), 
                 "maze_defense", 
-                self.game.camera
+                None
             )
     
     def draw(self, surface):
@@ -134,25 +107,25 @@ class MazeDefenseState(State):
         
         # Draw maze
         if self.game.maze:
-            self.game.maze.draw(surface, self.game.camera)
+            self.game.maze.draw(surface, None)
         
         # Draw tower defense elements
         if hasattr(self.game, 'tower_defense_manager'):
-            self.game.tower_defense_manager.draw(surface, self.game.camera)
+            self.game.tower_defense_manager.draw(surface, None)
         
         # Draw turrets
         if self.game.turrets_group:
             for turret in self.game.turrets_group:
-                turret.draw(surface, self.game.camera)
+                turret.draw(surface, None)
         
         # Draw reactor
         if self.game.reactor_group:
             for reactor in self.game.reactor_group:
-                reactor.draw(surface, self.game.camera)
+                reactor.draw(surface, None)
         
         # Draw enemies
         if self.game.combat_controller:
-            self.game.combat_controller.enemy_manager.draw_all(surface, self.game.camera)
+            self.game.combat_controller.enemy_manager.draw_all(surface, None)
         
         # Update and draw explosion particles
         self.game.explosion_particles_group.update()

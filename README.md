@@ -309,6 +309,26 @@ For detailed information about the weapon system refactoring, see [README_WEAPON
 - **collectibles**: Collectible properties, goals
 - **progression**: Level timers, rewards, leaderboard
 
+## Documentation
+
+### Comprehensive Documentation Suite
+
+The codebase now includes extensive documentation:
+
+- **[API Documentation](API_DOCUMENTATION.md)**: Complete API reference with methods, parameters, and examples
+- **[AI System Guide](README_AI_SYSTEM.md)**: Detailed guide to the behavior-based AI architecture
+- **[Weapon System Guide](README_WEAPON_SYSTEM.md)**: Strategy pattern implementation and weapon creation
+- **[Game Configuration](GAME_CONFIGURATION.md)**: Technical systems and architecture overview
+
+### Code Documentation
+
+All major classes and methods now include comprehensive docstrings with:
+- Purpose and functionality descriptions
+- Parameter specifications with types
+- Return value documentation
+- Usage examples and best practices
+- Algorithm complexity analysis where applicable
+
 ## Recent Improvements
 
 ### Architecture Refactoring

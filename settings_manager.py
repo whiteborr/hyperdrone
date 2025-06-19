@@ -8,6 +8,22 @@ logger = logging.getLogger(__name__)
 class SettingsManager:
     """
     Manages game settings loaded from JSON files and provides access to them.
+    
+    Centralized settings management system that loads configuration from JSON files
+    and provides a clean API for accessing and modifying game parameters. Supports
+    categorized settings, asset path management, and automatic saving of changes.
+    
+    Key Features:
+    - Hierarchical settings organization by category
+    - Asset manifest management for centralized asset paths
+    - Automatic change tracking and saving
+    - Default value support for missing settings
+    - Type-safe setting access with fallbacks
+    
+    Attributes:
+        settings (dict): Hierarchical dictionary of all game settings
+        asset_manifest (dict): Dictionary mapping asset keys to file paths
+        settings_modified (bool): Flag indicating if settings need saving
     """
     def __init__(self):
         self.settings = {}
@@ -63,15 +79,23 @@ class SettingsManager:
     
     def get_setting(self, category, key, default=None):
         """
-        Get a setting value from the specified category.
+        Get a setting value from the specified category with fallback support.
+        
+        Provides safe access to hierarchical settings with automatic fallback
+        to default values when settings are missing. This prevents crashes
+        from missing configuration and allows for graceful degradation.
         
         Args:
-            category: The settings category (e.g., 'display', 'gameplay')
-            key: The setting key
-            default: Default value if setting is not found
+            category (str): The settings category (e.g., 'display', 'gameplay', 'weapons')
+            key (str): The setting key within the category
+            default (Any, optional): Default value returned if setting is not found
             
         Returns:
-            The setting value or default if not found
+            Any: The setting value if found, otherwise the default value
+            
+        Example:
+            fps = settings_manager.get_setting("display", "FPS", 60)
+            player_speed = settings_manager.get_setting("gameplay", "PLAYER_SPEED", 3.0)
         """
         if category in self.settings and key in self.settings[category]:
             return self.settings[category][key]

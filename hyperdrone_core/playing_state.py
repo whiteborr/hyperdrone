@@ -96,6 +96,9 @@ class PlayingState(State):
             power_ups_group=self.game.power_ups_group
         )
         
+        # Spawn enemies for the current level
+        self.game.combat_controller.enemy_manager.spawn_enemies_for_level(self.game.level_manager.level)
+        
         # Set up puzzle controller
         self.game.puzzle_controller.set_active_entities(
             player=self.game.player, 

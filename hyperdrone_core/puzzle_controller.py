@@ -1,6 +1,7 @@
 # hyperdrone_core/puzzle_controller.py
 import pygame
 import os 
+import logging
 
 from settings_manager import get_setting, settings_manager
 from constants import (
@@ -10,6 +11,8 @@ from constants import (
 
 from entities import AncientAlienTerminal
 from .ring_puzzle_module import RingPuzzle
+
+logger = logging.getLogger(__name__)
 
 class PuzzleController:
     """
@@ -37,7 +40,7 @@ class PuzzleController:
         self.architect_vault_terminals_activated = [False] * total_fragments
         self.architect_vault_puzzle_terminals_group = pygame.sprite.Group()
 
-        print("PuzzleController initialized.")
+        logger.info("PuzzleController initialized.")
 
     def set_active_entities(self, player, drone_system, scene_manager, alien_terminals_group=None, architect_vault_terminals_group=None):
         """Sets references to currently active game entities relevant to puzzles."""
@@ -96,7 +99,7 @@ class PuzzleController:
         Initializes and starts the Ring Puzzle, passing the AssetManager to it.
         """
         if not self.scene_manager or not self.drone_system:
-            print("PuzzleController: SceneManager or DroneSystem not available to start ring puzzle.")
+            logger.error("PuzzleController: SceneManager or DroneSystem not available to start ring puzzle.")
             return
 
         if self.drone_system.has_puzzle_terminal_been_solved(terminal_sprite.item_id):
@@ -123,9 +126,9 @@ class PuzzleController:
             self.last_interacted_terminal_for_ring_puzzle = terminal_sprite
             self.scene_manager.set_game_state(GAME_STATE_RING_PUZZLE)
             self.game_controller.play_sound('ui_confirm')
-            print(f"PuzzleController: Ring Puzzle started for terminal {terminal_sprite.item_id}.")
+            logger.info(f"PuzzleController: Ring Puzzle started for terminal {terminal_sprite.item_id}.")
         except Exception as e:
-            print(f"PuzzleController: Error initializing RingPuzzle: {e}")
+            logger.error(f"PuzzleController: Error initializing RingPuzzle: {e}")
             self.current_ring_puzzle = None
             self.ring_puzzle_active_flag = False
             self.scene_manager.set_game_state(GAME_STATE_PLAYING)
@@ -133,7 +136,7 @@ class PuzzleController:
 
     def _handle_ring_puzzle_solved(self):
         """Handles the logic when the Ring Puzzle is solved."""
-        print("PuzzleController: Ring Puzzle solved!")
+        logger.info("PuzzleController: Ring Puzzle solved!")
         self.ring_puzzle_solved_this_session = True
         
         if self.drone_system:
@@ -171,7 +174,7 @@ class PuzzleController:
                 self.game_controller.ui_manager.build_menu.activate()
             else:
                  self.game_controller.ui_manager.build_menu.deactivate()
-        print("PuzzleController: Exited Ring Puzzle.")
+        logger.info("PuzzleController: Exited Ring Puzzle.")
 
 
     def try_activate_architect_vault_terminal(self, terminal_idx_pressed):
@@ -179,7 +182,7 @@ class PuzzleController:
         Attempts to activate one of the Architect's Vault entry terminals.
         """
         if not (0 <= terminal_idx_pressed < len(self.architect_vault_terminals_activated)):
-            print(f"PuzzleController: Invalid terminal index {terminal_idx_pressed} pressed.")
+            logger.warning(f"PuzzleController: Invalid terminal index {terminal_idx_pressed} pressed.")
             return
 
         if self.architect_vault_terminals_activated[terminal_idx_pressed]:
@@ -224,7 +227,7 @@ class PuzzleController:
         
         total_fragments = get_setting("collectibles", "TOTAL_CORE_FRAGMENTS_NEEDED", 3)
         self.architect_vault_terminals_activated = [False] * total_fragments
-        print("PuzzleController: All puzzle states reset.")
+        logger.info("PuzzleController: All puzzle states reset.")
 
     def draw_active_puzzle(self, surface):
         """Draws the UI for the currently active puzzle."""

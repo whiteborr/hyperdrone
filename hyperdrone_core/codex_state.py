@@ -19,6 +19,5 @@ class CodexState(State):
         pass
     
     def draw(self, surface):
-        # Let the UI manager handle drawing the codex screen
-        # The UI manager already has all the necessary code to draw the codex
+        # Drawing is now handled by the UIManager.
         pass

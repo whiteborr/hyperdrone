@@ -113,9 +113,7 @@ class PathfindingEnemy(pygame.sprite.Sprite):
         # Convert path to pixel coordinates
         pixel_path = [self.path_manager.grid_to_pixel(*pos) for pos in self.path]
         
-        # Apply camera transformation if provided
-        if camera:
-            pixel_path = [camera.apply_to_pos(pos) for pos in pixel_path]
+        # No camera transformation
             
         # Draw path as lines
         if len(pixel_path) > 1:

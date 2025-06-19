@@ -114,7 +114,7 @@ class Maze:
         
         if not self.walls: return
 
-        # Draw internal walls
+        # Draw internal walls (camera is ignored)
         for line_segment in self.walls: 
             p1_relative, p2_relative = line_segment 
             abs_p1 = (p1_relative[0] + self.game_area_x_offset, p1_relative[1]) 

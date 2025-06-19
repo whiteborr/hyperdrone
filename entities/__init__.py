@@ -19,6 +19,7 @@ from .turret import Turret
 from .maze import Maze
 from .maze_chapter3 import MazeChapter3
 from .temporary_barricade import TemporaryBarricade
+from .glitching_wall import GlitchingWall # <-- Import the new class
 
 __all__ = [
     "AncientAlienTerminal",
@@ -31,6 +32,7 @@ __all__ = [
     "DefenseDrone",
     "Enemy",
     "EscapeZone",
+    "GlitchingWall",
     "GlyphTabletItem",
     "LaserBeam",
     "LightningZap",

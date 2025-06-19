@@ -32,6 +32,13 @@ This document outlines potential improvements, new features, and modding ideas f
   * Spawns temporary, destructible walls that block enemy movement and projectiles.
   * Includes a cooldown system visible on the HUD.
   * Integrated into the game's settings menu and has a destruction sound effect.
+* **Chapter 4 SHMUP Gameplay**: ✅ **Implemented**
+  * Wave-based enemy spawning system similar to Space Invaders.
+  * Enemies spawn in organized formations (2-4 rows, 4-8 columns per wave).
+  * Progressive difficulty with increasing enemy count and speed each wave.
+  * One-shot kill system - all enemies die from a single bullet hit.
+  * 3-second delays between waves for pacing.
+  * Integrated with existing explosion and collision systems.
 
 ## **I. Storyline**
 

@@ -2,8 +2,10 @@ import sys
 import traceback
 import pygame
 import logging
+from logging_config import setup_logging
 
-logging.basicConfig(level=logging.INFO)
+# Setup logging for the application
+logger = setup_logging(logging.INFO)
 
 from hyperdrone_core.game_loop import GameController
 
@@ -12,14 +14,14 @@ if __name__ == '__main__':
     Main entry point for the Hyperdrone game.
     Initializes the GameController and starts the game loop.
     """
-    logging.info("Starting Hyperdrone...")
+    logger.info("Starting Hyperdrone...")
     try:
         # Create an instance of the GameController
         game_controller = GameController()
         # Start the main game loop
         game_controller.run()
     except Exception as e:
-        traceback.print_exc() # Print the full traceback for the runtime error
+        logger.error(f"Fatal error: {e}", exc_info=True)
         # Attempt to clean up Pygame if it was initialized
         if pygame.get_init():
             pygame.quit()

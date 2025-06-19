@@ -214,6 +214,11 @@
       }
     }
   },
+  "hazards": {
+    "GLITCH_WALL_ON_DURATION_MS": 2000,
+    "GLITCH_WALL_OFF_DURATION_MS": 1500,
+    "GLITCH_WALL_DAMAGE": 15
+  },
   "weapons": {
     "PLAYER_DEFAULT_BULLET_SIZE": 4,
     "PLAYER_BIG_BULLET_SIZE": 12,
@@ -382,26 +387,10 @@
     "LORE_SCENE_2": "images/lore/scene2.png",
     "LORE_SCENE_3": "images/lore/scene3.png",
     "LORE_SCENE_4": "images/lore/scene4.png",
-    "COLLECT_RING_SOUND": "sounds/collect_ring.wav",
-    "WEAPON_UPGRADE_COLLECT_SOUND": "sounds/weapon_upgrade_collect.wav",
-    "COLLECT_FRAGMENT_SOUND": "sounds/collect_fragment.wav",
-    "SHOOT_SOUND": "sounds/shoot.wav",
-    "ENEMY_SHOOT_SOUND": "sounds/enemy_shoot.wav",
-    "CRASH_SOUND": "sounds/crash.wav",
-    "LEVEL_UP_SOUND": "sounds/level_up.wav",
-    "UI_SELECT_SOUND": "sounds/ui_select.wav",
-    "UI_CONFIRM_SOUND": "sounds/ui_confirm.wav",
-    "UI_DENIED_SOUND": "sounds/ui_denied.wav",
-    "MISSILE_LAUNCH_SOUND": "sounds/missile_launch.wav",
-    "PROTOTYPE_DRONE_EXPLODE_SOUND": "sounds/prototype_drone_explode.wav",
-    "UI_TEXT_FONT": "fonts/neuropol.otf",
-    "MENU_THEME_MUSIC": "sounds/menu_music.wav",
-    "GAMEPLAY_THEME_MUSIC": "sounds/gameplay_music.wav",
-    "DEFENSE_THEME_MUSIC": "sounds/defense_mode_music.wav",
-    "REGULAR_ENEMY_SPRITE_PATH": "images/enemies/prototype_enemy.png",
-    "PROTOTYPE_DRONE_SPRITE_PATH": "images/enemies/prototype_enemy.png",
-    "SENTINEL_DRONE_SPRITE_PATH": "images/enemies/sentinel_drone.png",
-    "MAZE_GUARDIAN_SPRITE_PATH": "images/enemies/maze_guardian.png"
+    "STORY_MAP_BACKGROUND": "images/ui/story_map_background.png",
+    "CHAPTER_ICON_UNLOCKED": "images/ui/chapter_icon_unlocked.png",
+    "CHAPTER_ICON_LOCKED": "images/ui/chapter_icon_locked.png",
+    "PLAYER_MAP_CURSOR": "images/ui/player_map_cursor.png"
   },
   "game_states": {
     "GAME_STATE_MAIN_MENU": "main_menu",

@@ -1,5 +1,8 @@
 import os
 import re
+import logging
+
+logger = logging.getLogger(__name__)
 
 def update_imports_in_file(file_path):
     with open(file_path, 'r', encoding='utf-8') as f:
@@ -40,9 +43,9 @@ def main():
         if update_imports_in_file(file_path):
             updated_files.append(file_path)
     
-    print(f"Updated {len(updated_files)} files:")
+    logger.info(f"Updated {len(updated_files)} files:")
     for file in updated_files:
-        print(f"  - {file}")
+        logger.info(f"  - {file}")
 
 if __name__ == "__main__":
     main()

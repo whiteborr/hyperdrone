@@ -127,7 +127,7 @@ class WaveManager:
             logger.warning("WaveManager: Manual wave start attempted but not in build phase or all waves cleared.")
             return
         logger.info("WaveManager: Player manually starting next wave.")
-        print(f"Starting wave {self.current_wave_number} manually")
+        logger.info(f"Starting wave {self.current_wave_number} manually")
         self._start_combat_wave_internal()
 
     def _start_build_phase_internal(self, is_first_wave=False):
@@ -163,9 +163,9 @@ class WaveManager:
         self.time_until_next_group_ms = 0
         
         # Debug output
-        print(f"Starting combat wave {self.current_wave_number}")
-        print(f"Wave definition: {self.current_wave_enemy_groups}")
-        print(f"Maze has spawn positions: {self.game_controller.maze.ENEMY_SPAWN_GRID_POSITIONS}")
+        logger.info(f"Starting combat wave {self.current_wave_number}")
+        logger.debug(f"Wave definition: {self.current_wave_enemy_groups}")
+        logger.debug(f"Maze has spawn positions: {self.game_controller.maze.ENEMY_SPAWN_GRID_POSITIONS}")
         
         # Force immediate spawn of first enemy for testing
         if self.current_group_index < len(self.current_wave_enemy_groups):
@@ -174,7 +174,7 @@ class WaveManager:
                 spawn_grid_pos = random.choice(self.game_controller.maze.ENEMY_SPAWN_GRID_POSITIONS)
                 path = self.game_controller.maze.get_enemy_path_to_core(spawn_grid_pos)
                 if path:
-                    print(f"Forcing immediate spawn of {group['enemy_type']} at {spawn_grid_pos}")
+                    logger.debug(f"Forcing immediate spawn of {group['enemy_type']} at {spawn_grid_pos}")
                     self.game_controller.combat_controller.enemy_manager.spawn_enemy_for_defense(
                         group["enemy_type"], 
                         spawn_grid_pos,
@@ -182,7 +182,7 @@ class WaveManager:
                     )
                     self.enemies_spawned_in_current_group += 1
                 else:
-                    print(f"No path found for spawn position {spawn_grid_pos}")
+                    logger.warning(f"No path found for spawn position {spawn_grid_pos}")
         
         self.game_controller.set_story_message(f"Wave {self.current_wave_number}/{self.total_waves} Incoming!")
         logger.info(f"WaveManager: Starting Combat Wave {self.current_wave_number} of {self.total_waves}")

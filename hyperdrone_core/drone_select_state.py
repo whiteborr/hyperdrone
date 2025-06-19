@@ -19,6 +19,5 @@ class DroneSelectState(State):
         pass
     
     def draw(self, surface):
-        # Let the UI manager handle drawing the drone select screen
-        # The UI manager already has all the necessary code to draw the drone selection
+        # Drawing is now handled by the UIManager.
         pass

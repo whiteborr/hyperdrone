@@ -42,19 +42,16 @@ class DefenseDronePathfinder(PathfindingEnemy):
             logger.warning(f"Could not load sprite with key '{self.sprite_key}' for DefenseDronePathfinder")
             
     def draw(self, surface: pygame.Surface, camera=None):
-        """Draw the enemy with camera transformation if provided"""
+        """Draw the enemy directly without camera transformation"""
         if not self.image or not self.rect:
             return
             
-        if camera:
-            screen_rect = camera.apply_to_rect(self.rect)
-            surface.blit(self.image, screen_rect)
-        else:
-            surface.blit(self.image, self.rect)
+        # Always use direct drawing without camera
+        surface.blit(self.image, self.rect)
             
         # Draw health bar
         if self.alive:
-            self._draw_health_bar(surface, camera)
+            self._draw_health_bar(surface, None)
             
     def _draw_health_bar(self, surface: pygame.Surface, camera=None):
         """Draw a health bar above the enemy"""
@@ -69,11 +66,7 @@ class DefenseDronePathfinder(PathfindingEnemy):
         bar_x = self.rect.centerx - bar_width / 2
         bar_y = self.rect.top - bar_height - 2
         
-        # Apply camera transformation if provided
-        if camera:
-            bar_x, bar_y = camera.apply_to_pos((bar_x, bar_y))
-            bar_width *= camera.zoom_level
-            bar_height *= camera.zoom_level
+        # No camera transformation
             
         # Calculate health percentage
         health_percentage = self.health / self.max_health if self.max_health > 0 else 0

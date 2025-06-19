@@ -28,7 +28,26 @@ from .weapon_strategies import (
 logger = logging.getLogger(__name__)
 
 
-class PlayerDrone(BaseDrone): 
+class PlayerDrone(BaseDrone):
+    """
+    Player-controlled drone with weapons, abilities, and power-up management.
+    
+    Extends BaseDrone with player-specific functionality including:
+    - Multiple weapon strategies with upgradeable modes
+    - Active abilities system with cooldowns
+    - Power-up effects (shield, speed boost, weapon upgrades)
+    - Health management and damage handling
+    - Sprite management based on current weapon mode
+    
+    Attributes:
+        drone_id (str): Unique identifier for this drone type
+        current_weapon_mode (int): Currently active weapon mode
+        current_weapon_strategy (BaseWeaponStrategy): Active weapon implementation
+        powerup_manager (PowerUpManager): Manages temporary power-up effects
+        active_abilities (dict): Currently available active abilities with cooldowns
+        bullets_group (pygame.sprite.Group): Player's bullet projectiles
+        missiles_group (pygame.sprite.Group): Player's missile projectiles
+    """
     def __init__(self, x, y, drone_id, drone_stats, asset_manager, sprite_asset_key, crash_sound_key, drone_system):
         base_speed_from_stats = drone_stats.get("speed", get_setting("gameplay", "PLAYER_SPEED", 3))
         tile_size = get_setting("gameplay", "TILE_SIZE", 80)
@@ -187,13 +206,12 @@ class PlayerDrone(BaseDrone):
     def update_active_abilities(self, current_time_ms):
         """Updates the state and cooldowns of active abilities."""
         for ability_id, status in list(self.active_abilities.items()):
-            if status.get('is_active') and current_time_ms > status['active_end_time']:
+            if status.get('is_active') and 'active_end_time' in status and current_time_ms > status['active_end_time']:
                 status['is_active'] = False
                 logger.info(f"Ability '{ability_id}' deactivated.")
-            if current_time_ms > status['cooldown_end_time']:
+            if 'cooldown_end_time' in status and current_time_ms > status['cooldown_end_time']:
                 # Ability is off cooldown, remove 'cooldown_end_time' to indicate ready
-                if 'cooldown_end_time' in status:
-                    del status['cooldown_end_time']
+                del status['cooldown_end_time']
 
     def unlock_ability(self, ability_id):
         """Unlocks an active ability for the player."""
@@ -202,7 +220,19 @@ class PlayerDrone(BaseDrone):
             logger.info(f"Player unlocked active ability: {ability_id}")
 
     def activate_ability(self, ability_id, game_controller_ref):
-        """Activates an unlocked ability."""
+        """
+        Activates an unlocked active ability if not on cooldown.
+        
+        Checks unlock status and cooldown before activation. Handles ability-specific
+        logic and manages cooldown timers. Provides user feedback through messages.
+        
+        Args:
+            ability_id (str): Identifier of the ability to activate
+            game_controller_ref (GameController): Reference to main game controller
+            
+        Returns:
+            bool: True if ability was successfully activated, False otherwise
+        """
         if not self.drone_system.has_ability_unlocked(ability_id):
             game_controller_ref.set_story_message(f"Ability '{ability_id}' is not unlocked!", 2000)
             game_controller_ref.play_sound('ui_denied')
@@ -277,6 +307,19 @@ class PlayerDrone(BaseDrone):
         super().rotate(direction, self.rotation_speed)
             
     def shoot(self, sound_asset_key=None, missile_sound_asset_key=None, maze=None, enemies_group=None):
+        """
+        Fires the current weapon using the active weapon strategy.
+        
+        Delegates to the current weapon strategy for projectile creation and
+        updates sprite appearance to match weapon mode. Handles cooldown
+        management and sound effects.
+        
+        Args:
+            sound_asset_key (str, optional): Sound to play when firing
+            missile_sound_asset_key (str, optional): Sound for missile weapons
+            maze (Maze, optional): Current maze for collision detection
+            enemies_group (pygame.sprite.Group, optional): Target enemies for homing weapons
+        """
         # Update references if provided
         if enemies_group is not None:
             self.enemies_group = enemies_group

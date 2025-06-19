@@ -94,14 +94,10 @@ class UIFlowController:
 
     def update(self, current_time_ms, delta_time_ms, current_game_state):
         """Called every frame to update UI animations or timed transitions."""
+        # MODIFICATION: Use class names for state IDs to match the StateManager.
         menu_like_states = [
-            GAME_STATE_MAIN_MENU,
-            GAME_STATE_LEADERBOARD,
-            GAME_STATE_SETTINGS,
-            GAME_STATE_DRONE_SELECT,
-            GAME_STATE_CODEX,
-            GAME_STATE_GAME_OVER,
-            GAME_STATE_ENTER_NAME
+            "MainMenuState", "LeaderboardState", "SettingsState",
+            "DroneSelectState", "CodexState", "GameOverState", "EnterNameState"
         ]
         
         if current_game_state in menu_like_states:
@@ -330,11 +326,11 @@ class UIFlowController:
         
         # Set up prerequisites based on chapter
         if chapter_index >= 1:  # Chapter 2 or later
-            # Mark all objectives in previous chapters as complete
+            # Mark all objectives in previous chapters as complete but don't trigger completion logic
             for i in range(chapter_index):
                 prev_chapter = story_manager.chapters[i]
                 for obj in prev_chapter.objectives:
-                    obj.complete()
+                    obj.completed = True  # Set directly without calling complete()
                     
             # For Chapter 2 (Guardian), unlock VANTIS drone
             if chapter_index >= 1 and hasattr(self.game_controller, 'drone_system'):

@@ -14,12 +14,20 @@ def create_weapon_strategy(weapon_mode, player_drone):
     """
     Factory method to create the appropriate weapon strategy based on weapon mode.
     
+    Maps weapon mode constants to their corresponding strategy implementations.
+    This factory pattern allows for easy extension of the weapon system without
+    modifying existing code.
+    
     Args:
-        weapon_mode: The weapon mode constant
-        player_drone: The player drone instance
+        weapon_mode (int): The weapon mode constant (e.g., WEAPON_MODE_TRI_SHOT)
+        player_drone (PlayerDrone): The player drone instance that will use this weapon
         
     Returns:
-        An instance of the appropriate weapon strategy
+        BaseWeaponStrategy: An instance of the appropriate weapon strategy
+        
+    Example:
+        strategy = create_weapon_strategy(WEAPON_MODE_LIGHTNING, player)
+        player.current_weapon_strategy = strategy
     """
     strategy_map = {
         WEAPON_MODE_DEFAULT: DefaultWeaponStrategy,
@@ -38,6 +46,26 @@ def create_weapon_strategy(weapon_mode, player_drone):
     return strategy_class(player_drone)
 
 class BaseWeaponStrategy:
+    """
+    Base class for all weapon strategies implementing the Strategy pattern.
+    
+    Defines the common interface and shared functionality for all weapon types.
+    Each weapon strategy encapsulates the specific firing behavior, projectile
+    creation, and timing for a particular weapon mode.
+    
+    Key Features:
+    - Cooldown management for rate of fire control
+    - Common projectile properties (speed, damage, lifetime)
+    - Sound effect integration
+    - Maze and enemy group references for advanced weapons
+    
+    Attributes:
+        player (PlayerDrone): The player drone using this weapon
+        bullet_speed (float): Speed of projectiles fired by this weapon
+        bullet_damage (int): Damage dealt by projectiles
+        shoot_cooldown (int): Milliseconds between shots
+        last_shot_time (int): Timestamp of last shot for cooldown calculation
+    """
     def __init__(self, player_drone):
         self.player = player_drone
         self.enemies_group = player_drone.enemies_group if hasattr(player_drone, 'enemies_group') else None
@@ -58,7 +86,20 @@ class BaseWeaponStrategy:
         return self.shoot_cooldown
     
     def fire(self, sound_asset_key=None, missile_sound_asset_key=None):
-        """Base fire method that handles common logic and delegates to _create_projectile"""
+        """
+        Base fire method that handles common logic and delegates to _create_projectile.
+        
+        Manages cooldown checking, spawn position calculation, sound effects,
+        and delegates actual projectile creation to subclass implementations.
+        This template method pattern ensures consistent behavior across all weapons.
+        
+        Args:
+            sound_asset_key (str, optional): Sound effect key for regular shots
+            missile_sound_asset_key (str, optional): Sound effect key for missiles
+            
+        Returns:
+            bool: True if weapon fired successfully, False if on cooldown
+        """
         current_time_ms = pygame.time.get_ticks()
         if not self.can_shoot(current_time_ms):
             return False
@@ -86,7 +127,21 @@ class BaseWeaponStrategy:
         return current_time_ms - self.last_shot_time > self.shoot_cooldown
     
     def _create_projectile(self, spawn_x, spawn_y, missile_sound_asset_key=None):
-        """To be implemented by subclasses"""
+        """
+        Creates the specific projectile(s) for this weapon type.
+        
+        Template method that must be implemented by each weapon strategy to
+        define its unique firing behavior. Called by the base fire() method
+        after cooldown and positioning calculations.
+        
+        Args:
+            spawn_x (float): X coordinate where projectile should spawn
+            spawn_y (float): Y coordinate where projectile should spawn
+            missile_sound_asset_key (str, optional): Sound key for missile weapons
+            
+        Raises:
+            NotImplementedError: Must be implemented by subclasses
+        """
         raise NotImplementedError("Subclasses must implement this method")
     
     def update_maze(self, maze):
