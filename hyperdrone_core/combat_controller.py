@@ -100,6 +100,9 @@ class CombatController:
                 return
             if self.wave_manager:
                 self.wave_manager.update(current_time_ms, delta_time_ms)
+            # Update tower defense manager enemies
+            if hasattr(self.game_controller, 'tower_defense_manager'):
+                self.game_controller.tower_defense_manager.update(delta_time_ms)
 
         self._update_power_ups(current_time_ms)
         self._handle_collisions(current_game_state)
@@ -399,13 +402,52 @@ class CombatController:
         if not self.game_controller.is_build_phase:
             return False
             
+        # Check if there's already a turret at this position
+        for turret in self.turrets_group:
+            if turret.rect.collidepoint(world_pos):
+                logger.info("Cannot place turret - position already occupied")
+                return False
+            
         # world_pos is already in screen coordinates in this context
         return self.game_controller.tower_defense_manager.try_place_tower(world_pos, self.asset_manager)
         
     def try_upgrade_clicked_turret(self, world_pos):
         """Attempt to upgrade a turret at the given world position"""
-        # This is a stub method that will be implemented later
-        # For now, just return False to prevent errors
+        if not hasattr(self.game_controller, 'tower_defense_manager'):
+            return False
+            
+        if not self.game_controller.is_build_phase:
+            return False
+            
+        # Find turret at clicked position
+        clicked_turret = None
+        for turret in self.turrets_group:
+            if turret.rect.collidepoint(world_pos):
+                clicked_turret = turret
+                break
+                
+        if not clicked_turret:
+            logger.info("No turret found at clicked position for upgrade")
+            return False
+            
+        # Check if turret can be upgraded
+        if clicked_turret.upgrade_level >= clicked_turret.MAX_UPGRADE_LEVEL:
+            logger.info("Turret is already at maximum upgrade level")
+            return False
+            
+        # Check if player has enough cores
+        upgrade_cost = clicked_turret.UPGRADE_COST
+        player_cores = self.game_controller.drone_system.get_player_cores()
+        if player_cores < upgrade_cost:
+            logger.info(f"Not enough cores to upgrade turret (need {upgrade_cost})")
+            return False
+            
+        # Upgrade the turret
+        if clicked_turret.upgrade():
+            self.game_controller.drone_system.spend_player_cores(upgrade_cost)
+            logger.info(f"Turret upgraded to level {clicked_turret.upgrade_level}")
+            return True
+            
         return False
         
     def _handle_maze_guardian_defeated(self):

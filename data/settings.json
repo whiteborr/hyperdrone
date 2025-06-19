@@ -1,442 +1,31 @@
 {
   "display": {
-    "WIDTH": 1920,
-    "HEIGHT": 1200,
-    "FPS": 60,
-    "FULLSCREEN_MODE": true,
+    "FULLSCREEN_MODE": false,
     "MUSIC_VOLUME_MULTIPLIER": 0.5,
-    "SFX_VOLUME_MULTIPLIER": 0.7,
-    "BOTTOM_PANEL_HEIGHT": 120,
-    "HUD_RING_ICON_AREA_X_OFFSET": 150,
-    "HUD_RING_ICON_AREA_Y_OFFSET": 30,
-    "HUD_RING_ICON_SIZE": 24,
-    "HUD_RING_ICON_SPACING": 5,
-    "HUD_HEALTH_BAR_WIDTH": 200,
-    "HUD_HEALTH_BAR_HEIGHT": 20,
-    "HUD_HEALTH_BAR_X_OFFSET": 20,
-    "HUD_HEALTH_BAR_Y_OFFSET": 20,
-    "HUD_WEAPON_ICON_SIZE": 48,
-    "HUD_WEAPON_ICON_X_OFFSET": 20,
-    "HUD_WEAPON_ICON_Y_OFFSET": 60,
-    "HUD_SCORE_X_OFFSET": 20,
-    "HUD_SCORE_Y_OFFSET": 100,
-    "HUD_TIMER_X_OFFSET": 20,
-    "HUD_TIMER_Y_OFFSET": 130,
-    "GAME_PLAY_AREA_HEIGHT": 960,
-    "HUD_ABILITY_ICON_SIZE": 60,
-    "HUD_ABILITY_ICON_X_OFFSET": 100,
-    "HUD_ABILITY_ICON_Y_OFFSET": 20
-  },
-  "colors": {
-    "BLACK": [
-      0,
-      0,
-      0
-    ],
-    "WHITE": [
-      255,
-      255,
-      255
-    ],
-    "RED": [
-      255,
-      0,
-      0
-    ],
-    "DARK_RED": [
-      100,
-      0,
-      0
-    ],
-    "GREEN": [
-      0,
-      255,
-      0
-    ],
-    "BLUE": [
-      0,
-      100,
-      255
-    ],
-    "CYAN": [
-      0,
-      255,
-      255
-    ],
-    "LIGHT_BLUE": [
-      173,
-      216,
-      230
-    ],
-    "YELLOW": [
-      255,
-      255,
-      0
-    ],
-    "GOLD": [
-      255,
-      215,
-      0
-    ],
-    "ORANGE": [
-      255,
-      165,
-      0
-    ],
-    "PURPLE": [
-      128,
-      0,
-      128
-    ],
-    "DARK_PURPLE": [
-      40,
-      0,
-      70
-    ],
-    "MAGENTA": [
-      255,
-      0,
-      255
-    ],
-    "PINK": [
-      255,
-      192,
-      203
-    ],
-    "GREY": [
-      100,
-      100,
-      100
-    ],
-    "DARK_GREY": [
-      50,
-      50,
-      50
-    ],
-    "ELECTRIC_BLUE": [
-      0,
-      128,
-      255
-    ],
-    "ESCAPE_ZONE_COLOR": [
-      0,
-      255,
-      120
-    ],
-    "PLAYER_BULLET_COLOR": [
-      0,
-      255,
-      255
-    ],
-    "MISSILE_COLOR": [
-      255,
-      0,
-      0
-    ],
-    "LIGHTNING_COLOR": [
-      0,
-      128,
-      255
-    ],
-    "FLAME_COLORS": [
-      [
-        255,
-        100,
-        0
-      ],
-      [
-        255,
-        165,
-        0
-      ],
-      [
-        255,
-        215,
-        0
-      ],
-      [
-        255,
-        255,
-        100
-      ]
-    ],
-    "ARCHITECT_VAULT_BG_COLOR": [
-      20,
-      0,
-      30
-    ],
-    "ARCHITECT_VAULT_WALL_COLOR": [
-      150,
-      120,
-      200
-    ],
-    "ARCHITECT_VAULT_ACCENT_COLOR": [
-      255,
-      215,
-      0
-    ]
+    "SFX_VOLUME_MULTIPLIER": 0.7
   },
   "gameplay": {
-    "TILE_SIZE": 80,
     "PLAYER_MAX_HEALTH": 100,
     "PLAYER_LIVES": 3,
     "PLAYER_SPEED": 3,
-    "ROTATION_SPEED": 5,
     "PLAYER_INVINCIBILITY": false,
-    "INITIAL_WEAPON_MODE": 0,
-    "PLAYER_BULLET_COLOR": [
-      0,
-      255,
-      255
-    ],
-    "MISSILE_COLOR": [
-      255,
-      0,
-      0
-    ],
-    "TOTAL_CORE_FRAGMENTS_NEEDED": 3,
-    "RING_PUZZLE_CORE_REWARD": 750,
-    "LEADERBOARD_FILE_NAME": "leaderboard.json",
-    "LEADERBOARD_MAX_ENTRIES": 10,
-    "MAX_RINGS_PER_LEVEL": 5,
-    "POWERUP_TYPES": {
-      "weapon_upgrade": {
-        "weight": 0.4,
-        "duration": 0
-      },
-      "shield": {
-        "weight": 0.3,
-        "duration": 10000
-      },
-      "speed_boost": {
-        "weight": 0.3,
-        "duration": 5000
-      }
-    }
-  },
-  "hazards": {
-    "GLITCH_WALL_ON_DURATION_MS": 2000,
-    "GLITCH_WALL_OFF_DURATION_MS": 1500,
-    "GLITCH_WALL_DAMAGE": 15
-  },
-  "weapons": {
-    "PLAYER_DEFAULT_BULLET_SIZE": 4,
-    "PLAYER_BIG_BULLET_SIZE": 12,
-    "PLAYER_BULLET_SPEED": 7,
-    "PLAYER_BULLET_LIFETIME": 200,
-    "PLAYER_BASE_SHOOT_COOLDOWN": 500,
-    "PLAYER_RAPID_FIRE_COOLDOWN": 150,
-    "BOUNCING_BULLET_MAX_BOUNCES": 2,
-    "PIERCING_BULLET_MAX_PIERCES": 1,
-    "MISSILE_SPEED": 5.6,
-    "MISSILE_LIFETIME": 400,
-    "MISSILE_SIZE": 8,
-    "MISSILE_TURN_RATE": 8,
-    "MISSILE_COOLDOWN": 3000,
-    "MISSILE_DAMAGE": 50,
-    "LIGHTNING_DAMAGE": 15,
-    "LIGHTNING_LIFETIME": 30,
-    "LIGHTNING_COOLDOWN": 750,
-    "LIGHTNING_ZAP_RANGE": 250,
-    "LIGHTNING_BASE_THICKNESS": 5,
-    "LIGHTNING_CORE_THICKNESS_RATIO": 0.4,
-    "LIGHTNING_SEGMENTS": 12,
-    "LIGHTNING_MAX_OFFSET": 18,
-    "LIGHTNING_CORE_OFFSET_RATIO": 0.3,
-    "LIGHTNING_BRANCH_CHANCE": 0.25,
-    "LIGHTNING_BRANCH_MAX_SEGMENTS": 5,
-    "LIGHTNING_BRANCH_MAX_OFFSET": 10,
-    "LIGHTNING_BRANCH_THICKNESS_RATIO": 0.5,
-    "LIGHTNING_WALL_CRAWL_MIN_TENDRILS": 1,
-    "LIGHTNING_WALL_CRAWL_MAX_TENDRILS": 4,
-    "LIGHTNING_WALL_CRAWL_MAX_LENGTH": 80.0,
-    "LIGHTNING_WALL_CRAWL_THICKNESS_RATIO": 0.6,
-    "LIGHTNING_WALL_CRAWL_SEGMENTS": 4,
-    "LIGHTNING_WALL_CRAWL_OFFSET_RATIO": 0.4,
-    "LIGHTNING_COLOR": [
-      0,
-      128,
-      255
-    ]
-  },
-  "abilities": {
-    "PHANTOM_CLOAK_DURATION_MS": 5000,
-    "PHANTOM_CLOAK_COOLDOWN_MS": 15000,
-    "PHANTOM_CLOAK_ALPHA_SETTING": 70,
-    "THRUST_PARTICLE_SPREAD_ANGLE": 45,
-    "THRUST_PARTICLE_LIFETIME_BLAST": 25,
-    "THRUST_PARTICLE_START_SIZE_BLAST_MIN": 5,
-    "THRUST_PARTICLE_START_SIZE_BLAST_MAX": 10,
-    "THRUST_PARTICLE_SPEED_MIN_BLAST": 1.5,
-    "THRUST_PARTICLE_SPEED_MAX_BLAST": 3.0,
-    "THRUST_PARTICLE_SHRINK_RATE_BLAST": 0.15,
-    "TEMPORARY_BARRICADE_COOLDOWN_MS": 10000,
-    "TEMPORARY_BARRICADE_DURATION_MS": 3000,
-    "TEMPORARY_BARRICADE_HEALTH": 100,
-    "TEMPORARY_BARRICADE_SIZE": 40,
-    "TEMPORARY_BARRICADE_COUNT": 3
+    "INITIAL_WEAPON_MODE": 0
   },
   "enemies": {
     "ENEMY_SPEED": 1.5,
-    "ENEMY_HEALTH": 100,
-    "ENEMY_BULLET_SPEED": 5,
-    "ENEMY_BULLET_COOLDOWN": 1500,
-    "ENEMY_BULLET_LIFETIME": 75,
-    "ENEMY_BULLET_DAMAGE": 10,
-    "PROTOTYPE_DRONE_HEALTH": 150,
-    "PROTOTYPE_DRONE_SPEED": 2.0,
-    "PROTOTYPE_DRONE_SHOOT_COOLDOWN": 1200,
-    "PROTOTYPE_DRONE_BULLET_SPEED": 6,
-    "TR3B_SPEED": 2.0,
-    "TR3B_HEALTH": 150,
-    "TR3B_BULLET_COOLDOWN": 1200,
-    "RETREAT_HEALTH_THRESHOLD": 0.3,
-    "CAN_RETREAT": true,
-    "RETREAT_RECALC_INTERVAL_MS": 1000,
-    "MIN_RETREAT_DISTANCE_TILES": 8,
-    "RETREAT_SPEED_MULTIPLIER": 1.2,
-    "RETREAT_SEARCH_RADIUS_TILES": 20
-  },
-  "bosses": {
-    "MAZE_GUARDIAN_HEALTH": 5000,
-    "MAZE_GUARDIAN_SPEED": 1.0,
-    "MAZE_GUARDIAN_BULLET_SPEED": 6,
-    "MAZE_GUARDIAN_BULLET_LIFETIME": 80,
-    "MAZE_GUARDIAN_BULLET_DAMAGE": 15,
-    "MAZE_GUARDIAN_LASER_DAMAGE": 20,
-    "MAZE_GUARDIAN_LASER_COOLDOWN": 5000,
-    "MAZE_GUARDIAN_LASER_SWEEP_ARC": 90,
-    "MAZE_GUARDIAN_SHIELD_DURATION_MS": 6000,
-    "MAZE_GUARDIAN_SHIELD_COOLDOWN_MS": 10000,
-    "MAZE_GUARDIAN_ARENA_SHIFT_INTERVAL_MS": 3000,
-    "MAZE_GUARDIAN_ARENA_SHIFT_DURATION_MS": 1000,
-    "MAZE_GUARDIAN_MINION_SPAWN_COOLDOWN_MS": 7000,
-    "SENTINEL_DRONE_HEALTH": 75,
-    "SENTINEL_DRONE_SPEED": 3.0
+    "ENEMY_HEALTH": 25
   },
   "powerups": {
-    "POWERUP_SIZE": 26,
-    "POWERUP_SPAWN_CHANCE": 0.05,
-    "MAX_POWERUPS_ON_SCREEN": 2,
-    "WEAPON_UPGRADE_ITEM_LIFETIME": 15000,
-    "POWERUP_ITEM_LIFETIME": 12000,
     "SHIELD_POWERUP_DURATION": 10000,
-    "SPEED_BOOST_POWERUP_DURATION": 7000,
-    "POWERUP_SPAWN_INTERVAL": 15000
-  },
-  "collectibles": {
-    "TOTAL_CORE_FRAGMENTS_NEEDED": 3,
-    "CORE_FRAGMENT_VISUAL_SIZE": 32,
-    "MAX_RINGS_PER_LEVEL": 5
-  },
-  "architect_vault": {
-    "ARCHITECT_VAULT_EXTRACTION_TIMER_MS": 90000,
-    "ARCHITECT_VAULT_GAUNTLET_WAVES": 3,
-    "ARCHITECT_VAULT_DRONES_PER_WAVE": [
-      3,
-      4,
-      5
-    ],
-    "ARCHITECT_REWARD_BLUEPRINT_ID": "DRONE_ARCHITECT_X",
-    "ARCHITECT_REWARD_LORE_ID": "lore_architect_origin"
-  },
-  "defense_mode": {
-    "DEFENSE_REACTOR_HEALTH": 1000,
-    "DEFENSE_BUILD_PHASE_DURATION_MS": 30000,
-    "DEFENSE_WAVE_CLEAR_CORE_REWARD_BASE": 100,
-    "DEFENSE_WAVE_CLEAR_CORE_INCREMENT": 50,
-    "DEFENSE_DRONE_1_HEALTH": 75,
-    "DEFENSE_DRONE_1_SPEED": 1.8,
-    "DEFENSE_DRONE_2_HEALTH": 150,
-    "DEFENSE_DRONE_2_SPEED": 1.2,
-    "DEFENSE_DRONE_3_HEALTH": 50,
-    "DEFENSE_DRONE_3_SPEED": 2.5,
-    "DEFENSE_DRONE_4_HEALTH": 250,
-    "DEFENSE_DRONE_4_SPEED": 1.0,
-    "DEFENSE_DRONE_5_HEALTH": 100,
-    "DEFENSE_DRONE_5_SPEED": 2.0,
-    "TURRET_BASE_COST": 50,
-    "TURRET_UPGRADE_COST": 100,
-    "TURRET_MAX_UPGRADE_LEVEL": 3,
-    "MAX_TURRETS_DEFENSE_MODE": 10
+    "SPEED_BOOST_POWERUP_DURATION": 7000
   },
   "progression": {
-    "LEVEL_TIMER_DURATION": 120000,
-    "LEVEL_TIMER_WARNING_THRESHOLD": 30000,
-    "BONUS_LEVEL_DURATION_MS": 60000,
-    "RING_PUZZLE_CORE_REWARD": 750,
-    "LEADERBOARD_MAX_ENTRIES": 10,
-    "LEADERBOARD_FILE_NAME": "leaderboard.json"
+    "LEVEL_TIMER_DURATION": 120000
   },
-  "assets": {
-    "RING_UI_ICON": "images/collectibles/ring_ui_icon.png",
-    "RING_UI_ICON_EMPTY": "images/collectibles/ring_ui_icon_empty.png",
-    "MENU_LOGO": "images/ui/menu_logo_hyperdrone.png",
-    "CORE_FRAGMENT_EMPTY_ICON": "images/collectibles/fragment_ui_icon_empty.png",
-    "REACTOR_HUD_ICON": "images/level_elements/reactor_icon.png",
-    "CORE_REACTOR_IMAGE": "images/level_elements/core_reactor.png",
-    "SHIELD_POWERUP_ICON": "images/powerups/shield_icon.png",
-    "SPEED_BOOST_POWERUP_ICON": "images/powerups/speed_icon.png",
-    "WEAPON_UPGRADE_POWERUP_ICON": "images/powerups/weapon_icon.png",
-    "DEFENSE_DRONE_1_SPRITE": "images/enemies/defense_drone_1.png",
-    "DEFENSE_DRONE_2_SPRITE": "images/enemies/defense_drone_2.png",
-    "DEFENSE_DRONE_3_SPRITE": "images/enemies/defense_drone_3.png",
-    "DEFENSE_DRONE_4_SPRITE": "images/enemies/defense_drone_4.png",
-    "DEFENSE_DRONE_5_SPRITE": "images/enemies/defense_drone_5.png",
-    "LORE_SCENE_1": "images/lore/scene1.png",
-    "LORE_SCENE_2": "images/lore/scene2.png",
-    "LORE_SCENE_3": "images/lore/scene3.png",
-    "LORE_SCENE_4": "images/lore/scene4.png",
-    "STORY_MAP_BACKGROUND": "images/ui/story_map_background.png",
-    "CHAPTER_ICON_UNLOCKED": "images/ui/chapter_icon_unlocked.png",
-    "CHAPTER_ICON_LOCKED": "images/ui/chapter_icon_locked.png",
-    "PLAYER_MAP_CURSOR": "images/ui/player_map_cursor.png"
-  },
-  "game_states": {
-    "GAME_STATE_MAIN_MENU": "main_menu",
-    "GAME_STATE_PLAYING": "playing",
-    "GAME_STATE_GAME_OVER": "game_over",
-    "GAME_STATE_LEADERBOARD": "leaderboard_display",
-    "GAME_STATE_ENTER_NAME": "enter_name",
-    "GAME_STATE_SETTINGS": "settings_menu",
-    "GAME_STATE_DRONE_SELECT": "drone_select_menu",
-    "GAME_STATE_CODEX": "codex_screen",
-    "GAME_STATE_BONUS_LEVEL_START": "bonus_level_start",
-    "GAME_STATE_BONUS_LEVEL_PLAYING": "bonus_level_playing",
-    "GAME_STATE_ARCHITECT_VAULT_INTRO": "architect_vault_intro",
-    "GAME_STATE_ARCHITECT_VAULT_ENTRY_PUZZLE": "architect_vault_entry_puzzle",
-    "GAME_STATE_ARCHITECT_VAULT_GAUNTLET": "architect_vault_gauntlet",
-    "GAME_STATE_ARCHITECT_VAULT_BOSS_FIGHT": "architect_vault_boss_fight",
-    "GAME_STATE_ARCHITECT_VAULT_EXTRACTION": "architect_vault_extraction",
-    "GAME_STATE_ARCHITECT_VAULT_SUCCESS": "architect_vault_success",
-    "GAME_STATE_ARCHITECT_VAULT_FAILURE": "architect_vault_failure",
-    "GAME_STATE_RING_PUZZLE": "ring_puzzle_active",
-    "GAME_STATE_GAME_INTRO_SCROLL": "game_intro_scroll",
-    "GAME_STATE_MAZE_DEFENSE": "maze_defense_mode"
+  "weapons": {
+    "weapons": 50
   },
   "weapon_modes": {
-    "WEAPON_MODE_DEFAULT": 0,
-    "WEAPON_MODE_TRI_SHOT": 1,
-    "WEAPON_MODE_RAPID_SINGLE": 2,
-    "WEAPON_MODE_RAPID_TRI": 3,
-    "WEAPON_MODE_BIG_SHOT": 4,
-    "WEAPON_MODE_BOUNCE": 5,
-    "WEAPON_MODE_PIERCE": 6,
-    "WEAPON_MODE_HEATSEEKER": 7,
-    "WEAPON_MODE_HEATSEEKER_PLUS_BULLETS": 8,
-    "WEAPON_MODE_LIGHTNING": 9,
-    "WEAPON_MODE_NAMES": {
-      "0": "Single Shot",
-      "1": "Tri-Shot",
-      "2": "Rapid Single",
-      "3": "Rapid Tri-Shot",
-      "4": "Big Shot",
-      "5": "Bounce Shot",
-      "6": "Pierce Shot",
-      "7": "Heatseeker",
-      "8": "Seeker + Rapid",
-      "9": "Chain Lightning"
-    },
     "WEAPON_MODES_SEQUENCE": [
       0,
       1,
@@ -448,6 +37,18 @@
       7,
       8,
       9
-    ]
+    ],
+    "WEAPON_MODE_NAMES": {
+      "0": "Single Shot",
+      "1": "Tri-Shot",
+      "2": "Rapid Single",
+      "3": "Rapid Tri-Shot",
+      "4": "Big Shot",
+      "5": "Bounce Shot",
+      "6": "Pierce Shot",
+      "7": "Heatseeker",
+      "8": "Seeker + Rapid",
+      "9": "Chain Lightning"
+    }
   }
 }

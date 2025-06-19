@@ -251,8 +251,10 @@ class UIFlowController:
             if selected_item["type"] == "action":
                 if item_key == "RESET_SETTINGS_ACTION":
                     # Reset settings to defaults
-                    from settings_manager import save_settings
-                    save_settings()
+                    from settings_manager import reset_all_settings_to_default
+                    reset_all_settings_to_default()
+                    # Reinitialize settings menu to reflect changes
+                    self.settings_items_data = self.game_controller._get_settings_menu_items_data_structure()
                     self.game_controller.play_sound('ui_confirm')
                 return True
             elif selected_item.get("action") == "start_chapter" and selected_item["type"] == "choice":

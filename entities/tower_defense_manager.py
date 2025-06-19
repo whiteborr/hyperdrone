@@ -75,14 +75,15 @@ class TowerDefenseManager:
         grid_col = int(x // self.tile_size)
         grid_row = int(y // self.tile_size)
         
-        # Check if tower can be placed
-        if not self.path_manager.can_place_tower(grid_row, grid_col):
-            logger.info(f"Cannot place tower at ({grid_row}, {grid_col}) - would block all paths")
+        # Check if this is a designated turret spot
+        if self.path_manager.grid[grid_row][grid_col] != 'T':
+            logger.info(f"Cannot place tower at ({grid_row}, {grid_col}) - not a designated turret spot")
             return False
             
         # Check if player has enough resources
         tower_cost = Turret.TURRET_COST
-        if self.player_resources < tower_cost:
+        player_cores = self.game_controller.drone_system.get_player_cores() if self.game_controller and hasattr(self.game_controller, 'drone_system') else 0
+        if player_cores < tower_cost:
             logger.info(f"Not enough resources to place tower (need {tower_cost})")
             return False
             
@@ -94,11 +95,16 @@ class TowerDefenseManager:
         new_tower = Turret(tile_center_x, tile_center_y, None, asset_manager)
         self.towers_group.add(new_tower)
         
-        # Update grid to mark tower position
-        self.path_manager.grid[grid_row][grid_col] = 'T'
+        # Also add to game controller's turrets group
+        if self.game_controller and hasattr(self.game_controller, 'turrets_group'):
+            self.game_controller.turrets_group.add(new_tower)
         
-        # Deduct resources
-        self.player_resources -= tower_cost
+        # Update grid to mark tower position as occupied
+        self.path_manager.grid[grid_row][grid_col] = 'U'
+        
+        # Deduct resources from player's cores
+        if self.game_controller and hasattr(self.game_controller, 'drone_system'):
+            self.game_controller.drone_system.spend_player_cores(tower_cost)
         
         # Trigger path recalculation for all enemies
         self.recalculate_all_enemy_paths()
@@ -136,22 +142,27 @@ class TowerDefenseManager:
                 health = get_setting("gameplay", "DEFENSE_DRONE_1_HEALTH", 100)
                 speed = get_setting("gameplay", "DEFENSE_DRONE_1_SPEED", 1.0)
                 enemy = DefenseDronePathfinder(spawn_point, self.path_manager, asset_manager, sprite_key, speed=speed, health=health)
+                enemy.path_manager.goal_point = self.path_manager.goal_point
             elif drone_number == "2":
                 health = get_setting("gameplay", "DEFENSE_DRONE_2_HEALTH", 200)
                 speed = get_setting("gameplay", "DEFENSE_DRONE_2_SPEED", 0.7)
                 enemy = DefenseDronePathfinder(spawn_point, self.path_manager, asset_manager, sprite_key, speed=speed, health=health)
+                enemy.path_manager.goal_point = self.path_manager.goal_point
             elif drone_number == "3":
                 health = get_setting("gameplay", "DEFENSE_DRONE_3_HEALTH", 80)
                 speed = get_setting("gameplay", "DEFENSE_DRONE_3_SPEED", 1.5)
                 enemy = DefenseDronePathfinder(spawn_point, self.path_manager, asset_manager, sprite_key, speed=speed, health=health)
+                enemy.path_manager.goal_point = self.path_manager.goal_point
             elif drone_number == "4":
                 health = get_setting("gameplay", "DEFENSE_DRONE_4_HEALTH", 300)
                 speed = get_setting("gameplay", "DEFENSE_DRONE_4_SPEED", 0.5)
                 enemy = DefenseDronePathfinder(spawn_point, self.path_manager, asset_manager, sprite_key, speed=speed, health=health)
+                enemy.path_manager.goal_point = self.path_manager.goal_point
             elif drone_number == "5":
                 health = get_setting("gameplay", "DEFENSE_DRONE_5_HEALTH", 150)
                 speed = get_setting("gameplay", "DEFENSE_DRONE_5_SPEED", 1.2)
                 enemy = DefenseDronePathfinder(spawn_point, self.path_manager, asset_manager, sprite_key, speed=speed, health=health)
+                enemy.path_manager.goal_point = self.path_manager.goal_point
         else:
             # Create basic enemy types
             if enemy_type == 'basic':
@@ -163,6 +174,9 @@ class TowerDefenseManager:
             
         if enemy:
             self.enemies_group.add(enemy)
+            # Force immediate path calculation
+            if hasattr(enemy, 'calculate_path'):
+                enemy.calculate_path()
             return enemy
         return None
         
@@ -181,7 +195,15 @@ class TowerDefenseManager:
     def update(self, delta_time_ms: int):
         """Update game state"""
         # Update enemies
-        self.enemies_group.update()
+        for enemy in self.enemies_group:
+            old_pos = (enemy.x, enemy.y)
+            enemy.update()
+            new_pos = (enemy.x, enemy.y)
+            if old_pos != new_pos:
+                logger.info(f"Enemy moved from {old_pos} to {new_pos}")
+            # Remove dead enemies
+            if not enemy.alive:
+                enemy.kill()
         
         # Update towers
         self.towers_group.update(self.enemies_group, None, self.game_area_x_offset)
@@ -195,14 +217,16 @@ class TowerDefenseManager:
                 if 0 <= enemy_index < len(self.current_wave_enemy_types):
                     enemy_type = self.current_wave_enemy_types[enemy_index]
                 else:
-                    enemy_type = "basic"
+                    enemy_type = "defense_drone_1"
                 
                 # Get asset manager from game controller if available
                 asset_manager = None
                 if hasattr(self, 'game_controller') and hasattr(self.game_controller, 'asset_manager'):
                     asset_manager = self.game_controller.asset_manager
                 
-                self.spawn_enemy(enemy_type, asset_manager)
+                spawned_enemy = self.spawn_enemy(enemy_type, asset_manager)
+                if spawned_enemy:
+                    logger.info(f"Spawned {enemy_type} at {spawned_enemy.x}, {spawned_enemy.y}")
                 self.enemies_remaining_in_wave -= 1
                 self.spawn_timer = 0
                 

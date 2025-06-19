@@ -168,5 +168,53 @@ def save_settings():
     
 def reset_all_settings_to_default():
     """Reset all settings to their default values."""
-    settings_manager._load_settings()  # Reload settings from file
+    # Define default settings structure
+    default_settings = {
+        "display": {
+            "FULLSCREEN_MODE": False,
+            "MUSIC_VOLUME_MULTIPLIER": 0.5,
+            "SFX_VOLUME_MULTIPLIER": 0.7
+        },
+        "gameplay": {
+            "PLAYER_MAX_HEALTH": 100,
+            "PLAYER_LIVES": 3,
+            "PLAYER_SPEED": 3,
+            "PLAYER_INVINCIBILITY": False,
+            "INITIAL_WEAPON_MODE": 0
+        },
+        "enemies": {
+            "ENEMY_SPEED": 1.5,
+            "ENEMY_HEALTH": 25
+        },
+        "powerups": {
+            "SHIELD_POWERUP_DURATION": 10000,
+            "SPEED_BOOST_POWERUP_DURATION": 7000
+        },
+        "progression": {
+            "LEVEL_TIMER_DURATION": 120000
+        },
+        "weapons": {
+            "weapons": 50
+        },
+        "weapon_modes": {
+            "WEAPON_MODES_SEQUENCE": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+            "WEAPON_MODE_NAMES": {
+                "0": "Single Shot",
+                "1": "Tri-Shot", 
+                "2": "Rapid Single",
+                "3": "Rapid Tri-Shot",
+                "4": "Big Shot",
+                "5": "Bounce Shot",
+                "6": "Pierce Shot",
+                "7": "Heatseeker",
+                "8": "Seeker + Rapid",
+                "9": "Chain Lightning"
+            }
+        }
+    }
+    
+    # Reset to defaults
+    settings_manager.settings = default_settings
+    settings_manager.settings_modified = True
+    settings_manager.save_settings()
     logger.info("Game settings have been reset to defaults.")

@@ -39,7 +39,7 @@ class UIManager:
             "core_fragment_empty_icon": None, "reactor_icon_placeholder": None,
             "ability_icon_placeholder": None # NEW: Placeholder for ability icon
         }
-        self.ui_icon_size_lives = (15, 15)
+        self.ui_icon_size_lives = (48, 48)
         self.ui_icon_size_rings = (20, 20)
         self.ui_icon_size_fragments = (28, 28)
         self.ui_icon_size_reactor = (32, 32)
@@ -583,26 +583,16 @@ class UIManager:
         weapon_icon = self.ui_asset_surfaces.get("current_weapon_icon")
         if weapon_icon:
             rotated_icon = pygame.transform.rotate(weapon_icon, 90)
-            # Scale main weapon icon to match life icon size
+            # Scale weapon icon to match life icon size
             scaled_weapon_icon = pygame.transform.scale(rotated_icon, self.ui_icon_size_lives)
-            icon_width, icon_height = scaled_weapon_icon.get_size()
             
-            # Removed weapon label
-            
-            self.screen.blit(scaled_weapon_icon, (wpn_x, wpn_y))
-            
-            # Display lives as multiple weapon mode icons to the right of the weapon bar
-            if self.game_controller.lives > 0:
-                icon_spacing = 10
-                lives_start_x = wpn_x + icon_width + 20
-                
-                max_lives = get_setting("gameplay", "PLAYER_LIVES", 3)
-                actual_lives = max_lives - 1
+            # Display total number of lives using weapon mode icons
+            max_lives = get_setting("gameplay", "PLAYER_LIVES", 3)
+            icon_spacing = 10
 
-                for i in range(actual_lives):
-                    # Use the already scaled weapon icon
-                    icon_x = lives_start_x + (i * (self.ui_icon_size_lives[0] + icon_spacing))
-                    self.screen.blit(scaled_weapon_icon, (icon_x, panel_y + 20))
+            for i in range(max_lives):
+                icon_x = wpn_x + (i * (self.ui_icon_size_lives[0] + icon_spacing))
+                self.screen.blit(scaled_weapon_icon, (icon_x, wpn_y))
         
         # Weapon cooldown bar
         wpn_mode = player.current_weapon_mode
@@ -625,6 +615,9 @@ class UIManager:
             pygame.draw.rect(self.screen, DARK_GREY, (wpn_x, cooldown_bar_y, cooldown_width, 10))
             pygame.draw.rect(self.screen, YELLOW, (wpn_x, cooldown_bar_y, cooldown_width * progress, 10))
             pygame.draw.rect(self.screen, WHITE, (wpn_x, cooldown_bar_y, cooldown_width, 10), 1)
+
+        # Draw powerup bars above weapon bar
+        self._draw_powerup_bars(wpn_x, wpn_y - 30, cooldown_width)
 
         # Right side - Rings and fragments
         hud_ring_icon_area_x_offset = get_setting("display", "HUD_RING_ICON_AREA_X_OFFSET", 150)
@@ -763,6 +756,37 @@ class UIManager:
             obj_rect = obj_surf.get_rect(center=(objectives_x, objectives_y + i * 25))
             self.screen.blit(obj_surf, obj_rect)
 
+    def _draw_powerup_bars(self, x, y, width):
+        """Draw shield and speed boost duration bars"""
+        player = self.game_controller.player
+        if not player or not hasattr(player, 'powerup_manager'):
+            return
+            
+        current_time = pygame.time.get_ticks()
+        bar_height = 8
+        bar_spacing = 12
+        
+        # Shield bar
+        if player.powerup_manager.shield_active:
+            remaining = max(0, player.powerup_manager.shield_end_time - current_time)
+            total = player.powerup_manager.shield_duration
+            progress = remaining / total if total > 0 else 0
+            
+            pygame.draw.rect(self.screen, DARK_GREY, (x, y, width, bar_height))
+            pygame.draw.rect(self.screen, CYAN, (x, y, width * progress, bar_height))
+            pygame.draw.rect(self.screen, WHITE, (x, y, width, bar_height), 1)
+            y += bar_spacing
+            
+        # Speed boost bar
+        if player.powerup_manager.speed_boost_active:
+            remaining = max(0, player.powerup_manager.speed_boost_end_time - current_time)
+            total = player.powerup_manager.speed_boost_duration
+            progress = remaining / total if total > 0 else 0
+            
+            pygame.draw.rect(self.screen, DARK_GREY, (x, y, width, bar_height))
+            pygame.draw.rect(self.screen, GREEN, (x, y, width * progress, bar_height))
+            pygame.draw.rect(self.screen, WHITE, (x, y, width, bar_height), 1)
+
 
     def draw_settings_menu(self):
         self._draw_star_background()
@@ -894,6 +918,12 @@ class UIManager:
         width = get_setting("display", "WIDTH", 1920)
         title_surf = self._render_text_safe("Maze Defense", "large_text", CYAN, fallback_size=48)
         self.screen.blit(title_surf, title_surf.get_rect(center=(width // 2, 50)))
+        
+        # Display player cores
+        if self.drone_system:
+            cores = self.drone_system.get_player_cores()
+            cores_surf = self._render_text_safe(f"Cores: {cores}", "ui_text", GOLD, fallback_size=28)
+            self.screen.blit(cores_surf, (20, 20))
 
     def draw_pause_overlay(self):
         width = get_setting("display", "WIDTH", 1920)

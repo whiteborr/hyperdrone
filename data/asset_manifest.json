@@ -14,7 +14,6 @@
     "PROTOTYPE_DRONE_EXPLODE_SOUND": "sounds/prototype_drone_explode.ogg",
     "TURRET_PLACE_SOUND": "sounds/turret_placement.ogg",
     "BARRICADE_DESTROT_SOUND": "sounds/barricade_destroy.ogg",
-    "MENU_MOVE_SOUND": "sounds/ui_select.ogg",
     "MENU_MOVE": "sounds/ui_select.ogg",
     "BOSS_HIT_SOUND": "sounds/boss_hit.ogg",
     "BOSS_DEATH_SOUND": "sounds/boss_death.ogg"

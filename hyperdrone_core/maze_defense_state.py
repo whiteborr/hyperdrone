@@ -8,6 +8,9 @@ class MazeDefenseState(State):
     
     def enter(self, previous_state=None, **kwargs):
         """Initialize the maze defense state"""
+        # Make mouse visible for maze defense mode
+        pygame.mouse.set_visible(True)
+        
         self.game.combat_controller.reset_combat_state()
         self.game.puzzle_controller.reset_puzzles_state()
         
@@ -58,6 +61,11 @@ class MazeDefenseState(State):
         # Start first build phase
         self.game.combat_controller.wave_manager.start_first_build_phase()
         self.game.is_build_phase = True
+    
+    def exit(self):
+        """Clean up when leaving maze defense state"""
+        # Hide mouse cursor when exiting maze defense mode
+        pygame.mouse.set_visible(False)
     
     def handle_events(self, events):
         """Handle input events specific to maze defense state"""

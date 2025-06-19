@@ -48,7 +48,7 @@ class Bullet(pygame.sprite.Sprite):
         # This method is no longer used, initialization is done directly in __init__
         pass
 
-    def update(self, maze=None, game_area_x_offset=0):
+    def update(self, maze=None, game_area_x_offset=0, shmup_mode=False):
         if not self.alive: return
         self.frames_existed += 1; current_x, current_y = self.x, self.y
         potential_next_x, potential_next_y = current_x + self.dx, current_y + self.dy
@@ -68,8 +68,13 @@ class Bullet(pygame.sprite.Sprite):
                 else: self.alive = False
         if self.alive:
             if not collided_this_step or self.frames_existed <= 1: self.x, self.y = potential_next_x, potential_next_y
-        self.rect.center = (int(self.x), int(self.y)); self.lifetime -= 1
-        if self.lifetime <= 0: self.alive = False
+        self.rect.center = (int(self.x), int(self.y))
+        
+        # In SHMUP mode, bullets don't have lifetime limits
+        if not shmup_mode:
+            self.lifetime -= 1
+            if self.lifetime <= 0: self.alive = False
+        
         if self.alive:
             # Use dynamic height from settings
             game_play_area_height = get_setting("display", "HEIGHT", 1080)
@@ -109,8 +114,22 @@ class Missile(pygame.sprite.Sprite):
         self.enemies_group = enemies_group; self.target, self.turn_rate = None, get_setting("weapons", "MISSILE_TURN_RATE", 8)
         self.alive, self.frames_existed = True, 0; self.is_sliding, self.slide_direction_attempts, self.MAX_SLIDE_ATTEMPTS = False, 0, 3
         missile_size = get_setting("weapons", "MISSILE_SIZE", 8)
-        missile_w, missile_h = missile_size*1.5, missile_size*2.5; self.original_image_surface = pygame.Surface([missile_w, missile_h], pygame.SRCALPHA)
-        points = [(missile_w*0.5,0),(0,missile_h),(missile_w,missile_h)]; pygame.draw.polygon(self.original_image_surface,MISSILE_COLOR,points)
+        missile_w, missile_h = missile_size*1.5, missile_size*3; self.original_image_surface = pygame.Surface([missile_w, missile_h], pygame.SRCALPHA)
+        # Draw exhaust flame (sharp intense flame)
+        flame_points = [(missile_w*0.5, missile_h), (missile_w*0.2, missile_h*0.8), (missile_w*0.8, missile_h*0.8)]
+        pygame.draw.polygon(self.original_image_surface, (255, 100, 0), flame_points)
+        pygame.draw.polygon(self.original_image_surface, (255, 200, 0), [(missile_w*0.5, missile_h*0.95), (missile_w*0.35, missile_h*0.8), (missile_w*0.65, missile_h*0.8)])
+        # Draw white rocket body
+        body_rect = pygame.Rect(missile_w*0.25, missile_h*0.15, missile_w*0.5, missile_h*0.65)
+        pygame.draw.rect(self.original_image_surface, WHITE, body_rect)
+        # Draw nose cone
+        nose_points = [(missile_w*0.5, 0), (missile_w*0.25, missile_h*0.15), (missile_w*0.75, missile_h*0.15)]
+        pygame.draw.polygon(self.original_image_surface, WHITE, nose_points)
+        # Draw fins
+        left_fin = [(missile_w*0.1, missile_h*0.7), (missile_w*0.25, missile_h*0.6), (missile_w*0.25, missile_h*0.8)]
+        right_fin = [(missile_w*0.9, missile_h*0.7), (missile_w*0.75, missile_h*0.6), (missile_w*0.75, missile_h*0.8)]
+        pygame.draw.polygon(self.original_image_surface, WHITE, left_fin)
+        pygame.draw.polygon(self.original_image_surface, WHITE, right_fin)
         self.original_image = pygame.transform.rotate(self.original_image_surface,-90); self.image = self.original_image
         self.rect = self.image.get_rect(center=(int(self.x), int(self.y))); self._update_image_and_rect() 
 
@@ -141,7 +160,7 @@ class Missile(pygame.sprite.Sprite):
                     self.angle = math.degrees(math.atan2(s_dy, s_dx)); return s_dx, s_dy
         return None
 
-    def update(self, enemies_group_updated=None, maze=None, game_area_x_offset=0): 
+    def update(self, enemies_group_updated=None, maze=None, game_area_x_offset=0, shmup_mode=False): 
         if not self.alive: return
         self.frames_existed +=1
         if enemies_group_updated is not None: self.enemies_group = enemies_group_updated 
@@ -173,9 +192,12 @@ class Missile(pygame.sprite.Sprite):
             else: self.is_sliding,self.slide_direction_attempts=False,0
         if self.alive and not collided_this_frame: self.x,self.y=next_x,next_y
         self._update_image_and_rect() 
-        self.lifetime-=1; out_of_bounds=True
+        # In SHMUP mode, missiles don't have lifetime limits
+        if not shmup_mode:
+            self.lifetime-=1
+        out_of_bounds=True
         if self.rect: out_of_bounds=not(game_area_x_offset-self.rect.width < self.rect.centerx < get_setting("display", "WIDTH", 1920)+self.rect.width and -self.rect.height < self.rect.centery < get_setting("display", "HEIGHT", 1080)+self.rect.height)
-        if self.lifetime<=0 or out_of_bounds: self.alive=False
+        if (not shmup_mode and self.lifetime<=0) or out_of_bounds: self.alive=False
         if not self.alive: self.kill()
 
     def draw(self, surface, camera=None):

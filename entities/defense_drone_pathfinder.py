@@ -15,6 +15,8 @@ class DefenseDronePathfinder(PathfindingEnemy):
                  asset_manager, sprite_key: str,
                  speed: float = 1.0, health: int = 100, damage: int = 10):
         super().__init__(grid_pos, path_manager, speed, health, damage)
+        # Ensure we use the shared path manager
+        self.path_manager = path_manager
         
         # Load the proper sprite
         self.sprite_key = sprite_key

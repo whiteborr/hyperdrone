@@ -40,45 +40,44 @@ class ScrollingBackground:
         surface.blit(self.image, (0, self.y2))
 
 class ShmupEnemyManager:
-    """Manages wave-based spawning of enemies in the SHMUP level, Space Invaders style with teams."""
+    """Manages wave-based spawning of enemies in the SHMUP level, Space Invaders style with teams and captains."""
     def __init__(self, game_controller):
         self.game_controller = game_controller
         self.enemies = pygame.sprite.Group()
-        self.enemy_teams = []  # List of lists of enemies
+        self.enemy_teams = []  # List of dicts: {"captain": Enemy, "members": [Enemy], "active_index": int}
         self.current_wave = 0
         self.wave_spawn_timer = 0
-        self.wave_delay = 3000  # 3 seconds between waves
+        self.wave_delay = 3000
         self.enemies_spawned_in_wave = 0
         self.wave_complete = True
 
-        # Space Invaders style movement
-        self.formation_direction = 1  # 1 = right, -1 = left
+        self.formation_direction = 1
         self.formation_speed_x = 10
         self.formation_step_y = 20
         self.formation_bounds = pygame.Rect(0, 0, 0, 0)
         self.last_move_time = 0
-        self.move_interval = 800  # ms between formation moves (decreases with wave)
+        self.move_interval = 800
 
-        # Shooting
         self.last_shot_time = 0
-        self.shoot_interval = 2000  # ms
+        self.shoot_interval = 2000
+        self.return_distance = 300
+        self.return_threshold = 100
+        self.reengage_cooldown = 3000  # ms before reactivation
 
     def update(self, current_time, delta_time):
-        # Check if wave is complete
         if len(self.enemies) == 0 and not self.wave_complete:
             self.wave_complete = True
             self.wave_spawn_timer = current_time
 
-        # Spawn next wave
         if self.wave_complete and current_time - self.wave_spawn_timer > self.wave_delay:
             self.spawn_wave()
 
-        # Update enemy formation movement
         if current_time - self.last_move_time > self.move_interval:
             self._update_team_formations()
             self.last_move_time = current_time
 
-        # Shooting logic
+        self._update_fly_down_behavior(current_time)
+
         if current_time - self.last_shot_time > self.shoot_interval:
             self._random_enemy_shoot()
             self.last_shot_time = current_time
@@ -112,7 +111,8 @@ class ShmupEnemyManager:
             enemy_config['health'] = 1 if enemy_type == "sentinel" else 2
 
             for team_index in range(num_teams):
-                team = []
+                team_members = []
+                captain = None
                 for row in range(rows):
                     for col in range(team_size):
                         col_index = team_index * team_size + col
@@ -124,15 +124,28 @@ class ShmupEnemyManager:
                         enemy.speed = 0
                         enemy.angle = 90
                         enemy.enemy_type = enemy_type
+                        enemy.is_captain = False
+                        enemy.fly_down = False
+                        enemy.fly_curve_time = 0
+                        enemy.original_pos = (x, y)
+                        enemy.returning = False
+                        enemy.cooldown_until = 0
+
+                        if captain is None:
+                            enemy.is_captain = True
+                            captain = enemy
+
                         self.enemies.add(enemy)
-                        team.append(enemy)
+                        team_members.append(enemy)
                         self.enemies_spawned_in_wave += 1
+
                         if hasattr(enemy, 'image') and enemy.image:
                             original_size = enemy.image.get_size()
                             new_size = (int(original_size[0] * 1.25), int(original_size[1] * 1.25))
                             enemy.image = pygame.transform.scale(enemy.image, new_size)
                             enemy.rect = enemy.image.get_rect(center=enemy.rect.center)
-                self.enemy_teams.append(team)
+
+                self.enemy_teams.append({"captain": captain, "members": team_members, "active_index": 1})
 
             self.formation_speed_x += 1
             self.move_interval = max(200, self.move_interval - 50)
@@ -141,10 +154,13 @@ class ShmupEnemyManager:
     def _update_team_formations(self):
         screen_width = get_setting("display", "WIDTH", 1920)
         for team in self.enemy_teams:
-            if not team:
+            members = team["members"]
+            if not members:
                 continue
-            team_bounds = team[0].rect.copy()
-            for enemy in team:
+            team_bounds = members[0].rect.copy()
+            for enemy in members:
+                if enemy.fly_down:
+                    continue
                 team_bounds.union_ip(enemy.rect)
 
             move_sideways = True
@@ -153,16 +169,70 @@ class ShmupEnemyManager:
                 self.formation_direction *= -1
                 move_sideways = False
 
-            for enemy in team:
+            for enemy in members:
+                if enemy.fly_down:
+                    continue
                 if move_sideways:
                     enemy.rect.x += self.formation_direction * self.formation_speed_x
                 else:
                     enemy.rect.y += self.formation_step_y
 
+    def _update_fly_down_behavior(self, current_time):
+        for team in self.enemy_teams:
+            members = team["members"]
+            active_index = team["active_index"]
+            if active_index >= len(members):
+                continue
+            target = members[active_index]
+            if not target.alive:
+                team["active_index"] += 1
+                continue
+
+            if current_time < getattr(target, "cooldown_until", 0):
+                return
+
+            if not target.fly_down:
+                target.fly_down = True
+                target.fly_curve_time = 0
+            elif not target.returning:
+                target.fly_curve_time += 0.05
+                x_offset = 50 * math.sin(target.fly_curve_time * 2.0)
+                y_offset = 3 + 2 * math.cos(target.fly_curve_time)
+                target.rect.x += int(x_offset)
+                target.rect.y += int(y_offset)
+
+                distance = target.rect.y - target.original_pos[1]
+                if distance > self.return_distance:
+                    target.returning = True
+            else:
+                ox, oy = target.original_pos
+                dx = ox - target.rect.centerx
+                dy = oy - target.rect.centery
+                dist = math.hypot(dx, dy)
+                if dist < self.return_threshold:
+                    target.fly_down = False
+                    target.returning = False
+                    target.cooldown_until = current_time + self.reengage_cooldown
+                    target.rect.center = target.original_pos
+                else:
+                    target.rect.x += int(dx * 0.1)
+                    target.rect.y += int(dy * 0.1)
+
+            if hasattr(target, "shoot") and random.random() < 0.01:
+                player = self.game_controller.player
+                if player:
+                    dx = player.x - target.x
+                    dy = player.y - target.y
+                    angle_to_player = math.atan2(dy, dx) * 180 / math.pi
+                    target.shoot(angle_to_player, None)
+
     def _random_enemy_shoot(self):
         if not self.enemies:
             return
-        shooter = random.choice(self.enemies.sprites())
+        available_shooters = [e for e in self.enemies if not getattr(e, "fly_down", False)]
+        if not available_shooters:
+            return
+        shooter = random.choice(available_shooters)
         if hasattr(shooter, "shoot"):
             player = self.game_controller.player
             if player:
@@ -294,6 +364,21 @@ class HarvestChamberState(State):
                     projectile.kill()
                     break
 
+        # Handle lightning zap collisions with enemies
+        for zap in list(self.game.player.lightning_zaps_group):
+            if not zap.alive:
+                continue
+            for enemy in list(self.shmup_enemy_manager.enemies):
+                if not enemy.alive:
+                    continue
+                if zap.rect.colliderect(enemy.rect):
+                    # Instant kill for Chapter 4
+                    enemy.health = 0
+                    enemy.alive = False
+                    self.game._create_explosion(enemy.rect.centerx, enemy.rect.centery, 15, None, True)
+                    enemy.kill()
+                    break
+
         # Handle player-enemy collisions
         for enemy in pygame.sprite.spritecollide(self.game.player, self.shmup_enemy_manager.enemies, True):
             self.game.player.take_damage(50)
@@ -318,6 +403,11 @@ class HarvestChamberState(State):
         
         if self.game.player:
             self.game.player.bullets_group.draw(surface)
+            self.game.player.missiles_group.draw(surface)
+            # Draw lightning zaps
+            for zap in self.game.player.lightning_zaps_group:
+                if hasattr(zap, 'draw'):
+                    zap.draw(surface)
             # Draw scaled and rotated player directly
             if hasattr(self.game.player, 'image') and self.game.player.image:
                 rotated_image = pygame.transform.rotate(self.game.player.image, 90)

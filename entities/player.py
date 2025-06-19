@@ -194,8 +194,9 @@ class PlayerDrone(BaseDrone):
         
         super().update(maze, game_area_x_offset)
         
-        self.bullets_group.update(maze, game_area_x_offset)
-        self.missiles_group.update(enemies_group, maze, game_area_x_offset)
+        shmup_mode = getattr(self, 'shmup_mode', False)
+        self.bullets_group.update(maze, game_area_x_offset, shmup_mode)
+        self.missiles_group.update(enemies_group, maze, game_area_x_offset, shmup_mode)
         if hasattr(self, 'lightning_zaps_group'):
             self.lightning_zaps_group.update(current_time_ms)
         
