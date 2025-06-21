@@ -3,18 +3,12 @@
         "DRONE"
     ],
     "selected_drone_id": "DRONE",
-    "player_cores": 10,
+    "player_cores": 17,
     "unlocked_lore_ids": [],
-    "collected_core_fragments": [
-        "gamma",
-        "beta",
-        "alpha"
-    ],
+    "collected_core_fragments": [],
     "architect_vault_completed": false,
     "collected_glyph_tablets": [],
     "solved_puzzle_terminals": [],
-    "defeated_bosses": [
-        "MAZE_GUARDIAN"
-    ],
+    "defeated_bosses": [],
     "unlocked_abilities": []
 }

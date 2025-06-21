@@ -1,6 +1,8 @@
-import pygame
-import random
-import math
+import pygame.sprite
+import pygame.draw
+from pygame import Surface, SRCALPHA
+from random import choice, uniform
+from math import radians, cos, sin
 from settings_manager import get_setting
 from constants import FLAME_COLORS
 
@@ -19,27 +21,27 @@ class Particle(pygame.sprite.Sprite):
         self.lifetime = lifetime_frames
 
         if self.blast_mode:
-            self.color = random.choice(FLAME_COLORS)
-            self.size = random.uniform(min_size, max_size)
-            speed = random.uniform(min_speed, max_speed)
+            self.color = choice(FLAME_COLORS)
+            self.size = uniform(min_size, max_size)
+            speed = uniform(min_speed, max_speed)
         else:
-            self.color = random.choice(color_list)
-            self.size = random.uniform(min_size, max_size)
-            speed = random.uniform(min_speed, max_speed)
+            self.color = choice(color_list)
+            self.size = uniform(min_size, max_size)
+            speed = uniform(min_speed, max_speed)
             self.gravity = gravity
             self.shrink_rate = shrink_rate
 
         self.initial_size = self.size
         self.current_lifetime = 0
         
-        angle = base_angle_deg if base_angle_deg is not None else random.uniform(0, 360)
-        angle += random.uniform(-spread_angle_deg / 2, spread_angle_deg / 2)
-        angle_rad = math.radians(angle)
+        angle = base_angle_deg if base_angle_deg is not None else uniform(0, 360)
+        angle += uniform(-spread_angle_deg / 2, spread_angle_deg / 2)
+        angle_rad = radians(angle)
         
-        self.vx, self.vy = math.cos(angle_rad) * speed, math.sin(angle_rad) * speed
+        self.vx, self.vy = cos(angle_rad) * speed, sin(angle_rad) * speed
         
         surf_dim = int(self.initial_size * 2) + 2
-        self.image = pygame.Surface([surf_dim, surf_dim], pygame.SRCALPHA)
+        self.image = Surface([surf_dim, surf_dim], SRCALPHA)
         self.rect = self.image.get_rect(center=(int(self.x), int(self.y)))
         self._redraw_image()
 

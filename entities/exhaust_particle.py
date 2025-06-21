@@ -1,6 +1,8 @@
-import pygame
-import random
-import math
+import pygame.sprite
+import pygame.draw
+from pygame import Surface, SRCALPHA
+from random import choice, uniform, randint
+from math import radians, cos, sin
 from constants import FLAME_COLORS
 
 class ExhaustParticle(pygame.sprite.Sprite):
@@ -12,22 +14,22 @@ class ExhaustParticle(pygame.sprite.Sprite):
         # Position and movement
         self.x = float(x)
         self.y = float(y)
-        self.angle_rad = math.radians(angle_deg + random.uniform(-15, 15))
-        self.speed = random.uniform(1.5, 3.0)
-        self.vx = -math.cos(self.angle_rad) * self.speed  # Negative because it's exhaust (opposite direction)
-        self.vy = -math.sin(self.angle_rad) * self.speed
+        self.angle_rad = radians(angle_deg + uniform(-15, 15))
+        self.speed = uniform(1.5, 3.0)
+        self.vx = -cos(self.angle_rad) * self.speed  # Negative because it's exhaust (opposite direction)
+        self.vy = -sin(self.angle_rad) * self.speed
         
         # Appearance
-        self.color = random.choice(FLAME_COLORS)
-        self.size = random.uniform(5, 10)
+        self.color = choice(FLAME_COLORS)
+        self.size = uniform(5, 10)
         self.initial_size = self.size
         
         # Lifetime
-        self.max_lifetime = random.randint(15, 25)
+        self.max_lifetime = randint(15, 25)
         self.lifetime = 0
         
         # Create surface
-        self.image = pygame.Surface((int(self.size * 2), int(self.size * 2)), pygame.SRCALPHA)
+        self.image = Surface((int(self.size * 2), int(self.size * 2)), SRCALPHA)
         self.rect = self.image.get_rect(center=(int(self.x), int(self.y)))
         self._redraw()
     

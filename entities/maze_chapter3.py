@@ -1,11 +1,10 @@
 # entities/maze_chapter3.py
-import pygame
-import os
-import random
+import pygame.draw
+from pygame import Surface, SRCALPHA
+from random import choice
 from heapq import heappush, heappop
-import math
-import logging 
-import copy
+from math import sin
+import logging
 
 from settings_manager import get_setting
 from constants import BLACK, BLUE, RED, GREEN, YELLOW, CYAN
@@ -256,11 +255,11 @@ class MazeChapter3:
                 elif tile_type == 'T':
                     pygame.draw.rect(surface, self.path_color, rect)
                     if camera:
-                        temp_surface_for_turret_spot = pygame.Surface((tile_size * camera.zoom_level, tile_size * camera.zoom_level), pygame.SRCALPHA)
+                        temp_surface_for_turret_spot = Surface((tile_size * camera.zoom_level, tile_size * camera.zoom_level), SRCALPHA)
                         temp_surface_for_turret_spot.fill(self.turret_spot_color)
                         surface.blit(temp_surface_for_turret_spot, (rect[0], rect[1]))
                     else:
-                        temp_surface_for_turret_spot = pygame.Surface((tile_size, tile_size), pygame.SRCALPHA)
+                        temp_surface_for_turret_spot = Surface((tile_size, tile_size), SRCALPHA)
                         temp_surface_for_turret_spot.fill(self.turret_spot_color)
                         surface.blit(temp_surface_for_turret_spot, (x, y))
                     pygame.draw.rect(surface, GREEN, rect, 1)
@@ -312,4 +311,4 @@ class MazeChapter3:
 
     def get_random_path_cell_center_abs(self):
         path_cells = self.get_path_cells_abs()
-        return random.choice(path_cells) if path_cells else None
+        return choice(path_cells) if path_cells else None

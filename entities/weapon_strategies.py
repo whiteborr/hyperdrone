@@ -1,6 +1,8 @@
 # entities/weapon_strategies.py
-import pygame
-import math
+import pygame.time
+from math import radians, cos, sin, sqrt
+from pygame import Surface, SRCALPHA
+from pygame.draw import circle
 from settings_manager import get_setting
 from .bullet import Bullet, Missile, LightningZap
 from constants import (
@@ -107,9 +109,9 @@ class BaseWeaponStrategy:
         self.last_shot_time = current_time_ms
         
         # Calculate spawn position
-        rad_angle = math.radians(self.player.angle)
-        spawn_x = self.player.x + math.cos(rad_angle) * (self.player.rect.width / 2)
-        spawn_y = self.player.y + math.sin(rad_angle) * (self.player.rect.height / 2)
+        rad_angle = radians(self.player.angle)
+        spawn_x = self.player.x + cos(rad_angle) * (self.player.rect.width / 2)
+        spawn_y = self.player.y + sin(rad_angle) * (self.player.rect.height / 2)
         
         # Play sound if provided
         if sound_asset_key and self.asset_manager:
@@ -206,7 +208,7 @@ class BigShotWeaponStrategy(BaseWeaponStrategy):
         # Create big bullet
         new_bullet = Bullet(spawn_x, spawn_y, self.player.angle, self.bullet_speed, 
                            self.bullet_lifetime, self.bullet_size, 
-                           self.bullet_color, self.bullet_damage)
+                           self.bullet_color, self.bullet_damage, bullet_type='Big Shot')
         self.player.bullets_group.add(new_bullet)
 
 class BounceWeaponStrategy(BaseWeaponStrategy):
@@ -288,9 +290,9 @@ class HeatseekerPlusBulletsWeaponStrategy(BaseWeaponStrategy):
         # If we can only fire a bullet, do that
         elif can_fire_bullet:
             # Calculate spawn position
-            rad_angle = math.radians(self.player.angle)
-            spawn_x = self.player.x + math.cos(rad_angle) * (self.player.rect.width / 2)
-            spawn_y = self.player.y + math.sin(rad_angle) * (self.player.rect.height / 2)
+            rad_angle = radians(self.player.angle)
+            spawn_x = self.player.x + cos(rad_angle) * (self.player.rect.width / 2)
+            spawn_y = self.player.y + sin(rad_angle) * (self.player.rect.height / 2)
             
             # Play sound if provided
             if sound_asset_key and self.asset_manager:
@@ -310,7 +312,37 @@ class HeatseekerPlusBulletsWeaponStrategy(BaseWeaponStrategy):
         return False
 
 class LightningWeaponStrategy(BaseWeaponStrategy):
-    def _create_projectile(self, spawn_x, spawn_y, missile_sound_asset_key=None):
+    def __init__(self, player_drone):
+        super().__init__(player_drone)
+        self.charge_start_time = 0
+        self.is_charging = False
+        self.charge_duration = 5000  # 5 seconds
+        self.shoot_cooldown = get_setting("weapons", "PLAYER_BASE_SHOOT_COOLDOWN", 500)
+        
+    def start_charging(self):
+        """Start charging the lightning weapon"""
+        if not self.is_charging:
+            self.is_charging = True
+            self.charge_start_time = pygame.time.get_ticks()
+            
+    def stop_charging_and_fire(self, sound_asset_key=None):
+        """Stop charging and fire if fully charged"""
+        if not self.is_charging:
+            return False
+            
+        current_time = pygame.time.get_ticks()
+        charge_time = current_time - self.charge_start_time
+        
+        self.is_charging = False
+        
+        if charge_time >= self.charge_duration:
+            # Fully charged, fire chain lightning
+            self._fire_chain_lightning(sound_asset_key)
+            return True
+        return False
+        
+    def _fire_chain_lightning(self, sound_asset_key=None):
+        """Fire the charged lightning"""
         # Find closest enemy
         closest_enemy = None
         min_distance = float('inf')
@@ -319,15 +351,79 @@ class LightningWeaponStrategy(BaseWeaponStrategy):
         if self.enemies_group:
             for enemy in self.enemies_group:
                 if enemy.alive:
+                    # Skip boss enemies for targeting
+                    if hasattr(enemy, 'enemy_type') and 'boss' in enemy.enemy_type.lower():
+                        continue
+                    if hasattr(enemy, '__class__') and 'guardian' in enemy.__class__.__name__.lower():
+                        continue
+                        
                     dx = enemy.rect.centerx - self.player.rect.centerx
                     dy = enemy.rect.centery - self.player.rect.centery
-                    distance = math.sqrt(dx*dx + dy*dy)
+                    distance = sqrt(dx*dx + dy*dy)
                     if distance < min_distance and distance < lightning_range:
                         min_distance = distance
                         closest_enemy = enemy
         
-        # Create lightning zap
-        lightning_damage = get_setting("weapons", "LIGHTNING_DAMAGE", 25)
-        lightning_lifetime = get_setting("weapons", "LIGHTNING_LIFETIME", 30)
-        new_zap = LightningZap(self.player, closest_enemy, lightning_damage, lightning_lifetime, self.maze)
-        self.player.lightning_zaps_group.add(new_zap)
+        if closest_enemy:
+            # Play sound if provided
+            if sound_asset_key and self.asset_manager:
+                sound = self.asset_manager.get_sound(sound_asset_key)
+                if sound: sound.play()
+                
+            # Create lightning zap with chaining
+            lightning_lifetime = get_setting("weapons", "LIGHTNING_LIFETIME", 30)
+            new_zap = LightningZap(self.player, closest_enemy, 9999, lightning_lifetime, self.maze, game_area_x_offset=0, color_override=None, enemies_group=self.enemies_group)
+            self.player.lightning_zaps_group.add(new_zap)
+            
+    def get_charge_progress(self):
+        """Get charging progress (0.0 to 1.0)"""
+        if not self.is_charging:
+            return 0.0
+        current_time = pygame.time.get_ticks()
+        charge_time = current_time - self.charge_start_time
+        return min(1.0, charge_time / self.charge_duration)
+        
+    def is_fully_charged(self):
+        """Check if weapon is fully charged"""
+        return self.is_charging and self.get_charge_progress() >= 1.0
+        
+    def draw_charging_effect(self, surface, camera=None):
+        """Draw charging visual effect around player"""
+        if not self.is_charging:
+            return
+            
+        progress = self.get_charge_progress()
+        if progress <= 0:
+            return
+            
+        # Draw charging circle around player
+        player_center = self.player.rect.center
+        if camera:
+            player_center = camera.apply_to_point(player_center)
+            
+        # Pulsing circle effect
+        base_radius = 30
+        max_radius = 60
+        current_radius = int(base_radius + (max_radius - base_radius) * progress)
+        
+        # Color intensity based on charge
+        intensity = int(100 + 155 * progress)
+        charge_color = (intensity, intensity, 255)
+        
+        # Draw multiple circles for glow effect
+        for i in range(3):
+            alpha = int(50 * (1 - i * 0.3) * progress)
+            radius = current_radius + i * 5
+            
+            # Create temporary surface for alpha blending
+            temp_surface = Surface((radius * 2 + 10, radius * 2 + 10), SRCALPHA)
+            circle(temp_surface, (*charge_color, alpha), (radius + 5, radius + 5), radius, 2)
+            surface.blit(temp_surface, (player_center[0] - radius - 5, player_center[1] - radius - 5))
+    
+    def _create_projectile(self, spawn_x, spawn_y, missile_sound_asset_key=None):
+        """Create normal lightning bullet"""
+        # Create bright yellow lightning bullet to make it visible
+        new_bullet = Bullet(spawn_x, spawn_y, self.player.angle, self.bullet_speed, 
+                           self.bullet_lifetime, self.bullet_size, 
+                           (255, 255, 0), self.bullet_damage)
+        self.player.bullets_group.add(new_bullet)

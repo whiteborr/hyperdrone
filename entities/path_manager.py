@@ -1,5 +1,4 @@
-import heapq
-import pygame
+from heapq import heappush, heappop
 import logging
 from typing import List, Tuple, Dict, Set, Optional
 from settings_manager import get_setting
@@ -71,7 +70,7 @@ class PathManager:
             
         # Priority queue for A*
         open_set = []
-        heapq.heappush(open_set, (0, start))
+        heappush(open_set, (0, start))
         
         # For path reconstruction
         came_from = {}
@@ -86,7 +85,7 @@ class PathManager:
         closed_set = set()
         
         while open_set:
-            _, current = heapq.heappop(open_set)
+            _, current = heappop(open_set)
             
             if current == goal:
                 # Reconstruct path
@@ -109,7 +108,7 @@ class PathManager:
                     came_from[neighbor] = current
                     g_score[neighbor] = tentative_g_score
                     f_score[neighbor] = tentative_g_score + self.heuristic(neighbor, goal)
-                    heapq.heappush(open_set, (f_score[neighbor], neighbor))
+                    heappush(open_set, (f_score[neighbor], neighbor))
                     
         logger.warning(f"No path found from {start} to {goal}")
         return []  # No path found

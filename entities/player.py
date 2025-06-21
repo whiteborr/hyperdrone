@@ -1,8 +1,9 @@
 # entities/player.py
-import pygame
-import math
-import os
-import random
+from pygame.sprite import Group
+from pygame.time import get_ticks
+from pygame.transform import smoothscale, rotate
+from pygame.draw import rect as draw_rect
+from math import radians, cos, sin
 import logging 
 
 from settings_manager import get_setting
@@ -61,7 +62,7 @@ class PlayerDrone(BaseDrone):
         self.crash_sound_key = crash_sound_key
         
         # Initialize last_shot_time and current_shoot_cooldown for UI
-        self.last_shot_time = pygame.time.get_ticks()
+        self.last_shot_time = get_ticks()
         self.current_shoot_cooldown = 0
         
         self.base_hp = drone_stats.get("hp", get_setting("gameplay", "PLAYER_MAX_HEALTH", 100))
@@ -80,23 +81,24 @@ class PlayerDrone(BaseDrone):
         self.image = None
         
         initial_weapon_mode = get_setting("gameplay", "INITIAL_WEAPON_MODE", 0)
-        weapon_modes_sequence = get_setting("gameplay", "WEAPON_MODES_SEQUENCE", [0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
+        weapon_modes_sequence = get_setting("weapon_modes", "WEAPON_MODES_SEQUENCE", [0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
         try:
             self.weapon_mode_index = weapon_modes_sequence.index(initial_weapon_mode)
         except ValueError:
             self.weapon_mode_index = 0 
         self.current_weapon_mode = weapon_modes_sequence[self.weapon_mode_index]
         
-        self.bullets_group = pygame.sprite.Group()
-        self.missiles_group = pygame.sprite.Group()
-        self.lightning_zaps_group = pygame.sprite.Group()
-        self.enemies_group = pygame.sprite.Group()  # Initialize enemies_group
+        self.bullets_group = Group()
+        self.missiles_group = Group()
+        self.lightning_zaps_group = Group()
+        self.enemies_group = Group()  # Initialize enemies_group
         
         # Current weapon strategy will be set by set_weapon_mode
         
         # Set initial weapon strategy
-        self.current_weapon_strategy = None
-        self.set_weapon_mode(self.current_weapon_mode)
+        from .weapon_strategies import create_weapon_strategy
+        self.current_weapon_strategy = create_weapon_strategy(self.current_weapon_mode, self)
+        self.current_shoot_cooldown = self.current_weapon_strategy.get_cooldown()
         self._load_sprite()
 
         # NEW: Active Abilities System
@@ -107,7 +109,7 @@ class PlayerDrone(BaseDrone):
         self.ability_durations = {
             "temporary_barricade": get_setting("abilities", "TEMPORARY_BARRICADE_DURATION_MS", 3000)
         }
-        self.spawned_barricades_group = pygame.sprite.Group() # NEW: Group for spawned barricades
+        self.spawned_barricades_group = Group() # NEW: Group for spawned barricades
 
     def _load_sprite(self):
         # Always use the base drone sprite first
@@ -116,7 +118,7 @@ class PlayerDrone(BaseDrone):
         # If we have a valid image, use it
         if loaded_image:
             # We now assume the source image faces RIGHT and do not apply any correction here.
-            self.original_image = pygame.transform.smoothscale(loaded_image, self.drone_visual_size)
+            self.original_image = smoothscale(loaded_image, self.drone_visual_size)
         else:
             self.original_image = self.asset_manager._create_fallback_surface(size=self.drone_visual_size, text=self.drone_id[:1], color=(0,200,0,150))
         
@@ -127,54 +129,34 @@ class PlayerDrone(BaseDrone):
                 
     def _update_drone_sprite(self):
         """Update the drone sprite based on the current weapon mode"""
-        # Get the drone ID and weapon mode
-        drone_id = self.drone_id.lower()  # Ensure lowercase for consistency
-        weapon_mode = self.current_weapon_mode
+        # Cache weapon sprite mappings as class attribute
+        if not hasattr(self.__class__, '_weapon_sprite_names'):
+            self.__class__._weapon_sprite_names = {
+                WEAPON_MODE_DEFAULT: "default",
+                WEAPON_MODE_TRI_SHOT: "tri_shot",
+                WEAPON_MODE_RAPID_SINGLE: "rapid_single",
+                WEAPON_MODE_RAPID_TRI: "rapid_tri_shot",
+                WEAPON_MODE_BIG_SHOT: "big_shot",
+                WEAPON_MODE_BOUNCE: "bounce",
+                WEAPON_MODE_PIERCE: "pierce",
+                WEAPON_MODE_HEATSEEKER: "heatseeker",
+                WEAPON_MODE_HEATSEEKER_PLUS_BULLETS: "heatseeker_plus_bullets",
+                WEAPON_MODE_LIGHTNING: "lightning"
+            }
         
-        # Map weapon modes to their sprite names
-        from constants import (
-            WEAPON_MODE_DEFAULT, WEAPON_MODE_TRI_SHOT, WEAPON_MODE_RAPID_SINGLE, WEAPON_MODE_RAPID_TRI,
-            WEAPON_MODE_BIG_SHOT, WEAPON_MODE_BOUNCE, WEAPON_MODE_PIERCE,
-            WEAPON_MODE_HEATSEEKER, WEAPON_MODE_HEATSEEKER_PLUS_BULLETS,
-            WEAPON_MODE_LIGHTNING
-        )
-        
-        weapon_sprite_names = {
-            WEAPON_MODE_DEFAULT: "default",
-            WEAPON_MODE_TRI_SHOT: "tri_shot",
-            WEAPON_MODE_RAPID_SINGLE: "rapid_single",
-            WEAPON_MODE_RAPID_TRI: "rapid_tri_shot",
-            WEAPON_MODE_BIG_SHOT: "big_shot",
-            WEAPON_MODE_BOUNCE: "bounce",
-            WEAPON_MODE_PIERCE: "pierce",
-            WEAPON_MODE_HEATSEEKER: "heatseeker",
-            WEAPON_MODE_HEATSEEKER_PLUS_BULLETS: "heatseeker_plus_bullets",
-            WEAPON_MODE_LIGHTNING: "lightning"
-        }
-        
-        # Get the weapon sprite name
-        weapon_sprite_name = weapon_sprite_names.get(weapon_mode, "default")
-        
-        # Try to load the weapon-specific drone sprite
+        weapon_sprite_name = self._weapon_sprite_names.get(self.current_weapon_mode, "default")
         weapon_sprite_key = f"drone_{weapon_sprite_name}"
-        loaded_image = self.asset_manager.get_image(weapon_sprite_key)
         
-        # If not found, fall back to the default drone sprite
-        if not loaded_image:
-            loaded_image = self.asset_manager.get_image(self.sprite_asset_key)
+        # Try weapon-specific sprite first, then fallback
+        loaded_image = (self.asset_manager.get_image(weapon_sprite_key) or 
+                       self.asset_manager.get_image(self.sprite_asset_key))
         
-        # If we have a valid image, use it
         if loaded_image:
-            self.original_image = pygame.transform.smoothscale(loaded_image, self.drone_visual_size)
-        else:
-            # This should rarely happen as we already checked for the default sprite in _load_sprite
-            self.original_image = self.asset_manager._create_fallback_surface(size=self.drone_visual_size, text=self.drone_id[:1], color=(0,200,0,150))
-        
-        # Update the image and maintain the current center position
-        current_center = self.rect.center if hasattr(self, 'rect') and self.rect else (int(self.x), int(self.y))
-        self.image = self.original_image.copy()
-        self.rect = self.image.get_rect(center=current_center)
-        self.collision_rect = self.rect.inflate(-self.rect.width * 0.3, -self.rect.height * 0.3)
+            self.original_image = smoothscale(loaded_image, self.drone_visual_size)
+            current_center = self.rect.center if hasattr(self, 'rect') and self.rect else (int(self.x), int(self.y))
+            self.image = self.original_image.copy()
+            self.rect = self.image.get_rect(center=current_center)
+            self.collision_rect = self.rect.inflate(-self.rect.width * 0.3, -self.rect.height * 0.3)
 
     def update(self, current_time_ms, maze, enemies_group, player_actions, game_area_x_offset=0):
         if not self.alive: return
@@ -239,7 +221,7 @@ class PlayerDrone(BaseDrone):
             game_controller_ref.play_sound('ui_denied')
             return False
 
-        current_time_ms = pygame.time.get_ticks()
+        current_time_ms = get_ticks()
         ability_status = self.active_abilities.get(ability_id, {})
         
         # Check if on cooldown
@@ -273,7 +255,7 @@ class PlayerDrone(BaseDrone):
         barricade_size = get_setting("abilities", "TEMPORARY_BARRICADE_SIZE", 40)
 
         # Calculate spawn points in an arc in front of the player
-        player_angle_rad = math.radians(self.angle)
+        player_angle_rad = radians(self.angle)
         spawn_distance = self.rect.width * 1.2 # Distance from player center
         
         # Clear existing player-spawned barricades to prevent clutter
@@ -282,10 +264,10 @@ class PlayerDrone(BaseDrone):
         for i in range(barricade_count):
             # Distribute barricades in a slight arc
             angle_offset = (i - (barricade_count - 1) / 2) * 20 # -20, 0, 20 for 3 barricades
-            barricade_angle_rad = math.radians(self.angle + angle_offset)
+            barricade_angle_rad = radians(self.angle + angle_offset)
 
-            spawn_x = self.x + math.cos(barricade_angle_rad) * spawn_distance
-            spawn_y = self.y + math.sin(barricade_angle_rad) * spawn_distance
+            spawn_x = self.x + cos(barricade_angle_rad) * spawn_distance
+            spawn_y = self.y + sin(barricade_angle_rad) * spawn_distance
             
             # Ensure barricade is not spawned inside a wall
             maze = game_controller_ref.maze # Access maze from game_controller
@@ -308,38 +290,24 @@ class PlayerDrone(BaseDrone):
         super().rotate(direction, self.rotation_speed)
             
     def shoot(self, sound_asset_key=None, missile_sound_asset_key=None, maze=None, enemies_group=None):
-        """
-        Fires the current weapon using the active weapon strategy.
-        
-        Delegates to the current weapon strategy for projectile creation and
-        updates sprite appearance to match weapon mode. Handles cooldown
-        management and sound effects.
-        
-        Args:
-            sound_asset_key (str, optional): Sound to play when firing
-            missile_sound_asset_key (str, optional): Sound for missile weapons
-            maze (Maze, optional): Current maze for collision detection
-            enemies_group (pygame.sprite.Group, optional): Target enemies for homing weapons
-        """
+        """Fires the current weapon using the active weapon strategy."""
+        if not self.current_weapon_strategy:
+            return
+            
         # Update references if provided
         if enemies_group is not None:
             self.enemies_group = enemies_group
-            if self.current_weapon_strategy:
-                self.current_weapon_strategy.update_enemies_group(enemies_group)
+            self.current_weapon_strategy.update_enemies_group(enemies_group)
         
-        if maze is not None and self.current_weapon_strategy:
+        if maze is not None:
             self.current_weapon_strategy.update_maze(maze)
         
-        # Delegate firing logic to the current weapon strategy
-        if self.current_weapon_strategy:
-            if self.current_weapon_strategy.fire(sound_asset_key, missile_sound_asset_key):
-                # Update last_shot_time for UI cooldown display
-                self.last_shot_time = pygame.time.get_ticks()
-                # Ensure the drone sprite matches the current weapon mode
-                self._update_drone_sprite()
+        # Fire weapon
+        if self.current_weapon_strategy.fire(sound_asset_key, missile_sound_asset_key):
+            self.last_shot_time = get_ticks()
 
     def cycle_weapon_state(self):
-        weapon_modes_sequence = get_setting("gameplay", "WEAPON_MODES_SEQUENCE", [0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
+        weapon_modes_sequence = get_setting("weapon_modes", "WEAPON_MODES_SEQUENCE", [0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
         self.weapon_mode_index = (self.weapon_mode_index + 1) % len(weapon_modes_sequence)
         self.current_weapon_mode = weapon_modes_sequence[self.weapon_mode_index]
         self.set_weapon_mode(self.current_weapon_mode)
@@ -347,17 +315,15 @@ class PlayerDrone(BaseDrone):
 
     def set_weapon_mode(self, mode):
         """Set the current weapon strategy based on the weapon mode"""
+        # Always update weapon strategy
+            
         from .weapon_strategies import create_weapon_strategy
         
         self.current_weapon_mode = mode
         self.current_weapon_strategy = create_weapon_strategy(mode, self)
-        
-        # Update cooldown value for UI
         self.current_shoot_cooldown = self.current_weapon_strategy.get_cooldown()
         self._update_drone_sprite()
-        
-        # Reset last_shot_time attribute needed by UI
-        self.last_shot_time = pygame.time.get_ticks()
+        self.last_shot_time = get_ticks()
 
     def take_damage(self, amount, sound_key_on_hit=None):
         if not self.alive: return
@@ -387,18 +353,22 @@ class PlayerDrone(BaseDrone):
             self.alive = False
 
     def draw(self, surface, camera=None):
+        if not self.alive:
+            return
+            
         # Draw power-up effects first (behind the drone)
         self.powerup_manager.draw(surface, camera)
         
-        # NEW: Draw spawned barricades
+        # Draw spawned barricades
         self.spawned_barricades_group.draw(surface, camera)
 
-        if self.alive and self.original_image:
-            rotated_image = pygame.transform.rotate(self.original_image, -self.angle)
-            draw_rect = rotated_image.get_rect(center=self.rect.center)
-            surface.blit(rotated_image, draw_rect)
-            
-            # Draw health bar above the drone
+        # Draw charging effect for lightning weapon
+        if hasattr(self.current_weapon_strategy, 'draw_charging_effect'):
+            self.current_weapon_strategy.draw_charging_effect(surface, camera)
+
+        if self.original_image:
+            rotated_image = rotate(self.original_image, -self.angle)
+            surface.blit(rotated_image, rotated_image.get_rect(center=self.rect.center))
             self.draw_health_bar(surface, camera)
             
         self.bullets_group.draw(surface)
@@ -418,9 +388,9 @@ class PlayerDrone(BaseDrone):
         health_percentage = self.health / self.max_health if self.max_health > 0 else 0
         filled_width = int(bar_width * health_percentage)
         fill_color = GREEN if health_percentage > 0.6 else YELLOW if health_percentage > 0.3 else RED
-        pygame.draw.rect(surface, (50,50,50), (bar_x, bar_y, bar_width, bar_height))
-        if filled_width > 0: pygame.draw.rect(surface, fill_color, (bar_x, bar_y, filled_width, bar_height))
-        pygame.draw.rect(surface, WHITE, (bar_x, bar_y, bar_width, bar_height), 1)
+        draw_rect(surface, (50,50,50), (bar_x, bar_y, bar_width, bar_height))
+        if filled_width > 0: draw_rect(surface, fill_color, (bar_x, bar_y, filled_width, bar_height))
+        draw_rect(surface, WHITE, (bar_x, bar_y, bar_width, bar_height), 1)
         
     def activate_shield(self, duration_ms):
         """Activate shield effect for the specified duration"""
@@ -433,3 +403,17 @@ class PlayerDrone(BaseDrone):
     def activate_speed_boost(self):
         """Activate armed speed boost when UP key is pressed"""
         self.powerup_manager.activate_speed_boost()
+        
+    def unlock_weapon_mode(self, weapon_mode):
+        """Unlock a specific weapon mode for the player"""
+        weapon_modes_sequence = get_setting("weapon_modes", "WEAPON_MODES_SEQUENCE", [0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
+        
+        # Add the weapon mode to the sequence if not already present
+        if weapon_mode not in weapon_modes_sequence:
+            weapon_modes_sequence.append(weapon_mode)
+            # Update the setting
+            from settings_manager import set_setting
+            set_setting("gameplay", "WEAPON_MODES_SEQUENCE", weapon_modes_sequence)
+            
+        logger.info(f"Player unlocked weapon mode: {weapon_mode}")
+        return True

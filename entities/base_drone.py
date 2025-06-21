@@ -1,10 +1,12 @@
 # entities/base_drone.py
-import math
-import pygame
+from math import radians, cos, sin
+from pygame.sprite import Sprite
+from pygame import Rect
+from pygame.transform import rotate
 
 from settings_manager import get_setting
 
-class BaseDrone(pygame.sprite.Sprite):
+class BaseDrone(Sprite):
     def __init__(self, x, y, size, speed):
         super().__init__()
         self.x = float(x)
@@ -15,7 +17,7 @@ class BaseDrone(pygame.sprite.Sprite):
         self.moving_forward = False
         self.alive = True
         
-        self.rect = pygame.Rect(x - size / 2, y - size / 2, size, size)
+        self.rect = Rect(x - size / 2, y - size / 2, size, size)
         self.collision_rect = self.rect.inflate(-size * 0.2, -size * 0.2)
 
     def get_position(self):
@@ -33,9 +35,9 @@ class BaseDrone(pygame.sprite.Sprite):
     def update_movement(self, maze=None, game_area_x_offset=0):
         if self.moving_forward:
             # Note: math functions use radians, not degrees
-            rad_angle = math.radians(self.angle)
-            dx = math.cos(rad_angle) * self.speed
-            dy = math.sin(rad_angle) * self.speed
+            rad_angle = radians(self.angle)
+            dx = cos(rad_angle) * self.speed
+            dy = sin(rad_angle) * self.speed
             
             # Check for wall collision before moving
             if maze:
@@ -68,7 +70,7 @@ class BaseDrone(pygame.sprite.Sprite):
         if self.alive and hasattr(self, 'image') and self.image:
             # The angle is inverted here to match the reversed rotation logic,
             # ensuring the visual rotation on screen feels correct.
-            rotated_image = pygame.transform.rotate(self.image, -self.angle)
+            rotated_image = rotate(self.image, -self.angle)
             draw_rect = rotated_image.get_rect(center=self.rect.center)
             surface.blit(rotated_image, draw_rect)
 

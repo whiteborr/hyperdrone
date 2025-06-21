@@ -1,4 +1,6 @@
-import pygame
+from pygame import Surface
+from pygame.transform import smoothscale
+from pygame.draw import rect as draw_rect
 import logging
 from typing import List, Tuple, Optional
 from entities.path_manager import PathManager
@@ -34,7 +36,7 @@ class DefenseDronePathfinder(PathfindingEnemy):
             try:
                 # Scale the image to the proper size
                 self.size = self.path_manager.tile_size * 0.8
-                self.original_image = pygame.transform.smoothscale(loaded_image, (self.size, self.size))
+                self.original_image = smoothscale(loaded_image, (self.size, self.size))
                 self.image = self.original_image.copy()
                 self.rect = self.image.get_rect(center=(int(self.x), int(self.y)))
                 self.collision_rect = self.rect.inflate(-4, -4)
@@ -43,7 +45,7 @@ class DefenseDronePathfinder(PathfindingEnemy):
         else:
             logger.warning(f"Could not load sprite with key '{self.sprite_key}' for DefenseDronePathfinder")
             
-    def draw(self, surface: pygame.Surface, camera=None):
+    def draw(self, surface: Surface, camera=None):
         """Draw the enemy directly without camera transformation"""
         if not self.image or not self.rect:
             return
@@ -55,7 +57,7 @@ class DefenseDronePathfinder(PathfindingEnemy):
         if self.alive:
             self._draw_health_bar(surface, None)
             
-    def _draw_health_bar(self, surface: pygame.Surface, camera=None):
+    def _draw_health_bar(self, surface: Surface, camera=None):
         """Draw a health bar above the enemy"""
         if not self.alive or not self.rect:
             return
@@ -75,7 +77,7 @@ class DefenseDronePathfinder(PathfindingEnemy):
         filled_width = bar_width * health_percentage
         
         # Draw background
-        pygame.draw.rect(surface, DARK_GREY, (bar_x, bar_y, bar_width, bar_height))
+        draw_rect(surface, DARK_GREY, (bar_x, bar_y, bar_width, bar_height))
         
         # Draw filled portion
         if filled_width > 0:
@@ -87,7 +89,7 @@ class DefenseDronePathfinder(PathfindingEnemy):
             else:
                 fill_color = GREEN
                 
-            pygame.draw.rect(surface, fill_color, (bar_x, bar_y, filled_width, bar_height))
+            draw_rect(surface, fill_color, (bar_x, bar_y, filled_width, bar_height))
             
         # Draw border
-        pygame.draw.rect(surface, WHITE, (bar_x, bar_y, bar_width, bar_height), 1)
+        draw_rect(surface, WHITE, (bar_x, bar_y, bar_width, bar_height), 1)

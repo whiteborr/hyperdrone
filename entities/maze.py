@@ -1,8 +1,9 @@
 # entities/maze.py
-import pygame
-import random
+import pygame.draw
+from pygame import Rect
+from random import shuffle
 import logging
-import math
+from math import sin
 from settings_manager import get_setting
 from constants import BLUE, RED, GOLD, ARCHITECT_VAULT_WALL_COLOR, DARK_PURPLE, WHITE
 
@@ -45,7 +46,7 @@ class Maze:
     def _generate_maze_grid(self, row, col): 
         self.grid[row][col] = 0
         directions = [(0, 1), (0, -1), (1, 0), (-1, 0)] 
-        random.shuffle(directions) 
+        shuffle(directions) 
 
         for dr, dc in directions: 
             new_row, new_col = row + 2 * dr, col + 2 * dc 
@@ -100,7 +101,7 @@ class Maze:
         elif self.maze_type == "corrupted":
             # Create a pulsing, corrupted color effect
             self.corruption_pulse += 0.05
-            pulse = (math.sin(self.corruption_pulse) + 1) / 2 # Oscillates between 0 and 1
+            pulse = (sin(self.corruption_pulse) + 1) / 2 # Oscillates between 0 and 1
             r = int(70 + pulse * 60)
             g = int(20 + pulse * 40)
             b = int(90 + pulse * 60)
@@ -129,7 +130,7 @@ class Maze:
             pygame.draw.line(surface, border_color, abs_p1, abs_p2, border_thickness) 
 
     def is_wall(self, obj_center_x_abs, obj_center_y_abs, obj_width, obj_height): 
-        obj_rect = pygame.Rect(
+        obj_rect = Rect(
             int(obj_center_x_abs - obj_width / 2), 
             int(obj_center_y_abs - obj_height / 2), 
             int(obj_width), 

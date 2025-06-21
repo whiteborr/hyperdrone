@@ -1,3 +1,5 @@
+import pygame.sprite
+import pygame.draw
 import pygame
 import logging
 from typing import List, Tuple, Optional
@@ -124,7 +126,7 @@ class PathfindingEnemy(pygame.sprite.Sprite):
         """Mark that this enemy needs to recalculate its path"""
         self.needs_path_recalculation = True
         
-    def draw_path(self, surface: pygame.Surface, camera=None):
+    def draw_path(self, surface, camera=None):
         """Debug method to draw the enemy's path"""
         if not self.path:
             return

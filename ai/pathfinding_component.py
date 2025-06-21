@@ -1,8 +1,8 @@
 # ai/pathfinding_component.py
-import math
-import random
+from math import hypot, degrees, atan2, cos, sin
+from random import choice, uniform
 import logging
-import pygame
+from pygame import Rect
 
 from hyperdrone_core.pathfinding import a_star_search, find_wall_follow_target, find_alternative_target
 from settings_manager import get_setting
@@ -81,8 +81,8 @@ class PathfinderComponent:
 
         if not self.path and target_pos:
             dx, dy = target_pos[0] - self.enemy.x, target_pos[1] - self.enemy.y
-            if math.hypot(dx, dy) > 0:
-                self.enemy.angle = math.degrees(math.atan2(dy, dx))
+            if hypot(dx, dy) > 0:
+                self.enemy.angle = degrees(atan2(dy, dx))
 
     def update_movement(self, maze, current_time_ms, delta_time_ms, game_area_x_offset=0, speed_override=None):
         is_stuck = self._handle_stuck_logic(current_time_ms, delta_time_ms, maze, game_area_x_offset)
@@ -96,7 +96,7 @@ class PathfinderComponent:
 
         target = self.path[self.current_path_index]
         dx, dy = target[0] - self.enemy.x, target[1] - self.enemy.y
-        dist = math.hypot(dx, dy)
+        dist = hypot(dx, dy)
 
         if dist < self.WAYPOINT_THRESHOLD:
             self.current_path_index += 1
@@ -106,10 +106,10 @@ class PathfinderComponent:
 
         target = self.path[self.current_path_index]
         dx, dy = target[0] - self.enemy.x, target[1] - self.enemy.y
-        dist = math.hypot(dx, dy)
+        dist = hypot(dx, dy)
 
         if dist > 0:
-            self.enemy.angle = math.degrees(math.atan2(dy, dx))
+            self.enemy.angle = degrees(atan2(dy, dx))
             move_x, move_y = (dx/dist)*effective_speed, (dy/dist)*effective_speed
             next_x, next_y = self.enemy.x + move_x, self.enemy.y + move_y
 
@@ -118,14 +118,14 @@ class PathfinderComponent:
 
         self.enemy.rect.center = (self.enemy.x, self.enemy.y)
         game_play_area_height = get_setting("display", "HEIGHT", 1080)
-        self.enemy.rect.clamp_ip(pygame.Rect(game_area_x_offset, 0, get_setting("display", "WIDTH", 1920) - game_area_x_offset, game_play_area_height))
+        self.enemy.rect.clamp_ip(Rect(game_area_x_offset, 0, get_setting("display", "WIDTH", 1920) - game_area_x_offset, game_play_area_height))
         self.enemy.x, self.enemy.y = self.enemy.rect.centerx, self.enemy.rect.centery
         if self.enemy.collision_rect:
             self.enemy.collision_rect.center = self.enemy.rect.center
         return False
 
     def _handle_stuck_logic(self, current_time_ms, delta_time_ms, maze, game_area_x_offset):
-        dist_moved = math.hypot(self.enemy.x - self.last_pos_check[0], self.enemy.y - self.last_pos_check[1])
+        dist_moved = hypot(self.enemy.x - self.last_pos_check[0], self.enemy.y - self.last_pos_check[1])
         if dist_moved < self.STUCK_MOVE_THRESHOLD:
             self.stuck_timer += delta_time_ms
         else:
@@ -152,19 +152,19 @@ class PathfinderComponent:
 
             if walkable_tiles:
                 tile_size = get_setting("gameplay", "TILE_SIZE", 80)
-                viable_tiles = [p for p in walkable_tiles if tile_size * 3 < math.hypot(p[0] - self.enemy.x, p[1] - self.enemy.y) < tile_size * 12]
+                viable_tiles = [p for p in walkable_tiles if tile_size * 3 < hypot(p[0] - self.enemy.x, p[1] - self.enemy.y) < tile_size * 12]
                 if viable_tiles:
-                    unstick_target = random.choice(viable_tiles)
+                    unstick_target = choice(viable_tiles)
                     self.path = []
                     self.last_path_recalc_time = 0
                     self._recalculate_path(unstick_target, maze, current_time_ms, game_area_x_offset)
                     self.stuck_timer = 0
                     return True
 
-            angle = random.uniform(0, 2 * math.pi)
+            angle = uniform(0, 2 * 3.14159)
             tile_size = get_setting("gameplay", "TILE_SIZE", 80)
-            self.enemy.x += math.cos(angle) * tile_size * 2
-            self.enemy.y += math.sin(angle) * tile_size * 2
+            self.enemy.x += cos(angle) * tile_size * 2
+            self.enemy.y += sin(angle) * tile_size * 2
             self.enemy.rect.center = (self.enemy.x, self.enemy.y)
             self.enemy.collision_rect.center = self.enemy.rect.center
             self.stuck_timer = 0

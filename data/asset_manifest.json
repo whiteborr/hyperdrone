@@ -30,6 +30,8 @@
   "images": {
     "RING_UI_ICON": "images/collectibles/ring_ui_icon.png",
     "RING_UI_ICON_EMPTY": "images/collectibles/ring_ui_icon_empty.png",
+    "ORICHALC_FRAGMENT_ICON": "images/collectibles/orichalc_fragment.png",
+    "ORICHALC_FRAGMENT_CONTAINER": "images/collectibles/orichalc_fragment_container.png",
     "MENU_LOGO": "images/ui/menu_logo_hyperdrone.png",
     "CORE_FRAGMENT_EMPTY_ICON": "images/collectibles/fragment_ui_icon_empty.png",
     "REACTOR_HUD_ICON": "images/level_elements/reactor_icon.png",
@@ -37,6 +39,7 @@
     "SHIELD_POWERUP_ICON": "images/powerups/shield_icon.png",
     "SPEED_BOOST_POWERUP_ICON": "images/powerups/speed_icon.png",
     "WEAPON_UPGRADE_POWERUP_ICON": "images/powerups/weapon_icon.png",
+    "WEAPONS_UPGRADE_SHOP": "images/powerups/weapons_upgrade_shop.png",
     "DEFENSE_DRONE_1_SPRITE": "images/enemies/defense_drone_1.png",
     "DEFENSE_DRONE_2_SPRITE": "images/enemies/defense_drone_2.png",
     "DEFENSE_DRONE_3_SPRITE": "images/enemies/defense_drone_3.png",

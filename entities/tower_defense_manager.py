@@ -1,6 +1,6 @@
-import pygame
+import pygame.sprite
 import logging
-import random
+from random import choice, randint
 from typing import List, Tuple, Dict, Optional
 from entities.path_manager import PathManager
 from entities.enemy_pathfinder import PathfindingEnemy
@@ -127,7 +127,7 @@ class TowerDefenseManager:
             return None
             
         # Choose a random spawn point and validate it
-        original_spawn_point = random.choice(self.path_manager.spawn_points)
+        original_spawn_point = choice(self.path_manager.spawn_points)
         
         # Ensure spawn point is within grid bounds
         if (original_spawn_point[0] >= self.grid_height or original_spawn_point[1] >= self.grid_width or 

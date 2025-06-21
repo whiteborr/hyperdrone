@@ -1,6 +1,7 @@
 # settings_manager.py
-import json
-import os
+from json import load, dump
+from os.path import join, exists, dirname
+from os import makedirs
 import logging
 
 logger = logging.getLogger(__name__)
@@ -35,10 +36,10 @@ class SettingsManager:
     def _load_settings(self):
         """Load settings from settings.json"""
         try:
-            settings_path = os.path.join("data", "settings.json")
-            if os.path.exists(settings_path):
+            settings_path = join("data", "settings.json")
+            if exists(settings_path):
                 with open(settings_path, 'r') as f:
-                    self.settings = json.load(f)
+                    self.settings = load(f)
                 logger.info("Settings loaded successfully")
             else:
                 logger.warning(f"Settings file not found at {settings_path}")
@@ -50,10 +51,10 @@ class SettingsManager:
     def _load_asset_manifest(self):
         """Load asset paths from asset_manifest.json"""
         try:
-            manifest_path = os.path.join("data", "asset_manifest.json")
-            if os.path.exists(manifest_path):
+            manifest_path = join("data", "asset_manifest.json")
+            if exists(manifest_path):
                 with open(manifest_path, 'r') as f:
-                    self.asset_manifest = json.load(f)
+                    self.asset_manifest = load(f)
                 logger.info("Asset manifest loaded successfully")
             else:
                 logger.warning(f"Asset manifest file not found at {manifest_path}")
@@ -68,10 +69,10 @@ class SettingsManager:
             return
             
         try:
-            settings_path = os.path.join("data", "settings.json")
-            os.makedirs(os.path.dirname(settings_path), exist_ok=True)
+            settings_path = join("data", "settings.json")
+            makedirs(dirname(settings_path), exist_ok=True)
             with open(settings_path, 'w') as f:
-                json.dump(self.settings, f, indent=2)
+                dump(self.settings, f, indent=2)
             logger.info("Settings saved successfully")
             self.settings_modified = False
         except Exception as e:

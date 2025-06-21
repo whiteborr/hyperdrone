@@ -1,6 +1,5 @@
-import sys
-import traceback
-import pygame
+from sys import exit
+from pygame import get_init, quit as pygame_quit
 import logging
 from logging_config import setup_logging
 
@@ -23,6 +22,6 @@ if __name__ == '__main__':
     except Exception as e:
         logger.error(f"Fatal error: {e}", exc_info=True)
         # Attempt to clean up Pygame if it was initialized
-        if pygame.get_init():
-            pygame.quit()
-        sys.exit()
+        if get_init():
+            pygame_quit()
+        exit()

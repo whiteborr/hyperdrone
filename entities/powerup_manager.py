@@ -14,6 +14,7 @@ class PowerUpManager:
         self.player = player_ref
         self.shield_active = False
         self.shield_end_time = 0
+        self.shield_duration = 0
         self.speed_boost_armed = False
         self.speed_boost_active = False
         self.speed_boost_end_time = 0
@@ -26,6 +27,7 @@ class PowerUpManager:
     
     def activate_shield(self, duration_ms):
         self.shield_active = True
+        self.shield_duration = duration_ms
         self.shield_end_time = pygame.time.get_ticks() + duration_ms
     
     def arm_speed_boost(self, duration_ms, multiplier=1.5):

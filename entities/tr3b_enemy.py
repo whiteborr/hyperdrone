@@ -1,7 +1,6 @@
 # entities/tr3b_enemy.py
-import math
-import random
-import pygame
+from math import hypot
+from random import random, randint
 import logging
 from .enemy import Enemy
 from settings_manager import get_setting
@@ -50,12 +49,12 @@ class TR3BEnemy(Enemy):
         # Check for random dash chance when using patrol behavior
         if (isinstance(self.behavior, TRBPatrolBehavior) and 
             self.player_ref and self.player_ref.alive and 
-            self.dash_cooldown <= 0 and random.random() < 0.01):
+            self.dash_cooldown <= 0 and random() < 0.01):
             
-            player_dist = math.hypot(self.x - self.player_ref.x, self.y - self.player_ref.y)
+            player_dist = hypot(self.x - self.player_ref.x, self.y - self.player_ref.y)
             if player_dist < self.aggro_radius:
                 # Set dash behavior
-                self.dash_cooldown = random.randint(self.dash_cooldown_min, self.dash_cooldown_max)
+                self.dash_cooldown = randint(self.dash_cooldown_min, self.dash_cooldown_max)
                 self.set_behavior(TRBDashBehavior(self, self.player_ref.rect.center))
         
         # Use the parent class update method which will call the current behavior

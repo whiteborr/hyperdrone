@@ -1,6 +1,10 @@
 # entities/temporary_barricade.py
-import pygame
-import random
+import pygame.sprite
+import pygame.time
+import pygame.draw
+import pygame.transform
+from pygame import Surface, SRCALPHA, Rect
+from random import randint
 import logging
 
 from settings_manager import get_setting
@@ -27,7 +31,7 @@ class TemporaryBarricade(pygame.sprite.Sprite):
 
     def _create_barricade_image(self):
         """Creates a visual representation for the barricade."""
-        barricade_surface = pygame.Surface((self.size, self.size), pygame.SRCALPHA)
+        barricade_surface = Surface((self.size, self.size), SRCALPHA)
         barricade_surface.fill((0, 0, 0, 0)) # Transparent background
 
         # Outer shape (e.g., a thick square or cross)
@@ -36,7 +40,7 @@ class TemporaryBarricade(pygame.sprite.Sprite):
         
         # Inner glow/detail
         inner_padding = self.size * 0.15
-        inner_rect = pygame.Rect(inner_padding, inner_padding, self.size - 2*inner_padding, self.size - 2*inner_padding)
+        inner_rect = Rect(inner_padding, inner_padding, self.size - 2*inner_padding, self.size - 2*inner_padding)
         inner_color = (100, 200, 100, 255) # Lighter green
         pygame.draw.rect(barricade_surface, inner_color, inner_rect, border_radius=3)
 
@@ -88,7 +92,7 @@ class TemporaryBarricade(pygame.sprite.Sprite):
             current_tint = GREEN # Healthy green
         
         # Apply tint as an overlay (simple blending)
-        tint_surface = pygame.Surface(self.image.get_size(), pygame.SRCALPHA)
+        tint_surface = Surface(self.image.get_size(), SRCALPHA)
         tint_surface.fill((*current_tint[:3], 50)) # Semi-transparent tint
         self.image.blit(tint_surface, (0,0), special_flags=pygame.BLEND_RGBA_MULT)
 

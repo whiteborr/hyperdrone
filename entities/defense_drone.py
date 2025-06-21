@@ -1,6 +1,8 @@
 # entities/defense_drone.py
-import pygame
-import math
+from pygame.sprite import Sprite
+from pygame import Surface, SRCALPHA
+from pygame.transform import rotate
+from pygame.draw import rect as draw_rect
 import logging
 
 from settings_manager import get_setting
@@ -8,7 +10,7 @@ from constants import GREEN, YELLOW, RED, WHITE
 
 logger = logging.getLogger(__name__)
 
-class DefenseDrone(pygame.sprite.Sprite):
+class DefenseDrone(Sprite):
     def __init__(self, x, y, asset_manager, config, path_to_core=None, **kwargs):
         super().__init__()
         self.x, self.y = float(x), float(y)
@@ -44,7 +46,7 @@ class DefenseDrone(pygame.sprite.Sprite):
         self.original_image = self.asset_manager.get_image(self.sprite_asset_key, scale_to_size=default_size)
         if self.original_image is None:
             logger.warning(f"DefenseDrone: Could not load sprite with key '{self.sprite_asset_key}'")
-            self.original_image = pygame.Surface(default_size, pygame.SRCALPHA)
+            self.original_image = Surface(default_size, SRCALPHA)
             self.original_image.fill((255, 0, 0, 180))
         self.image = self.original_image.copy()
         self.rect = self.image.get_rect(center=(int(self.x), int(self.y)))
@@ -57,7 +59,7 @@ class DefenseDrone(pygame.sprite.Sprite):
         self.pathfinder.update_movement(maze, current_time_ms, delta_time_ms, game_area_x_offset)
         
         if self.image and self.original_image:
-            self.image = pygame.transform.rotate(self.original_image, -self.angle)
+            self.image = rotate(self.original_image, -self.angle)
             self.rect = self.image.get_rect(center=(int(self.x), int(self.y)))
             if self.collision_rect:
                 self.collision_rect.center = self.rect.center
@@ -105,9 +107,9 @@ class DefenseDrone(pygame.sprite.Sprite):
         else:
             fill_color = RED
             
-        pygame.draw.rect(surface, (80, 0, 0), (bar_x, bar_y, bar_w, bar_h))
+        draw_rect(surface, (80, 0, 0), (bar_x, bar_y, bar_w, bar_h))
         
         if fill_w > 0:
-            pygame.draw.rect(surface, fill_color, (bar_x, bar_y, int(fill_w), bar_h))
+            draw_rect(surface, fill_color, (bar_x, bar_y, int(fill_w), bar_h))
             
-        pygame.draw.rect(surface, WHITE, (bar_x, bar_y, bar_w, bar_h), 1)
+        draw_rect(surface, WHITE, (bar_x, bar_y, bar_w, bar_h), 1)

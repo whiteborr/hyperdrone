@@ -1,7 +1,7 @@
 # ai/behaviors.py
-import math
-import random
-import pygame
+from math import hypot, degrees, atan2, radians, cos, sin, pi
+from random import randint, choice, random, uniform
+from pygame import Rect
 import logging
 
 # Import pathfinding module
@@ -56,7 +56,7 @@ class WallFollowBehavior(BaseBehavior):
     def execute(self, maze, current_time_ms, delta_time_ms, game_area_x_offset=0):
         # Check if player is in range and switch to chase behavior if so
         if self.enemy.player_ref and self.enemy.player_ref.alive:
-            player_dist = math.hypot(self.enemy.x - self.enemy.player_ref.x, self.enemy.y - self.enemy.player_ref.y)
+            player_dist = hypot(self.enemy.x - self.enemy.player_ref.x, self.enemy.y - self.enemy.player_ref.y)
             if player_dist < self.enemy.aggro_radius:
                 self.enemy.set_behavior(ChasePlayerBehavior(self.enemy))
                 return
@@ -103,9 +103,9 @@ class WallFollowBehavior(BaseBehavior):
             if walkable_tiles:
                 # Choose a random walkable tile that's not too close to current position
                 tile_size = get_setting("gameplay", "TILE_SIZE", 80)
-                viable_tiles = [p for p in walkable_tiles if tile_size * 3 < math.hypot(p[0] - self.enemy.x, p[1] - self.enemy.y) < tile_size * 8]
+                viable_tiles = [p for p in walkable_tiles if tile_size * 3 < hypot(p[0] - self.enemy.x, p[1] - self.enemy.y) < tile_size * 8]
                 if viable_tiles:
-                    self.wall_follow_target = random.choice(viable_tiles)
+                    self.wall_follow_target = choice(viable_tiles)
                     self.enemy.pathfinder.set_target(self.wall_follow_target, maze, current_time_ms, game_area_x_offset)
     
     def _pixel_to_grid(self, px, py, offset=0):
@@ -138,7 +138,7 @@ class ChasePlayerBehavior(BaseBehavior):
         if not self.enemy.player_ref or not self.enemy.player_ref.alive:
             return
             
-        player_dist = math.hypot(self.enemy.x - self.enemy.player_ref.x, self.enemy.y - self.enemy.player_ref.y)
+        player_dist = hypot(self.enemy.x - self.enemy.player_ref.x, self.enemy.y - self.enemy.player_ref.y)
         
         # If player gets too far away, switch to wall following behavior
         if player_dist > self.enemy.aggro_radius * 1.2:
@@ -167,7 +167,7 @@ class ChasePlayerBehavior(BaseBehavior):
         if self.enemy.__class__.__name__ != "SentinelDrone" and player_dist < self.enemy.aggro_radius and (current_time_ms - self.enemy.last_shot_time > self.enemy.shoot_cooldown):
             dx = self.enemy.player_ref.rect.centerx - self.enemy.x
             dy = self.enemy.player_ref.rect.centery - self.enemy.y
-            self.enemy.shoot(math.degrees(math.atan2(dy, dx)), maze)
+            self.enemy.shoot(degrees(atan2(dy, dx)), maze)
             self.enemy.last_shot_time = current_time_ms
 
 class TRBPatrolBehavior(BaseBehavior):
@@ -176,15 +176,14 @@ class TRBPatrolBehavior(BaseBehavior):
         super().__init__(enemy)
         self.patrol_point_reached = True
         self.patrol_wait_time = 0
-        self.patrol_wait_duration = random.randint(500, 1500)
+        self.patrol_wait_duration = randint(500, 1500)
         self.current_patrol_point = None
 
     def execute(self, maze, current_time_ms, delta_time_ms, game_area_x_offset=0):
         # Check if player is in aggro range and switch to chase behavior if so
         if self.enemy.player_ref and self.enemy.player_ref.alive:
-            player_dist = math.hypot(self.enemy.x - self.enemy.player_ref.x, self.enemy.y - self.enemy.player_ref.y)
+            player_dist = hypot(self.enemy.x - self.enemy.player_ref.x, self.enemy.y - self.enemy.player_ref.y)
             if player_dist < self.enemy.aggro_radius:
-                from ai.behaviors import ChasePlayerBehavior
                 self.enemy.set_behavior(ChasePlayerBehavior(self.enemy))
                 return
         
@@ -203,10 +202,10 @@ class TRBPatrolBehavior(BaseBehavior):
                 return
                 
             # Check if we're stuck (no progress on path)
-            if self.enemy.pathfinder.path and self.enemy.pathfinder.current_path_index < len(self.enemy.pathfinder.path) and random.random() < 0.01:
+            if self.enemy.pathfinder.path and self.enemy.pathfinder.current_path_index < len(self.enemy.pathfinder.path) and random() < 0.01:
                 # Occasionally check distance to target to detect being stuck
                 target = self.enemy.pathfinder.path[self.enemy.pathfinder.current_path_index]
-                dist = math.hypot(self.enemy.x - target[0], self.enemy.y - target[1])
+                dist = hypot(self.enemy.x - target[0], self.enemy.y - target[1])
                 tile_size = get_setting("gameplay", "TILE_SIZE", 80)
                 if dist > tile_size * 3:
                     # We might be stuck, try a new path
@@ -222,7 +221,7 @@ class TRBPatrolBehavior(BaseBehavior):
                 # Time to move to a new patrol point
                 self._select_new_patrol_point(maze, current_time_ms, game_area_x_offset)
                 self.patrol_wait_time = 0
-                self.patrol_wait_duration = random.randint(500, 1500)
+                self.patrol_wait_duration = randint(500, 1500)
                 self.patrol_point_reached = False
             else:
                 # Hover in place while waiting
@@ -239,33 +238,33 @@ class TRBPatrolBehavior(BaseBehavior):
             # Filter tiles within patrol radius
             valid_tiles = []
             for tile in walkable_tiles:
-                dist_to_spawn = math.hypot(tile[0] - self.enemy.spawn_point[0], tile[1] - self.enemy.spawn_point[1])
+                dist_to_spawn = hypot(tile[0] - self.enemy.spawn_point[0], tile[1] - self.enemy.spawn_point[1])
                 if dist_to_spawn <= self.enemy.patrol_radius:
                     valid_tiles.append(tile)
             
             # If we have valid tiles, choose one
             if valid_tiles:
-                self.current_patrol_point = random.choice(valid_tiles)
+                self.current_patrol_point = choice(valid_tiles)
                 self.enemy.pathfinder.set_target(self.current_patrol_point, maze, current_time_ms, game_area_x_offset)
                 return
         
         # Fallback: use a simple point near spawn position
-        angle = random.uniform(0, 2 * math.pi)
+        angle = uniform(0, 2 * pi)
         tile_size = get_setting("gameplay", "TILE_SIZE", 80)
         distance = min(self.enemy.patrol_radius, tile_size * 4)  # Use patrol radius or reasonable distance
         self.current_patrol_point = (
-            self.enemy.spawn_point[0] + math.cos(angle) * distance,
-            self.enemy.spawn_point[1] + math.sin(angle) * distance
+            self.enemy.spawn_point[0] + cos(angle) * distance,
+            self.enemy.spawn_point[1] + sin(angle) * distance
         )
         self.enemy.pathfinder.set_target(self.current_patrol_point, maze, current_time_ms, game_area_x_offset)
 
     def _hover_movement(self, delta_time_ms, maze, game_area_x_offset):
         """Hover in place with slight random movement"""
         # Small random movements while hovering
-        angle = random.uniform(0, 2 * math.pi)
-        distance = random.uniform(0, 0.5)
-        move_x = math.cos(angle) * distance
-        move_y = math.sin(angle) * distance
+        angle = uniform(0, 2 * pi)
+        distance = uniform(0, 0.5)
+        move_x = cos(angle) * distance
+        move_y = sin(angle) * distance
         
         next_x, next_y = self.enemy.x + move_x, self.enemy.y + move_y
         if not (maze and maze.is_wall(next_x, next_y, self.enemy.collision_rect.width, self.enemy.collision_rect.height)):
@@ -277,30 +276,30 @@ class TRBDashBehavior(BaseBehavior):
     """Behavior for TR3B enemy dash movement"""
     def __init__(self, enemy, target_pos=None, dash_duration=None):
         super().__init__(enemy)
-        self.dash_duration = dash_duration or random.randint(200, 400)
+        self.dash_duration = dash_duration or randint(200, 400)
         self.dash_time_remaining = self.dash_duration
         
         # Set dash direction
         if target_pos and self.enemy.player_ref:
-            player_dist = math.hypot(self.enemy.x - self.enemy.player_ref.x, self.enemy.y - self.enemy.player_ref.y)
+            player_dist = hypot(self.enemy.x - self.enemy.player_ref.x, self.enemy.y - self.enemy.player_ref.y)
             dx, dy = target_pos[0] - self.enemy.x, target_pos[1] - self.enemy.y
-            angle = math.atan2(dy, dx)
+            angle = atan2(dy, dx)
             
             # Dash toward player if far, away if close
             tile_size = get_setting("gameplay", "TILE_SIZE", 80)
             if player_dist > tile_size * 5:
                 # Dash toward player
-                self.dash_direction = (math.cos(angle), math.sin(angle))
+                self.dash_direction = (cos(angle), sin(angle))
             else:
                 # Dash away from player
-                self.dash_direction = (-math.cos(angle), -math.sin(angle))
+                self.dash_direction = (-cos(angle), -sin(angle))
         else:
             # Random direction if no target
-            angle = random.uniform(0, 2 * math.pi)
-            self.dash_direction = (math.cos(angle), math.sin(angle))
+            angle = uniform(0, 2 * pi)
+            self.dash_direction = (cos(angle), sin(angle))
             
         # Update angle for visual rotation
-        self.enemy.angle = math.degrees(math.atan2(self.dash_direction[1], self.dash_direction[0]))
+        self.enemy.angle = degrees(atan2(self.dash_direction[1], self.dash_direction[0]))
 
     def execute(self, maze, current_time_ms, delta_time_ms, game_area_x_offset=0):
         # Update dash duration
@@ -310,7 +309,7 @@ class TRBDashBehavior(BaseBehavior):
         if self.dash_time_remaining <= 0:
             # Return to patrol or chase behavior
             if self.enemy.player_ref and self.enemy.player_ref.alive:
-                player_dist = math.hypot(self.enemy.x - self.enemy.player_ref.x, self.enemy.y - self.enemy.player_ref.y)
+                player_dist = hypot(self.enemy.x - self.enemy.player_ref.x, self.enemy.y - self.enemy.player_ref.y)
                 if player_dist < self.enemy.aggro_radius:
                     from ai.behaviors import ChasePlayerBehavior
                     self.enemy.set_behavior(ChasePlayerBehavior(self.enemy))
@@ -337,7 +336,7 @@ class TRBDashBehavior(BaseBehavior):
         # Keep within game bounds
         self.enemy.rect.center = (self.enemy.x, self.enemy.y)
         game_play_area_height = get_setting("display", "HEIGHT", 1080)
-        self.enemy.rect.clamp_ip(pygame.Rect(game_area_x_offset, 0, 
+        self.enemy.rect.clamp_ip(Rect(game_area_x_offset, 0, 
                                            get_setting("display", "WIDTH", 1920) - game_area_x_offset, 
                                            game_play_area_height))
         self.enemy.x, self.enemy.y = self.enemy.rect.centerx, self.enemy.rect.centery
@@ -387,9 +386,9 @@ class RetreatBehavior(BaseBehavior):
             if self.enemy.player_ref:
                 dx = self.enemy.x - self.enemy.player_ref.x
                 dy = self.enemy.y - self.enemy.player_ref.y
-                dist = math.hypot(dx, dy)
+                dist = hypot(dx, dy)
                 if dist > 0:
-                    self.enemy.angle = math.degrees(math.atan2(dy, dx))
+                    self.enemy.angle = degrees(atan2(dy, dx))
                     self.enemy.pathfinder.update_movement(
                         maze, 
                         current_time_ms, 
@@ -418,7 +417,7 @@ class RetreatBehavior(BaseBehavior):
 
         potential_targets = []
         for tile_x, tile_y in walkable_tiles:
-            dist_to_player = math.hypot(tile_x - player_x, tile_y - player_y)
+            dist_to_player = hypot(tile_x - player_x, tile_y - player_y)
             # Only consider tiles that are sufficiently far from the player
             if dist_to_player > self.min_retreat_distance:
                 # Prioritize tiles that are further away, and within a reasonable search area

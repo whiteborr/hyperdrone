@@ -1,8 +1,11 @@
 # entities/turret.py
-import pygame
-import math
-import random
-import os
+import pygame.sprite
+import pygame.draw
+import pygame.time
+import pygame.transform
+from pygame import Surface, SRCALPHA, Rect
+from math import degrees, atan2, radians, cos, sin
+from random import randint
 import logging
 
 from settings_manager import get_setting
@@ -61,7 +64,7 @@ class Turret(pygame.sprite.Sprite):
         weapon_modes = get_setting("gameplay", "WEAPON_MODES_SEQUENCE", [0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
         self.current_weapon_mode = weapon_modes[self.weapon_mode_index]
         self.original_image, self.image = None, None
-        self.rect = pygame.Rect(0, 0, self.SPRITE_SIZE[0], self.SPRITE_SIZE[1])
+        self.rect = Rect(0, 0, self.SPRITE_SIZE[0], self.SPRITE_SIZE[1])
         self.rect.center = (int(self.x), int(self.y))
         self.last_shot_time = pygame.time.get_ticks()
         self.last_missile_shot_time = pygame.time.get_ticks()
@@ -93,9 +96,9 @@ class Turret(pygame.sprite.Sprite):
             except (ValueError, pygame.error) as e: logger.error(f"Turret: Error scaling sprite for key '{asset_key}': {e}"); self.original_image = None
         else: logger.warning(f"Turret: Sprite for key '{asset_key}' not found."); self.original_image = None
         if self.original_image is None:
-            self.original_image = pygame.Surface(self.SPRITE_SIZE, pygame.SRCALPHA)
+            self.original_image = Surface(self.SPRITE_SIZE, SRCALPHA)
             pygame.draw.rect(self.original_image, self.turret_base_color_fallback, self.original_image.get_rect(), border_radius=3)
-            pygame.draw.rect(self.original_image, (50,50,50), pygame.Rect(self.SPRITE_SIZE[0]*0.4, self.SPRITE_SIZE[1]*0.7, self.SPRITE_SIZE[0]*0.2, self.SPRITE_SIZE[1]*0.3))
+            pygame.draw.rect(self.original_image, (50,50,50), Rect(self.SPRITE_SIZE[0]*0.4, self.SPRITE_SIZE[1]*0.7, self.SPRITE_SIZE[0]*0.2, self.SPRITE_SIZE[1]*0.3))
         self._draw_turret()
 
     def _update_weapon_attributes(self):
@@ -132,7 +135,7 @@ class Turret(pygame.sprite.Sprite):
         self._load_sprite_for_weapon_mode()
 
     def _draw_turret(self):
-        if not self.original_image: self.original_image = pygame.Surface(self.SPRITE_SIZE, pygame.SRCALPHA); self.original_image.fill(self.turret_base_color_fallback)
+        if not self.original_image: self.original_image = Surface(self.SPRITE_SIZE, SRCALPHA); self.original_image.fill(self.turret_base_color_fallback)
         self.image = pygame.transform.rotate(self.original_image, -self.angle)
         self.rect = self.image.get_rect(center=self.rect.center if self.rect else (int(self.x), int(self.y)))
 
@@ -148,7 +151,7 @@ class Turret(pygame.sprite.Sprite):
     def aim_at_target(self):
         if self.target and self.target.alive:
             dx, dy = self.target.rect.centerx - self.x, self.target.rect.centery - self.y
-            new_angle_deg = math.degrees(math.atan2(dy, dx))
+            new_angle_deg = degrees(atan2(dy, dx))
             if abs((new_angle_deg - self.angle + 180) % 360 - 180) > 0.5:
                 self.angle = new_angle_deg; self._draw_turret()
             return True
@@ -157,8 +160,8 @@ class Turret(pygame.sprite.Sprite):
     def shoot(self, enemies_group, maze_ref):
         current_time = pygame.time.get_ticks()
         if not self.target or not self.target.alive or not self.rect: return
-        rad_angle = math.radians(self.angle); spawn_offset = (self.SPRITE_SIZE[0] / 2) + 2
-        spawn_x, spawn_y = self.x + spawn_offset*math.cos(rad_angle), self.y + spawn_offset*math.sin(rad_angle)
+        rad_angle = radians(self.angle); spawn_offset = (self.SPRITE_SIZE[0] / 2) + 2
+        spawn_x, spawn_y = self.x + spawn_offset*cos(rad_angle), self.y + spawn_offset*sin(rad_angle)
         if self.current_weapon_mode not in [WEAPON_MODE_HEATSEEKER, WEAPON_MODE_LIGHTNING, WEAPON_MODE_HEATSEEKER_PLUS_BULLETS]:
             if (current_time - self.last_shot_time) > self.current_shoot_cooldown:
                 self.last_shot_time = current_time

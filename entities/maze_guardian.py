@@ -1,8 +1,11 @@
 # entities/maze_guardian.py
-import pygame
-import math
-import random
-import os
+import pygame.sprite
+import pygame.draw
+import pygame.time
+import pygame.transform
+from pygame import Surface, SRCALPHA, Rect
+from math import hypot, cos, sin, radians, degrees, atan2
+from random import choice, uniform, randint
 import logging
 
 from settings_manager import get_setting
@@ -68,7 +71,7 @@ class MazeGuardian(BaseDrone):
             self.original_image = None
         
         if self.original_image is None:
-            self.original_image = pygame.Surface(self.visual_size, pygame.SRCALPHA)
+            self.original_image = Surface(self.visual_size, SRCALPHA)
             self.original_image.fill(get_setting("bosses", "MAZE_GUARDIAN_COLOR", (80,0,120)))
             pygame.draw.rect(self.original_image, WHITE, self.original_image.get_rect(), 3)
         
@@ -85,7 +88,7 @@ class MazeGuardian(BaseDrone):
             ( half_main_w - corner_half_w,  half_main_h - corner_half_h)
         ]
         for i in range(4):
-            corner_rect = pygame.Rect(0, 0, self.corner_size[0], self.corner_size[1])
+            corner_rect = Rect(0, 0, self.corner_size[0], self.corner_size[1])
             self.corners.append({
                 'id': i, 'relative_offset': offsets[i], 'rect': corner_rect.copy(),
                 'health': self.health_per_corner, 'max_health': self.health_per_corner,
@@ -133,12 +136,12 @@ class MazeGuardian(BaseDrone):
         tile_size = get_setting("gameplay", "TILE_SIZE", 80)
         attempts, max_attempts, min_dist_from_self = 0, 10, tile_size * 3
         while attempts < max_attempts:
-            potential_target = random.choice(path_cells)
-            if math.hypot(potential_target[0] - self.x, potential_target[1] - self.y) > min_dist_from_self:
+            potential_target = choice(path_cells)
+            if hypot(potential_target[0] - self.x, potential_target[1] - self.y) > min_dist_from_self:
                 self.target_pos = potential_target
                 return
             attempts += 1
-        self.target_pos = random.choice(path_cells)
+        self.target_pos = choice(path_cells)
 
     def update(self, player_pos, maze, current_time_ms, delta_time_ms=0, game_area_x_offset=0, is_defense_mode=False):
         if not self.alive: return
@@ -147,7 +150,7 @@ class MazeGuardian(BaseDrone):
             self.move_timer = current_time_ms + self.MOVE_INTERVAL
         if self.target_pos:
             dx, dy = self.target_pos[0] - self.x, self.target_pos[1] - self.y
-            dist = math.hypot(dx, dy)
+            dist = hypot(dx, dy)
             if dist > self.speed:
                 self.x += (dx / dist) * self.speed; self.y += (dy / dist) * self.speed
             else:
@@ -214,8 +217,8 @@ class MazeGuardian(BaseDrone):
             
         # Create additional explosions around the boss
         for _ in range(8):
-            offset_x = random.randint(-self.rect.width//2, self.rect.width//2)
-            offset_y = random.randint(-self.rect.height//2, self.rect.height//2)
+            offset_x = randint(-self.rect.width//2, self.rect.width//2)
+            offset_y = randint(-self.rect.height//2, self.rect.height//2)
             self.combat_controller_ref.game_controller._create_explosion(
                 self.rect.centerx + offset_x,
                 self.rect.centery + offset_y,
@@ -228,7 +231,7 @@ class MazeGuardian(BaseDrone):
         if self.player_ref and self.player_ref.alive:
             dx = self.player_ref.rect.centerx - self.x
             dy = self.player_ref.rect.centery - self.y
-            angle = math.degrees(math.atan2(dy, dx))
+            angle = degrees(atan2(dy, dx))
             laser = LaserBeam(self.rect.center, angle)
             self.laser_beams.add(laser)
 
@@ -238,9 +241,9 @@ class MazeGuardian(BaseDrone):
             return
         logger.info(f"Spawning {count} minions.")
         for _ in range(count):
-            angle = random.uniform(0, 360)
-            spawn_x = self.x + math.cos(math.radians(angle)) * 150
-            spawn_y = self.y + math.sin(math.radians(angle)) * 150
+            angle = uniform(0, 360)
+            spawn_x = self.x + cos(radians(angle)) * 150
+            spawn_y = self.y + sin(radians(angle)) * 150
 
             self.combat_controller_ref.enemy_manager.spawn_enemy_by_id(
                 "sentinel",

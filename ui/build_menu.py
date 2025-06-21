@@ -1,5 +1,5 @@
 # ui/build_menu.py
-import pygame
+from pygame import Rect, draw, Surface, SRCALPHA, font, MOUSEBUTTONDOWN
 from settings_manager import get_setting, set_setting, get_asset_path
 from constants import (
     WHITE, BLACK, CYAN, YELLOW, GREEN, RED, DARK_GREY, GOLD, GREY
@@ -22,7 +22,7 @@ class BuildMenu:
         self.panel_height, self.panel_width = 90, 280
         height = get_setting("display", "HEIGHT", 1080)
         bottom_panel_height = get_setting("display", "BOTTOM_PANEL_HEIGHT", 120)
-        self.panel_rect = pygame.Rect(20, height - bottom_panel_height - self.panel_height - 10, self.panel_width, self.panel_height)
+        self.panel_rect = Rect(20, height - bottom_panel_height - self.panel_height - 10, self.panel_width, self.panel_height)
         self.selected_turret_on_map = None
         self.hover_tile_rect = None
         self.hover_tile_color = (*GREEN[:3], 100)
@@ -56,7 +56,7 @@ class BuildMenu:
 
             if 0 <= grid_row < self.game_controller.maze.actual_maze_rows and 0 <= grid_col < self.game_controller.maze.actual_maze_cols:
                 tile_world_x, tile_world_y = grid_col * tile_size + offset, grid_row * tile_size
-                self.hover_tile_rect = pygame.Rect(tile_world_x, tile_world_y, tile_size, tile_size)
+                self.hover_tile_rect = Rect(tile_world_x, tile_world_y, tile_size, tile_size)
                 
                 is_valid = isinstance(self.game_controller.maze, MazeChapter3) and self.game_controller.maze.grid[grid_row][grid_col] == 'T'
                 self.current_hover_color = self.hover_tile_color if is_valid else self.invalid_hover_tile_color
@@ -66,11 +66,11 @@ class BuildMenu:
     def draw(self, surface, camera=None):
         if not self.is_active: return
 
-        pygame.draw.rect(surface, (*DARK_GREY[:3], 200), self.panel_rect, border_radius=10) 
-        pygame.draw.rect(surface, CYAN, self.panel_rect, 2, border_radius=10)
+        draw.rect(surface, (*DARK_GREY[:3], 200), self.panel_rect, border_radius=10) 
+        draw.rect(surface, CYAN, self.panel_rect, 2, border_radius=10)
 
-        font_small = self.asset_manager.get_font("small_text", 24) or pygame.font.Font(None, 24)
-        font_ui = self.asset_manager.get_font("ui_text", 28) or pygame.font.Font(None, 28)
+        font_small = self.asset_manager.get_font("small_text", 24) or font.Font(None, 24)
+        font_ui = self.asset_manager.get_font("ui_text", 28) or font.Font(None, 28)
         
         y_offset = self.panel_rect.top + 10
         title_surf = font_ui.render("Build Mode", True, WHITE)
@@ -99,16 +99,16 @@ class BuildMenu:
 
         if self.hover_tile_rect and camera:
             screen_rect = camera.apply_to_rect(self.hover_tile_rect)
-            hover_surface = pygame.Surface(screen_rect.size, pygame.SRCALPHA)
+            hover_surface = Surface(screen_rect.size, SRCALPHA)
             hover_surface.fill(self.current_hover_color) 
             surface.blit(hover_surface, screen_rect.topleft)
-            pygame.draw.rect(surface, WHITE, screen_rect, 1)
+            draw.rect(surface, WHITE, screen_rect, 1)
 
     def handle_input(self, event, mouse_pos):
         if not self.is_active: return False
         
         # This now also handles selecting a turret to display its info, separate from upgrading.
-        if event.type == pygame.MOUSEBUTTONDOWN:
+        if event.type == MOUSEBUTTONDOWN:
             if self.panel_rect.collidepoint(mouse_pos):
                 if hasattr(self.game_controller, 'play_sound'): self.game_controller.play_sound('ui_select', 0.5)
                 return True

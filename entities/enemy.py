@@ -1,16 +1,17 @@
 # entities/enemy.py
-import math
-import random
-import os
+from math import hypot, degrees, atan2
+from random import randint, random
 import logging
-import json
 
-import pygame
+from pygame.sprite import Sprite
+from pygame.time import get_ticks
+from pygame import Surface, SRCALPHA
+from pygame.draw import polygon
 
 try:
     from .bullet import Bullet 
 except ImportError:
-    class Bullet(pygame.sprite.Sprite): pass
+    class Bullet(Sprite): pass
 
 # Import from settings_manager for settings access
 from settings_manager import get_setting
@@ -22,7 +23,7 @@ from ai.pathfinding_component import PathfinderComponent
 
 logger = logging.getLogger(__name__)
 
-class Enemy(pygame.sprite.Sprite):
+class Enemy(Sprite):
     def __init__(self, x, y, asset_manager, config, target_player_ref=None):
         super().__init__()
         self.x, self.y, self.angle = float(x), float(y), 0.0
@@ -54,8 +55,9 @@ class Enemy(pygame.sprite.Sprite):
         self._load_sprite()
         
         # Bullet system
-        self.bullets = pygame.sprite.Group()
-        self.last_shot_time = pygame.time.get_ticks() + random.randint(0, 1500)
+        from pygame.sprite import Group
+        self.bullets = Group()
+        self.last_shot_time = get_ticks() + randint(0, 1500)
         
         # Weapon configuration
         weapon_config = self.config.get("weapon", {})
@@ -109,7 +111,7 @@ class Enemy(pygame.sprite.Sprite):
 
         # NEW: Retreat Logic - check before executing current behavior
         if self.can_retreat and self.player_ref and self.player_ref.alive:
-            player_dist = math.hypot(self.x - self.player_ref.x, self.y - self.player_ref.y)
+            player_dist = hypot(self.x - self.player_ref.x, self.y - self.player_ref.y)
             if self.health <= self.retreat_health_threshold and player_dist < self.aggro_radius * 1.5:
                 if not isinstance(self.behavior, RetreatBehavior):
                     self.set_behavior(RetreatBehavior(self))
@@ -120,7 +122,8 @@ class Enemy(pygame.sprite.Sprite):
             self.behavior.execute(maze, current_time_ms, delta_time_ms, game_area_x_offset)
         
         # Update sprite rotation and position
-        self.image = pygame.transform.rotate(self.original_image, -self.angle)
+        from pygame.transform import rotate
+        self.image = rotate(self.original_image, -self.angle)
         self.rect = self.image.get_rect(center=(int(self.x), int(self.y)))
         self.collision_rect.center = self.rect.center
         
@@ -131,12 +134,13 @@ class Enemy(pygame.sprite.Sprite):
 
     def shoot(self, direct_angle_to_target, maze): 
         if not self.alive: return
-        rad_fire_angle = math.radians(direct_angle_to_target) 
+        from math import radians, cos, sin
+        rad_fire_angle = radians(direct_angle_to_target) 
         tip_offset_distance = (self.rect.width / 2) if self.rect else (get_setting("gameplay", "TILE_SIZE", 80) * 0.35)
         
         fire_origin_x, fire_origin_y = self.x, self.y
-        raw_fire_origin_x = self.x + math.cos(rad_fire_angle) * tip_offset_distance
-        raw_fire_origin_y = self.y + math.sin(rad_fire_angle) * tip_offset_distance
+        raw_fire_origin_x = self.x + cos(rad_fire_angle) * tip_offset_distance
+        raw_fire_origin_y = self.y + sin(rad_fire_angle) * tip_offset_distance
 
         if maze and not maze.is_wall(raw_fire_origin_x, raw_fire_origin_y, self.enemy_bullet_size, self.enemy_bullet_size):
             fire_origin_x, fire_origin_y = raw_fire_origin_x, raw_fire_origin_y
@@ -159,7 +163,7 @@ class Enemy(pygame.sprite.Sprite):
             self.health -= amount
             # Create small hit effect
             if hasattr(self, 'rect') and self.rect:
-                if random.random() < 0.3:  # 30% chance for spark on hit
+                if random() < 0.3:  # 30% chance for spark on hit
                     x, y = self.rect.center
                     if hasattr(self.asset_manager, 'game_controller') and self.asset_manager.game_controller:
                         self.asset_manager.game_controller._create_explosion(x, y, 3, None)
@@ -189,9 +193,10 @@ class Enemy(pygame.sprite.Sprite):
         bar_x, bar_y = screen_rect.centerx - bar_w/2, screen_rect.top - bar_h - 3
         fill_w = bar_w * (self.health / self.max_health if self.max_health > 0 else 0)
         fill_color = GREEN if self.health/self.max_health > 0.6 else YELLOW if self.health/self.max_health > 0.3 else RED
-        pygame.draw.rect(surface, (80,0,0), (bar_x, bar_y, bar_w, bar_h))
-        if fill_w > 0: pygame.draw.rect(surface, fill_color, (bar_x, bar_y, int(fill_w), bar_h)) 
-        pygame.draw.rect(surface, WHITE, (bar_x, bar_y, bar_w, bar_h), 1) 
+        from pygame.draw import rect as draw_rect
+        draw_rect(surface, (80,0,0), (bar_x, bar_y, bar_w, bar_h))
+        if fill_w > 0: draw_rect(surface, fill_color, (bar_x, bar_y, int(fill_w), bar_h)) 
+        draw_rect(surface, WHITE, (bar_x, bar_y, bar_w, bar_h), 1) 
 
 class DefenseDrone(Enemy):
     def __init__(self, x, y, asset_manager, config, path_to_core=None):
@@ -204,7 +209,8 @@ class DefenseDrone(Enemy):
         if not self.alive: return
         self.pathfinder.update_movement(maze, current_time_ms, delta_time_ms, game_area_x_offset)
         if self.image and self.original_image:
-            self.image = pygame.transform.rotate(self.original_image, -self.angle)
+            from pygame.transform import rotate
+            self.image = rotate(self.original_image, -self.angle)
             self.rect = self.image.get_rect(center=(int(self.x), int(self.y)))
             if self.collision_rect: self.collision_rect.center = self.rect.center
 
@@ -226,7 +232,7 @@ class SentinelDrone(Enemy):
     def _set_wall_follow_behavior(self):
         """Set wall following behavior after initialization to avoid circular import"""
         # Use a timer to delay behavior setting
-        self._behavior_timer = pygame.time.get_ticks()
+        self._behavior_timer = get_ticks()
         self._behavior_set = False
 
     def update(self, primary_target_pos_pixels, maze, current_time_ms, delta_time_ms, game_area_x_offset=0, is_defense_mode=False):
@@ -249,8 +255,8 @@ class SentinelDrone(Enemy):
         default_size = (int(tile_size * 0.6), int(tile_size * 0.6)) 
         self.original_image = self.asset_manager.get_image(self.sprite_asset_key, scale_to_size=default_size)
         if self.original_image is None:
-            self.original_image = pygame.Surface(default_size, pygame.SRCALPHA)
+            self.original_image = Surface(default_size, SRCALPHA)
             points = [(default_size[0]//2,0),(default_size[0],default_size[1]//2),(default_size[0]//2,default_size[1]),(0,default_size[1]//2)]
-            pygame.draw.polygon(self.original_image, DARK_PURPLE, points); pygame.draw.polygon(self.original_image, WHITE, points, 1)
+            polygon(self.original_image, DARK_PURPLE, points); polygon(self.original_image, WHITE, points, 1)
         self.image = self.original_image.copy(); self.rect = self.image.get_rect(center=(int(self.x), int(self.y))) 
         if self.rect: self.collision_rect = self.rect.inflate(-self.rect.width * 0.2, -self.rect.height * 0.2)

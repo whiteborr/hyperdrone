@@ -1,12 +1,14 @@
-import pygame
-import math # Added import math
-from settings_manager import get_setting # New settings management system
+import pygame.sprite
+import pygame.draw
+from pygame import Surface, SRCALPHA
+from math import sin
+from settings_manager import get_setting
 
 class EscapeZone(pygame.sprite.Sprite):
     def __init__(self, x, y):
         super().__init__()
         self.size = int(get_setting("gameplay", "TILE_SIZE", 80) * 1.5) # Make it a bit larger than a tile
-        self.image = pygame.Surface([self.size, self.size], pygame.SRCALPHA)
+        self.image = Surface([self.size, self.size], SRCALPHA)
         # Use get_setting for safety, in case ESCAPE_ZONE_COLOR is modified by user or missing
         self.color = get_setting("gameplay", "ESCAPE_ZONE_COLOR", (0, 255, 128)) # Bright green, default opaque
         
@@ -26,7 +28,7 @@ class EscapeZone(pygame.sprite.Sprite):
         current_alpha = alpha_override
         if current_alpha is None:
             # Pulse alpha
-            pulse_val = (math.sin(self.pulse_time) + 1) / 2 # 0 to 1
+            pulse_val = (sin(self.pulse_time) + 1) / 2 # 0 to 1
             current_alpha = self.min_alpha + (self.max_alpha - self.min_alpha) * pulse_val
         
         # Ensure color has 3 components (RGB) before adding alpha

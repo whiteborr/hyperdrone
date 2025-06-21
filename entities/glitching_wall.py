@@ -1,7 +1,10 @@
 # entities/glitching_wall.py
-import pygame
-import random
-import math
+import pygame.sprite
+import pygame.draw
+import pygame.time
+from pygame import Surface, SRCALPHA
+from random import randint, choice
+from math import sin
 from settings_manager import get_setting
 from constants import DARK_PURPLE, MAGENTA, WHITE
 
@@ -20,11 +23,11 @@ class GlitchingWall(pygame.sprite.Sprite):
 
         # State and timer
         self.is_solid = True
-        self.last_toggle_time = pygame.time.get_ticks() + random.randint(0, self.on_duration)
+        self.last_toggle_time = pygame.time.get_ticks() + randint(0, self.on_duration)
         self.pulse_timer = 0
 
         # Create the visual surface
-        self.image = pygame.Surface((self.tile_size, self.tile_size), pygame.SRCALPHA)
+        self.image = Surface((self.tile_size, self.tile_size), SRCALPHA)
         self.rect = self.image.get_rect(topleft=(x, y))
         self.collision_rect = self.rect.copy() # Collision rect matches visual rect
 
@@ -38,13 +41,13 @@ class GlitchingWall(pygame.sprite.Sprite):
             # Create a pulsing, glitchy effect when the wall is solid
             self.pulse_timer += 0.1
             base_alpha = 150
-            pulse_alpha = base_alpha + (math.sin(self.pulse_timer) + 1) * 50 # Oscillates between 150-250
+            pulse_alpha = base_alpha + (sin(self.pulse_timer) + 1) * 50 # Oscillates between 150-250
             
             # Draw several overlapping rectangles for a distorted look
             for i in range(4):
-                color = (*random.choice([DARK_PURPLE, MAGENTA]), int(pulse_alpha / (i + 1)))
-                offset_x = random.randint(-4, 4)
-                offset_y = random.randint(-4, 4)
+                color = (*choice([DARK_PURPLE, MAGENTA]), int(pulse_alpha / (i + 1)))
+                offset_x = randint(-4, 4)
+                offset_y = randint(-4, 4)
                 inner_rect = self.image.get_rect().inflate(-i * 6 + offset_x, -i * 6 + offset_y)
                 pygame.draw.rect(self.image, color, inner_rect, border_radius=3)
             

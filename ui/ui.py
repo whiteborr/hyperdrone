@@ -1,10 +1,14 @@
 # ui/ui.py
-import os
-import math
-import random
+from os.path import exists
+from math import ceil
+from random import random
 import logging
 
-import pygame
+from pygame import Surface, SRCALPHA, Rect
+from pygame.draw import rect as draw_rect, circle, line as draw_line
+from pygame.font import Font
+from pygame.time import get_ticks
+from pygame.transform import rotate, scale
 
 from settings_manager import get_setting, set_setting, get_asset_path, settings_manager
 from constants import (
@@ -33,6 +37,10 @@ class UIManager:
         self.scene_manager = scene_manager_ref
         self.drone_system = drone_system_ref
         
+        # Cache frequently accessed settings
+        self._cached_width = get_setting("display", "WIDTH", 1920)
+        self._cached_height = get_setting("display", "HEIGHT", 1080)
+        
         self.ui_asset_surfaces = {
             "ring_icon": None, "ring_icon_empty": None, "menu_background": None,
             "current_drone_life_icon": None, "core_fragment_icons": {},
@@ -43,15 +51,15 @@ class UIManager:
         self.ui_icon_size_rings = (20, 20)
         self.ui_icon_size_fragments = (28, 28)
         self.ui_icon_size_reactor = (32, 32)
-        self.ui_icon_size_ability = (get_setting("display", "HUD_ABILITY_ICON_SIZE", 60), get_setting("display", "HUD_ABILITY_ICON_SIZE", 60)) # NEW
+        ability_icon_size = get_setting("display", "HUD_ABILITY_ICON_SIZE", 60)
+        self.ui_icon_size_ability = (ability_icon_size, ability_icon_size) # NEW
 
         self.codex_list_item_height = 0
         self.codex_max_visible_items_list = 0
         self.codex_max_visible_lines_content = 0
 
-        height = get_setting("display", "HEIGHT", 1080)
-        self.BOTTOM_INSTRUCTION_CENTER_Y = height - 50
-        self.SECONDARY_INSTRUCTION_CENTER_Y = height - 80
+        self.BOTTOM_INSTRUCTION_CENTER_Y = self._cached_height - 50
+        self.SECONDARY_INSTRUCTION_CENTER_Y = self._cached_height - 80
         self.INSTRUCTION_TEXT_COLOR = CYAN
         self.INSTRUCTION_BG_COLOR = (30, 30, 30, 150)
         self.INSTRUCTION_PADDING_X = 20
@@ -118,7 +126,7 @@ class UIManager:
         
         if loaded_icon:
             # Rotate the drone icon 90 degrees counterclockwise
-            rotated_icon = pygame.transform.rotate(loaded_icon, 90)
+            rotated_icon = rotate(loaded_icon, 90)
             self.ui_asset_surfaces["current_drone_life_icon"] = rotated_icon
         else:
             logger.warning(f"UIManager: Life icon for drone '{selected_drone_id}' (key: '{life_icon_asset_key}') not found. Using fallback.")
@@ -167,10 +175,10 @@ class UIManager:
             self.ui_asset_surfaces["current_weapon_icon"] = self._create_fallback_icon_surface(size=(64, 64), text="W", color=CYAN)
 
     def _create_fallback_icon_surface(self, size=(30,30), text="?", color=GREY, text_color=WHITE, font_key="ui_text"):
-        surface = pygame.Surface(size, pygame.SRCALPHA)
+        surface = Surface(size, SRCALPHA)
         surface.fill(color)
-        pygame.draw.rect(surface, WHITE, surface.get_rect(), 1)
-        font_to_use = self.asset_manager.get_font(font_key, max(10, size[1]-4)) or pygame.font.Font(None, max(10, size[1]-4))
+        draw_rect(surface, WHITE, surface.get_rect(), 1)
+        font_to_use = self.asset_manager.get_font(font_key, max(10, size[1]-4)) or Font(None, max(10, size[1]-4))
         if text and font_to_use:
             try:
                 text_surf = font_to_use.render(text, True, text_color)
@@ -180,21 +188,15 @@ class UIManager:
 
     def _render_text_safe(self, text, font_key, color, fallback_size=24):
         font = self.asset_manager.get_font(font_key, fallback_size)
-        if not font: font = pygame.font.Font(None, fallback_size)
+        if not font: font = Font(None, fallback_size)
         try: return font.render(str(text), True, color)
         except Exception as e:
             logger.error(f"UIManager: Error rendering text '{text}' with font key '{font_key}': {e}")
-            return pygame.font.Font(None, fallback_size).render("ERR", True, RED)
+            return Font(None, fallback_size).render("ERR", True, RED)
 
     def _wrap_text(self, text, font_key_for_size_calc, size_for_font, max_width):
-        font = self.asset_manager.get_font(font_key_for_size_calc, size_for_font) or pygame.font.Font(None, size_for_font)
-        words, lines, current_line = text.split(' '), [], ""
-        for word in words:
-            if font.size(current_line + word + " ")[0] <= max_width: current_line += word + " "
-            else:
-                if current_line: lines.append(current_line.strip())
-                current_line = word + " "
-        lines.append(current_line.strip()); return lines
+        font = self.asset_manager.get_font(font_key_for_size_calc, size_for_font) or Font(None, size_for_font)
+        return self._wrap_text_with_font_obj(text, font, max_width)
 
     def _wrap_text_with_font_obj(self, text, font_object, max_width):
         if not font_object: return [text]
@@ -211,7 +213,7 @@ class UIManager:
         ui_flow_ctrl = self.game_controller.ui_flow_controller
         if ui_flow_ctrl and hasattr(ui_flow_ctrl, 'menu_stars') and ui_flow_ctrl.menu_stars:
             for star_params in ui_flow_ctrl.menu_stars:
-                pygame.draw.circle(self.screen, WHITE, (int(star_params[0]), int(star_params[1])), star_params[3])
+                circle(self.screen, WHITE, (int(star_params[0]), int(star_params[1])), star_params[3])
 
     def draw_current_scene_ui(self, player_active_abilities_data=None):
         if not hasattr(self, 'state_manager') or self.state_manager is None:
@@ -277,12 +279,11 @@ class UIManager:
     def draw_story_map(self):
         """Draw the story map screen showing player progression through chapters"""
         # 1. Draw background
-        bg = self.asset_manager.load_image('images/ui/story_map_background.png', key='story_map_background')
-        width = get_setting("display", "WIDTH", 1920)
-        height = get_setting("display", "HEIGHT", 1080)
+        bg = self.asset_manager.get_image('story_map_background')
+        width, height = self._cached_width, self._cached_height
         
         if bg:
-            scaled_bg = pygame.transform.scale(bg, (width, height))
+            scaled_bg = scale(bg, (width, height))
             self.screen.blit(scaled_bg, (0, 0))
         else:
             self.screen.fill((10, 20, 40))  # Dark blue fallback color
@@ -335,16 +336,16 @@ class UIManager:
             if i == 4:  # Path from Chapter 5 to Bonus
                 if current_chapter_index >= 4:  # Only show if Chapter 5 is unlocked
                     color = unlocked_path_color if current_chapter_index >= 5 else path_color
-                    pygame.draw.line(self.screen, color, chapter_positions[i], chapter_positions[i+1], 4)
+                    draw_line(self.screen, color, chapter_positions[i], chapter_positions[i+1], 4)
             else:  # Regular chapter paths
                 color = unlocked_path_color if i < current_chapter_index else path_color
-                pygame.draw.line(self.screen, color, chapter_positions[i], chapter_positions[i+1], 4)
+                draw_line(self.screen, color, chapter_positions[i], chapter_positions[i+1], 4)
 
         # 4. Draw chapter icons and player cursor
-        # Load images directly from file paths
-        locked_icon = self.asset_manager.load_image('images/ui/chapter_icon_locked.png', key='chapter_icon_locked')
-        unlocked_icon = self.asset_manager.load_image('images/ui/chapter_icon_unlocked.png', key='chapter_icon_unlocked')
-        player_cursor = self.asset_manager.load_image('images/ui/player_map_cursor.png', key='player_map_cursor')
+        # Load images from asset manifest
+        locked_icon = self.asset_manager.get_image('chapter_icon_locked')
+        unlocked_icon = self.asset_manager.get_image('chapter_icon_unlocked')
+        player_cursor = self.asset_manager.get_image('player_map_cursor')
         
         # Create fallback icons if needed
         if not locked_icon:
@@ -357,7 +358,7 @@ class UIManager:
         # Chapter names
         chapter_names = ["Chapter 1", "Chapter 2", "Chapter 3", "Chapter 4", "Chapter 5", "Bonus"]
         # Use a font size that's already loaded
-        font = self.asset_manager.get_font("medium_text", 36) or pygame.font.Font(None, 24)
+        font = self.asset_manager.get_font("medium_text", 36) or Font(None, 24)
         
         for i, pos in enumerate(chapter_positions):
             # Determine if this chapter is unlocked
@@ -387,7 +388,7 @@ class UIManager:
             self.screen.blit(chapter_title_surf, (20, 20))
             
             # Draw chapter description
-            desc_font = self.asset_manager.get_font("ui_text", 28) or pygame.font.Font(None, 28)
+            desc_font = self.asset_manager.get_font("ui_text", 28) or Font(None, 28)
             wrapped_desc = self._wrap_text_with_font_obj(current_chapter.description, desc_font, width/2 - 40)
             for i, line in enumerate(wrapped_desc):
                 desc_surf = desc_font.render(line, True, WHITE)
@@ -395,7 +396,7 @@ class UIManager:
             
             # Draw objectives as bullet points
             obj_y = 60 + len(wrapped_desc) * 30 + 10
-            obj_font = self.asset_manager.get_font("ui_text", 24) or pygame.font.Font(None, 24)
+            obj_font = self.asset_manager.get_font("ui_text", 24) or Font(None, 24)
             
             for obj in current_chapter.objectives:
                 obj_color = GREEN if obj.is_complete else WHITE
@@ -412,8 +413,7 @@ class UIManager:
 
     def draw_architect_vault_hud_elements(self):
         title_surf = self._render_text_safe("Architect's Vault", "large_text", GOLD, fallback_size=48)
-        width = get_setting("display", "WIDTH", 1920)
-        self.screen.blit(title_surf, title_surf.get_rect(center=(width // 2, 50)))
+        self.screen.blit(title_surf, title_surf.get_rect(center=(self._cached_width // 2, 50)))
 
     def draw_game_intro_scroll(self):
         self._draw_star_background()
@@ -425,13 +425,12 @@ class UIManager:
         image_key = current_screen_data.get("image_path_key")
         text = current_screen_data.get("text", "")
         
-        screen_width = get_setting("display", "WIDTH", 1920)
-        screen_height = get_setting("display", "HEIGHT", 1080)
+        screen_width, screen_height = self._cached_width, self._cached_height
 
         if image_key:
             bg_image = self.asset_manager.get_image(image_key)
             if bg_image:
-                bg_surf = pygame.transform.scale(bg_image, (screen_width, screen_height))
+                bg_surf = scale(bg_image, (screen_width, screen_height))
                 self.screen.blit(bg_surf, (0, 0))
 
         lines = text.split('\n')
@@ -446,17 +445,16 @@ class UIManager:
         self.screen.blit(prompt_surf, prompt_surf.get_rect(center=(screen_width / 2, screen_height - 50)))
 
     def draw_story_message_overlay(self, message):
-        font = self.asset_manager.get_font("ui_text", 28) or pygame.font.Font(None, 28)
+        font = self.asset_manager.get_font("ui_text", 28) or Font(None, 28)
         text_surf = font.render(message, True, CYAN)
-        width = get_setting("display", "WIDTH", 1920)
-        height = get_setting("display", "HEIGHT", 1080)
+        width, height = self._cached_width, self._cached_height
         bg_rect = text_surf.get_rect(center=(width // 2, height - 150))
         bg_rect.inflate_ip(40, 20)
         
-        bg_surface = pygame.Surface(bg_rect.size, pygame.SRCALPHA)
+        bg_surface = Surface(bg_rect.size, SRCALPHA)
         bg_surface.fill((30, 30, 30, 180))
         self.screen.blit(bg_surface, bg_rect.topleft)
-        pygame.draw.rect(self.screen, CYAN, bg_rect, 1)
+        draw_rect(self.screen, CYAN, bg_rect, 1)
         self.screen.blit(text_surf, text_surf.get_rect(center=bg_rect.center))
 
     def draw_codex_screen(self):
@@ -467,8 +465,7 @@ class UIManager:
         font_entry = self.asset_manager.get_font("ui_text", 28)
         font_content = self.asset_manager.get_font("ui_text", 24)
         
-        width = get_setting("display", "WIDTH", 1920)
-        height = get_setting("display", "HEIGHT", 1080)
+        width, height = self._cached_width, self._cached_height
         
         title_surf = font_title.render("CODEX", True, GOLD)
         self.screen.blit(title_surf, title_surf.get_rect(center=(width / 2, 60)))
@@ -510,9 +507,7 @@ class UIManager:
         # Draw the main menu logo first.
         if self.ui_asset_surfaces["menu_background"]:
             logo_surf = self.ui_asset_surfaces["menu_background"]
-            screen_width = get_setting("display", "WIDTH", 1920)
-            screen_height = get_setting("display", "HEIGHT", 1080)
-            scaled_bg_surf = pygame.transform.scale(logo_surf, (screen_width, screen_height))
+            scaled_bg_surf = scale(logo_surf, (self._cached_width, self._cached_height))
             self.screen.blit(scaled_bg_surf, (0, 0))
 
         # Then draw the stars on TOP of the logo.
@@ -521,23 +516,19 @@ class UIManager:
         # Draw the menu options last, on top of everything.
         ui_flow_ctrl = self.game_controller.ui_flow_controller
         options, selected_index = ui_flow_ctrl.menu_options, ui_flow_ctrl.selected_menu_option
-        height = get_setting("display", "HEIGHT", 1080)
-        start_y, option_height = height * 0.55, 60
-        font_menu = self.asset_manager.get_font("large_text", 48) or pygame.font.Font(None, 48)
+        start_y, option_height = self._cached_height * 0.55, 60
+        font_menu = self.asset_manager.get_font("large_text", 48) or Font(None, 48)
 
         for i, option_text in enumerate(options):
             color = GOLD if i == selected_index else WHITE
             text_surf = font_menu.render(option_text, True, color)
-            width = get_setting("display", "WIDTH", 1920)
-            text_rect = text_surf.get_rect(center=(width // 2, start_y + i * option_height))
+            text_rect = text_surf.get_rect(center=(self._cached_width // 2, start_y + i * option_height))
             self.screen.blit(text_surf, text_rect)
 
     def draw_drone_select_menu(self):
         self._draw_star_background()
         title_surf = self._render_text_safe("Select Drone", "large_text", GOLD, fallback_size=48)
-        width = get_setting("display", "WIDTH", 1920)
-        height = get_setting("display", "HEIGHT", 1080)
-        self.screen.blit(title_surf, title_surf.get_rect(center=(width // 2, 80)))
+        self.screen.blit(title_surf, title_surf.get_rect(center=(self._cached_width // 2, 80)))
         
         ui_flow = self.game_controller.ui_flow_controller
         if not ui_flow.drone_select_options: return
@@ -548,106 +539,54 @@ class UIManager:
 
         sprite_asset_key = drone_config.get("sprite_path", "").replace("assets/","")
         sprite_surf = self.asset_manager.get_image(sprite_asset_key, scale_to_size=(256, 256))
-        if sprite_surf: self.screen.blit(sprite_surf, sprite_surf.get_rect(center=(width/2, height/2 - 100)))
+        if sprite_surf: self.screen.blit(sprite_surf, sprite_surf.get_rect(center=(self._cached_width/2, self._cached_height/2 - 100)))
 
         name_surf = self._render_text_safe(drone_config.get("name"), "medium_text", WHITE if is_unlocked else GREY, fallback_size=48)
-        self.screen.blit(name_surf, name_surf.get_rect(center=(width/2, height/2 + 100)))
+        self.screen.blit(name_surf, name_surf.get_rect(center=(self._cached_width/2, self._cached_height/2 + 100)))
         
         desc_surf = self._render_text_safe(drone_config.get("description"), "ui_text", CYAN, fallback_size=24)
-        self.screen.blit(desc_surf, desc_surf.get_rect(center=(width/2, height/2 + 150)))
+        self.screen.blit(desc_surf, desc_surf.get_rect(center=(self._cached_width/2, self._cached_height/2 + 150)))
         
         if not is_unlocked:
             unlock_cond = drone_config.get("unlock_condition", {})
             unlock_desc = unlock_cond.get("description", "Locked")
             unlock_surf = self._render_text_safe(unlock_desc, "ui_text", RED, fallback_size=28)
-            self.screen.blit(unlock_surf, unlock_surf.get_rect(center=(width/2, height/2 + 200)))
+            self.screen.blit(unlock_surf, unlock_surf.get_rect(center=(self._cached_width/2, self._cached_height/2 + 200)))
 
     def draw_gameplay_hud(self, player_active_abilities_data=None):
         player = self.game_controller.player
         if not player: return
         panel_height = get_setting("display", "BOTTOM_PANEL_HEIGHT", 120)
-        height = get_setting("display", "HEIGHT", 1080)
-        width = get_setting("display", "WIDTH", 1920)
+        height, width = self._cached_height, self._cached_width
         panel_y = height - panel_height
         panel_bg_color = (*DARK_GREY[:3], 220)
-        panel_surface = pygame.Surface((width, panel_height), pygame.SRCALPHA)
+        panel_surface = Surface((width, panel_height), SRCALPHA)
         panel_surface.fill(panel_bg_color)
         self.screen.blit(panel_surface, (0, panel_y))
-        pygame.draw.line(self.screen, CYAN, (0, panel_y), (width, panel_y), 2)
+        draw_line(self.screen, CYAN, (0, panel_y), (width, panel_y), 2)
         font_ui, font_small = self.asset_manager.get_font("ui_text", 28), self.asset_manager.get_font("ui_text", 24)
         
         # Left side - Weapon and lives
         wpn_x, wpn_y = 30, panel_y + 20
-        icon_height = 0
+        wpn_mode = player.current_weapon_mode
+        self.update_weapon_icon_surface(wpn_mode)
         
         weapon_icon = self.ui_asset_surfaces.get("current_weapon_icon")
         if weapon_icon:
-            rotated_icon = pygame.transform.rotate(weapon_icon, 90)
-            # Scale weapon icon to match life icon size
-            scaled_weapon_icon = pygame.transform.scale(rotated_icon, self.ui_icon_size_lives)
+            # Display lives using weapon icons
+            self._draw_lives_icons(weapon_icon, wpn_x, wpn_y)
             
-            # Display total number of lives using weapon mode icons
-            max_lives = get_setting("gameplay", "PLAYER_LIVES", 3)
-            icon_spacing = 10
-
-            for i in range(max_lives):
-                icon_x = wpn_x + (i * (self.ui_icon_size_lives[0] + icon_spacing))
-                self.screen.blit(scaled_weapon_icon, (icon_x, wpn_y))
-        
-        # Weapon cooldown bar
-        wpn_mode = player.current_weapon_mode
-        from constants import WEAPON_MODE_NAMES
-        wpn_name = WEAPON_MODE_NAMES.get(wpn_mode, "N/A")
-        
-        self.update_weapon_icon_surface(wpn_mode)
-        
-        icon_surf = self.ui_asset_surfaces.get("current_weapon_icon")
-        if icon_surf:
-            rotated_icon = pygame.transform.rotate(icon_surf, 90)
-            icon_width, icon_height = rotated_icon.get_size()
-            icon_rect = pygame.Rect(wpn_x, wpn_y, icon_width, icon_height)
-            text_x = icon_rect.right + 15
-            cooldown_bar_y = wpn_y + icon_height + 10
-            # Extend weapon bar to the left of the screen
-            time_since = pygame.time.get_ticks() - player.last_shot_time
-            progress = min(1.0, time_since / player.current_shoot_cooldown) if player.current_shoot_cooldown > 0 else 1.0
-            cooldown_width = 200
-            pygame.draw.rect(self.screen, DARK_GREY, (wpn_x, cooldown_bar_y, cooldown_width, 10))
-            pygame.draw.rect(self.screen, YELLOW, (wpn_x, cooldown_bar_y, cooldown_width * progress, 10))
-            pygame.draw.rect(self.screen, WHITE, (wpn_x, cooldown_bar_y, cooldown_width, 10), 1)
+            # Draw weapon cooldown bar
+            rotated_icon = rotate(weapon_icon, 90)
+            icon_height = rotated_icon.get_size()[1]
+            self._draw_weapon_cooldown_bar(player, wpn_x, wpn_y + icon_height + 10)
 
         # Draw powerup bars above weapon bar
-        self._draw_powerup_bars(wpn_x, wpn_y - 30, cooldown_width)
+        self._draw_powerup_bars(wpn_x, wpn_y - 30, 200)
 
         # Right side - Rings and fragments
-        hud_ring_icon_area_x_offset = get_setting("display", "HUD_RING_ICON_AREA_X_OFFSET", 150)
-        hud_ring_icon_area_y_offset = get_setting("display", "HUD_RING_ICON_AREA_Y_OFFSET", 30)
-        hud_ring_icon_size = get_setting("display", "HUD_RING_ICON_SIZE", 24)
-        hud_ring_icon_spacing = get_setting("display", "HUD_RING_ICON_SPACING", 5)
-        
-        rings_x = width - hud_ring_icon_area_x_offset
-        rings_y = panel_y + hud_ring_icon_area_y_offset
-        frags_x = width - 150
-        frags_y = panel_y + 65
-        
-        current_game_state = self.state_manager.get_current_state_id() if self.state_manager else None
-        if current_game_state == "PlayingState":
-            ring_icon, ring_empty = self.ui_asset_surfaces.get("ring_icon"), self.ui_asset_surfaces.get("ring_icon_empty")
-            if ring_icon and ring_empty:
-                for i in range(self.game_controller.level_manager.total_rings_per_level): 
-                    show_filled = i < self.game_controller.level_manager.displayed_collected_rings_count
-                    icon_x = rings_x + i * (hud_ring_icon_size + hud_ring_icon_spacing)
-                    self.screen.blit(ring_icon if show_filled else ring_empty, (icon_x, rings_y))
-        
-        core_fragment_details = settings_manager.get_core_fragment_details()
-        collected = self.drone_system.get_collected_fragments_ids()
-        required = sorted([d['id'] for d in core_fragment_details.values() if d.get('required_for_vault')])
-        animating_ids = [anim['fragment_id'] for anim in self.game_controller.animating_fragments_to_hud]
-
-        for i, frag_id in enumerate(required):
-            show_filled_icon = (frag_id in collected) and (frag_id not in animating_ids)
-            icon = self.ui_asset_surfaces["core_fragment_icons"].get(frag_id) if show_filled_icon else self.ui_asset_surfaces["core_fragment_empty_icon"]
-            if icon: self.screen.blit(icon, (frags_x + i * (self.ui_icon_size_fragments[0] + 5), frags_y))
+        self._draw_rings_hud(width, panel_y)
+        self._draw_fragments_hud(width, panel_y)
         
         # NEW: Draw active abilities (if player_active_abilities_data is passed)
         if player_active_abilities_data:
@@ -658,39 +597,44 @@ class UIManager:
 
 
     def get_scaled_fragment_icon_surface(self, fragment_id):
-        # First check if it's a level fragment (fragment_level_1, etc.)
-        if fragment_id.startswith("fragment_level_"):
-            level_num = fragment_id.split("_")[-1]
-            # Try to find the corresponding alpha, beta, gamma fragment based on level
-            if level_num == "1":
-                fragment_id = "alpha"
-            elif level_num == "2":
-                fragment_id = "beta"
-            elif level_num == "3":
-                fragment_id = "gamma"
+        # Normalize fragment ID
+        normalized_id = self._normalize_fragment_id(fragment_id)
         
-        icon_surface = self.ui_asset_surfaces["core_fragment_icons"].get(fragment_id)
+        # Check cache first
+        icon_surface = self.ui_asset_surfaces["core_fragment_icons"].get(normalized_id)
         if icon_surface: 
             return icon_surface
         
-        # Try loading directly from asset manager
-        if fragment_id in ["alpha", "beta", "gamma"]:
-            direct_key = f"images/collectibles/core_fragment_{fragment_id}.png"
-            icon_surface = self.asset_manager.get_image(direct_key, scale_to_size=self.ui_icon_size_fragments)
-            if icon_surface:
-                # Cache it for future use
-                self.ui_asset_surfaces["core_fragment_icons"][fragment_id] = icon_surface
-                return icon_surface
+        # Try loading from asset manager
+        icon_surface = self._load_fragment_icon(normalized_id)
+        if icon_surface:
+            self.ui_asset_surfaces["core_fragment_icons"][normalized_id] = icon_surface
+            return icon_surface
         
         logger.warning(f"UIManager: Scaled icon surface for fragment_id '{fragment_id}' not found. Using fallback.")
         return self._create_fallback_icon_surface(self.ui_icon_size_fragments, "?", PURPLE)
+    
+    def _normalize_fragment_id(self, fragment_id):
+        if fragment_id.startswith("fragment_level_"):
+            level_num = fragment_id.split("_")[-1]
+            level_map = {"1": "alpha", "2": "beta", "3": "gamma"}
+            return level_map.get(level_num, fragment_id)
+        return fragment_id
+    
+    def _load_fragment_icon(self, fragment_id):
+        if fragment_id in ["alpha", "beta", "gamma"]:
+            direct_key = f"images/collectibles/core_fragment_{fragment_id}.png"
+            return self.asset_manager.get_image(direct_key, scale_to_size=self.ui_icon_size_fragments)
+        elif fragment_id == "orichalc_fragment_container":
+            return self.asset_manager.get_image("orichalc_fragment_container.png", scale_to_size=self.ui_icon_size_fragments)
+        return None
 
     def _draw_active_abilities_hud(self, active_abilities_data):
         ability_icon_x = get_setting("display", "HUD_ABILITY_ICON_X_OFFSET", 100)
         ability_icon_y = get_setting("display", "HUD_ABILITY_ICON_Y_OFFSET", 20)
         ability_icon_size = self.ui_icon_size_ability
-        font_small = self.asset_manager.get_font("small_text", 24) or pygame.font.Font(None, 24)
-        current_time_ms = pygame.time.get_ticks()
+        font_small = self.asset_manager.get_font("small_text", 24) or Font(None, 24)
+        current_time_ms = get_ticks()
 
         # Assuming only one active ability is tracked for now for simplicity in UI placement
         # If multiple abilities are to be displayed, this loop would iterate over them
@@ -711,12 +655,12 @@ class UIManager:
                     cooldown_ratio = time_remaining / total_cooldown
                     
                     # Darken the icon for cooldown
-                    cooldown_overlay = pygame.Surface(icon_rect.size, pygame.SRCALPHA)
+                    cooldown_overlay = Surface(icon_rect.size, SRCALPHA)
                     cooldown_overlay.fill((0, 0, 0, 150)) # Dark transparent overlay
                     self.screen.blit(cooldown_overlay, icon_rect)
 
                     # Draw cooldown number
-                    cooldown_text = f"{math.ceil(time_remaining / 1000)}s"
+                    cooldown_text = f"{ceil(time_remaining / 1000)}s"
                     text_surf = font_small.render(cooldown_text, True, WHITE)
                     self.screen.blit(text_surf, text_surf.get_rect(center=icon_rect.center))
                 else:
@@ -738,8 +682,7 @@ class UIManager:
         if not current_chapter or not current_chapter.objectives:
             return
             
-        width = get_setting("display", "WIDTH", 1920)
-        height = get_setting("display", "HEIGHT", 1080)
+        width, height = self._cached_width, self._cached_height
         panel_height = get_setting("display", "BOTTOM_PANEL_HEIGHT", 120)
         panel_y = height - panel_height
         
@@ -747,11 +690,14 @@ class UIManager:
         objectives_x = width // 2
         objectives_y = panel_y + 30
         
-        font = self.asset_manager.get_font("ui_text", 24) or pygame.font.Font(None, 24)
+        font = self.asset_manager.get_font("ui_text", 24) or Font(None, 24)
         
         for i, objective in enumerate(current_chapter.objectives):
             obj_color = YELLOW if objective.is_complete else WHITE
             obj_text = f"• {objective.description}"
+            obj_surf = font.render(obj_text, True, obj_color)
+            obj_rect = obj_surf.get_rect(center=(objectives_x, objectives_y + i * 25))
+            self.screen.blit(obj_surf, obj_rect)
             obj_surf = font.render(obj_text, True, obj_color)
             obj_rect = obj_surf.get_rect(center=(objectives_x, objectives_y + i * 25))
             self.screen.blit(obj_surf, obj_rect)
@@ -762,7 +708,7 @@ class UIManager:
         if not player or not hasattr(player, 'powerup_manager'):
             return
             
-        current_time = pygame.time.get_ticks()
+        current_time = get_ticks()
         bar_height = 8
         bar_spacing = 12
         
@@ -772,9 +718,9 @@ class UIManager:
             total = player.powerup_manager.shield_duration
             progress = remaining / total if total > 0 else 0
             
-            pygame.draw.rect(self.screen, DARK_GREY, (x, y, width, bar_height))
-            pygame.draw.rect(self.screen, CYAN, (x, y, width * progress, bar_height))
-            pygame.draw.rect(self.screen, WHITE, (x, y, width, bar_height), 1)
+            draw_rect(self.screen, DARK_GREY, (x, y, width, bar_height))
+            draw_rect(self.screen, CYAN, (x, y, width * progress, bar_height))
+            draw_rect(self.screen, WHITE, (x, y, width, bar_height), 1)
             y += bar_spacing
             
         # Speed boost bar
@@ -783,16 +729,15 @@ class UIManager:
             total = player.powerup_manager.speed_boost_duration
             progress = remaining / total if total > 0 else 0
             
-            pygame.draw.rect(self.screen, DARK_GREY, (x, y, width, bar_height))
-            pygame.draw.rect(self.screen, GREEN, (x, y, width * progress, bar_height))
-            pygame.draw.rect(self.screen, WHITE, (x, y, width, bar_height), 1)
+            draw_rect(self.screen, DARK_GREY, (x, y, width, bar_height))
+            draw_rect(self.screen, GREEN, (x, y, width * progress, bar_height))
+            draw_rect(self.screen, WHITE, (x, y, width, bar_height), 1)
 
 
     def draw_settings_menu(self):
         self._draw_star_background()
         title_surf = self._render_text_safe("Settings", "large_text", GOLD, fallback_size=48)
-        width = get_setting("display", "WIDTH", 1920)
-        self.screen.blit(title_surf, title_surf.get_rect(center=(width // 2, 80)))
+        self.screen.blit(title_surf, title_surf.get_rect(center=(self._cached_width // 2, 80)))
         
         ui_flow = self.game_controller.ui_flow_controller
         settings_items, selected_index = ui_flow.settings_items_data, ui_flow.selected_setting_index
@@ -823,7 +768,7 @@ class UIManager:
             else: val_text = "[PRESS ENTER]"
             
             val_surf = font_setting.render(val_text, True, color)
-            self.screen.blit(val_surf, (width - 200 - val_surf.get_width(), y_pos))
+            self.screen.blit(val_surf, (self._cached_width - 200 - val_surf.get_width(), y_pos))
 
     def draw_leaderboard_overlay(self):
         self._draw_star_background()
@@ -857,7 +802,7 @@ class UIManager:
         self._draw_star_background()
         width = get_setting("display", "WIDTH", 1920)
         height = get_setting("display", "HEIGHT", 1080)
-        overlay = pygame.Surface((width, height), pygame.SRCALPHA); overlay.fill((50, 0, 0, 180))
+        overlay = Surface((width, height), SRCALPHA); overlay.fill((50, 0, 0, 180))
         self.screen.blit(overlay, (0,0))
         title_surf = self._render_text_safe("DRONE DESTROYED", "title_text", RED, fallback_size=90)
         self.screen.blit(title_surf, title_surf.get_rect(center=(width // 2, height // 2 - 100)))
@@ -873,7 +818,7 @@ class UIManager:
             # Draw the options
             option_y_start = height // 2 + 20
             option_spacing = 50
-            font = self.asset_manager.get_font("medium_text", 36) or pygame.font.Font(None, 36)
+            font = self.asset_manager.get_font("medium_text", 36) or Font(None, 36)
             
             for i, option in enumerate(options):
                 color = GOLD if i == selected_option else WHITE
@@ -928,8 +873,156 @@ class UIManager:
     def draw_pause_overlay(self):
         width = get_setting("display", "WIDTH", 1920)
         height = get_setting("display", "HEIGHT", 1080)
-        overlay = pygame.Surface((width, height), pygame.SRCALPHA)
+        overlay = Surface((width, height), SRCALPHA)
         overlay.fill((0, 0, 0, 180))
         self.screen.blit(overlay, (0, 0))
         pause_text = self._render_text_safe("PAUSED", "title_text", WHITE, fallback_size=90)
         self.screen.blit(pause_text, pause_text.get_rect(center=(width//2, height//2)))
+    def _draw_powerup_bars(self, x, y, width):
+        """Draw powerup status bars above weapon bar"""
+        player = self.game_controller.player
+        if not player or not hasattr(player, 'powerup_manager'):
+            return
+            
+        bar_height = 8
+        bar_spacing = 12
+        current_y = y
+        
+        # Shield bar
+        if player.powerup_manager.shield_active:
+            remaining_time = player.powerup_manager.shield_end_time - get_ticks()
+            if remaining_time > 0:
+                progress = remaining_time / player.powerup_manager.shield_duration
+                draw_rect(self.screen, DARK_GREY, (x, current_y, width, bar_height))
+                draw_rect(self.screen, CYAN, (x, current_y, width * progress, bar_height))
+                draw_rect(self.screen, WHITE, (x, current_y, width, bar_height), 1)
+                current_y -= bar_spacing
+        
+        # Speed boost bar
+        if player.powerup_manager.speed_boost_active:
+            remaining_time = player.powerup_manager.speed_boost_end_time - get_ticks()
+            if remaining_time > 0:
+                progress = remaining_time / player.powerup_manager.speed_boost_duration
+                draw_rect(self.screen, DARK_GREY, (x, current_y, width, bar_height))
+                draw_rect(self.screen, GREEN, (x, current_y, width * progress, bar_height))
+                draw_rect(self.screen, WHITE, (x, current_y, width, bar_height), 1)
+
+    def draw_settings_menu(self):
+        """Draw the settings menu"""
+        self._draw_star_background()
+        title_surf = self._render_text_safe("Settings", "large_text", GOLD, fallback_size=48)
+        self.screen.blit(title_surf, title_surf.get_rect(center=(self._cached_width // 2, 80)))
+        
+    def draw_leaderboard_overlay(self):
+        """Draw the leaderboard overlay"""
+        self._draw_star_background()
+        title_surf = self._render_text_safe("Leaderboard", "large_text", GOLD, fallback_size=48)
+        self.screen.blit(title_surf, title_surf.get_rect(center=(self._cached_width // 2, 80)))
+        
+    def draw_game_over_overlay(self):
+        """Draw the game over overlay"""
+        self._draw_star_background()
+        title_surf = self._render_text_safe("Game Over", "large_text", RED, fallback_size=48)
+        self.screen.blit(title_surf, title_surf.get_rect(center=(self._cached_width // 2, self._cached_height // 2)))
+        
+    def draw_enter_name_overlay(self):
+        """Draw the enter name overlay"""
+        self._draw_star_background()
+        title_surf = self._render_text_safe("Enter Name", "large_text", GOLD, fallback_size=48)
+        self.screen.blit(title_surf, title_surf.get_rect(center=(self._cached_width // 2, 80)))
+        
+    def draw_architect_vault_success_overlay(self):
+        """Draw the architect vault success overlay"""
+        self._draw_star_background()
+        title_surf = self._render_text_safe("Vault Success!", "large_text", GOLD, fallback_size=48)
+        self.screen.blit(title_surf, title_surf.get_rect(center=(self._cached_width // 2, self._cached_height // 2)))
+        
+    def draw_architect_vault_failure_overlay(self):
+        """Draw the architect vault failure overlay"""
+        self._draw_star_background()
+        title_surf = self._render_text_safe("Vault Failed", "large_text", RED, fallback_size=48)
+        self.screen.blit(title_surf, title_surf.get_rect(center=(self._cached_width // 2, self._cached_height // 2)))
+        
+    def draw_maze_defense_hud(self):
+        """Draw the maze defense HUD"""
+        title_surf = self._render_text_safe("Maze Defense", "large_text", GOLD, fallback_size=48)
+        self.screen.blit(title_surf, title_surf.get_rect(center=(self._cached_width // 2, 50)))
+        
+    def draw_pause_overlay(self):
+        """Draw the pause overlay"""
+        overlay = Surface((self._cached_width, self._cached_height), SRCALPHA)
+        overlay.fill((0, 0, 0, 128))
+        self.screen.blit(overlay, (0, 0))
+        
+        pause_surf = self._render_text_safe("PAUSED", "large_text", WHITE, fallback_size=72)
+        self.screen.blit(pause_surf, pause_surf.get_rect(center=(self._cached_width // 2, self._cached_height // 2)))
+    def _draw_lives_icons(self, weapon_icon, x, y):
+        """Draw player lives using weapon icons"""
+        rotated_icon = rotate(weapon_icon, 90)
+        scaled_weapon_icon = scale(rotated_icon, self.ui_icon_size_lives)
+        current_lives = self.game_controller.lives
+        icon_spacing = 10
+
+        for i in range(current_lives):
+            icon_x = x + (i * (self.ui_icon_size_lives[0] + icon_spacing))
+            self.screen.blit(scaled_weapon_icon, (icon_x, y))
+    
+    def _draw_weapon_cooldown_bar(self, player, x, y):
+        """Draw weapon cooldown progress bar"""
+        time_since = get_ticks() - player.last_shot_time
+        progress = min(1.0, time_since / player.current_shoot_cooldown) if player.current_shoot_cooldown > 0 else 1.0
+        cooldown_width = 200
+        draw_rect(self.screen, DARK_GREY, (x, y, cooldown_width, 10))
+        draw_rect(self.screen, YELLOW, (x, y, cooldown_width * progress, 10))
+        draw_rect(self.screen, WHITE, (x, y, cooldown_width, 10), 1)
+    
+    def _draw_rings_hud(self, width, panel_y):
+        """Draw ring collection indicators"""
+        hud_ring_icon_area_x_offset = get_setting("display", "HUD_RING_ICON_AREA_X_OFFSET", 150)
+        hud_ring_icon_area_y_offset = get_setting("display", "HUD_RING_ICON_AREA_Y_OFFSET", 30)
+        hud_ring_icon_size = get_setting("display", "HUD_RING_ICON_SIZE", 24)
+        hud_ring_icon_spacing = get_setting("display", "HUD_RING_ICON_SPACING", 5)
+        
+        rings_x = width - hud_ring_icon_area_x_offset
+        rings_y = panel_y + hud_ring_icon_area_y_offset
+        
+        current_game_state = self.state_manager.get_current_state_id() if self.state_manager else None
+        if current_game_state == "PlayingState":
+            ring_icon, ring_empty = self.ui_asset_surfaces.get("ring_icon"), self.ui_asset_surfaces.get("ring_icon_empty")
+            if ring_icon and ring_empty:
+                for i in range(self.game_controller.level_manager.total_rings_per_level): 
+                    show_filled = i < self.game_controller.level_manager.displayed_collected_rings_count
+                    icon_x = rings_x + i * (hud_ring_icon_size + hud_ring_icon_spacing)
+                    self.screen.blit(ring_icon if show_filled else ring_empty, (icon_x, rings_y))
+    
+    def _draw_fragments_hud(self, width, panel_y):
+        """Draw core fragment collection indicators"""
+        frags_x = width - 200
+        
+        # Draw orichalc fragment container
+        orichalc_icon = self.ui_asset_surfaces["core_fragment_icons"].get("orichalc_fragment_container")
+        if not orichalc_icon:
+            orichalc_icon = self.asset_manager.get_image("orichalc_fragment_container.png", scale_to_size=self.ui_icon_size_fragments)
+            if orichalc_icon:
+                self.ui_asset_surfaces["core_fragment_icons"]["orichalc_fragment_container"] = orichalc_icon
+        
+        if orichalc_icon:
+            self.screen.blit(orichalc_icon, (frags_x - 40, frags_y))
+        frags_y = panel_y + 65
+        
+        core_fragment_details = settings_manager.get_core_fragment_details()
+        collected = self.drone_system.get_collected_fragments_ids()
+        required = sorted([d['id'] for d in core_fragment_details.values() if d.get('required_for_vault')])
+        animating_ids = [anim['fragment_id'] for anim in self.game_controller.animating_fragments_to_hud]
+
+        for i, frag_id in enumerate(required):
+            show_filled_icon = (frag_id in collected) and (frag_id not in animating_ids)
+            icon = self.ui_asset_surfaces["core_fragment_icons"].get(frag_id) if show_filled_icon else self.ui_asset_surfaces["core_fragment_empty_icon"]
+            if icon: 
+                self.screen.blit(icon, (frags_x + i * (self.ui_icon_size_fragments[0] + 5), frags_y))
+
+    def _draw_powerup_bars(self, x, y, width):
+        """Draw powerup duration bars - placeholder for actual implementation"""
+        # This method is referenced but not implemented in the original code
+        # Add implementation based on game's powerup system
+        pass

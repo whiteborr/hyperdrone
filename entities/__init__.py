@@ -20,6 +20,7 @@ from .maze import Maze
 from .maze_chapter3 import MazeChapter3
 from .temporary_barricade import TemporaryBarricade
 from .glitching_wall import GlitchingWall # <-- Import the new class
+from .weapon_shop import WeaponShop
 
 __all__ = [
     "AncientAlienTerminal",
@@ -51,5 +52,6 @@ __all__ = [
     "TemporaryBarricade",
     "Turret",
     "VaultLogItem",
-    "WeaponUpgradeItem"
+    "WeaponUpgradeItem",
+    "WeaponShop"
 ]
