@@ -1,0 +1,383 @@
+# hyperdrone_core/state_manager.py
+import pygame
+import os
+import time
+import logging
+from settings_manager import get_setting
+from constants import (
+    GAME_STATE_PLAYING, GAME_STATE_MAZE_DEFENSE, GAME_STATE_MAIN_MENU,
+    GAME_STATE_GAME_OVER, GAME_STATE_LEADERBOARD, GAME_STATE_SETTINGS,
+    GAME_STATE_DRONE_SELECT, GAME_STATE_CODEX, GAME_STATE_ENTER_NAME,
+    GAME_STATE_GAME_INTRO_SCROLL, GAME_STATE_RING_PUZZLE, GAME_STATE_STORY_MAP,
+    GAME_STATE_BONUS_LEVEL_START, GAME_STATE_BONUS_LEVEL_PLAYING,
+    GAME_STATE_ARCHITECT_VAULT_INTRO, GAME_STATE_ARCHITECT_VAULT_ENTRY_PUZZLE,
+    GAME_STATE_ARCHITECT_VAULT_GAUNTLET, GAME_STATE_ARCHITECT_VAULT_EXTRACTION,
+    GAME_STATE_ARCHITECT_VAULT_SUCCESS, GAME_STATE_ARCHITECT_VAULT_FAILURE,
+    GAME_STATE_BOSS_FIGHT, GAME_STATE_CORRUPTED_SECTOR, GAME_STATE_HARVEST_CHAMBER
+)
+from .state import State
+from .playing_state import PlayingState
+from .maze_defense_state import MazeDefenseState
+from .main_menu_state import MainMenuState
+from .game_over_state import GameOverState
+from .leaderboard_state import LeaderboardState
+from .settings_state import SettingsState
+from .drone_select_state import DroneSelectState
+from .codex_state import CodexState
+from .enter_name_state import EnterNameState
+from .game_intro_scroll_state import GameIntroScrollState
+from .ring_puzzle_state import RingPuzzleState
+from .story_map_state import StoryMapState
+from .bonus_level_state import BonusLevelStartState, BonusLevelPlayingState
+from .architect_vault_states import (
+    ArchitectVaultIntroState,
+    ArchitectVaultEntryPuzzleState,
+    ArchitectVaultGauntletState,
+    ArchitectVaultExtractionState,
+    ArchitectVaultSuccessState,
+    ArchitectVaultFailureState
+)
+from .boss_fight_state import BossFightState
+from .corrupted_sector_state import CorruptedSectorState
+from .harvest_chamber_state import HarvestChamberState
+
+logger = logging.getLogger(__name__)
+
+class StateManager:
+    """
+    Manages game states using the State Design Pattern.
+    """
+    def __init__(self, game_controller_ref):
+        """
+        Initializes the StateManager.
+        Args:
+            game_controller_ref: A reference to the main game controller instance.
+        """
+        self.game_controller = game_controller_ref
+        self.asset_manager = self.game_controller.asset_manager
+        self.current_state = None
+        self.state_classes = {}
+        self.current_music_context_key = None
+        
+        # Import and initialize the state registry
+        from .state_registry import state_registry
+        self.registry = state_registry
+        
+        # Register state classes
+        self._register_state_classes()
+        
+        # Initialize with default state
+        self.set_state("MainMenuState")
+        
+        self._update_music()  # Initial music play
+    
+    def _register_state_classes(self):
+        """Register all available state classes"""
+        # Define state classes
+        state_classes = {
+            "PlayingState": PlayingState,
+            "MazeDefenseState": MazeDefenseState,
+            "MainMenuState": MainMenuState,
+            "GameOverState": GameOverState,
+            "LeaderboardState": LeaderboardState,
+            "SettingsState": SettingsState,
+            "DroneSelectState": DroneSelectState,
+            "CodexState": CodexState,
+            "EnterNameState": EnterNameState,
+            "GameIntroScrollState": GameIntroScrollState,
+            "RingPuzzleState": RingPuzzleState,
+            "StoryMapState": StoryMapState,
+            "BonusLevelStartState": BonusLevelStartState,
+            "BonusLevelPlayingState": BonusLevelPlayingState,
+            "ArchitectVaultIntroState": ArchitectVaultIntroState,
+            "ArchitectVaultEntryPuzzleState": ArchitectVaultEntryPuzzleState,
+            "ArchitectVaultGauntletState": ArchitectVaultGauntletState,
+            "ArchitectVaultExtractionState": ArchitectVaultExtractionState,
+            "ArchitectVaultSuccessState": ArchitectVaultSuccessState,
+            "ArchitectVaultFailureState": ArchitectVaultFailureState,
+            "BossFightState": BossFightState,
+            "CorruptedSectorState": CorruptedSectorState,
+            "HarvestChamberState": HarvestChamberState
+        }
+        
+        # Register states with both the local cache and the central registry
+        self.state_classes = state_classes
+        for state_id, state_class in state_classes.items():
+            self.registry.register_state(state_id, state_class)
+        
+        # Register allowed transitions
+        self._register_allowed_transitions()
+        
+        # Map from old string constants to new state classes for backward compatibility
+        self.legacy_state_mapping = {
+            GAME_STATE_PLAYING: "PlayingState",
+            GAME_STATE_MAZE_DEFENSE: "MazeDefenseState",
+            GAME_STATE_MAIN_MENU: "MainMenuState",
+            GAME_STATE_GAME_OVER: "GameOverState",
+            GAME_STATE_LEADERBOARD: "LeaderboardState",
+            GAME_STATE_SETTINGS: "SettingsState",
+            GAME_STATE_DRONE_SELECT: "DroneSelectState",
+            GAME_STATE_CODEX: "CodexState",
+            GAME_STATE_ENTER_NAME: "EnterNameState",
+            GAME_STATE_GAME_INTRO_SCROLL: "GameIntroScrollState",
+            GAME_STATE_STORY_MAP: "StoryMapState",
+            GAME_STATE_RING_PUZZLE: "RingPuzzleState",
+            GAME_STATE_BONUS_LEVEL_START: "BonusLevelStartState",
+            GAME_STATE_BONUS_LEVEL_PLAYING: "BonusLevelPlayingState",
+            GAME_STATE_ARCHITECT_VAULT_INTRO: "ArchitectVaultIntroState",
+            GAME_STATE_ARCHITECT_VAULT_ENTRY_PUZZLE: "ArchitectVaultEntryPuzzleState",
+            GAME_STATE_ARCHITECT_VAULT_GAUNTLET: "ArchitectVaultGauntletState",
+            GAME_STATE_ARCHITECT_VAULT_EXTRACTION: "ArchitectVaultExtractionState",
+            GAME_STATE_ARCHITECT_VAULT_SUCCESS: "ArchitectVaultSuccessState",
+            GAME_STATE_ARCHITECT_VAULT_FAILURE: "ArchitectVaultFailureState",
+            GAME_STATE_BOSS_FIGHT: "BossFightState",
+            GAME_STATE_CORRUPTED_SECTOR: "CorruptedSectorState",
+            GAME_STATE_HARVEST_CHAMBER: "HarvestChamberState"
+        }
+        
+    def _register_allowed_transitions(self):
+        """Register allowed transitions between states"""
+        # Main menu transitions
+        self.registry.register_transition("MainMenuState", "StoryMapState")
+        self.registry.register_transition("MainMenuState", "SettingsState")
+        self.registry.register_transition("MainMenuState", "LeaderboardState")
+        self.registry.register_transition("MainMenuState", "DroneSelectState")
+        self.registry.register_transition("MainMenuState", "CodexState")
+        self.registry.register_transition("MainMenuState", "GameIntroScrollState")
+        self.registry.register_transition("MainMenuState", "MazeDefenseState")
+        
+        # Settings transitions
+        self.registry.register_transition("SettingsState", "MainMenuState")
+        
+        # Leaderboard transitions
+        self.registry.register_transition("LeaderboardState", "MainMenuState")
+        
+        # Drone select transitions
+        self.registry.register_transition("DroneSelectState", "MainMenuState")
+        
+        # Codex transitions
+        self.registry.register_transition("CodexState", "MainMenuState")
+        
+        # Game intro transitions
+        self.registry.register_transition("GameIntroScrollState", "StoryMapState")
+        
+        # Story map transitions
+        self.registry.register_transition("StoryMapState", "PlayingState")
+        self.registry.register_transition("StoryMapState", "BossFightState")
+        self.registry.register_transition("StoryMapState", "CorruptedSectorState")
+        self.registry.register_transition("StoryMapState", "HarvestChamberState")
+        
+        # Playing state transitions
+        self.registry.register_transition("PlayingState", "GameOverState")
+        self.registry.register_transition("PlayingState", "RingPuzzleState")
+        self.registry.register_transition("PlayingState", "BonusLevelStartState")
+        self.registry.register_transition("PlayingState", "ArchitectVaultIntroState")
+        self.registry.register_transition("PlayingState", "MazeDefenseState")
+        self.registry.register_transition("PlayingState", "BossFightState")
+
+        # Game over transitions
+        self.registry.register_transition("GameOverState", "MainMenuState")
+        self.registry.register_transition("GameOverState", "EnterNameState")
+        self.registry.register_transition("GameOverState", "StoryMapState")
+        self.registry.register_transition("GameOverState", "PlayingState")
+        self.registry.register_transition("GameOverState", "MazeDefenseState")
+        self.registry.register_transition("GameOverState", "BossFightState")
+        self.registry.register_transition("GameOverState", "CorruptedSectorState")
+        self.registry.register_transition("GameOverState", "HarvestChamberState")
+        
+        # Enter name transitions
+        self.registry.register_transition("EnterNameState", "LeaderboardState")
+        
+        # Ring puzzle transitions
+        self.registry.register_transition("RingPuzzleState", "PlayingState")
+        
+        # Bonus level transitions
+        self.registry.register_transition("BonusLevelStartState", "BonusLevelPlayingState")
+        self.registry.register_transition("BonusLevelPlayingState", "PlayingState")
+        self.registry.register_transition("BonusLevelPlayingState", "GameOverState")
+        
+        # Architect vault transitions
+        self.registry.register_transition("ArchitectVaultIntroState", "ArchitectVaultEntryPuzzleState")
+        self.registry.register_transition("ArchitectVaultEntryPuzzleState", "ArchitectVaultGauntletState")
+        self.registry.register_transition("ArchitectVaultGauntletState", "ArchitectVaultExtractionState")
+        self.registry.register_transition("ArchitectVaultExtractionState", "ArchitectVaultSuccessState")
+        self.registry.register_transition("ArchitectVaultExtractionState", "ArchitectVaultFailureState")
+        self.registry.register_transition("ArchitectVaultSuccessState", "PlayingState")
+        self.registry.register_transition("ArchitectVaultFailureState", "PlayingState")
+        
+        # Maze defense transitions
+        self.registry.register_transition("MazeDefenseState", "PlayingState")
+        self.registry.register_transition("MazeDefenseState", "GameOverState")
+
+        # Boss fight transitions
+        self.registry.register_transition("BossFightState", "GameOverState")
+        self.registry.register_transition("BossFightState", "CorruptedSectorState")
+        self.registry.register_transition("BossFightState", "StoryMapState")
+
+        # Corrupted Sector transitions
+        self.registry.register_transition("CorruptedSectorState", "GameOverState")
+        self.registry.register_transition("CorruptedSectorState", "HarvestChamberState")
+
+        # Harvest Chamber transitions
+        self.registry.register_transition("HarvestChamberState", "GameOverState")
+        self.registry.register_transition("HarvestChamberState", "MainMenuState") # Placeholder for now
+    
+    def get_current_state(self):
+        """Returns the current state object."""
+        return self.current_state
+    
+    def get_current_state_id(self):
+        """Returns the current state's identifier."""
+        if self.current_state:
+            return self.current_state.get_state_id()
+        return None
+    
+    def _play_music(self, music_key, volume_multiplier_key="MUSIC_VOLUME_MULTIPLIER", loops=-1):
+        """Helper function to load and play music using AssetManager."""
+        music_path = self.asset_manager.get_music_path(music_key)
+
+        if not music_path or not os.path.exists(music_path):
+            logger.warning(f"Music file not found for key '{music_key}'")
+            if self.current_music_context_key == music_key:
+                pygame.mixer.music.stop()
+                self.current_music_context_key = None
+            return
+
+        try:
+            pygame.mixer.music.load(music_path)
+            volume_setting = get_setting("display", volume_multiplier_key, 1.0)
+            base_volume = get_setting("display", "MUSIC_BASE_VOLUME", 0.5)
+            pygame.mixer.music.set_volume(base_volume * volume_setting)
+            pygame.mixer.music.play(loops=loops)
+            self.current_music_context_key = music_key
+            logger.info(f"Playing music for context key '{music_key}'")
+        except pygame.error as e:
+            logger.error(f"Error playing music '{music_path}': {e}")
+            self.current_music_context_key = None
+    
+    def _update_music(self):
+        """Selects and plays appropriate music based on the current game state."""
+        if not self.current_state:
+            return
+            
+        current_state_id = self.current_state.get_state_id()
+        
+        music_map = {
+            "MainMenuState": "menu_theme",
+            "DroneSelectState": "menu_theme",
+            "SettingsState": "menu_theme",
+            "LeaderboardState": "menu_theme",
+            "EnterNameState": "menu_theme",
+            "GameOverState": "menu_theme",
+            "CodexState": "menu_theme",
+            "RingPuzzleState": "architect_vault_theme",
+            "GameIntroScrollState": "menu_theme",
+            "StoryMapState": "menu_theme",
+            "PlayingState": "gameplay_theme",
+            "BossFightState": "boss_theme", 
+            "CorruptedSectorState": "corrupted_theme",
+            "HarvestChamberState": "shmup_theme",
+            "BonusLevelPlayingState": "gameplay_theme",
+            "MazeDefenseState": "defense_theme",
+            "ArchitectVaultIntroState": "architect_vault_theme",
+            "ArchitectVaultEntryPuzzleState": "architect_vault_theme",
+            "ArchitectVaultGauntletState": "architect_vault_theme",
+            "ArchitectVaultExtractionState": "architect_vault_theme",
+            "ArchitectVaultSuccessState": "menu_theme",
+            "ArchitectVaultFailureState": "menu_theme"
+        }
+
+        music_key_for_state = music_map.get(current_state_id)
+
+        if music_key_for_state:
+            if self.current_music_context_key != music_key_for_state or not pygame.mixer.music.get_busy():
+                self._play_music(music_key_for_state)
+
+        if hasattr(self.game_controller, 'paused'):
+            if self.game_controller.paused:
+                if pygame.mixer.music.get_busy():
+                    pygame.mixer.music.pause()
+            else:
+                if not pygame.mixer.music.get_busy() and pygame.mixer.music.get_pos() > 0:
+                    pygame.mixer.music.unpause()
+                elif not pygame.mixer.music.get_busy() and self.current_music_context_key == music_key_for_state:
+                    self._play_music(self.current_music_context_key)
+    
+    def set_state(self, state_id, **kwargs):
+        """
+        Sets the current game state and initializes it.
+        Args:
+            state_id: The identifier of the state to set (class name or legacy string constant)
+            **kwargs: Additional parameters to pass to the state's enter method
+        """
+        if state_id in self.legacy_state_mapping:
+            state_id = self.legacy_state_mapping[state_id]
+        
+        # Special case for PlayingState - always allow restarting the playing state
+        # This is needed for player respawning when they lose a life
+        force_restart = kwargs.get('force_restart', False)
+        
+        if self.current_state and self.current_state.get_state_id() == state_id and not force_restart:
+            is_gameplay_state = state_id in ["PlayingState", "BonusLevelPlayingState", "MazeDefenseState", "BossFightState", "CorruptedSectorState", "HarvestChamberState"] or state_id.startswith("ArchitectVault")
+            if not (is_gameplay_state and hasattr(self.game_controller, 'paused') and self.game_controller.paused):
+                return
+        
+        old_state = self.current_state
+        old_state_id = old_state.get_state_id() if old_state else None
+        
+        if old_state_id and not self.registry.is_transition_allowed(old_state_id, state_id):
+            logger.warning(f"Transition from '{old_state_id}' to '{state_id}' is not allowed")
+            return
+        
+        state_class = self.registry.get_state_class(state_id)
+        if not state_class:
+            logger.error(f"Unknown state '{state_id}'")
+            return
+        
+        if old_state:
+            old_state.exit(state_id)
+        
+        new_state = state_class(self.game_controller)
+        new_state.enter(old_state_id, **kwargs)
+        
+        self.current_state = new_state
+        
+        self.registry.record_transition(old_state_id, state_id, time.time())
+        
+        logger.info(f"Game state changed from '{old_state_id}' to '{state_id}'")
+        
+        self._update_music()
+        
+        if hasattr(self.game_controller, 'handle_state_transition'):
+            self.game_controller.handle_state_transition(state_id, old_state_id, **kwargs)
+    
+    def update(self):
+        """
+        Called every frame by the main game loop for timed transitions or checks.
+        """
+        if not self.current_state:
+            return
+            
+        current_time = pygame.time.get_ticks()
+        current_state_id = self.current_state.get_state_id()
+        
+        # Handle timed transitions
+        if current_state_id == "ArchitectVaultIntroState":
+            if hasattr(self.game_controller, 'architect_vault_message_timer') and \
+               hasattr(self.game_controller, 'architect_vault_current_phase') and \
+               self.game_controller.architect_vault_current_phase == "intro":
+                if current_time > self.game_controller.architect_vault_message_timer:
+                    self.set_state("ArchitectVaultEntryPuzzleState")
+        
+        elif current_state_id == "BonusLevelStartState":
+            if hasattr(self.game_controller, 'bonus_level_start_display_end_time'):
+                if current_time > self.game_controller.bonus_level_start_display_end_time:
+                    self.set_state("BonusLevelPlayingState")
+                    
+        elif current_state_id == "StoryMapState":
+            if hasattr(self.game_controller, 'story_map_state') and hasattr(self.game_controller.story_map_state, 'ready_to_transition'):
+                if self.game_controller.story_map_state.ready_to_transition:
+                    self.game_controller.story_map_state._transition_to_gameplay()
+        
+        if hasattr(self.game_controller, 'paused') and not self.game_controller.paused:
+            self._update_music()
