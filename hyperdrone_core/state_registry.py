@@ -1,4 +1,4 @@
-# hyperdrone_core/state_registry.py
+# hyperdrone_core/state_registry.pyAdd commentMore actions
 import logging
 
 logger = logging.getLogger(__name__)

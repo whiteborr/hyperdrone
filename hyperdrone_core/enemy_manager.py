@@ -2,10 +2,13 @@ import pygame
 import random
 import json
 import os
+import logging
 from entities import Enemy, SentinelDrone
 from entities.defense_drone import DefenseDrone
 from entities.tr3b_enemy import TR3BEnemy
 from settings_manager import get_setting, set_setting, get_asset_path
+
+logger = logging.getLogger(__name__)
 
 class EnemyManager:
     def __init__(self, game_controller_ref, asset_manager):
@@ -21,14 +24,23 @@ class EnemyManager:
             with open(config_path, 'r') as f:
                 self.enemy_configs = json.load(f)["enemies"]
         except (FileNotFoundError, json.JSONDecodeError, KeyError) as e:
-            print(f"Error loading enemy configs: {e}")
+            logger.error(f"Error loading enemy configs: {e}")
             # Fallback to default configs if file can't be loaded
 
     def spawn_enemy_by_id(self, enemy_id, x, y, **kwargs):
         """Spawn an enemy by its ID from the configuration"""
-        config = self.enemy_configs.get(enemy_id)
+        # For level 1, use prototype_enemy as fallback if regular_enemy fails
+        if enemy_id == "regular_enemy":
+            config = self.enemy_configs.get(enemy_id)
+            if not config:
+                logger.warning(f"Regular enemy config not found, using prototype_enemy instead")
+                enemy_id = "prototype_enemy"
+                config = self.enemy_configs.get(enemy_id)
+        else:
+            config = self.enemy_configs.get(enemy_id)
+            
         if not config:
-            print(f"ERROR: Enemy config for '{enemy_id}' not found.")
+            logger.error(f"Enemy config for '{enemy_id}' not found.")
             return None
             
         # Dynamically get the class based on class_name
@@ -44,7 +56,7 @@ class EnemyManager:
         elif class_name == "DefenseDrone":
             enemy_class = DefenseDrone
         else:
-            print(f"ERROR: Unknown enemy class '{class_name}'")
+            logger.error(f"Unknown enemy class '{class_name}'")
             return None
             
         # Create the enemy instance
@@ -128,7 +140,7 @@ class EnemyManager:
                                 break
                     attempts += 1
         
-        print(f"Level {level}: Spawned {spawned_count} enemies out of {num_enemies} requested")
+        logger.info(f"Level {level}: Spawned {spawned_count} enemies out of {num_enemies} requested")
 
     def spawn_enemy_for_defense(self, enemy_type_key, spawn_position_grid, path_to_core):
         abs_x, abs_y = self.game_controller.maze._grid_to_pixel_center(*spawn_position_grid)
@@ -137,12 +149,12 @@ class EnemyManager:
         enemy = self.spawn_enemy_by_id(enemy_type_key, abs_x, abs_y, path_to_core=path_to_core)
         
         if enemy:
-            print(f"Spawned {enemy_type_key} at {abs_x}, {abs_y} with path length: {len(path_to_core)}")
+            logger.info(f"Spawned {enemy_type_key} at {abs_x}, {abs_y} with path length: {len(path_to_core)}")
         else:
             # Fallback to defense_drone_1 if the requested enemy type doesn't exist
             enemy = self.spawn_enemy_by_id("defense_drone_1", abs_x, abs_y, path_to_core=path_to_core)
             if enemy:
-                print(f"Fallback: Spawned defense_drone_1 at {abs_x}, {abs_y} with path length: {len(path_to_core)}")
+                logger.info(f"Fallback: Spawned defense_drone_1 at {abs_x}, {abs_y} with path length: {len(path_to_core)}")
         
     def update_enemies(self, primary_target_pos_pixels, maze, current_time_ms, delta_time_ms, game_area_x_offset=0, is_defense_mode=False):
         for enemy_obj in list(self.enemies):
@@ -156,12 +168,10 @@ class EnemyManager:
 
     def draw_all(self, surface, camera=None):
         for enemy in self.enemies:
-            enemy.draw(surface, camera)
-            if enemy.alive and hasattr(enemy, '_draw_health_bar'): enemy._draw_health_bar(surface, camera)
+            enemy.draw(surface, None)
+            if enemy.alive and hasattr(enemy, '_draw_health_bar'): enemy._draw_health_bar(surface, None)
 
     def reset_all(self): self.enemies.empty()
     def get_sprites(self): return self.enemies
     def get_active_enemies_count(self): 
-        count = sum(1 for e in self.enemies if e.alive)
-        print(f"Active enemies count: {count}")
-        return count
+        return sum(1 for e in self.enemies if e.alive)

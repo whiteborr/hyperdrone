@@ -1,4 +1,4 @@
-# hyperdrone_core/item_manager.py
+# hyperdrone_core/item_manager.pyAdd commentMore actions
 import random
 import pygame
 import math

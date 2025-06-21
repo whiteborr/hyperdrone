@@ -1,7 +1,10 @@
 import json
 import os
+import logging
 
 from settings_manager import get_setting, set_setting, save_settings
+
+logger = logging.getLogger(__name__)
 
 DATA_DIR = "data" #
 LEADERBOARD_FULL_PATH = os.path.join(DATA_DIR, get_setting("progression", "LEADERBOARD_FILE_NAME", "leaderboard.json")) #
@@ -11,9 +14,9 @@ def _ensure_data_dir_exists(): #
     if not os.path.exists(DATA_DIR): #
         try: #
             os.makedirs(DATA_DIR) #
-            print(f"Leaderboard: Created data directory at '{DATA_DIR}'") #
+            logger.info(f"Leaderboard: Created data directory at '{DATA_DIR}'") #
         except OSError as e: #
-            print(f"Leaderboard: Error creating data directory '{DATA_DIR}': {e}") #
+            logger.error(f"Leaderboard: Error creating data directory '{DATA_DIR}': {e}") #
             return False #
     return True #
 
@@ -28,31 +31,31 @@ def load_scores(): #
     current_leaderboard_path = os.path.join(DATA_DIR, get_setting("progression", "LEADERBOARD_FILE_NAME", "leaderboard.json"))
 
     if not os.path.exists(current_leaderboard_path): #
-        print(f"Leaderboard: File '{current_leaderboard_path}' not found. Returning empty list.") #
+        logger.info(f"Leaderboard: File '{current_leaderboard_path}' not found. Returning empty list.") #
         return [] #
     try: #
         with open(current_leaderboard_path, 'r') as f: #
             scores = json.load(f) #
             if not isinstance(scores, list): #
-                print(f"Leaderboard: Data in '{current_leaderboard_path}' is not a list. Resetting.") #
+                logger.warning(f"Leaderboard: Data in '{current_leaderboard_path}' is not a list. Resetting.") #
                 return [] #
             for entry in scores: #
                 if not isinstance(entry, dict): #
-                    print(f"Leaderboard: Invalid entry found in '{current_leaderboard_path}'. Resetting.") #
+                    logger.warning(f"Leaderboard: Invalid entry found in '{current_leaderboard_path}'. Resetting.") #
                     return [] #
             scores.sort(key=lambda x: (-int(x.get(KEY_LEADERBOARD_SCORE, 0)), -int(x.get(KEY_LEADERBOARD_LEVEL, 0)), str(x.get(KEY_LEADERBOARD_NAME, 'ZZZ')))) #
             return scores #
     except (IOError, json.JSONDecodeError) as e: #
-        print(f"Leaderboard: Error loading or parsing '{current_leaderboard_path}': {e}. Returning empty list.") #
+        logger.error(f"Leaderboard: Error loading or parsing '{current_leaderboard_path}': {e}. Returning empty list.") #
         return [] #
     except Exception as e: #
-        print(f"Leaderboard: Unexpected error loading scores from '{current_leaderboard_path}': {e}. Returning empty list.") #
+        logger.error(f"Leaderboard: Unexpected error loading scores from '{current_leaderboard_path}': {e}. Returning empty list.") #
         return [] #
 
 def save_scores(scores): #
     """Saves scores to the leaderboard file."""
     if not _ensure_data_dir_exists(): #
-        print("Leaderboard: Cannot save scores, data directory issue.") #
+        logger.error("Leaderboard: Cannot save scores, data directory issue.") #
         return #
 
     # Update path to use the leaderboard file name from settings
@@ -63,9 +66,9 @@ def save_scores(scores): #
         with open(current_leaderboard_path, 'w') as f: #
             json.dump(scores, f, indent=4) #
     except IOError as e: #
-        print(f"Leaderboard: Error: Could not save scores to '{current_leaderboard_path}': {e}") #
+        logger.error(f"Leaderboard: Error: Could not save scores to '{current_leaderboard_path}': {e}") #
     except Exception as e: #
-        print(f"Leaderboard: Unexpected error saving scores to '{current_leaderboard_path}': {e}") #
+        logger.error(f"Leaderboard: Unexpected error saving scores to '{current_leaderboard_path}': {e}") #
 
 def add_score(name, score, level): #
     """
@@ -74,14 +77,14 @@ def add_score(name, score, level): #
     from constants import KEY_LEADERBOARD_NAME, KEY_LEADERBOARD_SCORE, KEY_LEADERBOARD_LEVEL
     
     if not name or not isinstance(name, str) or len(name.strip()) == 0: #
-        print("Leaderboard: Invalid name provided for score. Not adding.") #
+        logger.warning("Leaderboard: Invalid name provided for score. Not adding.") #
         return False #
     
     try: #
         current_score = int(score) #
         current_level = int(level) #
     except ValueError: #
-        print("Leaderboard: Invalid score or level provided (must be numbers). Not adding.") #
+        logger.warning("Leaderboard: Invalid score or level provided (must be numbers). Not adding.") #
         return False #
 
     scores = load_scores() #
@@ -111,10 +114,10 @@ def add_score(name, score, level): #
         # Use settings_manager for LEADERBOARD_MAX_ENTRIES
         scores = scores[:get_setting("progression", "LEADERBOARD_MAX_ENTRIES", 10)] #
         save_scores(scores) #
-        print(f"Leaderboard: Score added for {new_score_entry[KEY_LEADERBOARD_NAME]}: Score {new_score_entry[KEY_LEADERBOARD_SCORE]}, Level {new_score_entry[KEY_LEADERBOARD_LEVEL]}") #
+        logger.info(f"Leaderboard: Score added for {new_score_entry[KEY_LEADERBOARD_NAME]}: Score {new_score_entry[KEY_LEADERBOARD_SCORE]}, Level {new_score_entry[KEY_LEADERBOARD_LEVEL]}") #
         return True #
 
-    print(f"Leaderboard: Score for {new_score_entry[KEY_LEADERBOARD_NAME]} (Score: {new_score_entry[KEY_LEADERBOARD_SCORE]}, Level: {new_score_entry[KEY_LEADERBOARD_LEVEL]}) did not qualify.") #
+    logger.info(f"Leaderboard: Score for {new_score_entry[KEY_LEADERBOARD_NAME]} (Score: {new_score_entry[KEY_LEADERBOARD_SCORE]}, Level: {new_score_entry[KEY_LEADERBOARD_LEVEL]}) did not qualify.") #
     return False #
 
 def get_top_scores(): #
@@ -131,7 +134,7 @@ def is_high_score(score, level): #
         check_score = int(score) #
         check_level = int(level) #
     except ValueError: #
-        print("Leaderboard: Invalid score or level provided for high score check.") #
+        logger.warning("Leaderboard: Invalid score or level provided for high score check.") #
         return False #
 
     scores = load_scores() #

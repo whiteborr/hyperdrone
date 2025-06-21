@@ -118,7 +118,6 @@ class UIManager:
             logger.warning("UIManager: Ability icon placeholder not found. Using fallback.")
             self.ui_asset_surfaces["ability_icon_placeholder"] = self._create_fallback_icon_surface(self.ui_icon_size_ability, "A", (100, 200, 255))
 
-
     def update_player_life_icon_surface(self):
         selected_drone_id = self.drone_system.get_selected_drone_id()
         life_icon_asset_key = f"drone_{selected_drone_id}_hud_icon" 
@@ -277,139 +276,51 @@ class UIManager:
                 self.draw_story_message_overlay(self.game_controller.story_message)
     
     def draw_story_map(self):
-        """Draw the story map screen showing player progression through chapters"""
-        # 1. Draw background
-        bg = self.asset_manager.get_image('story_map_background')
+        """Draw a simple story map screen"""
+        self._draw_star_background()
         width, height = self._cached_width, self._cached_height
         
-        if bg:
-            scaled_bg = scale(bg, (width, height))
-            self.screen.blit(scaled_bg, (0, 0))
+        # Try to get background from asset manager, fallback to solid color
+        bg_path = get_asset_path('images', 'STORY_MAP_BACKGROUND')
+        if bg_path:
+            bg = self.asset_manager.get_image(bg_path)
+            if bg:
+                scaled_bg = scale(bg, (width, height))
+                self.screen.blit(scaled_bg, (0, 0))
+            else:
+                self.screen.fill((10, 20, 40))
         else:
-            self.screen.fill((10, 20, 40))  # Dark blue fallback color
-            
-        # Title removed from minimap as requested
-
-        # 2. Define chapter positions and path - moved lower on the screen
-        chapter_positions = [
-            (width * 0.2, height * 0.6),    # Chapter 1
-            (width * 0.35, height * 0.45),  # Chapter 2
-            (width * 0.5, height * 0.6),    # Chapter 3
-            (width * 0.65, height * 0.45),  # Chapter 4
-            (width * 0.8, height * 0.6),    # Chapter 5
-            (width * 0.9, height * 0.4)     # Bonus Chapter
-        ]
+            self.screen.fill((10, 20, 40))
         
-        # Get current chapter index from story manager
-        current_chapter_index = 0  # Default to first chapter
+        title_surf = self._render_text_safe("Story Map", "large_text", GOLD, fallback_size=48)
+        self.screen.blit(title_surf, title_surf.get_rect(center=(width // 2, 100)))
+        
         current_chapter = None
-        if hasattr(self.game_controller, 'story_manager'):
-            story_manager = self.game_controller.story_manager
-            if story_manager:
-                current_chapter = story_manager.get_current_chapter()
-                if current_chapter:
-                    # Map chapter IDs to indices (0-based)
-                    chapter_id_map = {
-                        "chapter_1": 0,
-                        "chapter1": 0,
-                        "chapter_2": 1,
-                        "chapter2": 1,
-                        "chapter_3": 2,
-                        "chapter3": 2,
-                        "chapter_4": 3,
-                        "chapter4": 3,
-                        "chapter_5": 4,
-                        "chapter5": 4,
-                        "bonus": 5
-                    }
-                    current_chapter_index = chapter_id_map.get(current_chapter.chapter_id, 0)
-                else:
-                    # If no current chapter, set to first chapter
-                    current_chapter_index = 0
+        if hasattr(self.game_controller, 'story_manager') and self.game_controller.story_manager:
+            current_chapter = self.game_controller.story_manager.get_current_chapter()
         
-        # 3. Draw paths between chapters
-        path_color = (100, 80, 50)        # Brown for locked paths
-        unlocked_path_color = (200, 160, 100)  # Light gold for unlocked paths
-        
-        for i in range(len(chapter_positions) - 1):
-            # Skip the path to bonus chapter if not the last main chapter
-            if i == 4:  # Path from Chapter 5 to Bonus
-                if current_chapter_index >= 4:  # Only show if Chapter 5 is unlocked
-                    color = unlocked_path_color if current_chapter_index >= 5 else path_color
-                    draw_line(self.screen, color, chapter_positions[i], chapter_positions[i+1], 4)
-            else:  # Regular chapter paths
-                color = unlocked_path_color if i < current_chapter_index else path_color
-                draw_line(self.screen, color, chapter_positions[i], chapter_positions[i+1], 4)
-
-        # 4. Draw chapter icons and player cursor
-        # Load images from asset manifest
-        locked_icon = self.asset_manager.get_image('chapter_icon_locked')
-        unlocked_icon = self.asset_manager.get_image('chapter_icon_unlocked')
-        player_cursor = self.asset_manager.get_image('player_map_cursor')
-        
-        # Create fallback icons if needed
-        if not locked_icon:
-            locked_icon = self._create_fallback_icon_surface((40, 40), "?", (80, 80, 80))
-        if not unlocked_icon:
-            unlocked_icon = self._create_fallback_icon_surface((40, 40), "!", (200, 200, 100))
-        if not player_cursor:
-            player_cursor = self._create_fallback_icon_surface((50, 50), "X", (0, 200, 200))
-
-        # Chapter names
-        chapter_names = ["Chapter 1", "Chapter 2", "Chapter 3", "Chapter 4", "Chapter 5", "Bonus"]
-        # Use a font size that's already loaded
-        font = self.asset_manager.get_font("medium_text", 36) or Font(None, 24)
-        
-        for i, pos in enumerate(chapter_positions):
-            # Determine if this chapter is unlocked
-            is_unlocked = i <= current_chapter_index
-            
-            # Draw the appropriate icon
-            icon_to_draw = unlocked_icon if is_unlocked else locked_icon
-            if icon_to_draw:
-                rect = icon_to_draw.get_rect(center=pos)
-                self.screen.blit(icon_to_draw, rect)
-            
-            # Draw chapter name
-            name_color = WHITE if is_unlocked else GREY
-            name_surf = font.render(chapter_names[i], True, name_color)
-            name_pos = (pos[0], pos[1] + 40)  # Position below the icon
-            self.screen.blit(name_surf, name_surf.get_rect(center=name_pos))
-            
-            # Draw player cursor on current chapter
-            if i == current_chapter_index and player_cursor:
-                cursor_rect = player_cursor.get_rect(center=(pos[0], pos[1] - 30))  # Position above the icon
-                self.screen.blit(player_cursor, cursor_rect)
-        
-        # Display chapter title and description in top left
         if current_chapter:
-            # Draw chapter title
-            chapter_title_surf = self._render_text_safe(current_chapter.title, "medium_text", GOLD, fallback_size=36)
-            self.screen.blit(chapter_title_surf, (20, 20))
+            chapter_title_surf = self._render_text_safe(current_chapter.title, "ui_text", CYAN, fallback_size=32)
+            self.screen.blit(chapter_title_surf, chapter_title_surf.get_rect(center=(width // 2, 200)))
             
-            # Draw chapter description
-            desc_font = self.asset_manager.get_font("ui_text", 28) or Font(None, 28)
-            wrapped_desc = self._wrap_text_with_font_obj(current_chapter.description, desc_font, width/2 - 40)
+            desc_font = Font(None, 24)
+            wrapped_desc = self._wrap_text_with_font_obj(current_chapter.description, desc_font, width - 200)
             for i, line in enumerate(wrapped_desc):
                 desc_surf = desc_font.render(line, True, WHITE)
-                self.screen.blit(desc_surf, (20, 60 + i * 30))
+                self.screen.blit(desc_surf, desc_surf.get_rect(center=(width // 2, 250 + i * 30)))
             
-            # Draw objectives as bullet points
-            obj_y = 60 + len(wrapped_desc) * 30 + 10
-            obj_font = self.asset_manager.get_font("ui_text", 24) or Font(None, 24)
+            obj_y = 250 + len(wrapped_desc) * 30 + 50
+            obj_font = Font(None, 24)
             
             for obj in current_chapter.objectives:
                 obj_color = GREEN if obj.is_complete else WHITE
                 obj_text = f"• {obj.description}"
                 obj_surf = obj_font.render(obj_text, True, obj_color)
-                self.screen.blit(obj_surf, (30, obj_y))
+                self.screen.blit(obj_surf, obj_surf.get_rect(center=(width // 2, obj_y)))
                 obj_y += 30
         
-        # Draw instruction at bottom
-        instruction = "Press SPACE or ENTER to continue"
-        # Use a font size that's already loaded (28 instead of 24)
-        instruction_surf = self._render_text_safe(instruction, "ui_text", CYAN, fallback_size=28)
-        self.screen.blit(instruction_surf, instruction_surf.get_rect(center=(width // 2, height - 30)))
+        instruction_surf = self._render_text_safe("Press SPACE or ENTER to continue", "ui_text", CYAN, fallback_size=24)
+        self.screen.blit(instruction_surf, instruction_surf.get_rect(center=(width // 2, height - 50)))
 
     def draw_architect_vault_hud_elements(self):
         title_surf = self._render_text_safe("Architect's Vault", "large_text", GOLD, fallback_size=48)
@@ -460,10 +371,10 @@ class UIManager:
     def draw_codex_screen(self):
         self._draw_star_background()
         ui_flow = self.game_controller.ui_flow_controller
-        font_title = self.asset_manager.get_font("large_text", 52)
-        font_cat = self.asset_manager.get_font("medium_text", 36)
-        font_entry = self.asset_manager.get_font("ui_text", 28)
-        font_content = self.asset_manager.get_font("ui_text", 24)
+        font_title = self.asset_manager.get_font("large_text", 52) or Font(None, 52)
+        font_cat = self.asset_manager.get_font("medium_text", 36) or Font(None, 36)
+        font_entry = self.asset_manager.get_font("ui_text", 28) or Font(None, 28)
+        font_content = self.asset_manager.get_font("ui_text", 24) or Font(None, 24)
         
         width, height = self._cached_width, self._cached_height
         
@@ -471,20 +382,30 @@ class UIManager:
         self.screen.blit(title_surf, title_surf.get_rect(center=(width / 2, 60)))
         
         if ui_flow.codex_current_view == "categories":
-            start_y = 150
-            for i, cat_name in enumerate(ui_flow.codex_categories_list):
-                color = YELLOW if i == ui_flow.codex_selected_category_index else WHITE
-                cat_surf = font_cat.render(cat_name, True, color)
-                self.screen.blit(cat_surf, cat_surf.get_rect(center=(width/2, start_y + i * 50)))
+            if not ui_flow.codex_categories_list:
+                no_entries_surf = font_cat.render("No lore entries unlocked yet!", True, WHITE)
+                self.screen.blit(no_entries_surf, no_entries_surf.get_rect(center=(width/2, 300)))
+                instruction_surf = font_entry.render("Explore the game to unlock lore entries", True, CYAN)
+                self.screen.blit(instruction_surf, instruction_surf.get_rect(center=(width/2, 350)))
+            else:
+                start_y = 150
+                for i, cat_name in enumerate(ui_flow.codex_categories_list):
+                    color = YELLOW if i == ui_flow.codex_selected_category_index else WHITE
+                    cat_surf = font_cat.render(cat_name, True, color)
+                    self.screen.blit(cat_surf, cat_surf.get_rect(center=(width/2, start_y + i * 50)))
         
         elif ui_flow.codex_current_view == "entries":
             cat_title_surf = font_cat.render(f"Category: {ui_flow.codex_current_category_name}", True, CYAN)
             self.screen.blit(cat_title_surf, cat_title_surf.get_rect(center=(width/2, 140)))
             start_y = 220
-            for i, entry_data in enumerate(ui_flow.codex_entries_in_category_list):
-                color = YELLOW if i == ui_flow.codex_selected_entry_index_in_category else WHITE
-                entry_surf = font_entry.render(entry_data.get("title", "Unknown"), True, color)
-                self.screen.blit(entry_surf, (100, start_y + i * 40))
+            if not ui_flow.codex_entries_in_category_list:
+                no_entries_surf = font_entry.render("No entries in this category yet!", True, WHITE)
+                self.screen.blit(no_entries_surf, no_entries_surf.get_rect(center=(width/2, 300)))
+            else:
+                for i, entry_data in enumerate(ui_flow.codex_entries_in_category_list):
+                    color = YELLOW if i == ui_flow.codex_selected_entry_index_in_category else WHITE
+                    entry_surf = font_entry.render(entry_data.get("title", "Unknown"), True, color)
+                    self.screen.blit(entry_surf, (100, start_y + i * 40))
                 
         elif ui_flow.codex_current_view == "content":
             entry_details = self.drone_system.get_lore_entry_details(ui_flow.codex_selected_entry_id)
@@ -502,6 +423,17 @@ class UIManager:
                     line_y = start_y + i * line_height
                     if line_y > height - 100: break
                     self.screen.blit(line_surf, (100, line_y))
+        
+        # Add navigation instructions
+        if ui_flow.codex_current_view == "categories":
+            instruction = "Use UP/DOWN to navigate, ENTER to select, ESC to return to menu"
+        elif ui_flow.codex_current_view == "entries":
+            instruction = "Use UP/DOWN to navigate, ENTER to view, ESC to go back"
+        else:
+            instruction = "Use UP/DOWN to scroll, ESC to go back"
+        
+        instruction_surf = font_content.render(instruction, True, CYAN)
+        self.screen.blit(instruction_surf, instruction_surf.get_rect(center=(width/2, height - 50)))
 
     def draw_main_menu(self):
         # Draw the main menu logo first.
@@ -595,7 +527,6 @@ class UIManager:
         # Draw chapter objectives in the middle of the HUD
         self._draw_chapter_objectives_hud()
 
-
     def get_scaled_fragment_icon_surface(self, fragment_id):
         # Normalize fragment ID
         normalized_id = self._normalize_fragment_id(fragment_id)
@@ -626,7 +557,7 @@ class UIManager:
             direct_key = f"images/collectibles/core_fragment_{fragment_id}.png"
             return self.asset_manager.get_image(direct_key, scale_to_size=self.ui_icon_size_fragments)
         elif fragment_id == "orichalc_fragment_container":
-            return self.asset_manager.get_image("orichalc_fragment_container.png", scale_to_size=self.ui_icon_size_fragments)
+            return self.asset_manager.get_image("ORICHALC_FRAGMENT_CONTAINER", scale_to_size=self.ui_icon_size_fragments)
         return None
 
     def _draw_active_abilities_hud(self, active_abilities_data):
@@ -702,38 +633,6 @@ class UIManager:
             obj_rect = obj_surf.get_rect(center=(objectives_x, objectives_y + i * 25))
             self.screen.blit(obj_surf, obj_rect)
 
-    def _draw_powerup_bars(self, x, y, width):
-        """Draw shield and speed boost duration bars"""
-        player = self.game_controller.player
-        if not player or not hasattr(player, 'powerup_manager'):
-            return
-            
-        current_time = get_ticks()
-        bar_height = 8
-        bar_spacing = 12
-        
-        # Shield bar
-        if player.powerup_manager.shield_active:
-            remaining = max(0, player.powerup_manager.shield_end_time - current_time)
-            total = player.powerup_manager.shield_duration
-            progress = remaining / total if total > 0 else 0
-            
-            draw_rect(self.screen, DARK_GREY, (x, y, width, bar_height))
-            draw_rect(self.screen, CYAN, (x, y, width * progress, bar_height))
-            draw_rect(self.screen, WHITE, (x, y, width, bar_height), 1)
-            y += bar_spacing
-            
-        # Speed boost bar
-        if player.powerup_manager.speed_boost_active:
-            remaining = max(0, player.powerup_manager.speed_boost_end_time - current_time)
-            total = player.powerup_manager.speed_boost_duration
-            progress = remaining / total if total > 0 else 0
-            
-            draw_rect(self.screen, DARK_GREY, (x, y, width, bar_height))
-            draw_rect(self.screen, GREEN, (x, y, width * progress, bar_height))
-            draw_rect(self.screen, WHITE, (x, y, width, bar_height), 1)
-
-
     def draw_settings_menu(self):
         self._draw_star_background()
         title_surf = self._render_text_safe("Settings", "large_text", GOLD, fallback_size=48)
@@ -777,8 +676,8 @@ class UIManager:
         self.screen.blit(title_surf, title_surf.get_rect(center=(width // 2, 80)))
         
         scores = self.game_controller.ui_flow_controller.leaderboard_scores
-        font_header = self.asset_manager.get_font("medium_text", 36)
-        font_score = self.asset_manager.get_font("ui_text", 28)
+        font_header = self.asset_manager.get_font("medium_text", 36) or Font(None, 36)
+        font_score = self.asset_manager.get_font("ui_text", 28) or Font(None, 28)
         
         headers, header_positions = ["RANK", "NAME", "SCORE", "LEVEL"], [width*0.2, width*0.35, width*0.6, width*0.8]
         
@@ -878,6 +777,7 @@ class UIManager:
         self.screen.blit(overlay, (0, 0))
         pause_text = self._render_text_safe("PAUSED", "title_text", WHITE, fallback_size=90)
         self.screen.blit(pause_text, pause_text.get_rect(center=(width//2, height//2)))
+
     def _draw_powerup_bars(self, x, y, width):
         """Draw powerup status bars above weapon bar"""
         player = self.game_controller.player
@@ -889,7 +789,7 @@ class UIManager:
         current_y = y
         
         # Shield bar
-        if player.powerup_manager.shield_active:
+        if hasattr(player.powerup_manager, 'shield_active') and player.powerup_manager.shield_active:
             remaining_time = player.powerup_manager.shield_end_time - get_ticks()
             if remaining_time > 0:
                 progress = remaining_time / player.powerup_manager.shield_duration
@@ -899,7 +799,7 @@ class UIManager:
                 current_y -= bar_spacing
         
         # Speed boost bar
-        if player.powerup_manager.speed_boost_active:
+        if hasattr(player.powerup_manager, 'speed_boost_active') and player.powerup_manager.speed_boost_active:
             remaining_time = player.powerup_manager.speed_boost_end_time - get_ticks()
             if remaining_time > 0:
                 progress = remaining_time / player.powerup_manager.speed_boost_duration
@@ -907,55 +807,6 @@ class UIManager:
                 draw_rect(self.screen, GREEN, (x, current_y, width * progress, bar_height))
                 draw_rect(self.screen, WHITE, (x, current_y, width, bar_height), 1)
 
-    def draw_settings_menu(self):
-        """Draw the settings menu"""
-        self._draw_star_background()
-        title_surf = self._render_text_safe("Settings", "large_text", GOLD, fallback_size=48)
-        self.screen.blit(title_surf, title_surf.get_rect(center=(self._cached_width // 2, 80)))
-        
-    def draw_leaderboard_overlay(self):
-        """Draw the leaderboard overlay"""
-        self._draw_star_background()
-        title_surf = self._render_text_safe("Leaderboard", "large_text", GOLD, fallback_size=48)
-        self.screen.blit(title_surf, title_surf.get_rect(center=(self._cached_width // 2, 80)))
-        
-    def draw_game_over_overlay(self):
-        """Draw the game over overlay"""
-        self._draw_star_background()
-        title_surf = self._render_text_safe("Game Over", "large_text", RED, fallback_size=48)
-        self.screen.blit(title_surf, title_surf.get_rect(center=(self._cached_width // 2, self._cached_height // 2)))
-        
-    def draw_enter_name_overlay(self):
-        """Draw the enter name overlay"""
-        self._draw_star_background()
-        title_surf = self._render_text_safe("Enter Name", "large_text", GOLD, fallback_size=48)
-        self.screen.blit(title_surf, title_surf.get_rect(center=(self._cached_width // 2, 80)))
-        
-    def draw_architect_vault_success_overlay(self):
-        """Draw the architect vault success overlay"""
-        self._draw_star_background()
-        title_surf = self._render_text_safe("Vault Success!", "large_text", GOLD, fallback_size=48)
-        self.screen.blit(title_surf, title_surf.get_rect(center=(self._cached_width // 2, self._cached_height // 2)))
-        
-    def draw_architect_vault_failure_overlay(self):
-        """Draw the architect vault failure overlay"""
-        self._draw_star_background()
-        title_surf = self._render_text_safe("Vault Failed", "large_text", RED, fallback_size=48)
-        self.screen.blit(title_surf, title_surf.get_rect(center=(self._cached_width // 2, self._cached_height // 2)))
-        
-    def draw_maze_defense_hud(self):
-        """Draw the maze defense HUD"""
-        title_surf = self._render_text_safe("Maze Defense", "large_text", GOLD, fallback_size=48)
-        self.screen.blit(title_surf, title_surf.get_rect(center=(self._cached_width // 2, 50)))
-        
-    def draw_pause_overlay(self):
-        """Draw the pause overlay"""
-        overlay = Surface((self._cached_width, self._cached_height), SRCALPHA)
-        overlay.fill((0, 0, 0, 128))
-        self.screen.blit(overlay, (0, 0))
-        
-        pause_surf = self._render_text_safe("PAUSED", "large_text", WHITE, fallback_size=72)
-        self.screen.blit(pause_surf, pause_surf.get_rect(center=(self._cached_width // 2, self._cached_height // 2)))
     def _draw_lives_icons(self, weapon_icon, x, y):
         """Draw player lives using weapon icons"""
         rotated_icon = rotate(weapon_icon, 90)
@@ -998,17 +849,17 @@ class UIManager:
     def _draw_fragments_hud(self, width, panel_y):
         """Draw core fragment collection indicators"""
         frags_x = width - 200
+        frags_y = panel_y + 65
         
         # Draw orichalc fragment container
         orichalc_icon = self.ui_asset_surfaces["core_fragment_icons"].get("orichalc_fragment_container")
         if not orichalc_icon:
-            orichalc_icon = self.asset_manager.get_image("orichalc_fragment_container.png", scale_to_size=self.ui_icon_size_fragments)
+            orichalc_icon = self.asset_manager.get_image("ORICHALC_FRAGMENT_CONTAINER", scale_to_size=self.ui_icon_size_fragments)
             if orichalc_icon:
                 self.ui_asset_surfaces["core_fragment_icons"]["orichalc_fragment_container"] = orichalc_icon
         
         if orichalc_icon:
             self.screen.blit(orichalc_icon, (frags_x - 40, frags_y))
-        frags_y = panel_y + 65
         
         core_fragment_details = settings_manager.get_core_fragment_details()
         collected = self.drone_system.get_collected_fragments_ids()
@@ -1020,9 +871,3 @@ class UIManager:
             icon = self.ui_asset_surfaces["core_fragment_icons"].get(frag_id) if show_filled_icon else self.ui_asset_surfaces["core_fragment_empty_icon"]
             if icon: 
                 self.screen.blit(icon, (frags_x + i * (self.ui_icon_size_fragments[0] + 5), frags_y))
-
-    def _draw_powerup_bars(self, x, y, width):
-        """Draw powerup duration bars - placeholder for actual implementation"""
-        # This method is referenced but not implemented in the original code
-        # Add implementation based on game's powerup system
-        pass

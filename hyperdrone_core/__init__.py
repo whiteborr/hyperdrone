@@ -1,4 +1,4 @@
-# hyperdrone_core/__init__.py
+# hyperdrone_core/__init__.pyAdd commentMore actions
 
 # Import the main GameController class to be accessible when importing hyperdrone_core
 from .game_loop import GameController
@@ -37,7 +37,7 @@ __all__ = [
     "WaveManager",
     "BossFightState",
     "CorruptedSectorState",
-    "HarvestChamberState", # Add HarvestChamberState
+    "HarvestChamberState",
     "CombatController",
     "PuzzleController",
     "UIFlowController",

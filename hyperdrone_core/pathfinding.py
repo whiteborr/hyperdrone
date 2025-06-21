@@ -1,4 +1,4 @@
-# hyperdrone_core/pathfinding.py
+# hyperdrone_core/pathfinding.pyAdd commentMore actions
 import heapq
 import math
 import random
@@ -26,6 +26,35 @@ class AStarNode:
 
 
 def a_star_search(maze_grid, start_pos_grid, end_pos_grid, maze_rows, maze_cols):
+    """
+    A* pathfinding algorithm implementation for maze navigation.
+    
+    Finds the optimal path between two points in a grid-based maze using the A*
+    search algorithm. Uses Manhattan distance as the heuristic function and
+    considers 4-directional movement (up, down, left, right).
+    
+    Algorithm Details:
+    - Uses priority queue (heapq) for efficient node selection
+    - Maintains open set (nodes to explore) and closed set (explored nodes)
+    - Calculates f(n) = g(n) + h(n) where:
+      - g(n) = actual cost from start to node n
+      - h(n) = heuristic estimate from node n to goal (Manhattan distance)
+    - Reconstructs path by backtracking through parent pointers
+    
+    Args:
+        maze_grid (list): 2D list representing the maze (0=walkable, 1=wall)
+        start_pos_grid (tuple): Starting position as (row, col) in grid coordinates
+        end_pos_grid (tuple): Target position as (row, col) in grid coordinates
+        maze_rows (int): Number of rows in the maze grid
+        maze_cols (int): Number of columns in the maze grid
+        
+    Returns:
+        list: List of (x, y) pixel coordinates representing the path from start to end.
+              Returns empty list if no path exists.
+              
+    Time Complexity: O(b^d) where b is branching factor and d is depth
+    Space Complexity: O(b^d) for storing the open and closed sets
+    """
     """
     A* pathfinding algorithm to find the shortest path between two points.
     
@@ -59,20 +88,22 @@ def a_star_search(maze_grid, start_pos_grid, end_pos_grid, maze_rows, maze_cols)
     # Keep track of nodes in open list for faster lookup
     open_set_hash = {start_pos_grid}
     
-    # Main loop
+    # Main A* algorithm loop
     while open_list:
-        # Get node with lowest f_cost
+        # Get the node with the lowest f_cost (most promising path)
+        # Priority queue ensures we always get the best candidate first
         _, current_node = heapq.heappop(open_list)
         
-        # Skip if node was already processed
+        # Skip nodes that were already processed (can happen with duplicate entries)
         if current_node.position not in open_set_hash:
             continue
         
+        # Remove from open set as we're now processing it
         open_set_hash.remove(current_node.position)
         
-        # Check if we reached the goal
+        # Goal test: check if we've reached the destination
         if current_node.position == end_node.position:
-            # Reconstruct path
+            # Reconstruct the optimal path by following parent pointers
             path = []
             temp = current_node
             while temp:
@@ -80,26 +111,30 @@ def a_star_search(maze_grid, start_pos_grid, end_pos_grid, maze_rows, maze_cols)
                 temp = temp.parent
             return path[::-1]  # Return reversed path (start to end)
         
-        # Add current node to closed set
+        # Mark current node as fully explored
         closed_set.add(current_node.position)
         
-        # Check neighbors (4-directional movement)
+        # Explore all 4-directional neighbors (up, down, left, right)
         for new_pos_offset in [(0, -1), (0, 1), (-1, 0), (1, 0)]:
             node_pos = (current_node.position[0] + new_pos_offset[0], current_node.position[1] + new_pos_offset[1])
             
-            # Skip if out of bounds, wall, or already processed
+            # Skip invalid neighbors: out of bounds, walls, or already explored
             if not (0 <= node_pos[0] < maze_rows and 0 <= node_pos[1] < maze_cols) or maze_grid[node_pos[0]][node_pos[1]] == 1 or node_pos in closed_set:
                 continue
             
-            # Create neighbor node
+            # Create new node for this neighbor
             neighbor = AStarNode(node_pos, current_node)
             
-            # Calculate costs
+            # Calculate A* costs:
+            # g_cost: actual distance from start (incremental cost = 1 for grid movement)
             neighbor.g_cost = current_node.g_cost + 1
+            # h_cost: Manhattan distance heuristic to goal (admissible and consistent)
             neighbor.h_cost = abs(neighbor.position[0] - end_node.position[0]) + abs(neighbor.position[1] - end_node.position[1])
+            # f_cost: total estimated cost of path through this node
             neighbor.f_cost = neighbor.g_cost + neighbor.h_cost
             
-            # Skip if we already found a better path to this neighbor
+            # Only add to open list if we haven't found a better path to this position
+            # This prevents redundant exploration of suboptimal paths
             if not any(n[1] == neighbor and neighbor.g_cost >= n[1].g_cost for n in open_list):
                 heapq.heappush(open_list, (neighbor.f_cost, neighbor))
                 open_set_hash.add(neighbor.position)
@@ -109,6 +144,28 @@ def a_star_search(maze_grid, start_pos_grid, end_pos_grid, maze_rows, maze_cols)
 
 
 def find_wall_follow_target(maze, current_grid_pos, maze_rows, maze_cols):
+    """
+    Finds a target position for wall-following behavior.
+    
+    Implements a wall-following algorithm that helps entities navigate when
+    direct pathfinding fails. Searches for nearby walls and selects a target
+    position that allows the entity to follow the wall's perimeter.
+    
+    Algorithm:
+    1. Search in expanding radius around current position
+    2. Identify wall tiles adjacent to walkable spaces
+    3. Select target that maintains wall contact while allowing movement
+    4. Prefer targets that lead away from current position
+    
+    Args:
+        maze (Maze): The game maze object with grid and utility methods
+        current_grid_pos (tuple): Current position as (row, col) in grid coordinates
+        maze_rows (int): Number of rows in the maze
+        maze_cols (int): Number of columns in the maze
+        
+    Returns:
+        tuple or None: Target position as (row, col) if wall found, None otherwise
+    """
     """
     Find a target position along a wall to follow using A*
     

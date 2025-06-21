@@ -1,4 +1,4 @@
-# hyperdrone_core/settings_state.py
+# hyperdrone_core/settings_state.pyAdd commentMore actions
 import pygame
 from .state import State
 from settings_manager import get_setting
@@ -20,5 +20,5 @@ class SettingsState(State):
     
     def draw(self, surface):
         # Let the UI manager handle drawing the settings menu
-        # The UI manager already has all the necessary code to draw the settings
+        # The UI manager already has all the necessary code to draw the settingsAdd commentMore actions
         pass

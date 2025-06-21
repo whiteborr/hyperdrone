@@ -1,4 +1,4 @@
-# hyperdrone_core/playing_state.py
+# hyperdrone_core/playing_state.pyAdd commentMore actions
 import pygame
 from .state import State
 from settings_manager import get_setting
@@ -95,6 +95,9 @@ class PlayingState(State):
             maze=self.game.maze, 
             power_ups_group=self.game.power_ups_group
         )
+        
+        # Spawn enemies for the current level
+        self.game.combat_controller.enemy_manager.spawn_enemies_for_level(self.game.level_manager.level)
         
         # Set up puzzle controller
         self.game.puzzle_controller.set_active_entities(
@@ -216,5 +219,5 @@ class PlayingState(State):
         ring_icon = self.game.asset_manager.get_image("ring_ui_icon")
         self.game.level_manager.draw_ring_animations(surface, ring_icon)
         
-        # Draw fragment animations
+        # Draw fragment animationsAdd commentMore actions
         self.game._draw_fragment_animations()

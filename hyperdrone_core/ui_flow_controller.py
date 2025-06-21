@@ -1,4 +1,4 @@
-# hyperdrone_core/ui_flow_controller.py
+# hyperdrone_core/ui_flow_controller.pyAdd commentMore actions
 import pygame
 import random
 import logging
@@ -94,14 +94,10 @@ class UIFlowController:
 
     def update(self, current_time_ms, delta_time_ms, current_game_state):
         """Called every frame to update UI animations or timed transitions."""
+        # MODIFICATION: Use class names for state IDs to match the StateManager.
         menu_like_states = [
-            GAME_STATE_MAIN_MENU,
-            GAME_STATE_LEADERBOARD,
-            GAME_STATE_SETTINGS,
-            GAME_STATE_DRONE_SELECT,
-            GAME_STATE_CODEX,
-            GAME_STATE_GAME_OVER,
-            GAME_STATE_ENTER_NAME
+            "MainMenuState", "LeaderboardState", "SettingsState",
+            "DroneSelectState", "CodexState", "GameOverState", "EnterNameState"
         ]
         
         if current_game_state in menu_like_states:
@@ -255,8 +251,12 @@ class UIFlowController:
             if selected_item["type"] == "action":
                 if item_key == "RESET_SETTINGS_ACTION":
                     # Reset settings to defaults
-                    from settings_manager import save_settings
-                    save_settings()
+                    from settings_manager import reset_all_settings_to_default
+                    reset_all_settings_to_default()
+                    # Update game lives to match the reset default
+                    self.game_controller.lives = get_setting("gameplay", "PLAYER_LIVES", 3)
+                    # Reinitialize settings menu to reflect changes
+                    self.settings_items_data = self.game_controller._get_settings_menu_items_data_structure()
                     self.game_controller.play_sound('ui_confirm')
                 return True
             elif selected_item.get("action") == "start_chapter" and selected_item["type"] == "choice":
@@ -292,6 +292,9 @@ class UIFlowController:
                 new_val = max(selected_item["min"], min(new_val, selected_item["max"]))
                 from settings_manager import set_setting
                 set_setting(category, item_key, new_val)
+                # Update game lives if PLAYER_LIVES setting was changed
+                if item_key == "PLAYER_LIVES":
+                    self.game_controller.lives = new_val
                 self.game_controller.play_sound('ui_select')
             elif selected_item["type"] == "choice":
                 choices = selected_item["choices"]
@@ -304,12 +307,18 @@ class UIFlowController:
                         new_idx = (current_idx + direction) % len(choices)
                     from settings_manager import set_setting
                     set_setting(category, item_key, choices[new_idx])
+                    # Update game lives if PLAYER_LIVES setting was changed
+                    if item_key == "PLAYER_LIVES":
+                        self.game_controller.lives = choices[new_idx]
                     self.game_controller.play_sound('ui_select')
                 except (ValueError, TypeError):
                     # If there's any error, just set to the first choice
                     if choices:
                         from settings_manager import set_setting
                         set_setting(category, item_key, choices[0])
+                        # Update game lives if PLAYER_LIVES setting was changed
+                        if item_key == "PLAYER_LIVES":
+                            self.game_controller.lives = choices[0]
                         self.game_controller.play_sound('ui_select')
             return True
         return False
@@ -330,11 +339,11 @@ class UIFlowController:
         
         # Set up prerequisites based on chapter
         if chapter_index >= 1:  # Chapter 2 or later
-            # Mark all objectives in previous chapters as complete
+            # Mark all objectives in previous chapters as complete but don't trigger completion logic
             for i in range(chapter_index):
                 prev_chapter = story_manager.chapters[i]
                 for obj in prev_chapter.objectives:
-                    obj.complete()
+                    obj.completed = True  # Set directly without calling complete()
                     
             # For Chapter 2 (Guardian), unlock VANTIS drone
             if chapter_index >= 1 and hasattr(self.game_controller, 'drone_system'):

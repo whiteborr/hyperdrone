@@ -1,4 +1,4 @@
-# hyperdrone_core/event_manager.py
+# hyperdrone_core/event_manager.pyAdd commentMore actions
 import pygame
 import sys
 import logging
@@ -264,6 +264,6 @@ class EventManager:
         if self.batch_enabled != enabled:
             self.batch_enabled = enabled
             
-            # If disabling, flush all pending batches
+            # If disabling, flush all pending batchesAdd commentMore actions
             if not enabled:
                 self.flush_all_batches()

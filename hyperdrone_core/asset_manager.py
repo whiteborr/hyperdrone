@@ -1,4 +1,4 @@
-# hyperdrone_core/asset_manager.py
+# hyperdrone_core/asset_manager.pyAdd commentMore actions
 import pygame
 import os
 import logging
@@ -62,10 +62,13 @@ class AssetManager:
         original_image = self.images.get(key)
         
         if not original_image:
-            # If key not in cache, the key IS the path for non-manifest assets.
-            # This prevents treating a key name like a file path.
-            if os.path.exists(self._get_full_path(key) or ""):
-                 original_image = self.load_image(key)
+            # Check if it's a manifest key first
+            from settings_manager import settings_manager
+            manifest_path = settings_manager.get_asset_path("images", key)
+            if manifest_path:
+                original_image = self.load_image(manifest_path, key)
+            elif os.path.exists(self._get_full_path(key) or ""):
+                original_image = self.load_image(key)
             else:
                 logger.warning(f"AssetManager: Image with key or path '{key}' not found.")
                 if default_surface_params: return self._create_fallback_surface(**default_surface_params)

@@ -39,7 +39,7 @@ class HUDContainer:
     """Manages the orichalc container display in HUD"""
     def __init__(self, asset_manager):
         self.asset_manager = asset_manager
-        self.container_icon = asset_manager.get_image("orichalc_fragment_container", scale_to_size=(100, 100))
+        self.container_icon = asset_manager.get_image("ORICHALC_FRAGMENT_CONTAINER", scale_to_size=(100, 100))
         if not self.container_icon:
             # Fallback container
             self.container_icon = Surface((100, 100), SRCALPHA)

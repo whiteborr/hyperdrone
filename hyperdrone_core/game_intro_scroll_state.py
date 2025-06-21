@@ -1,4 +1,4 @@
-# hyperdrone_core/game_intro_scroll_state.py
+# hyperdrone_core/game_intro_scroll_state.pyAdd commentMore actions
 import pygame
 from .state import State
 from settings_manager import get_setting
@@ -21,5 +21,5 @@ class GameIntroScrollState(State):
     
     def draw(self, surface):
         # Let the UI manager handle drawing the game intro screen
-        # The UI manager already has all the necessary code to draw the intro
+        # The UI manager already has all the necessary code to draw the introAdd commentMore actions
         pass

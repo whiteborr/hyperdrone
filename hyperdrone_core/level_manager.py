@@ -1,4 +1,4 @@
-# hyperdrone_core/level_manager.py
+# hyperdrone_core/level_manager.pyAdd commentMore actions
 import pygame
 import random
 import logging

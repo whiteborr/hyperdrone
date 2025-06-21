@@ -3,7 +3,7 @@
         "DRONE"
     ],
     "selected_drone_id": "DRONE",
-    "player_cores": 17,
+    "player_cores": 0,
     "unlocked_lore_ids": [],
     "collected_core_fragments": [],
     "architect_vault_completed": false,

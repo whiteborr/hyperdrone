@@ -1,4 +1,4 @@
-# hyperdrone_core/camera.py
+# hyperdrone_core/camera.pyAdd commentMore actions
 import pygame
 from settings_manager import get_setting
 

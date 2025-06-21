@@ -1,4 +1,4 @@
-# hyperdrone_core/drone_select_state.py
+# hyperdrone_core/drone_select_state.pyAdd commentMore actions
 import pygame
 from .state import State
 from settings_manager import get_setting
@@ -19,6 +19,5 @@ class DroneSelectState(State):
         pass
     
     def draw(self, surface):
-        # Let the UI manager handle drawing the drone select screen
-        # The UI manager already has all the necessary code to draw the drone selection
+        # Drawing is now handled by the UIManager.
         pass

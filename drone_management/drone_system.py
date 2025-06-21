@@ -40,6 +40,10 @@ class DroneSystem:
         self.architect_vault_completed = False
 
         self._load_unlocks()
+        
+        # Unlock some basic lore entries by default for testing
+        self._unlock_default_lore_entries()
+        
         logger.info(f"DroneSystem initialized. Unlocked: {self.unlocked_drones}. Selected: {self.selected_drone_id}")
 
 
@@ -368,3 +372,19 @@ class DroneSystem:
     def set_player_level(self, level):
         """Placeholder for potential future logic related to player level."""
         pass
+    
+    def _unlock_default_lore_entries(self):
+        """Unlock some basic lore entries that should be available from the start"""
+        default_entries = [
+            "architect_legacy_intro",
+            "drone_DRONE"
+        ]
+        
+        for entry_id in default_entries:
+            if entry_id in self.all_lore_entries and entry_id not in self.unlocked_lore_ids:
+                self.unlocked_lore_ids.add(entry_id)
+                logger.info(f"Default lore entry '{entry_id}' unlocked")
+        
+        if default_entries:
+            self._save_dirty = True
+            self._save_unlocks()

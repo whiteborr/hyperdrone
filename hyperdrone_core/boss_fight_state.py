@@ -1,10 +1,13 @@
-# hyperdrone_core/boss_fight_state.py
+# hyperdrone_core/boss_fight_state.pyAdd commentMore actions
 import pygame
 import random
+import logging
 from .state import State
 from settings_manager import get_setting
 from entities import Maze, MazeGuardian, PlayerDrone
 from drone_management import DRONE_DATA
+
+logger = logging.getLogger(__name__)
 
 class BossFightState(State):
     """
@@ -14,7 +17,7 @@ class BossFightState(State):
     """
     def enter(self, previous_state=None, **kwargs):
         """Initializes the boss arena, the player, and the Maze Guardian."""
-        print("Entering BossFightState...")
+        logger.info("Entering BossFightState...")
         # Create a specific arena for the boss fight (more open layout)
         self.game.maze = Maze(maze_type="boss_arena")
 
@@ -81,7 +84,7 @@ class BossFightState(State):
             self.enemies_spawned_in_wave = 0
             self.wave_start_time = pygame.time.get_ticks()
             self.last_spawn_time = 0
-            print(f"Starting wave {self.current_wave}/{self.total_waves} with {self.enemies_to_kill_in_wave} {self.current_enemy_type} enemies")
+            logger.info(f"Starting wave {self.current_wave}/{self.total_waves} with {self.enemies_to_kill_in_wave} {self.current_enemy_type} enemies")
             self.game.set_story_message(f"Wave {self.current_wave}/{self.total_waves}: Defeat the guardian's minions!", 3000)
         else:
             self._spawn_boss()
@@ -89,7 +92,7 @@ class BossFightState(State):
     def _spawn_boss(self):
         """Spawn the Maze Guardian boss after all waves are cleared"""
         if not self.boss_spawned:
-            print("All waves cleared! Spawning the Maze Guardian boss!")
+            logger.info("All waves cleared! Spawning the Maze Guardian boss!")
             self.game.set_story_message("The Maze Guardian has appeared!", 5000)
             
             # Spawn the Maze Guardian
@@ -151,7 +154,7 @@ class BossFightState(State):
             
             self.game.combat_controller.enemy_manager.spawn_enemy_by_id(enemy_type, x, y)
             self.enemies_spawned_in_wave += 1
-            print(f"Spawned {enemy_type} {self.enemies_spawned_in_wave}/{self.enemies_to_kill_in_wave} for wave {self.current_wave}")
+            logger.info(f"Spawned {enemy_type} {self.enemies_spawned_in_wave}/{self.enemies_to_kill_in_wave} for wave {self.current_wave}")
     
     def update(self, delta_time):
         """Update all entities and check for the end of the fight."""

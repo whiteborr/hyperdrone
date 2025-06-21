@@ -1,4 +1,4 @@
-# hyperdrone_core/game_loop.py
+# hyperdrone_core/game_loop.pyAdd commentMore actions
 import sys
 import os
 import random
@@ -20,21 +20,37 @@ from .level_manager import LevelManager
 from .asset_manager import AssetManager
 from story import StoryManager, Chapter, Objective 
 
-from entities import PlayerDrone, CoreReactor, Turret, LightningZap, Missile, Particle
-from entities import MazeGuardian, SentinelDrone, EscapeZone, Maze, MazeChapter3, Bullet
+from entities import (
+    PlayerDrone, CoreReactor, Turret, LightningZap, Missile, Particle, GlitchingWall,
+    MazeGuardian, SentinelDrone, EscapeZone, Maze, MazeChapter3, Bullet
+)
 from entities.collectibles import (
     Ring as CollectibleRing, WeaponUpgradeItem, ShieldItem, SpeedBoostItem,
     CoreFragmentItem, GlyphTabletItem, AncientAlienTerminal, 
-    ArchitectEchoItem, CorruptedLogItem
+    ArchitectEchoItem, CorruptedLogItem, QuantumCircuitryItem
 )
 from entities.temporary_barricade import TemporaryBarricade
 from drone_management import DroneSystem, DRONE_DATA
 from settings_manager import get_setting, set_setting, save_settings, settings_manager
-from hyperdrone_core.camera import Camera
 
 logger_gc = logging.getLogger(__name__)
 
 class GameController:
+    """
+    Main game controller that manages the entire game lifecycle.
+    
+    Handles initialization, game loop execution, state management, and coordination
+    between all game systems including rendering, input, audio, and game logic.
+    
+    Attributes:
+        screen (pygame.Surface): Main display surface
+        asset_manager (AssetManager): Handles all game assets
+        drone_system (DroneSystem): Manages drone unlocks and progression
+        state_manager (StateManager): Handles game state transitions
+        event_manager (EventManager): Manages game events and communication
+        combat_controller (CombatController): Handles combat logic
+        level_manager (LevelManager): Manages level progression and scoring
+    """
     def __init__(self):
         pygame.init()
         pygame.mixer.init()
@@ -65,23 +81,18 @@ class GameController:
 
         self.clock = pygame.time.Clock()
         
-        self.player_actions = PlayerActions(self)
-        self.combat_controller = CombatController(self, self.asset_manager)
-        self.puzzle_controller = PuzzleController(self, self.asset_manager)
-        self.ui_flow_controller = UIFlowController(self)
-        # Pass self (GameController) and drone_system directly
-        self.ui_manager = UIManager(self.screen, self.asset_manager, self, None, self.drone_system)
-        
-        self.state_manager = StateManager(self)
-        
+        # --- Initialize all attributes and sprite groups first ---
         self.player = None
         self.maze = None
         self.camera = None
         
         self.score = 0
         self.level = 1
-
-        # Initialize sprite groups first
+        self.lives = get_setting("gameplay", "PLAYER_LIVES", 3)
+        self.paused = False
+        self.is_build_phase = False
+        
+        # Initialize all sprite groups
         self.collectible_rings_group = pygame.sprite.Group()
         self.power_ups_group = pygame.sprite.Group()
         self.core_fragments_group = pygame.sprite.Group()
@@ -94,22 +105,24 @@ class GameController:
         self.escape_zone_group = pygame.sprite.GroupSingle()
         self.reactor_group = pygame.sprite.GroupSingle()
         self.turrets_group = pygame.sprite.Group()
-        self.corrupted_logs_group = pygame.sprite.Group() # New group for logs
-        self.quantum_circuitry_group = pygame.sprite.GroupSingle() # For Chapter 4
-        self.spawned_barricades_group = pygame.sprite.Group() # Group for barricades
+        self.corrupted_logs_group = pygame.sprite.Group()
+        self.quantum_circuitry_group = pygame.sprite.GroupSingle()
+        self.spawned_barricades_group = pygame.sprite.Group()
+        self.glitching_walls_group = pygame.sprite.Group()
 
+        # --- Initialize controllers and managers AFTER attributes are set ---
+        self.player_actions = PlayerActions(self)
+        self.combat_controller = CombatController(self, self.asset_manager)
+        self.puzzle_controller = PuzzleController(self, self.asset_manager)
+        self.ui_flow_controller = UIFlowController(self)
+        self.ui_manager = UIManager(self.screen, self.asset_manager, self, None, self.drone_system)
+        
         from .item_manager import ItemManager
         self.item_manager = ItemManager(self, self.asset_manager)
         
-        self.ui_manager.state_manager = self.state_manager
+        self.ui_flow_controller.set_dependencies(None, self.ui_manager, self.drone_system)
         
-        self.ui_flow_controller.set_dependencies(self.state_manager, self.ui_manager, self.drone_system)
-        
-        self.event_manager = EventManager(self, self.state_manager, self.combat_controller, self.puzzle_controller, self.ui_flow_controller)
-        
-        self.lives = get_setting("gameplay", "PLAYER_LIVES", 3)
-        self.paused = False
-        self.is_build_phase = False
+        self.event_manager = EventManager(self, None, self.combat_controller, self.puzzle_controller, self.ui_flow_controller)
         
         self.level_manager = LevelManager(self)
         
@@ -141,9 +154,9 @@ class GameController:
         self.intro_screen_text_surfaces_current = []
         self.intro_font_key = "codex_category_font"
         
-        self.story_manager = StoryManager(state_manager_ref=self.state_manager, drone_system_ref=self.drone_system)
+        self.story_manager = StoryManager(state_manager_ref=None, drone_system_ref=self.drone_system)
 
-        # -- Define Chapter 1: The Anomaly --
+        # -- Define Story Chapters --
         ch1_obj1 = Objective(objective_id="c1_collect_rings", description="Gather energy signatures (Collect all Rings)", obj_type="collect_all", target="rings")
         ch1_obj2 = Objective(objective_id="c1_clear_hostiles", description="Neutralize initial defense drones", obj_type="kill_all", target="standard_enemies")
         chapter1 = Chapter(chapter_id="chapter_1", title="Chapter 1: The Anomaly", 
@@ -151,14 +164,12 @@ class GameController:
                            objectives=[ch1_obj1, ch1_obj2], 
                            next_state_id="PlayingState")
 
-        # -- Define Chapter 2: The Guardian --
         ch2_obj1 = Objective(objective_id="c2_defeat_guardian", description="Decommission the Vault's primary Guardian", obj_type="kill", target="MAZE_GUARDIAN")
         chapter2 = Chapter(chapter_id="chapter_2", title="Chapter 2: The Guardian", 
                            description="The Vault's defenses are active and hostile. A formidable Guardian blocks the path forward.", 
                            objectives=[ch2_obj1], 
                            next_state_id="BossFightState")
 
-        # -- Define Chapter 3: The Corrupted Sector --
         ch3_obj1 = Objective(objective_id="c3_find_log_alpha", description="Find Corrupted Log Alpha", obj_type="collect", target="log_alpha")
         ch3_obj2 = Objective(objective_id="c3_find_log_beta", description="Access secure data with VANTIS drone", obj_type="collect", target="log_beta")
         chapter3 = Chapter(chapter_id="chapter_3", title="Chapter 3: The Corrupted Sector", 
@@ -166,14 +177,12 @@ class GameController:
                            objectives=[ch3_obj1, ch3_obj2], 
                            next_state_id="CorruptedSectorState")
                            
-        # -- Define Chapter 4: The Harvest Chamber --
         ch4_obj1 = Objective(objective_id="c4_retrieve_payload", description="Retrieve the Quantum Circuitry", obj_type="collect", target="quantum_circuitry")
         chapter4 = Chapter(chapter_id="chapter_4", title="Chapter 4: The Harvest Chamber",
                             description="Descend into the Vault's intake chamber. Find the payload from flight MH370.",
                             objectives=[ch4_obj1],
                             next_state_id="HarvestChamberState")
 
-        # Add the chapters to the story manager in order
         self.story_manager.add_chapter(chapter1)
         self.story_manager.add_chapter(chapter2)
         self.story_manager.add_chapter(chapter3)
@@ -186,10 +195,13 @@ class GameController:
         self.STORY_TEXT_COLOR = (220, 220, 220)
         self.STORY_TITLE_COLOR = (255, 255, 255)
         
-        self.player = None
-        
-        self.state_manager.set_state("MainMenuState")
-        
+        # --- Final initialization step: Create StateManager and link it to other managers ---
+        self.state_manager = StateManager(self)
+        self.ui_manager.state_manager = self.state_manager
+        self.ui_flow_controller.scene_manager = self.state_manager
+        self.event_manager.scene_manager = self.state_manager
+        self.story_manager.state_manager = self.state_manager
+
         logger_gc.info("GameController initialized successfully.")
 
     def _preload_all_assets(self):
@@ -197,6 +209,15 @@ class GameController:
         logger_gc.info("GameController: All assets preloaded via AssetManager.")
     
     def run(self):
+        """
+        Main game loop that handles events, updates game state, and renders frames.
+        
+        Runs continuously until the game is quit, managing:
+        - Event processing (input, window events)
+        - Game state updates (physics, AI, animations)
+        - Rendering (drawing all game elements)
+        - Frame rate control
+        """
         while True:
             delta_time_ms = self.clock.tick(get_setting("display", "FPS", 60))
             
@@ -225,7 +246,6 @@ class GameController:
             if current_state:
                 current_state.draw(self.screen)
             
-            # Pass player's active ability data to UI manager
             active_abilities_data = {}
             if self.player and hasattr(self.player, 'active_abilities') and self.player.active_abilities:
                 active_abilities_data = self.player.active_abilities
@@ -305,7 +325,6 @@ class GameController:
             0: "Standard", 1: "Spread", 2: "Rapid", 3: "Missile"
         }
         
-        # Create chapter choices for the settings menu
         chapter_choices = []
         chapter_display_names = {}
         for i, chapter in enumerate(self.story_manager.chapters):
@@ -322,7 +341,6 @@ class GameController:
             {"label":"Start Chapter","key":"START_CHAPTER","category":"testing","type":"choice",
              "choices":chapter_choices, "get_display":lambda val:chapter_display_names.get(val,"Unknown"),
              "note":"For testing - sets prerequisites for chapter", "action":"start_chapter"},
-            # NEW: Add entry for Core Fragment Abilities
             {"label":"Core Abilities","key":"CORE_ABILITIES_KEY","category":"controls","type":"info", "get_display":lambda val:"'F' Key", "note":"Activate collected Core Fragment Abilities."},
             {"label":"Missile Damage","key":"weapons","type":"numeric","min":10,"max":100,"step":5},
             {"label":"Enemy Speed","key":"ENEMY_SPEED","category":"enemies","type":"numeric","min":0.5,"max":5,"step":0.5},
@@ -343,16 +361,14 @@ class GameController:
         if self.maze and hasattr(self.maze, 'get_walkable_tiles_abs'):
             walkable = self.maze.get_walkable_tiles_abs()
             if walkable:
-                # Get screen dimensions to ensure enemies are within visible area
                 screen_width = get_setting("display", "WIDTH", 1920)
                 screen_height = get_setting("display", "GAME_PLAY_AREA_HEIGHT", 960)
                 
-                # Filter walkable tiles to only include those within screen bounds
                 visible_walkable = [pos for pos in walkable if 0 < pos[0] < screen_width and 0 < pos[1] < screen_height]
                 
                 if visible_walkable:
                     return random.choice(visible_walkable)
-                return random.choice(walkable)  # Fallback to any walkable tile
+                return random.choice(walkable)
         return (200, 200)
         
     def _respawn_player(self):
@@ -360,16 +376,13 @@ class GameController:
         if not self.maze:
             return
             
-        # Get spawn position
         tile_size = get_setting("display", "TILE_SIZE", 64)
         spawn_x, spawn_y = self._get_safe_spawn_point(tile_size * 0.7, tile_size * 0.7)
         
-        # Get drone details
         drone_id = self.drone_system.get_selected_drone_id()
         drone_stats = self.drone_system.get_drone_stats(drone_id)
         sprite_key = f"drone_{drone_id}_ingame_sprite"
         
-        # Create new player drone
         from entities import PlayerDrone
         self.player = PlayerDrone(
             spawn_x, spawn_y, drone_id, drone_stats, 
@@ -377,14 +390,12 @@ class GameController:
             self.drone_system
         )
         
-        # Update combat controller with new player
         self.combat_controller.set_active_entities(
             player=self.player, 
             maze=self.maze, 
             power_ups_group=self.power_ups_group
         )
         
-        # Update puzzle controller with new player
         self.puzzle_controller.set_active_entities(
             player=self.player, 
             drone_system=self.drone_system, 
@@ -400,7 +411,6 @@ class GameController:
         
         if self.lives > 0:
             self.set_story_message(f"Lives remaining: {self.lives}", 2000)
-            # Respawn the player without recreating the maze
             self._respawn_player()
         else:
             logging.info("No lives remaining. Game over.")
@@ -476,15 +486,15 @@ class GameController:
         black_color = get_setting("colors", "BLACK", (0, 0, 0))
         self.screen.fill(black_color)
         if self.maze:
-            self.maze.draw(self.screen, self.camera)
+            self.maze.draw(self.screen, None)
         
         for item_group in [self.collectible_rings_group, self.power_ups_group, 
                           self.core_fragments_group, self.vault_logs_group,
                           self.glyph_tablets_group, self.architect_echoes_group,
                           self.corrupted_logs_group, self.quantum_circuitry_group,
-                          self.spawned_barricades_group]: # Add barricades to draw loop
+                          self.spawned_barricades_group]:
             for item in item_group:
-                item.draw(self.screen, self.camera)
+                item.draw(self.screen, None)
         
         self.explosion_particles_group.update()
         self.explosion_particles_group.draw(self.screen) 
@@ -495,29 +505,27 @@ class GameController:
         current_game_state = self.state_manager.get_current_state_id()
         game_state_maze_defense = get_setting("game_states", "GAME_STATE_MAZE_DEFENSE", "maze_defense_mode")
         if current_game_state == game_state_maze_defense and hasattr(self, 'tower_defense_manager'):
-            self.tower_defense_manager.draw(self.screen, self.camera)
+            self.tower_defense_manager.draw(self.screen, None)
             
         if self.combat_controller:
-            self.combat_controller.enemy_manager.draw_all(self.screen, self.camera)
+            self.combat_controller.enemy_manager.draw_all(self.screen, None)
             
         if self.turrets_group:
             for turret in self.turrets_group:
-                turret.draw(self.screen, self.camera)
+                turret.draw(self.screen, None)
                 
         if self.reactor_group:
             for reactor in self.reactor_group:
-                reactor.draw(self.screen, self.camera)
+                reactor.draw(self.screen, None)
                 
-        # Draw ring animations
         ring_icon = self.asset_manager.get_image("ring_ui_icon")
         self.level_manager.draw_ring_animations(self.screen, ring_icon)
         
-        # Draw fragment animations
         self._draw_fragment_animations()
     
     def _handle_collectible_collisions(self):
         if not self.player or not hasattr(self.player, 'rect'):
-            return
+            return None
             
         for ring in pygame.sprite.spritecollide(self.player, self.collectible_rings_group, True):
             self.level_manager.collect_ring(ring.rect.center)
@@ -534,73 +542,68 @@ class GameController:
                 self.play_sound('collect_ring')
                 
         for fragment in pygame.sprite.spritecollide(self.player, self.core_fragments_group, True):
-            # Get the fragment's position before removing it
             fragment_pos = (fragment.center_x, fragment.center_y)
-            fragment_id = fragment.fragment_id
             
-            # Add to collected fragments
-            self.drone_system.collect_core_fragment(fragment_id)
+            # Use the fragment_id attribute from the fragment instance
+            fragment_id_val = fragment.fragment_id
+
+            self.drone_system.collect_core_fragment(fragment_id_val)
             
-            # Apply ability effect if available
             if hasattr(fragment, 'associated_ability') and fragment.associated_ability:
                 if hasattr(self.player, 'unlock_ability'):
-                    # The unlock_ability method on player will also handle the drone_system unlock and story message
                     self.player.unlock_ability(fragment.associated_ability)
 
-            # Play sound
             self.play_sound('collect_fragment')
             
-            # Get the target position in the HUD
             width = get_setting("display", "WIDTH", 1920)
             height = get_setting("display", "HEIGHT", 1080)
             bottom_panel_height = get_setting("display", "BOTTOM_PANEL_HEIGHT", 120)
             frags_x = width - 150
             frags_y = height - bottom_panel_height + 65
             
-            # Use the stored target positions from UI manager if available
             target_pos = None
-            if hasattr(self, 'fragment_ui_target_positions') and fragment_id in self.fragment_ui_target_positions:
-                target_pos = self.fragment_ui_target_positions[fragment_id]
+            if hasattr(self, 'fragment_ui_target_positions') and fragment_id_val in self.fragment_ui_target_positions:
+                target_pos = self.fragment_ui_target_positions[fragment_id_val]
             
-            # If no stored position, calculate it
             if not target_pos:
                 core_fragment_details = settings_manager.get_core_fragment_details()
                 required = sorted([d['id'] for d in core_fragment_details.values() if d.get('required_for_vault')])
                 try:
-                    index = required.index(fragment_id)
+                    index = required.index(fragment_id_val)
                     target_x = frags_x + index * (self.ui_manager.ui_icon_size_fragments[0] + 5) + self.ui_manager.ui_icon_size_fragments[0] // 2
                     target_y = frags_y + self.ui_manager.ui_icon_size_fragments[1] // 2
                     target_pos = (target_x, target_y)
                 except ValueError:
-                    # Fragment not in required list, use default position
                     target_x = frags_x + len(required) * (self.ui_manager.ui_icon_size_fragments[0] + 5) + self.ui_manager.ui_icon_size_fragments[0] // 2
                     target_y = frags_y + self.ui_manager.ui_icon_size_fragments[1] // 2
                     target_pos = (target_x, target_y)
             
-            # Add to animating fragments with longer animation duration
             self.animating_fragments_to_hud.append({
                 'pos': list(fragment_pos),
                 'start_time': pygame.time.get_ticks(),
-                'duration': 1500,  # 1.5 second animation for better visibility
+                'duration': 1500,
                 'start_pos': fragment_pos,
                 'target_pos': target_pos,
-                'fragment_id': fragment_id
+                'fragment_id': fragment_id_val
             })
             
-            # No longer setting story message here directly; it's handled by player.unlock_ability now.
             from .game_events import ItemCollectedEvent
-            event = ItemCollectedEvent(item_id=fragment_id, item_type='core_fragment')
+            event = ItemCollectedEvent(item_id=fragment_id_val, item_type='core_fragment')
             self.event_manager.dispatch(event)
 
-        # Handle Corrupted Log collisions
+        collected_log_id = None
         for log in pygame.sprite.spritecollide(self.player, self.corrupted_logs_group, True):
             if hasattr(log, 'apply_effect'):
-                log.apply_effect(self.player, self) # Pass game_controller instance
+                log.apply_effect(self.player, self)
+                collected_log_id = log.log_id
+        if collected_log_id:
+            return collected_log_id
 
-        # Handle Quantum Circuitry collision
         for qc in pygame.sprite.spritecollide(self.player, self.quantum_circuitry_group, True):
             if hasattr(qc, 'apply_effect'):
                 qc.apply_effect(self.player, self)
+        
+        return None
     
     def _check_level_clear_condition(self):
         """Delegates all level clear condition checks to the LevelManager."""
@@ -615,37 +618,30 @@ class GameController:
         """Draw animations for core fragments moving to the HUD"""
         current_time = pygame.time.get_ticks()
         
-        # Process each animating fragment
         for i in range(len(self.animating_fragments_to_hud) - 1, -1, -1):
             fragment_data = self.animating_fragments_to_hud[i]
             elapsed = current_time - fragment_data['start_time']
             progress = min(1.0, elapsed / fragment_data['duration'])
             
             if progress >= 1.0:
-                # Animation complete
                 self.animating_fragments_to_hud.pop(i)
                 continue
                 
-            # Calculate current position using easing
-            ease_progress = 1 - (1 - progress) ** 3  # Cubic ease out
+            ease_progress = 1 - (1 - progress) ** 3
             x = fragment_data['start_pos'][0] + (fragment_data['target_pos'][0] - fragment_data['start_pos'][0]) * ease_progress
             y = fragment_data['start_pos'][1] + (fragment_data['target_pos'][1] - fragment_data['start_pos'][1]) * ease_progress
             
-            # Get the fragment icon
-            fragment_id = fragment_data['fragment_id']
-            fragment_icon = self.ui_manager.get_scaled_fragment_icon_surface(fragment_id)
+            fragment_id_val = fragment_data['fragment_id']
+            fragment_icon = self.ui_manager.get_scaled_fragment_icon_surface(fragment_id_val)
             
             if fragment_icon:
-                # Use exact size of the empty fragment icon
                 icon_size = self.ui_manager.ui_icon_size_fragments
                 
-                # Draw the fragment icon
                 scaled_icon = pygame.transform.scale(fragment_icon, icon_size)
                 icon_rect = scaled_icon.get_rect(center=(int(x), int(y)))
                 self.screen.blit(scaled_icon, icon_rect)
     
     def _draw_story_overlay(self, surface):
-        # Only draw chapter information on the StoryMapState
         current_state = self.state_manager.get_current_state_id()
         if current_state != "StoryMapState":
             return
