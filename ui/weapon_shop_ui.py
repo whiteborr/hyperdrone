@@ -343,10 +343,13 @@ class WeaponShopUI:
             icon_scaled = pygame.transform.scale(cores_icon, (20, 20))
             screen.blit(icon_scaled, (inv_x + inv_width - 80, inv_y + 12))
         
-        # Cores text with shadow
-        cores_shadow = font_ui.render(f"{self.fragments_count}", True, (0, 0, 0))
+        # Cores text with shadow - get current cores from drone system
+        current_cores = self.fragments_count
+        if hasattr(self, 'game_controller') and hasattr(self.game_controller, 'drone_system'):
+            current_cores = self.game_controller.drone_system.get_cores()
+        cores_shadow = font_ui.render(f"{current_cores}", True, (0, 0, 0))
         screen.blit(cores_shadow, (inv_x + inv_width - 53, inv_y + 17))
-        cores_surf = font_ui.render(f"{self.fragments_count}", True, YELLOW)
+        cores_surf = font_ui.render(f"{current_cores}", True, YELLOW)
         screen.blit(cores_surf, (inv_x + inv_width - 55, inv_y + 15))
         
         # Current drone section with shadows
