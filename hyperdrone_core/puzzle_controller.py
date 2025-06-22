@@ -141,7 +141,7 @@ class PuzzleController:
         
         if self.drone_system:
             reward = get_setting("puzzles", "RING_PUZZLE_CORE_REWARD", 750)
-            self.drone_system.add_player_cores(reward)
+            self.drone_system.add_cores(reward)
             if self.last_interacted_terminal_for_ring_puzzle:
                 self.drone_system.mark_puzzle_terminal_as_solved(self.last_interacted_terminal_for_ring_puzzle.item_id)
 

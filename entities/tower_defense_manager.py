@@ -86,8 +86,8 @@ class TowerDefenseManager:
             
         # Check if player has enough resources
         tower_cost = Turret.TURRET_COST
-        player_cores = self.game_controller.drone_system.get_player_cores() if self.game_controller and hasattr(self.game_controller, 'drone_system') else 0
-        if player_cores < tower_cost:
+        cores = self.game_controller.drone_system.get_cores() if self.game_controller and hasattr(self.game_controller, 'drone_system') else 0
+        if cores < tower_cost:
             logger.info(f"Not enough resources to place tower (need {tower_cost})")
             return False
             
@@ -108,7 +108,7 @@ class TowerDefenseManager:
         
         # Deduct resources from player's cores
         if self.game_controller and hasattr(self.game_controller, 'drone_system'):
-            self.game_controller.drone_system.spend_player_cores(tower_cost)
+            self.game_controller.drone_system.spend_cores(tower_cost)
         
         # Trigger path recalculation for all enemies
         self.recalculate_all_enemy_paths()

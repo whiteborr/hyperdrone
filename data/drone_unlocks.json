@@ -3,10 +3,10 @@
         "DRONE"
     ],
     "selected_drone_id": "DRONE",
-    "player_cores": 69,
+    "cores": 2,
     "unlocked_lore_ids": [
-        "architect_legacy_intro",
-        "drone_DRONE"
+        "drone_DRONE",
+        "architect_legacy_intro"
     ],
     "collected_core_fragments": [],
     "architect_vault_completed": false,
@@ -15,6 +15,12 @@
     "defeated_bosses": [],
     "unlocked_abilities": [],
     "owned_weapons": [
-        0
+        0,
+        9,
+        2,
+        7,
+        1,
+        5,
+        3
     ]
 }

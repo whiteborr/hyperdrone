@@ -825,7 +825,7 @@ class UIManager:
         
         # Display player cores
         if self.drone_system:
-            cores = self.drone_system.get_player_cores()
+            cores = self.drone_system.get_cores()
             cores_surf = self._render_text_safe(f"Cores: {cores}", "ui_text", GOLD, fallback_size=28)
             self.screen.blit(cores_surf, (20, 20))
 

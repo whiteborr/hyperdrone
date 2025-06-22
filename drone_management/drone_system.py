@@ -19,7 +19,7 @@ class DroneSystem:
         self.drones = DRONE_DATA
         self.unlocked_drones = {"DRONE"}  # Start with the base drone unlocked
         self.selected_drone_id = "DRONE"
-        self.player_cores = 0
+        self.cores = 0
         
         # Lore and story progression
         self.all_lore_entries = self._load_all_lore_entries()
@@ -73,7 +73,7 @@ class DroneSystem:
     def _load_unlocks(self):
         """Loads player progress from the save file."""
         from constants import (
-            KEY_UNLOCKED_DRONES, KEY_SELECTED_DRONE_ID, KEY_PLAYER_CORES,
+            KEY_UNLOCKED_DRONES, KEY_SELECTED_DRONE_ID, KEY_CORES,
             KEY_UNLOCKED_LORE_IDS, KEY_COLLECTED_CORE_FRAGMENTS,
             KEY_ARCHITECT_VAULT_COMPLETED, KEY_COLLECTED_GLYPH_TABLETS,
             KEY_SOLVED_PUZZLE_TERMINALS, KEY_DEFEATED_BOSSES
@@ -85,7 +85,7 @@ class DroneSystem:
                     data = load(f)
                     self.unlocked_drones.update(data.get(KEY_UNLOCKED_DRONES, ["DRONE"]))
                     self.selected_drone_id = data.get(KEY_SELECTED_DRONE_ID, "DRONE")
-                    self.player_cores = data.get(KEY_PLAYER_CORES, 0)
+                    self.cores = data.get(KEY_CORES, 0)
                     self.unlocked_lore_ids.update(data.get(KEY_UNLOCKED_LORE_IDS, []))
                     self.collected_core_fragments.update(data.get(KEY_COLLECTED_CORE_FRAGMENTS, []))
                     self.architect_vault_completed = data.get(KEY_ARCHITECT_VAULT_COMPLETED, False)
@@ -106,7 +106,7 @@ class DroneSystem:
             return
             
         from constants import (
-            KEY_UNLOCKED_DRONES, KEY_SELECTED_DRONE_ID, KEY_PLAYER_CORES,
+            KEY_UNLOCKED_DRONES, KEY_SELECTED_DRONE_ID, KEY_CORES,
             KEY_UNLOCKED_LORE_IDS, KEY_COLLECTED_CORE_FRAGMENTS,
             KEY_ARCHITECT_VAULT_COMPLETED, KEY_COLLECTED_GLYPH_TABLETS,
             KEY_SOLVED_PUZZLE_TERMINALS, KEY_DEFEATED_BOSSES
@@ -115,7 +115,7 @@ class DroneSystem:
         data = {
             KEY_UNLOCKED_DRONES: list(self.unlocked_drones),
             KEY_SELECTED_DRONE_ID: self.selected_drone_id,
-            KEY_PLAYER_CORES: self.player_cores,
+            KEY_CORES: self.cores,
             KEY_UNLOCKED_LORE_IDS: list(self.unlocked_lore_ids),
             KEY_COLLECTED_CORE_FRAGMENTS: list(self.collected_core_fragments),
             KEY_ARCHITECT_VAULT_COMPLETED: self.architect_vault_completed,
@@ -186,8 +186,8 @@ class DroneSystem:
         unlock_value = unlock_condition.get(KEY_UNLOCK_VALUE)
 
         if unlock_type == "cores":
-            if self.player_cores >= unlock_value:
-                self.player_cores -= unlock_value
+            if self.cores >= unlock_value:
+                self.cores -= unlock_value
                 self.unlocked_drones.add(drone_id)
                 self._save_dirty = True
                 self._save_unlocks()
@@ -206,27 +206,27 @@ class DroneSystem:
             pass
         return False
     
-    def add_player_cores(self, amount):
+    def add_cores(self, amount):
         if amount != 0:
-            self.player_cores += amount
+            self.cores += amount
             self._save_dirty = True
             self._save_unlocks()
         
-    def get_player_cores(self):
-        return self.player_cores
+    def get_cores(self):
+        return self.cores
         
-    def set_player_cores(self, amount):
+    def set_cores(self, amount):
         """Set the player's core count to a specific amount"""
         new_amount = max(0, amount)
-        if self.player_cores != new_amount:
-            self.player_cores = new_amount
+        if self.cores != new_amount:
+            self.cores = new_amount
             self._save_dirty = True
             self._save_unlocks()
-        return self.player_cores
+        return self.cores
         
-    def spend_player_cores(self, amount):
-        if self.player_cores >= amount:
-            self.player_cores -= amount
+    def spend_cores(self, amount):
+        if self.cores >= amount:
+            self.cores -= amount
             self._save_dirty = True
             self._save_unlocks()
             return True

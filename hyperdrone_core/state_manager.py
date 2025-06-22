@@ -183,6 +183,8 @@ class StateManager:
         
         # Weapons upgrade shop transitions
         self.registry.register_transition("WeaponsUpgradeShopState", "MainMenuState")
+        self.registry.register_transition("WeaponsUpgradeShopState", "PlayingState")
+        self.registry.register_transition("PlayingState", "WeaponsUpgradeShopState")
         
         # Game intro transitions
         self.registry.register_transition("GameIntroScrollState", "StoryMapState")
@@ -272,12 +274,13 @@ class StateManager:
 
         try:
             pygame.mixer.music.load(music_path)
-            volume_setting = get_setting("display", volume_multiplier_key, 1.0)
+            # Use new game volume setting
+            game_volume = get_setting("audio", "VOLUME_GAME", 5) / 10.0
             base_volume = get_setting("display", "MUSIC_BASE_VOLUME", 0.5)
-            pygame.mixer.music.set_volume(base_volume * volume_setting)
+            pygame.mixer.music.set_volume(base_volume * game_volume)
             pygame.mixer.music.play(loops=loops)
             self.current_music_context_key = music_key
-            logger.info(f"Playing music for context key '{music_key}'")
+            logger.info(f"Playing music for context key '{music_key}' at volume {game_volume}")
         except pygame.error as e:
             logger.error(f"Error playing music '{music_path}': {e}")
             self.current_music_context_key = None
@@ -286,6 +289,12 @@ class StateManager:
         """Selects and plays appropriate music based on the current game state."""
         if not self.current_state:
             return
+            
+        # Update volume for currently playing music
+        if pygame.mixer.music.get_busy():
+            game_volume = get_setting("audio", "VOLUME_GAME", 5) / 10.0
+            base_volume = get_setting("display", "MUSIC_BASE_VOLUME", 0.5)
+            pygame.mixer.music.set_volume(base_volume * game_volume)
             
         current_state_id = self.current_state.get_state_id()
         

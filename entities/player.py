@@ -350,7 +350,10 @@ class PlayerDrone(BaseDrone):
             # Play sound but don't reduce health
             if sound_key_on_hit and self.asset_manager:
                 sound = self.asset_manager.get_sound(sound_key_on_hit)
-                if sound: sound.play()
+                if sound:
+                    fx_volume = get_setting("audio", "VOLUME_FX", 7) / 10.0
+                    sound.set_volume(0.7 * fx_volume)
+                    sound.play()
             return
         
         # Check if shield is active
@@ -358,13 +361,19 @@ class PlayerDrone(BaseDrone):
             # Shield absorbs all damage
             if sound_key_on_hit and self.asset_manager:
                 sound = self.asset_manager.get_sound(sound_key_on_hit)
-                if sound: sound.play()
+                if sound:
+                    fx_volume = get_setting("audio", "VOLUME_FX", 7) / 10.0
+                    sound.set_volume(0.7 * fx_volume)
+                    sound.play()
             return
             
         self.health -= amount
         if sound_key_on_hit and self.asset_manager:
             sound = self.asset_manager.get_sound(sound_key_on_hit)
-            if sound: sound.play()
+            if sound:
+                fx_volume = get_setting("audio", "VOLUME_FX", 7) / 10.0
+                sound.set_volume(0.7 * fx_volume)
+                sound.play()
         if self.health <= 0:
             self.health = 0
             self.alive = False

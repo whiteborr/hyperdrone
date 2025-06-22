@@ -156,7 +156,11 @@ class Enemy(Sprite):
         self.bullets.add(new_bullet)
         
         if self.shoot_sound_key and self.asset_manager:
-            self.asset_manager.get_sound(self.shoot_sound_key).play()
+            sound = self.asset_manager.get_sound(self.shoot_sound_key)
+            if sound:
+                fx_volume = get_setting("audio", "VOLUME_FX", 7) / 10.0
+                sound.set_volume(0.7 * fx_volume)
+                sound.play()
 
     def take_damage(self, amount):
         if self.alive: 
@@ -172,10 +176,10 @@ class Enemy(Sprite):
                 self.health = 0
                 self.alive = False
                 logger.info(f"Enemy died at position ({self.x}, {self.y})")
-                # Spawn orichalc fragment in chapter 1
+                # Spawn orichalc fragment in chapter 1 (levels 1-4)
                 if hasattr(self.asset_manager, 'game_controller') and self.asset_manager.game_controller:
                     gc = self.asset_manager.game_controller
-                    if hasattr(gc, 'level_manager') and gc.level_manager.level == 1:
+                    if hasattr(gc, 'level_manager') and gc.level_manager.level <= 7:
                         from entities.orichalc_fragment import OrichalcFragment
                         fragment = OrichalcFragment(self.x, self.y, asset_manager=self.asset_manager)
                         gc.core_fragments_group.add(fragment)

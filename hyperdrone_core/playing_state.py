@@ -223,7 +223,7 @@ class PlayingState(State):
         
         # Draw HUD container for orichalc fragments
         if hasattr(self.game, 'hud_container'):
-            orichalc_count = self.game.drone_system.get_player_cores()
+            orichalc_count = self.game.drone_system.get_cores()
             self.game.hud_container.draw(surface, orichalc_count)
         
         if self.game.player:

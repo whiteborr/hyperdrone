@@ -97,7 +97,7 @@ class WaveManager:
                 base_reward = get_setting("defense", "DEFENSE_WAVE_CLEAR_CORE_REWARD_BASE", 100)
                 increment = get_setting("defense", "DEFENSE_WAVE_CLEAR_CORE_INCREMENT", 50)
                 reward = base_reward + (self.current_wave_number - 1) * increment
-                self.game_controller.drone_system.add_player_cores(reward); self.game_controller.play_sound('level_up') 
+                self.game_controller.drone_system.add_cores(reward); self.game_controller.play_sound('level_up') 
                 if self.current_wave_number >= self.total_waves: self.all_waves_cleared = True 
                 self._start_build_phase_internal()
     

@@ -116,7 +116,11 @@ class BaseWeaponStrategy:
         # Play sound if provided
         if sound_asset_key and self.asset_manager:
             sound = self.asset_manager.get_sound(sound_asset_key)
-            if sound: sound.play()
+            if sound:
+                from settings_manager import get_setting
+                fx_volume = get_setting("audio", "VOLUME_FX", 7) / 10.0
+                sound.set_volume(0.7 * fx_volume)
+                sound.play()
         
         # Call the specific implementation
         self._create_projectile(spawn_x, spawn_y, missile_sound_asset_key)
@@ -239,7 +243,11 @@ class HeatseekerWeaponStrategy(BaseWeaponStrategy):
         # Create heatseeker missile
         if missile_sound_asset_key and self.asset_manager:
             missile_sound = self.asset_manager.get_sound(missile_sound_asset_key)
-            if missile_sound: missile_sound.play()
+            if missile_sound:
+                from settings_manager import get_setting
+                fx_volume = get_setting("audio", "VOLUME_FX", 7) / 10.0
+                missile_sound.set_volume(0.7 * fx_volume)
+                missile_sound.play()
         
         missile_damage = get_setting("weapons", "MISSILE_DAMAGE", 30)
         new_missile = Missile(spawn_x, spawn_y, self.player.angle, missile_damage, self.enemies_group)
@@ -258,7 +266,11 @@ class HeatseekerPlusBulletsWeaponStrategy(BaseWeaponStrategy):
         # Create heatseeker missile (on missile cooldown)
         if missile_sound_asset_key and self.asset_manager:
             missile_sound = self.asset_manager.get_sound(missile_sound_asset_key)
-            if missile_sound: missile_sound.play()
+            if missile_sound:
+                from settings_manager import get_setting
+                fx_volume = get_setting("audio", "VOLUME_FX", 7) / 10.0
+                missile_sound.set_volume(0.7 * fx_volume)
+                missile_sound.play()
         
         missile_damage = get_setting("weapons", "MISSILE_DAMAGE", 30)
         new_missile = Missile(spawn_x, spawn_y, self.player.angle, missile_damage, self.enemies_group)
@@ -297,7 +309,11 @@ class HeatseekerPlusBulletsWeaponStrategy(BaseWeaponStrategy):
             # Play sound if provided
             if sound_asset_key and self.asset_manager:
                 sound = self.asset_manager.get_sound(sound_asset_key)
-                if sound: sound.play()
+                if sound:
+                    from settings_manager import get_setting
+                    fx_volume = get_setting("audio", "VOLUME_FX", 7) / 10.0
+                    sound.set_volume(0.7 * fx_volume)
+                    sound.play()
             
             # Create just a bullet
             new_bullet = Bullet(spawn_x, spawn_y, self.player.angle, self.bullet_speed, 
@@ -368,7 +384,11 @@ class LightningWeaponStrategy(BaseWeaponStrategy):
             # Play sound if provided
             if sound_asset_key and self.asset_manager:
                 sound = self.asset_manager.get_sound(sound_asset_key)
-                if sound: sound.play()
+                if sound:
+                    from settings_manager import get_setting
+                    fx_volume = get_setting("audio", "VOLUME_FX", 7) / 10.0
+                    sound.set_volume(0.7 * fx_volume)
+                    sound.play()
                 
             # Create lightning zap with chaining
             lightning_lifetime = get_setting("weapons", "LIGHTNING_LIFETIME", 30)

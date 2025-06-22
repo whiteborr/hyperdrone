@@ -27,7 +27,7 @@ from entities import (
 from entities.collectibles import (
     Ring as CollectibleRing, WeaponUpgradeItem, ShieldItem, SpeedBoostItem,
     CoreFragmentItem, GlyphTabletItem, AncientAlienTerminal, 
-    ArchitectEchoItem, CorruptedLogItem, QuantumCircuitryItem
+    ArchitectEchoItem, CorruptedLogItem, QuantumCircuitryItem, WeaponsUpgradeShopItem
 )
 from entities.temporary_barricade import TemporaryBarricade
 from drone_management import DroneSystem, DRONE_DATA
@@ -253,8 +253,13 @@ class GameController:
                 current_state.draw(self.screen)
             
             # --- MODIFICATION: Draw animation systems ---
-            orichalc_count = self.drone_system.get_player_cores() # Get count for the HUD
-            self.hud_container.draw(self.screen, orichalc_count)
+            # Only draw HUD container in chapter 1 playing states
+            current_state_id = self.state_manager.get_current_state_id()
+            current_chapter = self.story_manager.get_current_chapter()
+            if (current_state_id in ["PlayingState", "BonusLevelPlayingState"] and 
+                current_chapter and current_chapter.chapter_id == "chapter_1"):
+                orichalc_count = self.drone_system.get_cores()
+                self.hud_container.draw(self.screen, orichalc_count)
             self.energy_particles_group.draw(self.screen)
 
             active_abilities_data = {}
@@ -295,14 +300,20 @@ class GameController:
         pygame.quit()
         sys.exit()
         
-    def play_sound(self, key, vol=0.7):
+    def play_sound(self, key, vol=0.7, volume_override=None):
         if not hasattr(self, 'asset_manager'):
             return
             
         sound = self.asset_manager.get_sound(key)
         if sound:
             try:
-                sound.set_volume(vol * get_setting("display", "SFX_VOLUME_MULTIPLIER", 0.7))
+                # Use volume override if provided, otherwise use FX volume setting
+                if volume_override is not None:
+                    final_volume = vol * volume_override
+                else:
+                    fx_volume = get_setting("audio", "VOLUME_FX", 7) / 10.0
+                    final_volume = vol * fx_volume
+                sound.set_volume(final_volume)
                 sound.play()
             except Exception as e:
                 logger_gc.error(f"Error playing sound '{key}': {e}")
@@ -344,6 +355,8 @@ class GameController:
             chapter_display_names[chapter_id] = chapter.title
         
         return [
+            {"label":"Volume [FX]","key":"VOLUME_FX","category":"audio","type":"numeric","min":0,"max":10,"step":1},
+            {"label":"Volume [Game]","key":"VOLUME_GAME","category":"audio","type":"numeric","min":0,"max":10,"step":1},
             {"label":"Base Max Health","key":"PLAYER_MAX_HEALTH","category":"gameplay","type":"numeric","min":50,"max":200,"step":10,"note":"Original Drone base, others vary"},
             {"label":"Starting Lives","key":"PLAYER_LIVES","category":"gameplay","type":"numeric","min":1,"max":9,"step":1},
             {"label":"Base Speed","key":"PLAYER_SPEED","category":"gameplay","type":"numeric","min":1,"max":10,"step":1,"note":"Original Drone base, others vary"},
@@ -424,7 +437,8 @@ class GameController:
             self._respawn_player()
         else:
             logging.info("No lives remaining. Game over.")
-            self.state_manager.set_state("GameOverState")
+            current_state_id = self.state_manager.get_current_state_id()
+            self.state_manager.set_state("GameOverState", previous_state=current_state_id)
     
     def _create_explosion(self, x, y, num_particles=20, specific_sound_key=None, is_enemy=False):
         orange_color = get_setting("colors", "ORANGE", (255, 165, 0))
@@ -547,6 +561,8 @@ class GameController:
                 self.play_sound('weapon_upgrade_collect')
                 if hasattr(self.ui_manager, 'update_weapon_icon_surface'):
                     self.ui_manager.update_weapon_icon_surface(self.player.current_weapon_mode)
+            elif isinstance(powerup, WeaponsUpgradeShopItem):
+                powerup.apply_effect(self.player, self)
             elif isinstance(powerup, (ShieldItem, SpeedBoostItem)):
                 powerup.apply_effect(self.player)
                 self.play_sound('collect_ring')

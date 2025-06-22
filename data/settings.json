@@ -2,7 +2,13 @@
   "display": {
     "FULLSCREEN_MODE": false,
     "MUSIC_VOLUME_MULTIPLIER": 0.5,
-    "SFX_VOLUME_MULTIPLIER": 0.7
+    "SFX_VOLUME_MULTIPLIER": 0.7,
+    "WIDTH": 1920,
+    "HEIGHT": 1200
+  },
+  "audio": {
+    "VOLUME_FX": 1,
+    "VOLUME_GAME": 10
   },
   "gameplay": {
     "PLAYER_MAX_HEALTH": 100,

@@ -22,7 +22,7 @@ class LevelManager:
         
         # Chapter 1 specific tracking
         self.chapter1_level = 1
-        self.chapter1_max_levels = 4
+        self.chapter1_max_levels = 7
         
         # Ring collection variables
         self.collected_rings_count = 0
@@ -242,21 +242,22 @@ class LevelManager:
         ]
         all_items_collected = all(len(group) == 0 for group in required_collectible_groups)
 
-        # 3. Check if the primary conditions (enemies and items) are met
-        if all_enemies_defeated and all_items_collected:
+        # 3. Check if rings are collected (primary win condition)
+        rings_collected = len(self.game_controller.collectible_rings_group) == 0
+        
+        if rings_collected:
             # Stop the player drone's movement
             if self.game_controller.player and hasattr(self.game_controller.player, 'is_cruising'):
                 self.game_controller.player.is_cruising = False
                 
-            # 4. Also check that all collection animations are finished
+            # Check that all ring animations are finished
             rings_animating = len(self.animating_rings_to_hud) > 0
-            fragments_animating = len(self.game_controller.animating_fragments_to_hud) > 0
 
-            if rings_animating or fragments_animating:
-                return False  # Wait for animations to finish before advancing
+            if rings_animating:
+                return False  # Wait for ring animations to finish before advancing
 
             # Log level completion for debugging
-            logger.info(f"Level {self.level} cleared! Advancing to next level.")
+            logger.info(f"Level {self.level} cleared! All rings collected.")
             
             # All clear! Advance to the next level.
             return self._advance_to_next_level()
@@ -280,7 +281,7 @@ class LevelManager:
         current_chapter = self.game_controller.story_manager.get_current_chapter()
         if current_chapter and current_chapter.chapter_id == "chapter_1":
             self.chapter1_level += 1
-            # If we've completed all 4 levels of Chapter 1, mark objectives as complete
+            # If we've completed all 7 levels of Chapter 1, mark objectives as complete
             if self.chapter1_level > self.chapter1_max_levels:
                 self.game_controller.story_manager.complete_objective_by_id("c1_collect_rings")
                 self.game_controller.story_manager.complete_objective_by_id("c1_clear_hostiles")

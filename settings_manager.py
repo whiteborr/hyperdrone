@@ -176,6 +176,10 @@ def reset_all_settings_to_default():
             "MUSIC_VOLUME_MULTIPLIER": 0.5,
             "SFX_VOLUME_MULTIPLIER": 0.7
         },
+        "audio": {
+            "VOLUME_FX": 7,
+            "VOLUME_GAME": 5
+        },
         "gameplay": {
             "PLAYER_MAX_HEALTH": 100,
             "PLAYER_LIVES": 3,

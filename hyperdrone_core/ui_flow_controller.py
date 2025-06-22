@@ -296,7 +296,19 @@ class UIFlowController:
                 # Update game lives if PLAYER_LIVES setting was changed
                 if item_key == "PLAYER_LIVES":
                     self.game_controller.lives = new_val
-                self.game_controller.play_sound('ui_select')
+                # Play sample sound when FX volume is changed
+                elif item_key == "VOLUME_FX":
+                    self.game_controller.play_sound('shoot', volume_override=new_val/10.0)
+                    from settings_manager import save_settings
+                    save_settings()
+                # Adjust menu music volume when Game volume is changed
+                elif item_key == "VOLUME_GAME":
+                    if hasattr(self.game_controller, 'state_manager'):
+                        self.game_controller.state_manager._update_music()
+                    from settings_manager import save_settings
+                    save_settings()
+                else:
+                    self.game_controller.play_sound('ui_select')
             elif selected_item["type"] == "choice":
                 choices = selected_item["choices"]
                 try:
@@ -311,7 +323,19 @@ class UIFlowController:
                     # Update game lives if PLAYER_LIVES setting was changed
                     if item_key == "PLAYER_LIVES":
                         self.game_controller.lives = choices[new_idx]
-                    self.game_controller.play_sound('ui_select')
+                    # Play sample sound when FX volume is changed
+                    elif item_key == "VOLUME_FX":
+                        self.game_controller.play_sound('shoot', volume_override=choices[new_idx]/10.0)
+                        from settings_manager import save_settings
+                        save_settings()
+                    # Adjust menu music volume when Game volume is changed
+                    elif item_key == "VOLUME_GAME":
+                        if hasattr(self.game_controller, 'state_manager'):
+                            self.game_controller.state_manager._update_music()
+                        from settings_manager import save_settings
+                        save_settings()
+                    else:
+                        self.game_controller.play_sound('ui_select')
                 except (ValueError, TypeError):
                     # If there's any error, just set to the first choice
                     if choices:
@@ -320,7 +344,19 @@ class UIFlowController:
                         # Update game lives if PLAYER_LIVES setting was changed
                         if item_key == "PLAYER_LIVES":
                             self.game_controller.lives = choices[0]
-                        self.game_controller.play_sound('ui_select')
+                        # Play sample sound when FX volume is changed
+                        elif item_key == "VOLUME_FX":
+                            self.game_controller.play_sound('shoot', volume_override=choices[0]/10.0)
+                            from settings_manager import save_settings
+                            save_settings()
+                        # Adjust menu music volume when Game volume is changed
+                        elif item_key == "VOLUME_GAME":
+                            if hasattr(self.game_controller, 'state_manager'):
+                                self.game_controller.state_manager._update_music()
+                            from settings_manager import save_settings
+                            save_settings()
+                        else:
+                            self.game_controller.play_sound('ui_select')
             return True
         return False
         

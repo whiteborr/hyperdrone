@@ -189,7 +189,7 @@ class CombatController:
                         damage = projectile.damage if not isinstance(projectile, LightningZap) else get_setting("weapons", "LIGHTNING_DAMAGE", 15)
                         if self.maze_guardian.damage_corner(corner['id'], damage):
                             self.game_controller.level_manager.add_score(250)
-                            self.game_controller.drone_system.add_player_cores(25)
+                            self.game_controller.drone_system.add_cores(25)
                         if not (hasattr(projectile, 'max_pierces') and projectile.pierces_done < projectile.max_pierces):
                             projectile.kill()
                         break 
@@ -206,7 +206,7 @@ class CombatController:
                     enemy.take_damage(projectile.damage)
                     if not enemy.alive:
                         self.game_controller.level_manager.add_score(50)
-                        self.game_controller.drone_system.add_player_cores(10) 
+                        self.game_controller.drone_system.add_cores(10) 
                         self.game_controller._create_explosion(enemy.rect.centerx, enemy.rect.centery, 15, None, True)
                         self.game_controller.check_for_all_enemies_killed()
                     
@@ -357,7 +357,7 @@ class CombatController:
         powerup_hits = pygame.sprite.spritecollide(self.player, self.power_ups_group, True, pygame.sprite.collide_rect_ratio(0.7))
         for item in powerup_hits:
             if hasattr(item, 'apply_effect'):
-                item.apply_effect(self.player)
+                item.apply_effect(self.player, self.game_controller)
                 self.game_controller.play_sound('weapon_upgrade_collect') 
                 self.game_controller.level_manager.add_score(25)
 
@@ -449,14 +449,14 @@ class CombatController:
             
         # Check if player has enough cores
         upgrade_cost = clicked_turret.UPGRADE_COST
-        player_cores = self.game_controller.drone_system.get_player_cores()
-        if player_cores < upgrade_cost:
+        cores = self.game_controller.drone_system.get_cores()
+        if cores < upgrade_cost:
             logger.info(f"Not enough cores to upgrade turret (need {upgrade_cost})")
             return False
             
         # Upgrade the turret
         if clicked_turret.upgrade():
-            self.game_controller.drone_system.spend_player_cores(upgrade_cost)
+            self.game_controller.drone_system.spend_cores(upgrade_cost)
             logger.info(f"Turret upgraded to level {clicked_turret.upgrade_level}")
             return True
             
@@ -475,7 +475,7 @@ class CombatController:
             self.game_controller.level_manager.add_score(1000)
             
         if hasattr(self.game_controller, 'drone_system'):
-            self.game_controller.drone_system.add_player_cores(100)
+            self.game_controller.drone_system.add_cores(100)
             
         # Set a message for the player
         if hasattr(self.game_controller, 'set_story_message'):

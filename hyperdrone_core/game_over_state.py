@@ -24,8 +24,8 @@ class GameOverState(State):
                 elif event.key == pygame.K_RETURN or event.key == pygame.K_SPACE:
                     self.game.play_sound('menu_select')
                     if self.selected_option == 0:  # Continue
-                        # Restore player lives and continue from last state
-                        self.game.lives = 3  # Give the player full lives
+                        # Always reset lives to 3 when continuing
+                        self.game.lives = 3
                         self._respawn_player()
                         
                         # Determine which state to return to based on previous state

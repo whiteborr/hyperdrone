@@ -244,7 +244,7 @@ class JsonKeys:
         """Keys for drone_unlocks.json file"""
         UNLOCKED_DRONES: str = "unlocked_drones"
         SELECTED_DRONE_ID: str = "selected_drone_id"
-        PLAYER_CORES: str = "player_cores"
+        CORES: str = "cores"
         UNLOCKED_LORE_IDS: str = "unlocked_lore_ids"
         COLLECTED_CORE_FRAGMENTS: str = "collected_core_fragments"
         ARCHITECT_VAULT_COMPLETED: str = "architect_vault_completed"
@@ -278,7 +278,7 @@ class JsonKeys:
 # drone_unlocks.json keys
 KEY_UNLOCKED_DRONES = JsonKeys.DroneUnlocks.UNLOCKED_DRONES
 KEY_SELECTED_DRONE_ID = JsonKeys.DroneUnlocks.SELECTED_DRONE_ID
-KEY_PLAYER_CORES = JsonKeys.DroneUnlocks.PLAYER_CORES
+KEY_CORES = JsonKeys.DroneUnlocks.CORES
 KEY_UNLOCKED_LORE_IDS = JsonKeys.DroneUnlocks.UNLOCKED_LORE_IDS
 KEY_COLLECTED_CORE_FRAGMENTS = JsonKeys.DroneUnlocks.COLLECTED_CORE_FRAGMENTS
 KEY_ARCHITECT_VAULT_COMPLETED = JsonKeys.DroneUnlocks.ARCHITECT_VAULT_COMPLETED

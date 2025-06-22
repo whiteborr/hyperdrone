@@ -7,7 +7,7 @@ import logging
 from entities.collectibles import (
     Ring as CollectibleRing, WeaponUpgradeItem, ShieldItem, SpeedBoostItem,
     CoreFragmentItem, GlyphTabletItem, AncientAlienTerminal,
-    ArchitectEchoItem, CorruptedLogItem, QuantumCircuitryItem
+    ArchitectEchoItem, CorruptedLogItem, QuantumCircuitryItem, WeaponsUpgradeShopItem
 )
 from settings_manager import get_setting, settings_manager
 
@@ -168,6 +168,11 @@ class ItemManager:
 
         # Spawn a core fragment for this level
         self._spawn_core_fragment(self.game_controller.maze)
+        
+        # Spawn weapons upgrade shop on level 2 and 7 (only if not used before)
+        if (self.game_controller.level_manager.level == 2 and not hasattr(self.game_controller, 'weapon_shop_used_level_2')) or \
+           (self.game_controller.level_manager.level == 7 and not hasattr(self.game_controller, 'weapon_shop_used_level_7')):
+            self._spawn_weapons_upgrade_shop(self.game_controller.maze)
 
     def clear_all_items(self):
         """Clear all collectible items"""
@@ -302,3 +307,39 @@ class ItemManager:
             self._spawn_random_powerup(maze)
 
         logger.info(f"Successfully spawned {spawned} rings for level {self.game_controller.level_manager.level}")
+    
+    def _spawn_weapons_upgrade_shop(self, maze):
+        """Spawn weapons upgrade shop at a walkable position"""
+        if not maze:
+            logger.warning("Cannot spawn weapons upgrade shop: maze is None")
+            return False
+            
+        walkable_tiles = maze.get_walkable_tiles_abs()
+        if not walkable_tiles:
+            logger.warning("Cannot spawn weapons upgrade shop: no walkable tiles found")
+            return False
+            
+        valid_positions = []
+        tile_size = get_setting("gameplay", "TILE_SIZE", 80)
+        for pos in walkable_tiles:
+            too_close = False
+            # Check against other items to avoid overlap
+            for item_group in [self.collectible_rings_group, self.power_ups_group, self.core_fragments_group]:
+                for item in item_group:
+                    if math.hypot(pos[0] - item.rect.centerx, pos[1] - item.rect.centery) < tile_size * 4:
+                        too_close = True
+                        break
+                if too_close:
+                    break
+            if not too_close:
+                valid_positions.append(pos)
+                
+        if not valid_positions:
+            logger.warning("Cannot spawn weapons upgrade shop: no valid positions found")
+            return False
+            
+        spawn_pos = random.choice(valid_positions)
+        shop_item = WeaponsUpgradeShopItem(spawn_pos[0], spawn_pos[1], asset_manager=self.asset_manager)
+        self.power_ups_group.add(shop_item)
+        logger.info(f"Spawned weapons upgrade shop at {spawn_pos}")
+        return True

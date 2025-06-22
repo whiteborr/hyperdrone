@@ -15,6 +15,8 @@
     "TURRET_PLACE_SOUND": "sounds/turret_placement.ogg",
     "BARRICADE_DESTROT_SOUND": "sounds/barricade_destroy.ogg",
     "MENU_MOVE": "sounds/ui_select.ogg",
+    "menu_move": "sounds/menu_move.ogg",
+    "menu_select": "sounds/ui_select.ogg",
     "BOSS_HIT_SOUND": "sounds/boss_hit.ogg",
     "BOSS_DEATH_SOUND": "sounds/boss_death.ogg"
   },
@@ -52,7 +54,14 @@
     "STORY_MAP_BACKGROUND": "images/ui/story_map_background.png",
     "CHAPTER_ICON_UNLOCKED": "images/ui/chapter_icon_unlocked.png",
     "CHAPTER_ICON_LOCKED": "images/ui/chapter_icon_locked.png",
-    "PLAYER_MAP_CURSOR": "images/ui/player_map_cursor.png"
+    "PLAYER_MAP_CURSOR": "images/ui/player_map_cursor.png",
+    "DRONE_IMAGE": "images/drones/drone.png",
+    "PHANTOM_IMAGE": "images/drones/phantom.png",
+    "OMEGA9_IMAGE": "images/drones/omega-9.png",
+    "RHINOX_IMAGE": "images/drones/rhinox.png",
+    "STRIX_IMAGE": "images/drones/strix.png",
+    "VANTIS_IMAGE": "images/drones/vantis.png",
+    "ZEPHYR_IMAGE": "images/drones/zephyr.png"
   },
   "fonts": {
     "UI_TEXT_FONT": "fonts/neuropol.otf"

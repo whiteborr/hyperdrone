@@ -54,7 +54,7 @@ class OrichalcFragment(pygame.sprite.Sprite):
             self.collected = True
             # Add 1 core to player
             if hasattr(game_controller_instance, 'drone_system'):
-                game_controller_instance.drone_system.add_player_cores(1)
+                game_controller_instance.drone_system.add_cores(1)
             # Play collection sound
             if hasattr(game_controller_instance, 'play_sound'):
                 game_controller_instance.play_sound('collect_fragment')

@@ -5,11 +5,11 @@ from ui.weapon_shop_ui import WeaponShopUI
 
 class WeaponsUpgradeShopState(State):
     def enter(self, previous_state=None, **kwargs):
-        self.previous_state = previous_state
+        self.previous_state = previous_state or "PlayingState"
         self.weapon_shop_ui = WeaponShopUI(self.game.asset_manager)
         
-        # Get current orichalc fragments count
-        fragments_count = getattr(self.game, 'orichalc_fragments', 0)
+        # Get current cores count
+        fragments_count = self.game.drone_system.get_cores() if hasattr(self.game, 'drone_system') else 0
         
         # Create a mock weapon shop for the UI
         from entities.weapon_shop import WeaponShop
@@ -22,16 +22,16 @@ class WeaponsUpgradeShopState(State):
         for event in events:
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
-                    self.game.scene_manager.set_state("MainMenuState")
+                    self.game.state_manager.set_state(self.previous_state)
                     return
                 
                 # Handle weapon shop input
-                cost = self.weapon_shop_ui.handle_input(event.key)
-                if cost and cost > 0:
-                    # Deduct fragments
-                    if hasattr(self.game, 'orichalc_fragments'):
-                        self.game.orichalc_fragments -= cost
-                    self.weapon_shop_ui.fragments_count -= cost
+                result = self.weapon_shop_ui.handle_input(event.key)
+                if result and result > 0:
+                    # Deduct cores
+                    if hasattr(self.game, 'drone_system'):
+                        self.game.drone_system.spend_cores(result)
+                    self.weapon_shop_ui.fragments_count -= result
             
             elif event.type == pygame.MOUSEMOTION or event.type == pygame.MOUSEBUTTONDOWN:
                 mouse_pos = pygame.mouse.get_pos()

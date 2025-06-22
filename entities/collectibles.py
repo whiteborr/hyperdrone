@@ -361,6 +361,35 @@ class GlyphTabletItem(Collectible):
         if not self.collected: self.collected = True; return True
         return False
 
+class WeaponsUpgradeShopItem(Collectible):
+    def __init__(self, x, y, *, asset_manager):
+        tile_size = get_setting("gameplay", "TILE_SIZE", 80)
+        shop_size = int(tile_size * 1.2)
+        loaded_original_icon = asset_manager.get_image("WEAPONS_UPGRADE_SHOP")
+        if loaded_original_icon:
+            loaded_original_icon = scale(loaded_original_icon, (shop_size, shop_size))
+        super().__init__(x, y, base_color=PURPLE, size=shop_size, thickness=0, original_icon_surface=loaded_original_icon)
+        self.icon_rotation_speed = 0  # Shop doesn't rotate
+        self.pulse_speed_factor = 0  # No pulsing animation
+        self.pulse_radius_amplitude = 0  # No pulse effect
+
+    def apply_effect(self, player_drone, game_controller_instance):
+        if not self.collected:
+            self.collected = True
+            # Mark shop as used for current level
+            current_level = game_controller_instance.level_manager.level
+            if current_level == 2:
+                game_controller_instance.weapon_shop_used_level_2 = True
+            elif current_level == 7:
+                game_controller_instance.weapon_shop_used_level_7 = True
+            # Launch weapons upgrade shop
+            if hasattr(game_controller_instance, 'state_manager'):
+                game_controller_instance.state_manager.set_state("WeaponsUpgradeShopState")
+            if hasattr(game_controller_instance, 'play_sound'):
+                game_controller_instance.play_sound('ui_confirm')
+            return True
+        return False
+
 class ArchitectEchoItem(Collectible):
     def __init__(self, x, y, echo_id, associated_lore_id, *, asset_manager, icon_char="◈"):
         self.echo_id, self.associated_lore_id = echo_id, associated_lore_id
