@@ -62,7 +62,7 @@ class Bullet(Sprite):
         self.frames_existed += 1; current_x, current_y = self.x, self.y
         potential_next_x, potential_next_y = current_x + self.dx, current_y + self.dy
         collided_this_step = False
-        if maze and not self.can_pierce_walls and self.frames_existed > 1:
+        if maze and not self.can_pierce_walls:
             bullet_diameter = self.size * 2
             if maze.is_wall(potential_next_x, potential_next_y, bullet_diameter, bullet_diameter):
                 collided_this_step = True
@@ -189,7 +189,7 @@ class Missile(Sprite):
             effective_angle_rad = radians(self.angle) 
         potential_dx,potential_dy=cos(effective_angle_rad)*self.speed,sin(effective_angle_rad)*self.speed
         next_x,next_y=self.x+potential_dx,self.y+potential_dy; collided_this_frame=False
-        if maze and self.frames_existed > 1: 
+        if maze: 
             collision_check_width = self.rect.width*0.7 if self.rect else get_setting("weapons", "MISSILE_SIZE", 8)
             collision_check_height = self.rect.height*0.7 if self.rect else get_setting("weapons", "MISSILE_SIZE", 8)
             if maze.is_wall(next_x,next_y,collision_check_width,collision_check_height):

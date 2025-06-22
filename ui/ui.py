@@ -908,7 +908,8 @@ class UIManager:
     
     def _draw_fragments_hud(self, width, panel_y):
         """Draw core fragment collection indicators"""
-        frags_x = width - 200
+        hud_ring_icon_area_x_offset = get_setting("display", "HUD_RING_ICON_AREA_X_OFFSET", 150)
+        frags_x = width - hud_ring_icon_area_x_offset
         frags_y = panel_y + 65
         
         

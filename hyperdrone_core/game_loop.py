@@ -1,4 +1,4 @@
-# hyperdrone_core/game_loop.pyAdd commentMore actions
+# hyperdrone_core/game_loop.py
 import sys
 import os
 import random
@@ -32,6 +32,8 @@ from entities.collectibles import (
 from entities.temporary_barricade import TemporaryBarricade
 from drone_management import DroneSystem, DRONE_DATA
 from settings_manager import get_setting, set_setting, save_settings, settings_manager
+from entities.orichalc_fragment import OrichalcFragment
+from entities.orichalc_pickup_system import HUDContainer
 
 logger_gc = logging.getLogger(__name__)
 
@@ -55,7 +57,6 @@ class GameController:
         pygame.init()
         pygame.mixer.init()
         
-        # Hide the mouse cursor
         pygame.mouse.set_visible(False)
 
         try:
@@ -81,7 +82,6 @@ class GameController:
 
         self.clock = pygame.time.Clock()
         
-        # --- Initialize all attributes and sprite groups first ---
         self.player = None
         self.maze = None
         self.camera = None
@@ -92,7 +92,6 @@ class GameController:
         self.paused = False
         self.is_build_phase = False
         
-        # Initialize all sprite groups
         self.collectible_rings_group = pygame.sprite.Group()
         self.power_ups_group = pygame.sprite.Group()
         self.core_fragments_group = pygame.sprite.Group()
@@ -112,7 +111,6 @@ class GameController:
         self.energy_particles_group = pygame.sprite.Group()
         self.animating_fragments_to_hud = []
 
-        # --- Initialize controllers and managers AFTER attributes are set ---
         self.player_actions = PlayerActions(self)
         self.combat_controller = CombatController(self, self.asset_manager)
         self.puzzle_controller = PuzzleController(self, self.asset_manager)
@@ -122,7 +120,6 @@ class GameController:
         from .item_manager import ItemManager
         self.item_manager = ItemManager(self, self.asset_manager)
         
-        from entities.orichalc_pickup_system import HUDContainer
         self.hud_container = HUDContainer(self.asset_manager)
         
         self.ui_flow_controller.set_dependencies(None, self.ui_manager, self.drone_system)
@@ -135,7 +132,6 @@ class GameController:
         self.event_manager.register_listener(EnemyDefeatedEvent, self.on_enemy_defeated_effects)
         
         self.hud_displayed_fragments = set()
-        self.animating_fragments_to_hud = []
         self.fragment_ui_target_positions = {}
         
         self.level_timer_start_ticks = 0
@@ -161,7 +157,6 @@ class GameController:
         
         self.story_manager = StoryManager(state_manager_ref=None, drone_system_ref=self.drone_system)
 
-        # -- Define Story Chapters --
         ch1_obj1 = Objective(objective_id="c1_collect_rings", description="Gather energy signatures (Collect all Rings)", obj_type="collect_all", target="rings")
         ch1_obj2 = Objective(objective_id="c1_clear_hostiles", description="Neutralize initial defense drones", obj_type="kill_all", target="standard_enemies")
         chapter1 = Chapter(chapter_id="chapter_1", title="Chapter 1: The Anomaly", 
@@ -207,7 +202,6 @@ class GameController:
         self.STORY_TEXT_COLOR = (220, 220, 220)
         self.STORY_TITLE_COLOR = (255, 255, 255)
         
-        # --- Final initialization step: Create StateManager and link it to other managers ---
         self.state_manager = StateManager(self)
         self.ui_manager.state_manager = self.state_manager
         self.ui_flow_controller.scene_manager = self.state_manager
@@ -221,15 +215,6 @@ class GameController:
         logger_gc.info("GameController: All assets preloaded via AssetManager.")
     
     def run(self):
-        """
-        Main game loop that handles events, updates game state, and renders frames.
-        
-        Runs continuously until the game is quit, managing:
-        - Event processing (input, window events)
-        - Game state updates (physics, AI, animations)
-        - Rendering (drawing all game elements)
-        - Frame rate control
-        """
         while True:
             delta_time_ms = self.clock.tick(get_setting("display", "FPS", 60))
             
@@ -244,6 +229,15 @@ class GameController:
             
             if current_state and not self.paused:
                 current_state.update(delta_time_ms)
+                # --- MODIFICATION: Update animation systems ---
+                self.energy_particles_group.update()
+                self.hud_container.update()
+
+            # --- MODIFICATION: Check for arriving particles ---
+            for particle in list(self.energy_particles_group):
+                if particle.has_arrived():
+                    self.hud_container.trigger_pulse()
+                    particle.kill()
             
             current_time_ms = pygame.time.get_ticks()
             if current_state:
@@ -258,6 +252,11 @@ class GameController:
             if current_state:
                 current_state.draw(self.screen)
             
+            # --- MODIFICATION: Draw animation systems ---
+            orichalc_count = self.drone_system.get_player_cores() # Get count for the HUD
+            self.hud_container.draw(self.screen, orichalc_count)
+            self.energy_particles_group.draw(self.screen)
+
             active_abilities_data = {}
             if self.player and hasattr(self.player, 'active_abilities') and self.player.active_abilities:
                 active_abilities_data = self.player.active_abilities
@@ -384,7 +383,6 @@ class GameController:
         return (200, 200)
         
     def _respawn_player(self):
-        """Respawn the player without recreating the maze or level"""
         if not self.maze:
             return
             
@@ -498,7 +496,7 @@ class GameController:
         black_color = get_setting("colors", "BLACK", (0, 0, 0))
         self.screen.fill(black_color)
         if self.maze:
-            self.maze.draw(self.screen, None)
+            self.maze.draw(self.screen, self.camera)
         
         for item_group in [self.collectible_rings_group, self.power_ups_group, 
                           self.core_fragments_group, self.vault_logs_group,
@@ -506,29 +504,29 @@ class GameController:
                           self.corrupted_logs_group, self.quantum_circuitry_group,
                           self.spawned_barricades_group]:
             for item in item_group:
-                item.draw(self.screen, None)
+                item.draw(self.screen, self.camera)
         
         self.explosion_particles_group.update()
         self.explosion_particles_group.draw(self.screen) 
 
         if self.player:
-            self.player.draw(self.screen)
+            self.player.draw(self.screen, self.camera)
             
         current_game_state = self.state_manager.get_current_state_id()
         game_state_maze_defense = get_setting("game_states", "GAME_STATE_MAZE_DEFENSE", "maze_defense_mode")
         if current_game_state == game_state_maze_defense and hasattr(self, 'tower_defense_manager'):
-            self.tower_defense_manager.draw(self.screen, None)
+            self.tower_defense_manager.draw(self.screen, self.camera)
             
         if self.combat_controller:
-            self.combat_controller.enemy_manager.draw_all(self.screen, None)
+            self.combat_controller.enemy_manager.draw_all(self.screen, self.camera)
             
         if self.turrets_group:
             for turret in self.turrets_group:
-                turret.draw(self.screen, None)
+                turret.draw(self.screen, self.camera)
                 
         if self.reactor_group:
             for reactor in self.reactor_group:
-                reactor.draw(self.screen, None)
+                reactor.draw(self.screen, self.camera)
                 
         ring_icon = self.asset_manager.get_image("ring_ui_icon")
         self.level_manager.draw_ring_animations(self.screen, ring_icon)
@@ -553,11 +551,9 @@ class GameController:
                 powerup.apply_effect(self.player)
                 self.play_sound('collect_ring')
                 
-        # Handle regular core fragments (not orichalc)
-        from entities.orichalc_fragment import OrichalcFragment
         for fragment in list(self.core_fragments_group):
             if not isinstance(fragment, OrichalcFragment) and pygame.sprite.collide_rect(self.player, fragment):
-                fragment.kill()  # Remove from group
+                fragment.kill()
                 fragment_pos = (fragment.center_x, fragment.center_y)
                 fragment_id_val = fragment.fragment_id
                 self.drone_system.collect_core_fragment(fragment_id_val)
@@ -616,8 +612,6 @@ class GameController:
             if hasattr(qc, 'apply_effect'):
                 qc.apply_effect(self.player, self)
         
-        # Handle orichalc fragment collisions
-        from entities.orichalc_fragment import OrichalcFragment
         for fragment in list(self.core_fragments_group):
             if isinstance(fragment, OrichalcFragment) and not fragment.collected:
                 if pygame.sprite.collide_rect(self.player, fragment):
@@ -629,7 +623,6 @@ class GameController:
         return None
     
     def _check_level_clear_condition(self):
-        """Delegates all level clear condition checks to the LevelManager."""
         return self.level_manager.check_level_clear_condition()
         
     def set_story_message(self, message, duration=5000):
@@ -638,7 +631,6 @@ class GameController:
         self.story_message_end_time = pygame.time.get_ticks() + duration
     
     def _draw_fragment_animations(self):
-        """Draw animations for core fragments moving to the HUD"""
         current_time = pygame.time.get_ticks()
         
         for i in range(len(self.animating_fragments_to_hud) - 1, -1, -1):

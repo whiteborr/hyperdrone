@@ -50,6 +50,8 @@ class HUDContainer:
         self._cached_position = None
         self._last_screen_size = None
         
+        self.image_to_draw = self.container_icon
+        
     def get_position(self):
         """Get container position in bottom-right HUD with caching"""
         screen = get_surface()
@@ -65,23 +67,30 @@ class HUDContainer:
         """Start pulse animation"""
         self.pulse_start_time = get_ticks()
         self.is_pulsing = True
-        
-    def draw(self, surface, orichalc_count):
-        pos = self.get_position()
-        
-        # Draw container with pulse effect
+
+    def update(self):
+        """
+        Handles the logic for the pulsing animation.
+        This is called every frame from the main game loop.
+        """
         if self.is_pulsing:
             elapsed = get_ticks() - self.pulse_start_time
             if elapsed < 300:  # 0.3 second pulse
                 pulse_scale = 1.0 + 0.3 * sin(elapsed / 300 * pi * 4)
                 size = (int(100 * pulse_scale), int(100 * pulse_scale))
-                icon_to_draw = scale(self.container_icon, size)
-                surface.blit(icon_to_draw, icon_to_draw.get_rect(center=pos))
+                self.image_to_draw = scale(self.container_icon, size)
             else:
                 self.is_pulsing = False
-                surface.blit(self.container_icon, self.container_icon.get_rect(center=pos))
+                self.image_to_draw = self.container_icon
         else:
-            surface.blit(self.container_icon, self.container_icon.get_rect(center=pos))
+            self.image_to_draw = self.container_icon
+
+    def draw(self, surface, orichalc_count):
+        """Draws the container and the count. Now only handles rendering."""
+        pos = self.get_position()
+        
+        # Draw the container (which may be scaled by the update method)
+        surface.blit(self.image_to_draw, self.image_to_draw.get_rect(center=pos))
 
 class OrichalcPickupSystem:
     """Manages the complete orichalc fragment pickup animation"""
@@ -93,22 +102,20 @@ class OrichalcPickupSystem:
         
     def trigger_pickup(self, fragment_pos):
         """Start pickup animation sequence"""
-        # Start glow effect
         glow_data = {
             'pos': fragment_pos,
             'start_time': get_ticks(),
-            'glow_duration': 300  # 0.3 seconds
+            'glow_duration': 300
         }
         self.glowing_fragments.append(glow_data)
         
-        # Create energy particle after glow
-        set_timer(USEREVENT + 1, 300)  # Delay particle creation
+        set_timer(USEREVENT + 1, 300)
         self._pending_particle_pos = fragment_pos
         
     def handle_event(self, event):
         """Handle delayed particle creation"""
         if event.type == USEREVENT + 1:
-            set_timer(USEREVENT + 1, 0)  # Cancel timer
+            set_timer(USEREVENT + 1, 0)
             target_pos = self.hud_container.get_position()
             particle = EnergyParticle(self._pending_particle_pos, target_pos)
             self.energy_particles.add(particle)
@@ -117,34 +124,29 @@ class OrichalcPickupSystem:
         """Update all animations"""
         current_time = get_ticks()
         
-        # Update glow effects - filter in place
         self.glowing_fragments = [glow for glow in self.glowing_fragments 
                                  if current_time - glow['start_time'] <= glow['glow_duration']]
                 
-        # Update particles and check for completion
         for particle in self.energy_particles:
-            if particle.update():  # Particle reached target
+            if particle.update():
                 self.hud_container.trigger_pulse()
                 self.game_controller.play_sound('collect_fragment')
                 
     def draw(self, surface):
         """Draw all effects"""
         if not self.glowing_fragments and not self.energy_particles:
-            return  # Early exit if nothing to draw
+            return
             
         current_time = get_ticks()
         
-        # Draw glowing fragments
         for glow in self.glowing_fragments:
             elapsed = current_time - glow['start_time']
             progress = elapsed / glow['glow_duration']
-            # Pulsing glow effect
             alpha = int(128 + 127 * sin(progress * pi * 6))
             glow_surface = Surface((40, 40), SRCALPHA)
             circle(glow_surface, (*GOLD, alpha), (20, 20), 20)
             surface.blit(glow_surface, (glow['pos'][0] - 20, glow['pos'][1] - 20))
                 
-        # Draw energy particles
         self.energy_particles.draw(surface)
         
     def draw_hud(self, surface):

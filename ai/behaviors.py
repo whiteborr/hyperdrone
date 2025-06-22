@@ -167,8 +167,38 @@ class ChasePlayerBehavior(BaseBehavior):
         if self.enemy.__class__.__name__ != "SentinelDrone" and player_dist < self.enemy.aggro_radius and (current_time_ms - self.enemy.last_shot_time > self.enemy.shoot_cooldown):
             dx = self.enemy.player_ref.rect.centerx - self.enemy.x
             dy = self.enemy.player_ref.rect.centery - self.enemy.y
-            self.enemy.shoot(degrees(atan2(dy, dx)), maze)
-            self.enemy.last_shot_time = current_time_ms
+            # Only shoot if there's a clear line of sight to the player
+            if self._has_line_of_sight(self.enemy.x, self.enemy.y, self.enemy.player_ref.rect.centerx, self.enemy.player_ref.rect.centery, maze):
+                self.enemy.shoot(degrees(atan2(dy, dx)), maze)
+                self.enemy.last_shot_time = current_time_ms
+    
+    def _has_line_of_sight(self, start_x, start_y, end_x, end_y, maze):
+        """Check if there's a clear line of sight between two points"""
+        if not maze:
+            return True
+        
+        dx = end_x - start_x
+        dy = end_y - start_y
+        distance = hypot(dx, dy)
+        
+        if distance == 0:
+            return True
+        
+        # Normalize direction
+        step_x = dx / distance
+        step_y = dy / distance
+        
+        # Check points along the line
+        steps = int(distance / 5)  # Check every 5 pixels
+        for i in range(1, steps):
+            check_x = start_x + (step_x * i * 5)
+            check_y = start_y + (step_y * i * 5)
+            
+            # Check if this point is inside a wall
+            if maze.is_wall(check_x, check_y, 1, 1):
+                return False
+        
+        return True
 
 class TRBPatrolBehavior(BaseBehavior):
     """Behavior for TR3B enemy patrol movement"""
