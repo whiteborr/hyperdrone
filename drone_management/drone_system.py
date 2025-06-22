@@ -35,6 +35,9 @@ class DroneSystem:
 
         # NEW: Track unlocked active abilities
         self.unlocked_abilities = set()
+        
+        # Track owned weapons
+        self.owned_weapons = [0]  # Start with default weapon
 
         # Vault status
         self.architect_vault_completed = False
@@ -90,6 +93,7 @@ class DroneSystem:
                     self.solved_puzzle_terminals.update(data.get(KEY_SOLVED_PUZZLE_TERMINALS, []))
                     self.defeated_bosses.update(data.get(KEY_DEFEATED_BOSSES, []))
                     self.unlocked_abilities.update(data.get('unlocked_abilities', [])) # NEW
+                    self.owned_weapons = data.get('owned_weapons', [0])
             except IOError as e:
                 logger.error(f"Error loading save file '{self.SAVE_FILE}': {e}")
         else:
@@ -118,7 +122,8 @@ class DroneSystem:
             KEY_COLLECTED_GLYPH_TABLETS: list(self.collected_glyph_tablets),
             KEY_SOLVED_PUZZLE_TERMINALS: list(self.solved_puzzle_terminals),
             KEY_DEFEATED_BOSSES: list(self.defeated_bosses),
-            'unlocked_abilities': list(self.unlocked_abilities) # NEW
+            'unlocked_abilities': list(self.unlocked_abilities), # NEW
+            'owned_weapons': list(self.owned_weapons)
         }
         try:
             makedirs(dirname(self.SAVE_FILE), exist_ok=True)
@@ -372,6 +377,20 @@ class DroneSystem:
     def set_player_level(self, level):
         """Placeholder for potential future logic related to player level."""
         pass
+    
+    def add_owned_weapon(self, weapon_mode):
+        """Add a weapon to the player's owned weapons"""
+        if weapon_mode not in self.owned_weapons:
+            self.owned_weapons.append(weapon_mode)
+            self._save_dirty = True
+            self._save_unlocks()
+            logger.info(f"Weapon mode {weapon_mode} added to owned weapons")
+            return True
+        return False
+    
+    def get_owned_weapons(self):
+        """Get list of owned weapons"""
+        return self.owned_weapons.copy()
     
     def _unlock_default_lore_entries(self):
         """Unlock some basic lore entries that should be available from the start"""

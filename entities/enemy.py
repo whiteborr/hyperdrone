@@ -171,11 +171,19 @@ class Enemy(Sprite):
             if self.health <= 0: 
                 self.health = 0
                 self.alive = False
-                # Create explosion effect when enemy dies
+                logger.info(f"Enemy died at position ({self.x}, {self.y})")
+                # Spawn orichalc fragment in chapter 1
                 if hasattr(self.asset_manager, 'game_controller') and self.asset_manager.game_controller:
-                        self.asset_manager.game_controller.on_enemy_defeated_effects(
-                            type('EnemyDefeatedEvent', (object,), {'score_value': 0, 'position': (self.x, self.y), 'enemy_id': id(self)})()
-                        )
+                    gc = self.asset_manager.game_controller
+                    if hasattr(gc, 'level_manager') and gc.level_manager.level == 1:
+                        from entities.orichalc_fragment import OrichalcFragment
+                        fragment = OrichalcFragment(self.x, self.y, asset_manager=self.asset_manager)
+                        gc.core_fragments_group.add(fragment)
+                        logger.info(f"Spawned orichalc fragment at ({self.x}, {self.y})")
+                    # Create explosion effect when enemy dies
+                    gc.on_enemy_defeated_effects(
+                        type('EnemyDefeatedEvent', (object,), {'score_value': 0, 'position': (self.x, self.y), 'enemy_id': id(self)})()
+                    )
 
 
     def draw(self, surface, camera=None):

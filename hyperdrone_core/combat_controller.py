@@ -207,7 +207,7 @@ class CombatController:
                     if not enemy.alive:
                         self.game_controller.level_manager.add_score(50)
                         self.game_controller.drone_system.add_player_cores(10) 
-                        self.game_controller._create_explosion(enemy.rect.centerx, enemy.rect.centery, 15, None, True) 
+                        self.game_controller._create_explosion(enemy.rect.centerx, enemy.rect.centery, 15, None, True)
                         self.game_controller.check_for_all_enemies_killed()
                     
                     if not (hasattr(projectile, 'max_pierces') and projectile.pierces_done < projectile.max_pierces):
@@ -483,3 +483,14 @@ class CombatController:
             
         # Log the event
         logger.info("Maze Guardian defeated!")
+        
+    def _spawn_orichalc_fragment(self, x, y):
+        """Spawn an orichalc fragment at the given position"""
+        logger.info(f"Spawning orichalc fragment at ({x}, {y})")
+        from entities.orichalc_fragment import OrichalcFragment
+        fragment = OrichalcFragment(x, y, asset_manager=self.asset_manager)
+        if hasattr(self.game_controller, 'core_fragments_group'):
+            self.game_controller.core_fragments_group.add(fragment)
+            logger.info(f"Added orichalc fragment to core_fragments_group, group size: {len(self.game_controller.core_fragments_group)}")
+        else:
+            logger.error("game_controller does not have core_fragments_group")

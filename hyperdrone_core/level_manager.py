@@ -30,15 +30,7 @@ class LevelManager:
         self.total_rings_per_level = get_setting("collectibles", "MAX_RINGS_PER_LEVEL", 5)
         self.animating_rings_to_hud = []
         
-        # Position rings at the right side of the screen to match UI
-        width = get_setting("display", "WIDTH", 1920)
-        height = get_setting("display", "HEIGHT", 1080)
-        bottom_panel_height = get_setting("display", "BOTTOM_PANEL_HEIGHT", 120)
-        
-        self.ring_ui_base_pos = (
-            width - HUD_RING_ICON_AREA_X_OFFSET,
-            height - bottom_panel_height + HUD_RING_ICON_AREA_Y_OFFSET
-        )
+        # Ring animation will calculate positions dynamically to match UI exactly
         
         # Level timer variables
         self.level_start_time = pygame.time.get_ticks()
@@ -99,18 +91,30 @@ class LevelManager:
     def _animate_ring_to_hud(self, start_pos):
         """Create an animation for a collected ring moving to the HUD"""
         # Calculate the exact position of the collected ring in the HUD
-        collected_count = self.collected_rings_count - 1  # -1 because we already incremented the count
+        # Use the same index as the ring that was just collected (already incremented count - 1)
+        ring_index = self.collected_rings_count - 1
         
-        # Use the exact same calculation as in the UI
-        rings_x = self.ring_ui_base_pos[0]
-        rings_y = self.ring_ui_base_pos[1]
+        # Use the exact same calculation as in the UI _draw_rings_hud method
+        width = get_setting("display", "WIDTH", 1920)
+        height = get_setting("display", "HEIGHT", 1080)
+        bottom_panel_height = get_setting("display", "BOTTOM_PANEL_HEIGHT", 120)
+        panel_y = height - bottom_panel_height
         
-        # Calculate the center of the target icon
-        target_x = rings_x + collected_count * (HUD_RING_ICON_SIZE + HUD_RING_ICON_SPACING) + HUD_RING_ICON_SIZE // 2
-        target_y = rings_y + HUD_RING_ICON_SIZE // 2
+        hud_ring_icon_area_x_offset = get_setting("display", "HUD_RING_ICON_AREA_X_OFFSET", 150)
+        hud_ring_icon_area_y_offset = get_setting("display", "HUD_RING_ICON_AREA_Y_OFFSET", 30)
+        hud_ring_icon_size = get_setting("display", "HUD_RING_ICON_SIZE", 24)
+        hud_ring_icon_spacing = get_setting("display", "HUD_RING_ICON_SPACING", 5)
+        
+        rings_x = width - hud_ring_icon_area_x_offset
+        rings_y = panel_y + hud_ring_icon_area_y_offset
+        
+        # Calculate the center of the target icon using the exact same formula as the UI
+        icon_x = rings_x + ring_index * (hud_ring_icon_size + hud_ring_icon_spacing)
+        target_x = icon_x + hud_ring_icon_size // 2
+        target_y = rings_y + hud_ring_icon_size // 2
         
         # Ensure we don't add more animations than needed
-        if collected_count < self.total_rings_per_level:
+        if ring_index < self.total_rings_per_level:
             self.animating_rings_to_hud.append({
                 'pos': list(start_pos),
                 'start_time': pygame.time.get_ticks(),

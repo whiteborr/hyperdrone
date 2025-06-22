@@ -169,6 +169,15 @@ class AssetManager:
             return full_path
         logger.warning(f"AssetManager: Music path for key '{key}' not found.")
         return None
+    
+    def get_weapon_icon(self, weapon_mode):
+        """Get weapon icon by weapon mode ID"""
+        from settings_manager import settings_manager
+        weapon_icons = settings_manager.get_weapon_icon_paths()
+        icon_path = weapon_icons.get(str(weapon_mode))
+        if icon_path:
+            return self.get_image(icon_path.replace("assets/", "").replace("\\", "/"))
+        return None
 
     def preload_manifest(self, manifest_dict):
         logger.info("AssetManager: Starting preload from manifest...")

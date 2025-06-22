@@ -10,7 +10,7 @@ class OrichalcFragment(pygame.sprite.Sprite):
         super().__init__()
         self.center_x, self.center_y = float(x), float(y)
         fragment_size = 32
-        self.original_icon = asset_manager.get_image("orichalc_fragment_icon")
+        self.original_icon = asset_manager.get_image("ORICHALC_FRAGMENT_ICON")
         if self.original_icon:
             self.original_icon = pygame.transform.scale(self.original_icon, (fragment_size, fragment_size))
         self.collected = False
@@ -37,7 +37,6 @@ class OrichalcFragment(pygame.sprite.Sprite):
         
     def update(self):
         if self.collected:
-            self.kill()
             return True
         # Update rotation and pulse
         self.rotation_angle = (self.rotation_angle + 0.3) % 360
@@ -63,3 +62,11 @@ class OrichalcFragment(pygame.sprite.Sprite):
                 game_controller_instance.play_sound('collect_fragment')
             return True
         return False
+    
+
+    
+    def start_pickup_animation(self, hud_container):
+        """Create an energy particle that flies to the HUD container"""
+        from entities.energy_particle import EnergyParticle
+        target_pos = hud_container.get_position()
+        return EnergyParticle(self.center_x, self.center_y, target_pos[0], target_pos[1])

@@ -276,7 +276,7 @@ class UIManager:
                 self.draw_story_message_overlay(self.game_controller.story_message)
     
     def draw_story_map(self):
-        """Draw a simple story map screen"""
+        """Draw a story map screen with chapter progression"""
         self._draw_star_background()
         width, height = self._cached_width, self._cached_height
         
@@ -295,21 +295,25 @@ class UIManager:
         title_surf = self._render_text_safe("Story Map", "large_text", GOLD, fallback_size=48)
         self.screen.blit(title_surf, title_surf.get_rect(center=(width // 2, 100)))
         
+        # Draw chapter map line
+        self._draw_chapter_map_line(width, height)
+        
+        # Draw current chapter details below the map
         current_chapter = None
         if hasattr(self.game_controller, 'story_manager') and self.game_controller.story_manager:
             current_chapter = self.game_controller.story_manager.get_current_chapter()
         
         if current_chapter:
             chapter_title_surf = self._render_text_safe(current_chapter.title, "ui_text", CYAN, fallback_size=32)
-            self.screen.blit(chapter_title_surf, chapter_title_surf.get_rect(center=(width // 2, 200)))
+            self.screen.blit(chapter_title_surf, chapter_title_surf.get_rect(center=(width // 2, 450)))
             
             desc_font = Font(None, 24)
             wrapped_desc = self._wrap_text_with_font_obj(current_chapter.description, desc_font, width - 200)
             for i, line in enumerate(wrapped_desc):
                 desc_surf = desc_font.render(line, True, WHITE)
-                self.screen.blit(desc_surf, desc_surf.get_rect(center=(width // 2, 250 + i * 30)))
+                self.screen.blit(desc_surf, desc_surf.get_rect(center=(width // 2, 490 + i * 30)))
             
-            obj_y = 250 + len(wrapped_desc) * 30 + 50
+            obj_y = 490 + len(wrapped_desc) * 30 + 50
             obj_font = Font(None, 24)
             
             for obj in current_chapter.objectives:
@@ -321,6 +325,62 @@ class UIManager:
         
         instruction_surf = self._render_text_safe("Press SPACE or ENTER to continue", "ui_text", CYAN, fallback_size=24)
         self.screen.blit(instruction_surf, instruction_surf.get_rect(center=(width // 2, height - 50)))
+    
+    def _draw_chapter_map_line(self, width, height):
+        """Draw the chapter progression map with icons"""
+        # Load chapter icons
+        chapter_unlocked_icon = self.asset_manager.get_image("CHAPTER_ICON_UNLOCKED", scale_to_size=(64, 64))
+        chapter_locked_icon = self.asset_manager.get_image("CHAPTER_ICON_LOCKED", scale_to_size=(64, 64))
+        player_cursor_icon = self.asset_manager.get_image("PLAYER_MAP_CURSOR", scale_to_size=(32, 32))
+        
+        # Fallback icons if assets not found
+        if not chapter_unlocked_icon:
+            chapter_unlocked_icon = self._create_fallback_icon_surface((64, 64), "✓", GREEN)
+        if not chapter_locked_icon:
+            chapter_locked_icon = self._create_fallback_icon_surface((64, 64), "✗", GREY)
+        if not player_cursor_icon:
+            player_cursor_icon = self._create_fallback_icon_surface((32, 32), "►", GOLD)
+        
+        # Chapter positions along a horizontal line
+        map_y = 250
+        chapter_spacing = 150
+        start_x = (width - (4 * chapter_spacing)) // 2  # Center 5 chapters
+        
+        # Get current chapter info
+        current_chapter_index = -1
+        story_manager = None
+        if hasattr(self.game_controller, 'story_manager') and self.game_controller.story_manager:
+            story_manager = self.game_controller.story_manager
+            current_chapter_index = story_manager.current_chapter_index
+        
+        # Draw connecting line
+        line_start_x = start_x + 32  # Center of first icon
+        line_end_x = start_x + (4 * chapter_spacing) + 32  # Center of last icon
+        draw_line(self.screen, WHITE, (line_start_x, map_y + 32), (line_end_x, map_y + 32), 3)
+        
+        # Draw chapters 1-5
+        for i in range(5):
+            chapter_x = start_x + (i * chapter_spacing)
+            
+            # Determine if chapter is unlocked (current or previous chapters)
+            is_unlocked = i <= current_chapter_index
+            
+            # Choose appropriate icon
+            icon = chapter_unlocked_icon if is_unlocked else chapter_locked_icon
+            
+            # Draw chapter icon
+            self.screen.blit(icon, (chapter_x, map_y))
+            
+            # Draw chapter number
+            chapter_num_surf = self._render_text_safe(f"{i + 1}", "ui_text", WHITE, fallback_size=24)
+            num_rect = chapter_num_surf.get_rect(center=(chapter_x + 32, map_y + 80))
+            self.screen.blit(chapter_num_surf, num_rect)
+            
+            # Draw player cursor on current chapter
+            if i == current_chapter_index:
+                cursor_x = chapter_x + 16  # Center cursor over chapter icon
+                cursor_y = map_y - 40  # Position above the chapter icon
+                self.screen.blit(player_cursor_icon, (cursor_x, cursor_y))
 
     def draw_architect_vault_hud_elements(self):
         title_surf = self._render_text_safe("Architect's Vault", "large_text", GOLD, fallback_size=48)
@@ -851,15 +911,6 @@ class UIManager:
         frags_x = width - 200
         frags_y = panel_y + 65
         
-        # Draw orichalc fragment container
-        orichalc_icon = self.ui_asset_surfaces["core_fragment_icons"].get("orichalc_fragment_container")
-        if not orichalc_icon:
-            orichalc_icon = self.asset_manager.get_image("ORICHALC_FRAGMENT_CONTAINER", scale_to_size=self.ui_icon_size_fragments)
-            if orichalc_icon:
-                self.ui_asset_surfaces["core_fragment_icons"]["orichalc_fragment_container"] = orichalc_icon
-        
-        if orichalc_icon:
-            self.screen.blit(orichalc_icon, (frags_x - 40, frags_y))
         
         core_fragment_details = settings_manager.get_core_fragment_details()
         collected = self.drone_system.get_collected_fragments_ids()

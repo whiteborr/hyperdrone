@@ -109,6 +109,8 @@ class GameController:
         self.quantum_circuitry_group = pygame.sprite.GroupSingle()
         self.spawned_barricades_group = pygame.sprite.Group()
         self.glitching_walls_group = pygame.sprite.Group()
+        self.energy_particles_group = pygame.sprite.Group()
+        self.animating_fragments_to_hud = []
 
         # --- Initialize controllers and managers AFTER attributes are set ---
         self.player_actions = PlayerActions(self)
@@ -119,6 +121,9 @@ class GameController:
         
         from .item_manager import ItemManager
         self.item_manager = ItemManager(self, self.asset_manager)
+        
+        from entities.orichalc_pickup_system import HUDContainer
+        self.hud_container = HUDContainer(self.asset_manager)
         
         self.ui_flow_controller.set_dependencies(None, self.ui_manager, self.drone_system)
         
@@ -183,10 +188,17 @@ class GameController:
                             objectives=[ch4_obj1],
                             next_state_id="HarvestChamberState")
 
+        ch5_obj1 = Objective(objective_id="c5_final_objective", description="Complete the final mission", obj_type="complete", target="final_mission")
+        chapter5 = Chapter(chapter_id="chapter_5", title="Chapter 5: The Final Confrontation",
+                            description="Face the ultimate challenge in the Vault's core.",
+                            objectives=[ch5_obj1],
+                            next_state_id="MazeDefenseState")
+
         self.story_manager.add_chapter(chapter1)
         self.story_manager.add_chapter(chapter2)
         self.story_manager.add_chapter(chapter3)
         self.story_manager.add_chapter(chapter4)
+        self.story_manager.add_chapter(chapter5)
         
         self.story_manager.start_story()
 
@@ -541,55 +553,56 @@ class GameController:
                 powerup.apply_effect(self.player)
                 self.play_sound('collect_ring')
                 
-        for fragment in pygame.sprite.spritecollide(self.player, self.core_fragments_group, True):
-            fragment_pos = (fragment.center_x, fragment.center_y)
-            
-            # Use the fragment_id attribute from the fragment instance
-            fragment_id_val = fragment.fragment_id
+        # Handle regular core fragments (not orichalc)
+        from entities.orichalc_fragment import OrichalcFragment
+        for fragment in list(self.core_fragments_group):
+            if not isinstance(fragment, OrichalcFragment) and pygame.sprite.collide_rect(self.player, fragment):
+                fragment.kill()  # Remove from group
+                fragment_pos = (fragment.center_x, fragment.center_y)
+                fragment_id_val = fragment.fragment_id
+                self.drone_system.collect_core_fragment(fragment_id_val)
+                
+                if hasattr(fragment, 'associated_ability') and fragment.associated_ability:
+                    if hasattr(self.player, 'unlock_ability'):
+                        self.player.unlock_ability(fragment.associated_ability)
 
-            self.drone_system.collect_core_fragment(fragment_id_val)
-            
-            if hasattr(fragment, 'associated_ability') and fragment.associated_ability:
-                if hasattr(self.player, 'unlock_ability'):
-                    self.player.unlock_ability(fragment.associated_ability)
-
-            self.play_sound('collect_fragment')
-            
-            width = get_setting("display", "WIDTH", 1920)
-            height = get_setting("display", "HEIGHT", 1080)
-            bottom_panel_height = get_setting("display", "BOTTOM_PANEL_HEIGHT", 120)
-            frags_x = width - 150
-            frags_y = height - bottom_panel_height + 65
-            
-            target_pos = None
-            if hasattr(self, 'fragment_ui_target_positions') and fragment_id_val in self.fragment_ui_target_positions:
-                target_pos = self.fragment_ui_target_positions[fragment_id_val]
-            
-            if not target_pos:
-                core_fragment_details = settings_manager.get_core_fragment_details()
-                required = sorted([d['id'] for d in core_fragment_details.values() if d.get('required_for_vault')])
-                try:
-                    index = required.index(fragment_id_val)
-                    target_x = frags_x + index * (self.ui_manager.ui_icon_size_fragments[0] + 5) + self.ui_manager.ui_icon_size_fragments[0] // 2
-                    target_y = frags_y + self.ui_manager.ui_icon_size_fragments[1] // 2
-                    target_pos = (target_x, target_y)
-                except ValueError:
-                    target_x = frags_x + len(required) * (self.ui_manager.ui_icon_size_fragments[0] + 5) + self.ui_manager.ui_icon_size_fragments[0] // 2
-                    target_y = frags_y + self.ui_manager.ui_icon_size_fragments[1] // 2
-                    target_pos = (target_x, target_y)
-            
-            self.animating_fragments_to_hud.append({
-                'pos': list(fragment_pos),
-                'start_time': pygame.time.get_ticks(),
-                'duration': 1500,
-                'start_pos': fragment_pos,
-                'target_pos': target_pos,
-                'fragment_id': fragment_id_val
-            })
-            
-            from .game_events import ItemCollectedEvent
-            event = ItemCollectedEvent(item_id=fragment_id_val, item_type='core_fragment')
-            self.event_manager.dispatch(event)
+                self.play_sound('collect_fragment')
+                
+                width = get_setting("display", "WIDTH", 1920)
+                height = get_setting("display", "HEIGHT", 1080)
+                bottom_panel_height = get_setting("display", "BOTTOM_PANEL_HEIGHT", 120)
+                frags_x = width - 150
+                frags_y = height - bottom_panel_height + 65
+                
+                target_pos = None
+                if hasattr(self, 'fragment_ui_target_positions') and fragment_id_val in self.fragment_ui_target_positions:
+                    target_pos = self.fragment_ui_target_positions[fragment_id_val]
+                
+                if not target_pos:
+                    core_fragment_details = settings_manager.get_core_fragment_details()
+                    required = sorted([d['id'] for d in core_fragment_details.values() if d.get('required_for_vault')])
+                    try:
+                        index = required.index(fragment_id_val)
+                        target_x = frags_x + index * (self.ui_manager.ui_icon_size_fragments[0] + 5) + self.ui_manager.ui_icon_size_fragments[0] // 2
+                        target_y = frags_y + self.ui_manager.ui_icon_size_fragments[1] // 2
+                        target_pos = (target_x, target_y)
+                    except ValueError:
+                        target_x = frags_x + len(required) * (self.ui_manager.ui_icon_size_fragments[0] + 5) + self.ui_manager.ui_icon_size_fragments[0] // 2
+                        target_y = frags_y + self.ui_manager.ui_icon_size_fragments[1] // 2
+                        target_pos = (target_x, target_y)
+                
+                self.animating_fragments_to_hud.append({
+                    'pos': list(fragment_pos),
+                    'start_time': pygame.time.get_ticks(),
+                    'duration': 1500,
+                    'start_pos': fragment_pos,
+                    'target_pos': target_pos,
+                    'fragment_id': fragment_id_val
+                })
+                
+                from .game_events import ItemCollectedEvent
+                event = ItemCollectedEvent(item_id=fragment_id_val, item_type='core_fragment')
+                self.event_manager.dispatch(event)
 
         collected_log_id = None
         for log in pygame.sprite.spritecollide(self.player, self.corrupted_logs_group, True):
@@ -602,6 +615,16 @@ class GameController:
         for qc in pygame.sprite.spritecollide(self.player, self.quantum_circuitry_group, True):
             if hasattr(qc, 'apply_effect'):
                 qc.apply_effect(self.player, self)
+        
+        # Handle orichalc fragment collisions
+        from entities.orichalc_fragment import OrichalcFragment
+        for fragment in list(self.core_fragments_group):
+            if isinstance(fragment, OrichalcFragment) and not fragment.collected:
+                if pygame.sprite.collide_rect(self.player, fragment):
+                    particle = fragment.start_pickup_animation(self.hud_container)
+                    self.energy_particles_group.add(particle)
+                    fragment.apply_effect(self.player, self)
+                    fragment.kill()
         
         return None
     

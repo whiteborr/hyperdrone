@@ -113,13 +113,14 @@ class PathfindingEnemy(pygame.sprite.Sprite):
     def reach_goal(self):
         """Called when enemy reaches the goal"""
         logger.info("Enemy reached the goal!")
-        # Damage the core reactor directly when reaching goal
-        if hasattr(self, 'path_manager') and hasattr(self.path_manager, 'game_controller'):
-            game_controller = self.path_manager.game_controller
-            if hasattr(game_controller, 'combat_controller') and game_controller.combat_controller.core_reactor:
+        # Find game controller through tower defense manager
+        tower_defense_manager = getattr(self.path_manager, 'tower_defense_manager', None)
+        if tower_defense_manager and hasattr(tower_defense_manager, 'game_controller'):
+            game_controller = tower_defense_manager.game_controller
+            if hasattr(game_controller, 'core_reactor') and game_controller.core_reactor:
                 damage = getattr(self, 'damage', 25)
                 logger.info(f"Enemy damaging core for {damage} damage")
-                game_controller.combat_controller.core_reactor.take_damage(damage, game_controller)
+                game_controller.core_reactor.take_damage(damage, game_controller)
         self.alive = False
         
     def trigger_path_recalculation(self):

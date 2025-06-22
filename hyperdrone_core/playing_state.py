@@ -130,6 +130,9 @@ class PlayingState(State):
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_p:
                     self.game.toggle_pause()
+                elif event.key == pygame.K_TAB:
+                    if self.game.player:
+                        self.game.player.cycle_weapon_state()
                 else:
                     self.game.player_actions.handle_key_down(event)
             elif event.type == pygame.KEYUP:
@@ -202,13 +205,26 @@ class PlayingState(State):
             self.game.vault_logs_group,
             self.game.glyph_tablets_group, 
             self.game.architect_echoes_group,
-            self.game.spawned_barricades_group # NEW: Add this group here
+            self.game.spawned_barricades_group
         ]:
             for item in item_group:
                 item.draw(surface, self.game.camera)
+                # Update orichalc fragments
+                from entities.orichalc_fragment import OrichalcFragment
+                if isinstance(item, OrichalcFragment):
+                    item.update()
         
         self.game.explosion_particles_group.update()
         self.game.explosion_particles_group.draw(surface)
+        
+        # Update and draw energy particles
+        self.game.energy_particles_group.update()
+        self.game.energy_particles_group.draw(surface)
+        
+        # Draw HUD container for orichalc fragments
+        if hasattr(self.game, 'hud_container'):
+            orichalc_count = self.game.drone_system.get_player_cores()
+            self.game.hud_container.draw(surface, orichalc_count)
         
         if self.game.player:
             self.game.player.draw(surface)

@@ -28,7 +28,7 @@ class UIFlowController:
         self.drone_system = None
         self.leaderboard_scores = []
         
-        self.menu_options = ["Start Game", "Maze Defense", "Select Drone", "Codex", "Settings", "Leaderboard", "Quit"]
+        self.menu_options = ["Start Game", "Select Drone", "Weapon Upgrade Shop", "Codex", "Settings", "Leaderboard", "Quit"]
         self.selected_menu_option = 0
         self.menu_stars = self._create_stars(200)
 
@@ -198,8 +198,9 @@ class UIFlowController:
             logger.info(f"Main menu action selected: {selected_action}")
             self.game_controller.play_sound('ui_confirm')
             if selected_action == "Start Game": self.scene_manager.set_state(GAME_STATE_GAME_INTRO_SCROLL)
-            elif selected_action == "Maze Defense": self.scene_manager.set_state(GAME_STATE_MAZE_DEFENSE)
+
             elif selected_action == "Select Drone": self.scene_manager.set_state(GAME_STATE_DRONE_SELECT)
+            elif selected_action == "Weapon Upgrade Shop": self.scene_manager.set_state("WeaponsUpgradeShopState")
             elif selected_action == "Settings": self.scene_manager.set_state(GAME_STATE_SETTINGS)
             elif selected_action == "Leaderboard": self.scene_manager.set_state(GAME_STATE_LEADERBOARD)
             elif selected_action == "Codex": self.scene_manager.set_state(GAME_STATE_CODEX)
@@ -324,7 +325,7 @@ class UIFlowController:
         return False
         
     def _start_selected_chapter(self, chapter_index):
-        """Set up prerequisites and start the selected chapter."""
+        """Set up prerequisites and start the selected chapter via story map."""
         if not hasattr(self.game_controller, 'story_manager'):
             return
             
@@ -363,11 +364,9 @@ class UIFlowController:
                     self.game_controller.drone_system.collect_core_fragment("beta")
                     self.game_controller.drone_system.collect_core_fragment("gamma")
         
-        # Start the chapter
-        next_state_id = story_manager.chapters[chapter_index].next_state_id
-        if next_state_id and self.scene_manager:
-            # Use the correct next_state_id from the chapter instead of always defaulting to PlayingState
-            self.scene_manager.set_state(next_state_id)
+        # Launch the story map instead of directly launching the chapter
+        if self.scene_manager:
+            self.scene_manager.set_state("StoryMapState")
 
     def _handle_leaderboard_input(self, key):
         if key == pygame.K_RETURN or key == pygame.K_q or key == pygame.K_ESCAPE:

@@ -94,6 +94,13 @@ class ItemManager:
         walkable_tiles = maze.get_walkable_tiles_abs()
         if not walkable_tiles: return False
 
+        # Check if we're in Chapter 1 - only spawn shield and speed powerups
+        current_chapter = self.game_controller.story_manager.get_current_chapter()
+        if current_chapter and current_chapter.chapter_id == "chapter_1":
+            powerup_types = ["shield", "speed"]
+        else:
+            powerup_types = ["weapon", "shield", "speed"]
+
         valid_positions = []
         tile_size = get_setting("gameplay", "TILE_SIZE", 80)
         for pos in walkable_tiles:
@@ -107,7 +114,7 @@ class ItemManager:
         if not valid_positions: return False
 
         spawn_pos = random.choice(valid_positions)
-        powerup_type = random.choice(["weapon", "shield", "speed"])
+        powerup_type = random.choice(powerup_types)
 
         if powerup_type == "weapon": new_powerup = WeaponUpgradeItem(spawn_pos[0], spawn_pos[1], asset_manager=self.asset_manager)
         elif powerup_type == "shield": new_powerup = ShieldItem(spawn_pos[0], spawn_pos[1], asset_manager=self.asset_manager)

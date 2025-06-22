@@ -63,12 +63,12 @@ class CoreReactor(Sprite):
         if not self.alive: return
         self.current_health -= amount
         if game_controller_ref and hasattr(game_controller_ref, 'play_sound'):
-            game_controller_ref.play_sound('reactor_hit_placeholder')
+            game_controller_ref.play_sound('reactor_hit')
         if self.current_health <= 0:
             self.current_health = 0
             self.alive = False
             if game_controller_ref and hasattr(game_controller_ref, 'play_sound'):
-                game_controller_ref.play_sound('reactor_destroyed_placeholder')
+                game_controller_ref.play_sound('reactor_destroyed')
 
     def draw_health_bar(self, surface, camera=None):
         if not self.alive and self.current_health == 0:

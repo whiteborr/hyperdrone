@@ -2,7 +2,7 @@
 import pygame
 import logging
 from .state import State
-from constants import GAME_STATE_PLAYING, GAME_STATE_BOSS_FIGHT, GAME_STATE_CORRUPTED_SECTOR, GAME_STATE_HARVEST_CHAMBER
+from constants import GAME_STATE_PLAYING, GAME_STATE_BOSS_FIGHT, GAME_STATE_CORRUPTED_SECTOR, GAME_STATE_HARVEST_CHAMBER, GAME_STATE_MAZE_DEFENSE
 
 logger = logging.getLogger(__name__)
 
@@ -59,7 +59,7 @@ class StoryMapState(State):
             "chapter_2": GAME_STATE_BOSS_FIGHT,
             "chapter_3": GAME_STATE_CORRUPTED_SECTOR,
             "chapter_4": GAME_STATE_HARVEST_CHAMBER,
-            "chapter_5": GAME_STATE_PLAYING,  # Placeholder
+            "chapter_5": GAME_STATE_MAZE_DEFENSE,
             "bonus": GAME_STATE_PLAYING      # Placeholder
         }
         

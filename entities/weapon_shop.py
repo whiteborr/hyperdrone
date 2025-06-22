@@ -78,6 +78,21 @@ class WeaponShop(Sprite):
             return False
         distance = ((player_pos[0] - self.center_x) ** 2 + (player_pos[1] - self.center_y) ** 2) ** 0.5
         return distance <= self.interaction_range
+    
+    def get_weapon_stats(self, weapon_mode):
+        """Get weapon stats for display"""
+        stats = {
+            WEAPON_MODE_TRI_SHOT: {"damage": "1x3", "rate": "Medium", "special": "Triple Shot"},
+            WEAPON_MODE_RAPID_SINGLE: {"damage": "1x", "rate": "Fast", "special": "Rapid Fire"},
+            WEAPON_MODE_RAPID_TRI: {"damage": "1x3", "rate": "Fast", "special": "Rapid Triple"},
+            WEAPON_MODE_BIG_SHOT: {"damage": "3x", "rate": "Slow", "special": "Heavy Damage"},
+            WEAPON_MODE_BOUNCE: {"damage": "1x", "rate": "Medium", "special": "Bouncing"},
+            WEAPON_MODE_PIERCE: {"damage": "2x", "rate": "Medium", "special": "Piercing"},
+            WEAPON_MODE_HEATSEEKER: {"damage": "2x", "rate": "Slow", "special": "Homing"},
+            WEAPON_MODE_HEATSEEKER_PLUS_BULLETS: {"damage": "2x+1x", "rate": "Medium", "special": "Homing+Bullets"},
+            WEAPON_MODE_LIGHTNING: {"damage": "4x", "rate": "Very Slow", "special": "Chain Lightning"}
+        }
+        return stats.get(weapon_mode, {"damage": "1x", "rate": "Medium", "special": "Standard"})
         
     def update(self):
         """Update shop state"""

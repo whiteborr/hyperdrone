@@ -307,6 +307,23 @@ class PlayerDrone(BaseDrone):
             self.last_shot_time = get_ticks()
 
     def cycle_weapon_state(self):
+        # Get owned weapons from drone system
+        if hasattr(self, 'drone_system') and self.drone_system:
+            owned_weapons = self.drone_system.get_owned_weapons()
+            if owned_weapons:
+                # Find current weapon index in owned weapons
+                try:
+                    current_index = owned_weapons.index(self.current_weapon_mode)
+                    next_index = (current_index + 1) % len(owned_weapons)
+                    self.current_weapon_mode = owned_weapons[next_index]
+                except ValueError:
+                    # Current weapon not in owned list, use first owned weapon
+                    self.current_weapon_mode = owned_weapons[0]
+                self.set_weapon_mode(self.current_weapon_mode)
+                self._update_drone_sprite()
+                return
+        
+        # Fallback to original behavior
         weapon_modes_sequence = get_setting("weapon_modes", "WEAPON_MODES_SEQUENCE", [0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
         self.weapon_mode_index = (self.weapon_mode_index + 1) % len(weapon_modes_sequence)
         self.current_weapon_mode = weapon_modes_sequence[self.weapon_mode_index]

@@ -42,11 +42,6 @@ class PlayerActions:
         elif event.key == pygame.K_SPACE:
             self.is_shooting = True
         
-        elif event.key == pygame.K_c:
-            player.cycle_weapon_state()
-            if hasattr(self.game_controller, 'play_sound'):
-                self.game_controller.play_sound('ui_select')
-
         elif event.key == pygame.K_LSHIFT or event.key == pygame.K_RSHIFT:
             if hasattr(player, 'special_ability') and player.special_ability == "phantom_cloak":
                 if player.try_activate_cloak(pygame.time.get_ticks()):

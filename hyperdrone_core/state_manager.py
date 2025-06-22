@@ -40,6 +40,7 @@ from .architect_vault_states import (
 from .boss_fight_state import BossFightState
 from .corrupted_sector_state import CorruptedSectorState
 from .harvest_chamber_state import HarvestChamberState
+from .weapons_upgrade_shop_state import WeaponsUpgradeShopState
 
 logger = logging.getLogger(__name__)
 
@@ -112,7 +113,8 @@ class StateManager:
             "ArchitectVaultFailureState": ArchitectVaultFailureState,
             "BossFightState": BossFightState,
             "CorruptedSectorState": CorruptedSectorState,
-            "HarvestChamberState": HarvestChamberState
+            "HarvestChamberState": HarvestChamberState,
+            "WeaponsUpgradeShopState": WeaponsUpgradeShopState
         }
         
         # Register states with both the local cache and the central registry
@@ -160,9 +162,11 @@ class StateManager:
         self.registry.register_transition("MainMenuState", "CodexState")
         self.registry.register_transition("MainMenuState", "GameIntroScrollState")
         self.registry.register_transition("MainMenuState", "MazeDefenseState")
+        self.registry.register_transition("MainMenuState", "WeaponsUpgradeShopState")
         
         # Settings transitions
         self.registry.register_transition("SettingsState", "MainMenuState")
+        self.registry.register_transition("SettingsState", "StoryMapState")
         self.registry.register_transition("SettingsState", "CorruptedSectorState")
         self.registry.register_transition("SettingsState", "PlayingState")
         self.registry.register_transition("SettingsState", "BossFightState")
@@ -177,6 +181,9 @@ class StateManager:
         # Codex transitions
         self.registry.register_transition("CodexState", "MainMenuState")
         
+        # Weapons upgrade shop transitions
+        self.registry.register_transition("WeaponsUpgradeShopState", "MainMenuState")
+        
         # Game intro transitions
         self.registry.register_transition("GameIntroScrollState", "StoryMapState")
         
@@ -185,6 +192,7 @@ class StateManager:
         self.registry.register_transition("StoryMapState", "BossFightState")
         self.registry.register_transition("StoryMapState", "CorruptedSectorState")
         self.registry.register_transition("StoryMapState", "HarvestChamberState")
+        self.registry.register_transition("StoryMapState", "MazeDefenseState")
         
         # Playing state transitions
         self.registry.register_transition("PlayingState", "GameOverState")
@@ -289,6 +297,7 @@ class StateManager:
             "EnterNameState": "menu_theme",
             "GameOverState": "menu_theme",
             "CodexState": "menu_theme",
+            "WeaponsUpgradeShopState": "menu_theme",
             "RingPuzzleState": "architect_vault_theme",
             "GameIntroScrollState": "menu_theme",
             "StoryMapState": "menu_theme",

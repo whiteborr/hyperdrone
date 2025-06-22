@@ -25,6 +25,7 @@ class TowerDefenseManager:
         
         # Create path manager
         self.path_manager = PathManager(grid_width, grid_height, tile_size)
+        self.path_manager.tower_defense_manager = self
         
         # Sprite groups
         self.enemies_group = pygame.sprite.Group()
