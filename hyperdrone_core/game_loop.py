@@ -268,6 +268,9 @@ class GameController:
             
             self.ui_manager.draw_current_scene_ui(player_active_abilities_data=active_abilities_data)
             self._draw_story_overlay(self.screen)
+            
+            # Draw fade transition
+            self.state_manager.draw_fade_transition(self.screen)
 
             pygame.display.flip()
 
@@ -275,7 +278,8 @@ class GameController:
         self.paused = False
         
         if new_state == "MainMenuState":
-            self.ui_flow_controller.initialize_main_menu()
+            selected_option = kwargs.get('selected_option', 0)
+            self.ui_flow_controller.initialize_main_menu(selected_option)
         elif new_state == "DroneSelectState":
             self.ui_flow_controller.initialize_drone_select()
         elif new_state == "SettingsState":

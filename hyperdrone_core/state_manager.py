@@ -75,6 +75,15 @@ class StateManager:
         self.state_classes = {}
         self.current_music_context_key = None
         
+        # Fade transition attributes
+        self.fading_out = False
+        self.fading_in = False
+        self.fade_alpha = 0
+        self.fade_surface = None
+        self.pending_state_id = None
+        self.pending_state_kwargs = {}
+        self.fade_speed = 5
+        
         # Import and initialize the state registry
         from .state_registry import state_registry
         self.registry = state_registry
@@ -82,8 +91,14 @@ class StateManager:
         # Register state classes
         self._register_state_classes()
         
-        # Initialize with default state
-        self.set_state("MainMenuState")
+        # Initialize fade surface
+        screen_width = get_setting("display", "WIDTH", 1920)
+        screen_height = get_setting("display", "HEIGHT", 1080)
+        self.fade_surface = pygame.Surface((screen_width, screen_height))
+        self.fade_surface.fill((0, 0, 0))
+        
+        # Initialize with default state (skip fade for initial state)
+        self._set_state_direct("MainMenuState")
         
         self._update_music()  # Initial music play
     
@@ -384,6 +399,27 @@ class StateManager:
             logger.error(f"Unknown state '{state_id}'")
             return
         
+        # Start fade transition if not already fading
+        if not self.fading_out and not self.fading_in:
+            self.fading_out = True
+            self.fade_alpha = 0
+            self.pending_state_id = state_id
+            self.pending_state_kwargs = kwargs
+            return
+    
+    def _set_state_direct(self, state_id, **kwargs):
+        """Direct state change without fade transition."""
+        if state_id in self.legacy_state_mapping:
+            state_id = self.legacy_state_mapping[state_id]
+        
+        old_state = self.current_state
+        old_state_id = old_state.get_state_id() if old_state else None
+        
+        state_class = self.registry.get_state_class(state_id)
+        if not state_class:
+            logger.error(f"Unknown state '{state_id}'")
+            return
+        
         if old_state:
             old_state.exit(state_id)
         
@@ -407,6 +443,21 @@ class StateManager:
         """
         if not self.current_state:
             return
+        
+        # Update fade transitions
+        if self.fading_out:
+            self.fade_alpha += self.fade_speed
+            if self.fade_alpha >= 255:
+                self.fade_alpha = 255
+                self.fading_out = False
+                self.fading_in = True
+                # Perform actual state change
+                self._perform_state_change()
+        elif self.fading_in:
+            self.fade_alpha -= self.fade_speed
+            if self.fade_alpha <= 0:
+                self.fade_alpha = 0
+                self.fading_in = False
             
         current_time = pygame.time.get_ticks()
         current_state_id = self.current_state.get_state_id()
@@ -431,3 +482,49 @@ class StateManager:
         
         if hasattr(self.game_controller, 'paused') and not self.game_controller.paused:
             self._update_music()
+    
+    def _perform_state_change(self):
+        """Performs the actual state change after fade-out completes."""
+        if not self.pending_state_id:
+            return
+            
+        state_id = self.pending_state_id
+        kwargs = self.pending_state_kwargs
+        
+        if state_id in self.legacy_state_mapping:
+            state_id = self.legacy_state_mapping[state_id]
+        
+        old_state = self.current_state
+        old_state_id = old_state.get_state_id() if old_state else None
+        
+        state_class = self.registry.get_state_class(state_id)
+        if not state_class:
+            logger.error(f"Unknown state '{state_id}'")
+            return
+        
+        if old_state:
+            old_state.exit(state_id)
+        
+        new_state = state_class(self.game_controller)
+        new_state.enter(old_state_id, **kwargs)
+        
+        self.current_state = new_state
+        
+        self.registry.record_transition(old_state_id, state_id, time.time())
+        
+        logger.info(f"Game state changed from '{old_state_id}' to '{state_id}'")
+        
+        self._update_music()
+        
+        if hasattr(self.game_controller, 'handle_state_transition'):
+            self.game_controller.handle_state_transition(state_id, old_state_id, **kwargs)
+        
+        # Clear pending state
+        self.pending_state_id = None
+        self.pending_state_kwargs = {}
+    
+    def draw_fade_transition(self, screen):
+        """Draws the fade transition overlay."""
+        if (self.fading_out or self.fading_in) and self.fade_alpha > 0:
+            self.fade_surface.set_alpha(self.fade_alpha)
+            screen.blit(self.fade_surface, (0, 0))

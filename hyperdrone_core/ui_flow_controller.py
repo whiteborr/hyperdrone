@@ -125,8 +125,8 @@ class UIFlowController:
             stars.append([x, y, speed, size])
         return stars
 
-    def initialize_main_menu(self):
-        self.selected_menu_option = 0
+    def initialize_main_menu(self, selected_option=0):
+        self.selected_menu_option = selected_option
         if self.game_controller and hasattr(self.game_controller, 'combat_controller'):
             self.game_controller.combat_controller.reset_combat_state()
 
@@ -226,7 +226,8 @@ class UIFlowController:
                 self.drone_system.set_selected_drone(selected_id)
                 self.game_controller.play_sound('ui_confirm')
                 if hasattr(self.ui_manager, 'update_player_life_icon_surface'): self.ui_manager.update_player_life_icon_surface()
-                self.scene_manager.set_state(GAME_STATE_MAIN_MENU)
+                drone_select_index = self.menu_options.index("Select Drone") if "Select Drone" in self.menu_options else 0
+                self.scene_manager.set_state(GAME_STATE_MAIN_MENU, selected_option=drone_select_index)
             else:
                 if self.drone_system.unlock_drone(selected_id):
                     self.game_controller.play_sound('lore_unlock')
@@ -406,13 +407,18 @@ class UIFlowController:
 
     def _handle_leaderboard_input(self, key):
         if key == pygame.K_RETURN or key == pygame.K_q or key == pygame.K_ESCAPE:
-            self.scene_manager.set_state(GAME_STATE_MAIN_MENU)
+            leaderboard_index = self.menu_options.index("Leaderboard") if "Leaderboard" in self.menu_options else 0
+            self.scene_manager.set_state(GAME_STATE_MAIN_MENU, selected_option=leaderboard_index)
             return True
         return False
 
     def _handle_codex_input(self, key):
         if self.codex_current_view == "categories":
-            if key in (pygame.K_UP, pygame.K_w): self.codex_selected_category_index = (self.codex_selected_category_index - 1 + len(self.codex_categories_list)) % len(self.codex_categories_list) if self.codex_categories_list else 0
+            if key == pygame.K_ESCAPE:
+                codex_index = self.menu_options.index("Codex") if "Codex" in self.menu_options else 0
+                self.scene_manager.set_state(GAME_STATE_MAIN_MENU, selected_option=codex_index)
+                return True
+            elif key in (pygame.K_UP, pygame.K_w): self.codex_selected_category_index = (self.codex_selected_category_index - 1 + len(self.codex_categories_list)) % len(self.codex_categories_list) if self.codex_categories_list else 0
             elif key in (pygame.K_DOWN, pygame.K_s): self.codex_selected_category_index = (self.codex_selected_category_index + 1) % len(self.codex_categories_list) if self.codex_categories_list else 0
             elif key == pygame.K_RETURN:
                 if self.codex_categories_list:
@@ -482,7 +488,8 @@ class UIFlowController:
                 self.intro_screen_start_time = pygame.time.get_ticks()
             return True
         elif key == pygame.K_ESCAPE:
-            self.scene_manager.set_state(GAME_STATE_MAIN_MENU)
+            settings_index = self.menu_options.index("Settings") if "Settings" in self.menu_options else 0
+            self.scene_manager.set_state(GAME_STATE_MAIN_MENU, selected_option=settings_index)
             return True
         return False
 

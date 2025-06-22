@@ -11,7 +11,8 @@ class SettingsState(State):
         for event in events:
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
-                    self.game.state_manager.set_state("MainMenuState")
+                    settings_index = 4  # "Settings" is at index 4 in menu_options
+                    self.game.state_manager.set_state("MainMenuState", selected_option=settings_index)
                 else:
                     self.game.ui_flow_controller.handle_key_input(event.key, "SettingsState")
     

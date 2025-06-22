@@ -5,7 +5,8 @@ from settings_manager import get_setting
 
 class MainMenuState(State):
     def enter(self, previous_state=None, **kwargs):
-        self.game.ui_flow_controller.initialize_main_menu()
+        selected_option = kwargs.get('selected_option', 0)
+        self.game.ui_flow_controller.initialize_main_menu(selected_option)
     
     def handle_events(self, events):
         for event in events:

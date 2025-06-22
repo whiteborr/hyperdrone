@@ -11,7 +11,8 @@ class DroneSelectState(State):
         for event in events:
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
-                    self.game.state_manager.set_state("MainMenuState")
+                    drone_select_index = 1  # "Select Drone" is at index 1 in menu_options
+                    self.game.state_manager.set_state("MainMenuState", selected_option=drone_select_index)
                 else:
                     self.game.ui_flow_controller.handle_key_input(event.key, "drone_select")
     

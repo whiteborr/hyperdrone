@@ -10,7 +10,8 @@ class LeaderboardState(State):
         for event in events:
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
-                    self.game.state_manager.set_state("MainMenuState")
+                    leaderboard_index = 5  # "Leaderboard" is at index 5 in menu_options
+                    self.game.state_manager.set_state("MainMenuState", selected_option=leaderboard_index)
     
     def update(self, delta_time):
         pass

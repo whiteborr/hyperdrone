@@ -18,7 +18,7 @@ class WeaponShopUI:
         self.available_weapons = []
         self.show_confirmation = False
         self.mouse_pos = (0, 0)
-        self.border_corners = None
+        self.corner_overlay = None
         
     def show(self, weapon_shop, fragments_count, game_controller=None):
         """Show weapon shop with available weapons"""
@@ -412,34 +412,22 @@ class WeaponShopUI:
                 if y_offset > inv_y + inv_height - 50:
                     break
     
-    def _load_corner_borders(self):
-        """Load and rotate border image for all four corners"""
-        if self.border_corners:
-            return
-        
-        border_img = self.asset_manager.get_image("images/ui/weapons_shop_border.png")
-        if border_img:
-            self.border_corners = {
-                'top_left': border_img,
-                'top_right': pygame.transform.flip(border_img, True, False),
-                'bottom_left': pygame.transform.flip(border_img, False, True),
-                'bottom_right': pygame.transform.flip(border_img, True, True)
-            }
-    
     def _draw_corner_borders(self, screen, x, y, width, height):
         """Draw corner borders on the shop panel"""
-        self._load_corner_borders()
-        if not self.border_corners:
+        if not self.corner_overlay:
+            self.corner_overlay = self.asset_manager.get_image("images/ui/weapons_shop_border.png")
+        
+        if not self.corner_overlay:
             return
         
-        # Top-left
-        screen.blit(self.border_corners['top_left'], (x, y))
-        # Top-right
-        tr_img = self.border_corners['top_right']
-        screen.blit(tr_img, (x + width - tr_img.get_width(), y))
-        # Bottom-left
-        bl_img = self.border_corners['bottom_left']
-        screen.blit(bl_img, (x, y + height - bl_img.get_height()))
-        # Bottom-right
-        br_img = self.border_corners['bottom_right']
-        screen.blit(br_img, (x + width - br_img.get_width(), y + height - br_img.get_height()))
+        # Create rotated versions with SRCALPHA
+        top_left = self.corner_overlay
+        top_right = pygame.transform.flip(self.corner_overlay, True, False)
+        bottom_left = pygame.transform.flip(self.corner_overlay, False, True)
+        bottom_right = pygame.transform.rotate(self.corner_overlay, 180)
+        
+        # Draw corners
+        screen.blit(top_left, (x, y))
+        screen.blit(top_right, (x + width - top_right.get_width(), y))
+        screen.blit(bottom_left, (x, y + height - bottom_left.get_height()))
+        screen.blit(bottom_right, (x + width - bottom_right.get_width(), y + height - bottom_right.get_height()))
