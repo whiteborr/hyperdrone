@@ -20,7 +20,7 @@ class MazeGuardian(BaseDrone):
     def __init__(self, x, y, player_ref, maze_ref, combat_controller_ref, asset_manager): # Changed game_controller_ref to combat_controller_ref
         tile_size = get_setting("gameplay", "TILE_SIZE", 80)
         self.visual_size = (int(tile_size * 2.8), int(tile_size * 2.8))
-        super().__init__(x, y, size=self.visual_size[0], speed=get_setting("bosses", "MAZE_GUARDIAN_SPEED", 2.0))
+        super().__init__(x, y, size=self.visual_size[0], speed=get_setting("bosses", "MAZE_GUARDIAN_SPEED", 1))
 
         self.player_ref = player_ref
         self.maze_ref = maze_ref
@@ -108,10 +108,10 @@ class MazeGuardian(BaseDrone):
                 if corner['status'] == 'destroyed': return False
                 corner['health'] -= damage_amount
                 if self.combat_controller_ref.game_controller:
-                    self.combat_controller_ref.game_controller.play_sound('boss_hit', 0.7)
+                    self.combat_controller_ref.game_controller.play_sound('crash', 0.7)
                 if corner['health'] <= 0:
                     corner['health'] = 0; corner['status'] = 'destroyed'; corner['color'] = BLACK
-                    if self.combat_controller_ref.game_controller:
+                    if self.combat_controller_ref and hasattr(self.combat_controller_ref, 'game_controller') and self.combat_controller_ref.game_controller:
                          self.combat_controller_ref.game_controller._create_explosion(corner['rect'].centerx, corner['rect'].centery, num_particles=30, specific_sound_key='prototype_drone_explode')
                 elif corner['status'] == 'intact':
                     corner['status'] = 'damaged'; corner['color'] = ORANGE
@@ -183,10 +183,25 @@ class MazeGuardian(BaseDrone):
             self.alive = False
             if self.combat_controller_ref.game_controller:
                 # Play boss death sound
-                self.combat_controller_ref.game_controller.play_sound('boss_death', 1.0)
+                self.combat_controller_ref.game_controller.play_sound('prototype_drone_explode', 1.0)
                 
                 # Create a big explosion animation
                 self._create_death_explosion()
+                
+                # Drop fragment core assembler item
+                self._drop_fragment_core_assembler_item()
+                
+                # Complete chapter 2 objective before dispatching event
+                if hasattr(self.combat_controller_ref.game_controller, 'story_manager'):
+                    # Temporarily set to chapter 2 to complete the objective
+                    story_manager = self.combat_controller_ref.game_controller.story_manager
+                    current_index = story_manager.current_chapter_index
+                    if current_index > 1:  # If we're past chapter 2
+                        story_manager.current_chapter_index = 1  # Set to chapter 2 (0-indexed)
+                        story_manager.complete_objective_by_id('c2_defeat_guardian')
+                        story_manager.current_chapter_index = current_index  # Restore
+                    else:
+                        story_manager.complete_objective_by_id('c2_defeat_guardian')
                 
                 # Dispatch boss defeated event
                 from hyperdrone_core.game_events import BossDefeatedEvent
@@ -224,6 +239,15 @@ class MazeGuardian(BaseDrone):
                 self.rect.centery + offset_y,
                 num_particles=20,
                 specific_sound_key=None
+            )
+
+    def _drop_fragment_core_assembler_item(self):
+        """Spawns a collectible item that combines the 4 elemental fragments."""
+        if self.combat_controller_ref and hasattr(self.combat_controller_ref, 'spawn_collectible'):
+            self.combat_controller_ref.spawn_collectible(
+                collectible_id="core_fragment_assembler",
+                x=self.rect.centerx,
+                y=self.rect.centery
             )
 
     def shoot_laser(self):

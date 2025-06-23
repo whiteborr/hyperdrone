@@ -411,3 +411,52 @@ class ArchitectEchoItem(Collectible):
             if hasattr(game_controller_instance, 'play_sound'): game_controller_instance.play_sound('collect_fragment', 0.7)
             return True
         return False
+
+class CoreFragmentAssemblerItem(Collectible):
+    """A special item that combines the 4 elemental core fragments."""
+    def __init__(self, x, y, *, asset_manager):
+        tile_size = get_setting("gameplay", "TILE_SIZE", 80)
+        item_size = int(tile_size * 0.6)
+        
+        # Create a unique icon with 4 colored segments representing the fragments
+        icon_surface = Surface((item_size, item_size), SRCALPHA)
+        center = item_size // 2
+        quarter_size = item_size // 4
+        
+        # Draw 4 colored quarters representing fire, water, earth, air
+        colors = [(255, 100, 100), (100, 150, 255), (150, 100, 50), (200, 255, 200)]  # Fire, Water, Earth, Air
+        for i, color in enumerate(colors):
+            angle_start = i * 90
+            quarter_rect = Rect(0, 0, quarter_size, quarter_size)
+            if i == 0:  # Top-left
+                quarter_rect.topleft = (center - quarter_size, center - quarter_size)
+            elif i == 1:  # Top-right
+                quarter_rect.topleft = (center, center - quarter_size)
+            elif i == 2:  # Bottom-left
+                quarter_rect.topleft = (center - quarter_size, center)
+            else:  # Bottom-right
+                quarter_rect.topleft = (center, center)
+            draw_rect(icon_surface, color, quarter_rect)
+        
+        # Add a central circle
+        circle(icon_surface, WHITE, (center, center), quarter_size // 2, 2)
+        
+        super().__init__(x, y, base_color=PURPLE, size=item_size, thickness=3, original_icon_surface=icon_surface)
+        self.icon_rotation_speed = 1.0
+
+    def apply_effect(self, player_drone, game_controller_instance):
+        if not self.collected:
+            self.collected = True
+            if hasattr(game_controller_instance, 'drone_system'):
+                # Check if player has all 4 core fragments and combine them
+                fragments = ['core_fragment_fire', 'core_fragment_water', 'core_fragment_earth', 'core_fragment_air']
+                if all(game_controller_instance.drone_system.has_core_fragment(frag) for frag in fragments):
+                    game_controller_instance.set_story_message("Core Fragments Combined! Ultimate Power Unlocked!", 5000)
+                    if hasattr(game_controller_instance, 'play_sound'):
+                        game_controller_instance.play_sound('level_up', 1.0)
+                else:
+                    game_controller_instance.set_story_message("Core Fragment Assembler acquired. Collect all 4 elemental fragments to use.", 5000)
+                    if hasattr(game_controller_instance, 'play_sound'):
+                        game_controller_instance.play_sound('collect_fragment', 0.8)
+            return True
+        return False

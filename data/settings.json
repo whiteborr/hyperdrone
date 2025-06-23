@@ -21,6 +21,9 @@
     "ENEMY_SPEED": 1.5,
     "ENEMY_HEALTH": 25
   },
+  "bosses": {
+    "MAZE_GUARDIAN_SPEED": 1
+  },
   "powerups": {
     "SHIELD_POWERUP_DURATION": 10000,
     "SPEED_BOOST_POWERUP_DURATION": 7000

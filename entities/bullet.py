@@ -119,7 +119,7 @@ class Missile(Sprite):
         super().__init__()
         self.id = id(self) 
         self.x, self.y, self.angle, self.target_angle = float(x), float(y), float(initial_angle), float(initial_angle)
-        self.speed = get_setting("weapons", "MISSILE_SPEED", 5); self.lifetime = get_setting("weapons", "MISSILE_LIFETIME", 3000); self.damage = damage
+        self.speed = get_setting("weapons", "MISSILE_SPEED", 5); self.lifetime = get_setting("weapons", "MISSILE_LIFETIME", 3000); self.damage = get_setting("weapons", "MISSILE_DAMAGE", damage)
         self.enemies_group = enemies_group; self.target, self.turn_rate = None, get_setting("weapons", "MISSILE_TURN_RATE", 8)
         self.alive, self.frames_existed = True, 0; self.is_sliding, self.slide_direction_attempts, self.MAX_SLIDE_ATTEMPTS = False, 0, 3
         missile_size = get_setting("weapons", "MISSILE_SIZE", 8)

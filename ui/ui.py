@@ -298,33 +298,47 @@ class UIManager:
         # Draw chapter map line
         self._draw_chapter_map_line(width, height)
         
-        # Draw current chapter details below the map
-        current_chapter = None
-        if hasattr(self.game_controller, 'story_manager') and self.game_controller.story_manager:
-            current_chapter = self.game_controller.story_manager.get_current_chapter()
+        # Draw current chapter details below the map (only if not showing overlays)
+        current_state = self.state_manager.get_current_state() if self.state_manager else None
+        show_chapter_details = True
+        if (hasattr(current_state, 'showing_completion_summary') and current_state.showing_completion_summary) or \
+           (hasattr(current_state, 'animating_to_next_chapter') and current_state.animating_to_next_chapter):
+            show_chapter_details = False
+            
+        if show_chapter_details:
+            current_chapter = None
+            if hasattr(self.game_controller, 'story_manager') and self.game_controller.story_manager:
+                current_chapter = self.game_controller.story_manager.get_current_chapter()
+            
+            if current_chapter:
+                chapter_title_surf = self._render_text_safe(current_chapter.title, "ui_text", CYAN, fallback_size=32)
+                self.screen.blit(chapter_title_surf, chapter_title_surf.get_rect(center=(width // 2, 450)))
+                
+                desc_font = Font(None, 24)
+                wrapped_desc = self._wrap_text_with_font_obj(current_chapter.description, desc_font, width - 200)
+                for i, line in enumerate(wrapped_desc):
+                    desc_surf = desc_font.render(line, True, WHITE)
+                    self.screen.blit(desc_surf, desc_surf.get_rect(center=(width // 2, 490 + i * 30)))
+                
+                obj_y = 490 + len(wrapped_desc) * 30 + 50
+                obj_font = Font(None, 24)
+                
+                for obj in current_chapter.objectives:
+                    obj_color = GREEN if obj.is_complete else WHITE
+                    obj_text = f"• {obj.description}"
+                    obj_surf = obj_font.render(obj_text, True, obj_color)
+                    self.screen.blit(obj_surf, obj_surf.get_rect(center=(width // 2, obj_y)))
+                    obj_y += 30
         
-        if current_chapter:
-            chapter_title_surf = self._render_text_safe(current_chapter.title, "ui_text", CYAN, fallback_size=32)
-            self.screen.blit(chapter_title_surf, chapter_title_surf.get_rect(center=(width // 2, 450)))
-            
-            desc_font = Font(None, 24)
-            wrapped_desc = self._wrap_text_with_font_obj(current_chapter.description, desc_font, width - 200)
-            for i, line in enumerate(wrapped_desc):
-                desc_surf = desc_font.render(line, True, WHITE)
-                self.screen.blit(desc_surf, desc_surf.get_rect(center=(width // 2, 490 + i * 30)))
-            
-            obj_y = 490 + len(wrapped_desc) * 30 + 50
-            obj_font = Font(None, 24)
-            
-            for obj in current_chapter.objectives:
-                obj_color = GREEN if obj.is_complete else WHITE
-                obj_text = f"• {obj.description}"
-                obj_surf = obj_font.render(obj_text, True, obj_color)
-                self.screen.blit(obj_surf, obj_surf.get_rect(center=(width // 2, obj_y)))
-                obj_y += 30
+        # Show instruction if not in overlay mode OR if animation is complete
+        current_state = self.state_manager.get_current_state() if self.state_manager else None
+        animation_complete = (hasattr(current_state, 'animating_to_next_chapter') and 
+                            not current_state.animating_to_next_chapter and 
+                            hasattr(current_state, 'animation_timer'))
         
-        instruction_surf = self._render_text_safe("Press SPACE or ENTER to continue", "ui_text", CYAN, fallback_size=24)
-        self.screen.blit(instruction_surf, instruction_surf.get_rect(center=(width // 2, height - 50)))
+        if show_chapter_details or animation_complete:
+            instruction_surf = self._render_text_safe("Press SPACE or ENTER to continue", "ui_text", CYAN, fallback_size=24)
+            self.screen.blit(instruction_surf, instruction_surf.get_rect(center=(width // 2, height - 50)))
     
     def _draw_chapter_map_line(self, width, height):
         """Draw the chapter progression map with icons"""
@@ -375,12 +389,26 @@ class UIManager:
             chapter_num_surf = self._render_text_safe(f"{i + 1}", "ui_text", WHITE, fallback_size=24)
             num_rect = chapter_num_surf.get_rect(center=(chapter_x + 32, map_y + 80))
             self.screen.blit(chapter_num_surf, num_rect)
+        
+        # Draw player cursor - check if we're in animation mode
+        current_state = self.state_manager.get_current_state() if self.state_manager else None
+        if (hasattr(current_state, 'animating_to_next_chapter') and 
+            current_state.animating_to_next_chapter and 
+            hasattr(current_state, 'current_animation_pos')):
+            # Use animated position
+            cursor_pos = current_state.current_animation_pos
+            self.screen.blit(player_cursor_icon, (int(cursor_pos.x), int(cursor_pos.y)))
+        elif current_chapter_index >= 0 and current_chapter_index < 5:
+            # Use static position for current chapter
+            # If we just completed a chapter, show cursor at previous position initially
+            display_index = current_chapter_index
+            if (hasattr(current_state, 'showing_completion_summary') and 
+                current_state.showing_completion_summary):
+                display_index = max(0, current_chapter_index - 1)
             
-            # Draw player cursor on current chapter
-            if i == current_chapter_index:
-                cursor_x = chapter_x + 16  # Center cursor over chapter icon
-                cursor_y = map_y - 40  # Position above the chapter icon
-                self.screen.blit(player_cursor_icon, (cursor_x, cursor_y))
+            cursor_x = start_x + (display_index * chapter_spacing) + 16
+            cursor_y = map_y - 40
+            self.screen.blit(player_cursor_icon, (cursor_x, cursor_y))
 
     def draw_architect_vault_hud_elements(self):
         title_surf = self._render_text_safe("Architect's Vault", "large_text", GOLD, fallback_size=48)

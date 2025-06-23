@@ -33,7 +33,7 @@ class Enemy(Sprite):
         
         # Set attributes from the config dictionary
         stats = self.config.get("stats", {})
-        self.health = stats.get("health", 100)
+        self.health = get_setting("enemies", "ENEMY_HEALTH", stats.get("health", 100))
         self.max_health = self.health
         self.speed = stats.get("speed", 1.5)
         self.contact_damage = stats.get("contact_damage", 25)
@@ -176,7 +176,7 @@ class Enemy(Sprite):
                 self.health = 0
                 self.alive = False
                 logger.info(f"Enemy died at position ({self.x}, {self.y})")
-                # Spawn orichalc fragment in chapter 1 (levels 1-4)
+                # Spawn orichalc fragment in chapters 1-2 (levels 1-7)
                 if hasattr(self.asset_manager, 'game_controller') and self.asset_manager.game_controller:
                     gc = self.asset_manager.game_controller
                     if hasattr(gc, 'level_manager') and gc.level_manager.level <= 7:
