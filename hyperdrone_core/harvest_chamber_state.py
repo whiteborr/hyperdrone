@@ -1,8 +1,14 @@
-# hyperdrone_core/harvest_chamber_state.pyAdd commentMore actions
-import pygame
-import random
+# hyperdrone_core/harvest_chamber_state.py
+from pygame import Surface, Rect
+from pygame.sprite import Group, spritecollide
+from pygame.draw import circle
+from pygame.key import get_pressed
+from pygame.time import get_ticks
+from pygame.transform import rotate, scale
+from pygame import KEYDOWN, K_LEFT, K_RIGHT, K_UP, K_DOWN, K_a, K_d, K_w, K_s, K_SPACE, K_p
+from random import randint, choice, random
 import logging
-import math
+from math import sin, cos, atan2, pi, hypot
 from .state import State
 from settings_manager import get_setting
 from entities import Enemy 
@@ -14,13 +20,13 @@ class ScrollingBackground:
     def __init__(self, screen_height, image):
         self.image = image
         if self.image is None:
-            self.image = pygame.Surface((get_setting("display", "WIDTH", 1920), screen_height)).convert()
+            self.image = Surface((get_setting("display", "WIDTH", 1920), screen_height)).convert()
             self.image.fill((10, 0, 20))
             for _ in range(100):
-                x = random.randint(0, self.image.get_width())
-                y = random.randint(0, self.image.get_height())
-                size = random.randint(1, 3)
-                pygame.draw.circle(self.image, (random.randint(50, 100), 0, random.randint(100, 150)), (x, y), size)
+                x = randint(0, self.image.get_width())
+                y = randint(0, self.image.get_height())
+                size = randint(1, 3)
+                circle(self.image, (randint(50, 100), 0, randint(100, 150)), (x, y), size)
 
         self.rect = self.image.get_rect()
         self.y1 = 0
@@ -43,7 +49,7 @@ class ShmupEnemyManager:
     """Manages wave-based spawning of enemies in the SHMUP level, Space Invaders style with teams and captains."""
     def __init__(self, game_controller):
         self.game_controller = game_controller
-        self.enemies = pygame.sprite.Group()
+        self.enemies = Group()
         self.enemy_teams = []  # List of dicts: {"captain": Enemy, "members": [Enemy], "active_index": int}
         self.current_wave = 0
         self.wave_spawn_timer = 0
@@ -54,7 +60,7 @@ class ShmupEnemyManager:
         self.formation_direction = 1
         self.formation_speed_x = 10
         self.formation_step_y = 20
-        self.formation_bounds = pygame.Rect(0, 0, 0, 0)
+        self.formation_bounds = Rect(0, 0, 0, 0)
         self.last_move_time = 0
         self.move_interval = 800
 
@@ -142,7 +148,7 @@ class ShmupEnemyManager:
                         if hasattr(enemy, 'image') and enemy.image:
                             original_size = enemy.image.get_size()
                             new_size = (int(original_size[0] * 1.25), int(original_size[1] * 1.25))
-                            enemy.image = pygame.transform.scale(enemy.image, new_size)
+                            enemy.image = scale(enemy.image, new_size)
                             enemy.rect = enemy.image.get_rect(center=enemy.rect.center)
 
                 self.enemy_teams.append({"captain": captain, "members": team_members, "active_index": 1})
@@ -196,8 +202,8 @@ class ShmupEnemyManager:
                 target.fly_curve_time = 0
             elif not target.returning:
                 target.fly_curve_time += 0.05
-                x_offset = 50 * math.sin(target.fly_curve_time * 2.0)
-                y_offset = 3 + 2 * math.cos(target.fly_curve_time)
+                x_offset = 50 * sin(target.fly_curve_time * 2.0)
+                y_offset = 3 + 2 * cos(target.fly_curve_time)
                 target.rect.x += int(x_offset)
                 target.rect.y += int(y_offset)
 
@@ -208,7 +214,7 @@ class ShmupEnemyManager:
                 ox, oy = target.original_pos
                 dx = ox - target.rect.centerx
                 dy = oy - target.rect.centery
-                dist = math.hypot(dx, dy)
+                dist = hypot(dx, dy)
                 if dist < self.return_threshold:
                     target.fly_down = False
                     target.returning = False
@@ -218,12 +224,12 @@ class ShmupEnemyManager:
                     target.rect.x += int(dx * 0.1)
                     target.rect.y += int(dy * 0.1)
 
-            if hasattr(target, "shoot") and random.random() < 0.01:
+            if hasattr(target, "shoot") and random() < 0.01:
                 player = self.game_controller.player
                 if player:
                     dx = player.x - target.x
                     dy = player.y - target.y
-                    angle_to_player = math.atan2(dy, dx) * 180 / math.pi
+                    angle_to_player = atan2(dy, dx) * 180 / pi
                     target.shoot(angle_to_player, None)
 
     def _random_enemy_shoot(self):
@@ -232,13 +238,13 @@ class ShmupEnemyManager:
         available_shooters = [e for e in self.enemies if not getattr(e, "fly_down", False)]
         if not available_shooters:
             return
-        shooter = random.choice(available_shooters)
+        shooter = choice(available_shooters)
         if hasattr(shooter, "shoot"):
             player = self.game_controller.player
             if player:
                 dx = player.x - shooter.x
                 dy = player.y - shooter.y
-                angle_to_player = math.atan2(dy, dx) * 180 / math.pi
+                angle_to_player = atan2(dy, dx) * 180 / pi
                 shooter.shoot(angle_to_player, None)
 
     def draw(self, surface):
@@ -254,16 +260,16 @@ class ShmupPlayerController:
         if not self.player:
             return
 
-        keys = pygame.key.get_pressed()
+        keys = get_pressed()
         dx, dy = 0, 0
 
-        if keys[pygame.K_LEFT] or keys[pygame.K_a]:
+        if keys[K_LEFT] or keys[K_a]:
             dx = -1
-        if keys[pygame.K_RIGHT] or keys[pygame.K_d]:
+        if keys[K_RIGHT] or keys[K_d]:
             dx = 1
-        if keys[pygame.K_UP] or keys[pygame.K_w]:
+        if keys[K_UP] or keys[K_w]:
             dy = -1
-        if keys[pygame.K_DOWN] or keys[pygame.K_s]:
+        if keys[K_DOWN] or keys[K_s]:
             dy = 1
 
         self.player.x += dx * self.player_speed
@@ -277,7 +283,7 @@ class ShmupPlayerController:
         self.player.rect.center = (self.player.x, self.player.y)
 
         # Continuous shooting
-        if keys[pygame.K_SPACE]:
+        if keys[K_SPACE]:
             self.player.shoot()
 
 class HarvestChamberState(State):
@@ -321,7 +327,7 @@ class HarvestChamberState(State):
 
     def update(self, delta_time):
         """Update SHMUP gameplay logic."""
-        current_time = pygame.time.get_ticks()
+        current_time = get_ticks()
 
         if not self.game.player:
             self.game.state_manager.set_state("MainMenuState")
@@ -380,14 +386,14 @@ class HarvestChamberState(State):
                     break
 
         # Handle player-enemy collisions
-        for enemy in pygame.sprite.spritecollide(self.game.player, self.shmup_enemy_manager.enemies, True):
+        for enemy in spritecollide(self.game.player, self.shmup_enemy_manager.enemies, True):
             self.game.player.take_damage(50)
 
 
     def handle_events(self, events):
         """Handle player input for SHMUP controls."""
         for event in events:
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_p:
+            if event.type == KEYDOWN and event.key == K_p:
                 self.game.toggle_pause()
 
     def draw(self, surface):
@@ -410,8 +416,8 @@ class HarvestChamberState(State):
                     zap.draw(surface)
             # Draw scaled and rotated player directly
             if hasattr(self.game.player, 'image') and self.game.player.image:
-                rotated_image = pygame.transform.rotate(self.game.player.image, 90)
-                scaled_image = pygame.transform.scale(rotated_image, 
+                rotated_image = rotate(self.game.player.image, 90)
+                scaled_image = scale(rotated_image, 
                     (int(rotated_image.get_width() * 1.5), int(rotated_image.get_height() * 1.5)))
                 surface.blit(scaled_image, (self.game.player.rect.centerx - scaled_image.get_width()//2, 
                                           self.game.player.rect.centery - scaled_image.get_height()//2))

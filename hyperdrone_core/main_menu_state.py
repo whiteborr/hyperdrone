@@ -1,7 +1,6 @@
-# hyperdrone_core/main_menu_state.pyAdd commentMore actions
-import pygame
+# hyperdrone_core/main_menu_state.py
+from pygame import KEYDOWN
 from .state import State
-from settings_manager import get_setting
 
 class MainMenuState(State):
     def enter(self, previous_state=None, **kwargs):
@@ -10,7 +9,7 @@ class MainMenuState(State):
     
     def handle_events(self, events):
         for event in events:
-            if event.type == pygame.KEYDOWN:
+            if event.type == KEYDOWN:
                 self.game.ui_flow_controller.handle_key_input(event.key, "main_menu")
     
     def update(self, delta_time):

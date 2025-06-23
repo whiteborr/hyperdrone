@@ -1,7 +1,6 @@
-# hyperdrone_core/game_intro_scroll_state.pyAdd commentMore actions
-import pygame
+# hyperdrone_core/game_intro_scroll_state.py
+from pygame import KEYDOWN, K_SPACE, K_ESCAPE
 from .state import State
-from settings_manager import get_setting
 
 class GameIntroScrollState(State):
     def enter(self, previous_state=None, **kwargs):
@@ -9,10 +8,10 @@ class GameIntroScrollState(State):
     
     def handle_events(self, events):
         for event in events:
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_SPACE:
+            if event.type == KEYDOWN:
+                if event.key == K_SPACE:
                     self.game.ui_flow_controller.advance_intro_screen()
-                elif event.key == pygame.K_ESCAPE:
+                elif event.key == K_ESCAPE:
                     self.game.ui_flow_controller.skip_intro()
     
     def update(self, delta_time):

@@ -1,5 +1,6 @@
-# hyperdrone_core/puzzle_controller.pyAdd commentMore actions
-import pygame
+# hyperdrone_core/puzzle_controller.py
+from pygame.sprite import Group
+from pygame import KEYDOWN, K_ESCAPE, K_RETURN, K_SPACE, K_1, K_2, K_3
 import os 
 import logging
 
@@ -38,7 +39,7 @@ class PuzzleController:
 
         total_fragments = get_setting("collectibles", "TOTAL_CORE_FRAGMENTS_NEEDED", 3)
         self.architect_vault_terminals_activated = [False] * total_fragments
-        self.architect_vault_puzzle_terminals_group = pygame.sprite.Group()
+        self.architect_vault_puzzle_terminals_group = Group()
 
         logger.info("PuzzleController initialized.")
 
@@ -70,25 +71,25 @@ class PuzzleController:
         if current_game_state == GAME_STATE_RING_PUZZLE:
             if self.ring_puzzle_active_flag and self.current_ring_puzzle:
                 self.current_ring_puzzle.handle_input(event)
-                if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                if event.type == KEYDOWN and event.key == K_ESCAPE:
                     self.exit_ring_puzzle()
                     return True
                 if self.current_ring_puzzle.is_solved() and \
                    not self.current_ring_puzzle.active and \
-                   event.type == pygame.KEYDOWN and (event.key == pygame.K_RETURN or event.key == pygame.K_SPACE):
+                   event.type == KEYDOWN and (event.key == K_RETURN or event.key == K_SPACE):
                     self.exit_ring_puzzle(puzzle_was_solved=True)
                     return True
                 return True
 
         elif current_game_state == GAME_STATE_ARCHITECT_VAULT_ENTRY_PUZZLE:
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_1:
+            if event.type == KEYDOWN:
+                if event.key == K_1:
                     self.try_activate_architect_vault_terminal(0)
                     return True
-                elif event.key == pygame.K_2:
+                elif event.key == K_2:
                     self.try_activate_architect_vault_terminal(1)
                     return True
-                elif event.key == pygame.K_3:
+                elif event.key == K_3:
                     self.try_activate_architect_vault_terminal(2)
                     return True
         return False

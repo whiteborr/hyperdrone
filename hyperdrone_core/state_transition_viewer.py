@@ -1,5 +1,9 @@
-# hyperdrone_core/state_transition_viewer.pyAdd commentMore actions
-import pygame
+# hyperdrone_core/state_transition_viewer.py
+from pygame import get_init, init as pygame_init, quit as pygame_quit
+from pygame.display import set_mode, set_caption, flip
+from pygame.font import SysFont
+from pygame.event import get as event_get
+from pygame import QUIT, KEYDOWN, K_ESCAPE
 import time
 from datetime import datetime
 
@@ -27,14 +31,14 @@ class StateTransitionViewer:
         
     def initialize(self):
         """Initialize pygame and create the viewer window"""
-        if not pygame.get_init():
-            pygame.init()
+        if not get_init():
+            pygame_init()
         
-        self.screen = pygame.display.set_mode((self.screen_width, self.screen_height))
-        pygame.display.set_caption("HYPERDRONE State Transition Viewer")
+        self.screen = set_mode((self.screen_width, self.screen_height))
+        set_caption("HYPERDRONE State Transition Viewer")
         
-        self.font = pygame.font.SysFont("Arial", 14)
-        self.title_font = pygame.font.SysFont("Arial", 24, bold=True)
+        self.font = SysFont("Arial", 14)
+        self.title_font = SysFont("Arial", 24, bold=True)
         
         self.initialized = True
         
@@ -45,19 +49,19 @@ class StateTransitionViewer:
             
         running = True
         while running:
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
+            for event in event_get():
+                if event.type == QUIT:
                     running = False
-                elif event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_ESCAPE:
+                elif event.type == KEYDOWN:
+                    if event.key == K_ESCAPE:
                         running = False
             
             self.screen.fill((30, 30, 40))
             self._draw_transition_history()
             self._draw_state_graph()
-            pygame.display.flip()
+            flip()
             
-        pygame.quit()
+        pygame_quit()
         
     def _draw_transition_history(self):
         """Draw the transition history as a list"""

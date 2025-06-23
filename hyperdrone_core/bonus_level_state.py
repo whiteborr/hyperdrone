@@ -1,22 +1,24 @@
-# hyperdrone_core/bonus_level_state.pyAdd commentMore actions
-import pygame
+# hyperdrone_core/bonus_level_state.py
+from pygame.time import get_ticks
+from pygame.font import Font
+from pygame import KEYDOWN, KEYUP, K_SPACE, K_p, K_ESCAPE
 from .state import State
 from settings_manager import get_setting
 
 class BonusLevelStartState(State):
     def enter(self, previous_state=None, **kwargs):
         # Initialize bonus level start display
-        self.game.bonus_level_start_display_end_time = pygame.time.get_ticks() + 3000  # 3 seconds display
+        self.game.bonus_level_start_display_end_time = get_ticks() + 3000  # 3 seconds display
     
     def handle_events(self, events):
         for event in events:
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_SPACE:
+            if event.type == KEYDOWN:
+                if event.key == K_SPACE:
                     # Skip timer and go directly to bonus level
                     self.game.state_manager.set_state("BonusLevelPlayingState")
     
     def update(self, delta_time):
-        current_time = pygame.time.get_ticks()
+        current_time = get_ticks()
         if current_time > self.game.bonus_level_start_display_end_time:
             self.game.state_manager.set_state("BonusLevelPlayingState")
     
@@ -31,19 +33,19 @@ class BonusLevelStartState(State):
         surface.fill(black_color)
         
         # Draw bonus level announcement
-        font = self.game.asset_manager.get_font("large_text", 64) or pygame.font.Font(None, 64)
+        font = self.game.asset_manager.get_font("large_text", 64) or Font(None, 64)
         title_surf = font.render("BONUS LEVEL", True, gold_color)
         surface.blit(title_surf, title_surf.get_rect(
             center=(width // 2, height // 2 - 50)))
         
         # Draw instructions
-        font = self.game.asset_manager.get_font("medium_text", 36) or pygame.font.Font(None, 36)
+        font = self.game.asset_manager.get_font("medium_text", 36) or Font(None, 36)
         instr_surf = font.render("Collect all rings before time runs out!", True, white_color)
         surface.blit(instr_surf, instr_surf.get_rect(
             center=(width // 2, height // 2 + 50)))
         
         # Draw "Press SPACE to start" prompt
-        font = self.game.asset_manager.get_font("ui_text", 24) or pygame.font.Font(None, 24)
+        font = self.game.asset_manager.get_font("ui_text", 24) or Font(None, 24)
         prompt_surf = font.render("Press SPACE to start", True, cyan_color)
         surface.blit(prompt_surf, prompt_surf.get_rect(
             center=(width // 2, height // 2 + 150)))
@@ -85,7 +87,7 @@ class BonusLevelPlayingState(State):
         )
         
         # Start bonus level timer
-        self.game.bonus_level_timer_start = pygame.time.get_ticks()
+        self.game.bonus_level_timer_start = get_ticks()
         self.game.bonus_level_duration_ms = get_setting("progression", "BONUS_LEVEL_DURATION_MS", 60000)
         
         # Spawn bonus level collectibles
@@ -95,18 +97,18 @@ class BonusLevelPlayingState(State):
     
     def handle_events(self, events):
         for event in events:
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_p:
+            if event.type == KEYDOWN:
+                if event.key == K_p:
                     self.game.toggle_pause()
-                elif event.key == pygame.K_ESCAPE:
+                elif event.key == K_ESCAPE:
                     self.game.toggle_pause()
                 else:
                     self.game.player_actions.handle_key_down(event)
-            elif event.type == pygame.KEYUP:
+            elif event.type == KEYUP:
                 self.game.player_actions.handle_key_up(event)
     
     def update(self, delta_time):
-        current_time_ms = pygame.time.get_ticks()
+        current_time_ms = get_ticks()
         
         # Update player
         if self.game.player:
@@ -167,12 +169,12 @@ class BonusLevelPlayingState(State):
             self.game.player.draw(surface)
         
         # Draw timer
-        current_time_ms = pygame.time.get_ticks()
+        current_time_ms = get_ticks()
         time_elapsed = current_time_ms - self.game.bonus_level_timer_start
         time_remaining = max(0, self.game.bonus_level_duration_ms - time_elapsed)
         seconds_remaining = int(time_remaining / 1000)
         
-        font = self.game.asset_manager.get_font("large_text", 48) or pygame.font.Font(None, 48)
+        font = self.game.asset_manager.get_font("large_text", 48) or Font(None, 48)
         timer_surf = font.render(f"Time: {seconds_remaining}s", True, 
                                red_color if seconds_remaining <= 10 else white_color)
         surface.blit(timer_surf, timer_surf.get_rect(center=(width // 2, 50)))

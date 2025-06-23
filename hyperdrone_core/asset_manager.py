@@ -1,5 +1,10 @@
-# hyperdrone_core/asset_manager.pyAdd commentMore actions
-import pygame
+# hyperdrone_core/asset_manager.py
+from pygame.image import load as image_load
+from pygame.mixer import Sound
+from pygame.font import Font
+from pygame.transform import smoothscale
+from pygame.draw import rect as draw_rect
+from pygame import Surface, SRCALPHA, error as pygame_error
 import os
 import logging
 from settings_manager import get_asset_path, get_setting
@@ -49,12 +54,12 @@ class AssetManager:
             logger.error(f"AssetManager: Image file not found at '{full_path}' for key '{key}'.")
             return None
         try:
-            image = pygame.image.load(full_path)
+            image = image_load(full_path)
             image = image.convert_alpha() if use_convert_alpha else image.convert()
             if colorkey: image.set_colorkey(colorkey)
             self.images[key] = image
             return image
-        except pygame.error as e:
+        except pygame_error as e:
             logger.error(f"AssetManager: Pygame error loading image '{full_path}': {e}")
             return None
 
@@ -84,23 +89,23 @@ class AssetManager:
             scaled_w, scaled_h = int(scale_to_size[0]), int(scale_to_size[1])
             if scaled_w <= 0 or scaled_h <= 0: raise ValueError("Image scaling dimensions must be positive.")
             
-            scaled_image = pygame.transform.smoothscale(original_image, (scaled_w, scaled_h))
+            scaled_image = smoothscale(original_image, (scaled_w, scaled_h))
             self.images[scaled_key] = scaled_image
             return scaled_image
-        except (ValueError, TypeError, pygame.error) as e:
+        except (ValueError, TypeError, pygame_error) as e:
             logger.error(f"AssetManager: Error scaling image for key '{key}' to {scale_to_size}: {e}")
             return original_image
         
     def _create_fallback_surface(self, size=(32,32), color=(128,0,128), text=None, text_color=(255,255,255), font_key=None, font_size=20):
-        surface = pygame.Surface(size, pygame.SRCALPHA); surface.fill(color)
+        surface = Surface(size, SRCALPHA); surface.fill(color)
         if text:
             try:
-                font = self.get_font(font_key, font_size) if font_key else pygame.font.Font(None, font_size)
-                if not font: font = pygame.font.Font(None, font_size)
+                font = self.get_font(font_key, font_size) if font_key else Font(None, font_size)
+                if not font: font = Font(None, font_size)
                 text_surf = font.render(str(text), True, text_color)
                 surface.blit(text_surf, text_surf.get_rect(center=(size[0]//2, size[1]//2)))
             except Exception as e: logger.error(f"AssetManager: Error rendering fallback text '{text}': {e}")
-        pygame.draw.rect(surface, (200,200,200), surface.get_rect(), 1); return surface
+        draw_rect(surface, (200,200,200), surface.get_rect(), 1); return surface
 
     def load_sound(self, relative_path, key=None):
         if key is None: key = relative_path
@@ -114,8 +119,8 @@ class AssetManager:
             logger.error(f"AssetManager: Sound file not found: '{full_path}'.")
             return None
         try:
-            sound = pygame.mixer.Sound(full_path); self.sounds[key] = sound; return sound
-        except pygame.error as e: logger.error(f"AssetManager: Error loading sound '{full_path}': {e}"); return None
+            sound = Sound(full_path); self.sounds[key] = sound; return sound
+        except pygame_error as e: logger.error(f"AssetManager: Error loading sound '{full_path}': {e}"); return None
 
     def get_sound(self, key):
         sound = self.sounds.get(key)
@@ -132,18 +137,18 @@ class AssetManager:
         
         try:
             # Use full_path directly, which can be None for system default font
-            font = pygame.font.Font(full_path, size)
+            font = Font(full_path, size)
             self.fonts[font_cache_key] = font
             logger.debug(f"AssetManager: Loaded font '{full_path or 'System Font'}' size {size} as '{font_cache_key}'.")
             return font
-        except (pygame.error, FileNotFoundError) as e: # Catch FileNotFoundError as well
+        except (pygame_error, FileNotFoundError) as e: # Catch FileNotFoundError as well
             logger.error(f"AssetManager: Pygame error loading font '{full_path or 'System Font'}' size {size}: {e}")
             try:
                 logger.warning(f"AssetManager: Attempting fallback to system font for key '{base_key}' size {size}.")
-                font = pygame.font.Font(None, size)
+                font = Font(None, size)
                 self.fonts[font_cache_key] = font
                 return font
-            except pygame.error as e_sys:
+            except pygame_error as e_sys:
                 logger.error(f"AssetManager: Pygame error loading system font as fallback: {e_sys}")
                 return None
 
@@ -154,8 +159,8 @@ class AssetManager:
         if not font:
             logger.warning(f"AssetManager: Font '{cache_key}' not found. Check manifest or use load_font first.")
             try:
-                return pygame.font.Font(None, size)
-            except pygame.error:
+                return Font(None, size)
+            except pygame_error:
                 return None
         return font
 

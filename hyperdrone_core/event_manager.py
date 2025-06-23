@@ -1,5 +1,8 @@
-# hyperdrone_core/event_manager.pyAdd commentMore actions
-import pygame
+# hyperdrone_core/event_manager.py
+from pygame.event import get as event_get
+from pygame.key import get_pressed
+from pygame.time import get_ticks
+from pygame import QUIT, MOUSEWHEEL, KEYDOWN, KEYUP, MOUSEBUTTONDOWN, K_ESCAPE, K_LEFT, K_RIGHT, K_UP, K_DOWN, K_a, K_d, K_w, K_s, K_SPACE, K_p
 import sys
 import logging
 import time
@@ -39,7 +42,7 @@ class EventManager:
         Process all game events for the current frame.
         This includes pygame events, camera controls, and player input.
         """
-        current_time_ms = pygame.time.get_ticks()
+        current_time_ms = get_ticks()
         current_game_state = self.scene_manager.get_current_state()
         
         # Handle camera panning in maze defense mode
@@ -47,24 +50,24 @@ class EventManager:
             self._handle_camera_panning()
 
         # Process pygame events
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
+        for event in event_get():
+            if event.type == QUIT:
                 self.game_controller.quit_game()
             
             # Mouse wheel for zoom in maze defense
-            if event.type == pygame.MOUSEWHEEL and current_game_state == GAME_STATE_MAZE_DEFENSE and self.game_controller.camera:
+            if event.type == MOUSEWHEEL and current_game_state == GAME_STATE_MAZE_DEFENSE and self.game_controller.camera:
                 self._handle_mouse_wheel(event)
 
             # Keyboard events
-            if event.type == pygame.KEYDOWN:
+            if event.type == KEYDOWN:
                 self._handle_key_down(event, current_game_state)
 
             # Key up events
-            if event.type == pygame.KEYUP and not self.game_controller.paused:
+            if event.type == KEYUP and not self.game_controller.paused:
                 self.game_controller.player_actions.handle_key_up(event)
             
             # Mouse button events
-            if event.type == pygame.MOUSEBUTTONDOWN:
+            if event.type == MOUSEBUTTONDOWN:
                 self._handle_mouse_down(event, current_game_state)
 
         # Handle continuous player movement in gameplay states
@@ -77,12 +80,12 @@ class EventManager:
     
     def _handle_camera_panning(self):
         """Handle continuous camera panning from keyboard input."""
-        keys = pygame.key.get_pressed()
+        keys = get_pressed()
         dx, dy = 0, 0
-        if keys[pygame.K_LEFT] or keys[pygame.K_a]: dx = -1
-        if keys[pygame.K_RIGHT] or keys[pygame.K_d]: dx = 1
-        if keys[pygame.K_UP] or keys[pygame.K_w]: dy = -1
-        if keys[pygame.K_DOWN] or keys[pygame.K_s]: dy = 1
+        if keys[K_LEFT] or keys[K_a]: dx = -1
+        if keys[K_RIGHT] or keys[K_d]: dx = 1
+        if keys[K_UP] or keys[K_w]: dy = -1
+        if keys[K_DOWN] or keys[K_s]: dy = 1
         if dx != 0 or dy != 0:
             self.game_controller.camera.pan(dx, dy)
     
@@ -94,7 +97,7 @@ class EventManager:
     
     def _handle_key_down(self, event, current_game_state):
         # Handle escape key
-        if event.key == pygame.K_ESCAPE:
+        if event.key == K_ESCAPE:
             self.handle_escape_key(current_game_state)
             return
             
@@ -109,11 +112,11 @@ class EventManager:
             
         # Handle maze defense specific input
         if current_game_state == GAME_STATE_MAZE_DEFENSE and not self.game_controller.paused:
-            if event.key == pygame.K_SPACE and self.combat_controller.wave_manager:
+            if event.key == K_SPACE and self.combat_controller.wave_manager:
                 self.combat_controller.wave_manager.manual_start_next_wave()
                 
         # Handle pause toggle
-        if event.key == pygame.K_p and (is_gameplay_state or current_game_state == GAME_STATE_MAZE_DEFENSE):
+        if event.key == K_p and (is_gameplay_state or current_game_state == GAME_STATE_MAZE_DEFENSE):
             self.game_controller.toggle_pause()
             
         # Let puzzle controller handle input

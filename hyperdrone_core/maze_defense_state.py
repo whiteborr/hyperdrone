@@ -1,5 +1,7 @@
-# hyperdrone_core/maze_defense_state.pyAdd commentMore actions
-import pygame
+# hyperdrone_core/maze_defense_state.py
+from pygame.mouse import set_visible, get_pos as mouse_get_pos
+from pygame.time import get_ticks
+from pygame import KEYDOWN, MOUSEBUTTONDOWN, K_p, K_SPACE
 import logging
 from .state import State
 from settings_manager import get_setting
@@ -12,7 +14,7 @@ class MazeDefenseState(State):
     def enter(self, previous_state=None, **kwargs):
         """Initialize the maze defense state"""
         # Make mouse visible for maze defense mode
-        pygame.mouse.set_visible(True)
+        set_visible(True)
         
         self.game.combat_controller.reset_combat_state()
         self.game.puzzle_controller.reset_puzzles_state()
@@ -68,21 +70,21 @@ class MazeDefenseState(State):
     def exit(self):
         """Clean up when leaving maze defense state"""
         # Hide mouse cursor when exiting maze defense mode
-        pygame.mouse.set_visible(False)
+        set_visible(False)
     
     def handle_events(self, events):
         """Handle input events specific to maze defense state"""
         # Process discrete events
         for event in events:
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_p:
+            if event.type == KEYDOWN:
+                if event.key == K_p:
                     self.game.toggle_pause()
-                elif event.key == pygame.K_SPACE:
+                elif event.key == K_SPACE:
                     if self.game.combat_controller.wave_manager:
                         self.game.combat_controller.wave_manager.manual_start_next_wave()
             
             # Handle mouse button down events
-            elif event.type == pygame.MOUSEBUTTONDOWN:
+            elif event.type == MOUSEBUTTONDOWN:
                 screen_pos = event.pos
                 # Check if click is on build menu
                 if (self.game.ui_manager.build_menu and 
@@ -98,7 +100,7 @@ class MazeDefenseState(State):
     
     def update(self, delta_time):
         """Update game logic for maze defense state"""
-        current_time_ms = pygame.time.get_ticks()
+        current_time_ms = get_ticks()
         
         # Update combat controller
         self.game.combat_controller.update(current_time_ms, delta_time)
@@ -111,7 +113,7 @@ class MazeDefenseState(State):
         # Update build menu if available
         if hasattr(self.game.ui_manager, 'build_menu') and self.game.ui_manager.build_menu:
             self.game.ui_manager.build_menu.update(
-                pygame.mouse.get_pos(), 
+                mouse_get_pos(), 
                 "maze_defense_mode", 
                 None
             )

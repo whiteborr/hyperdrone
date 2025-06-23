@@ -1,5 +1,5 @@
-# hyperdrone_core/leaderboard_state.pyAdd commentMore actions
-import pygame
+# hyperdrone_core/leaderboard_state.py
+from pygame import KEYDOWN, K_ESCAPE
 from .state import State
 
 class LeaderboardState(State):
@@ -8,8 +8,8 @@ class LeaderboardState(State):
     
     def handle_events(self, events):
         for event in events:
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_ESCAPE:
+            if event.type == KEYDOWN:
+                if event.key == K_ESCAPE:
                     leaderboard_index = 5  # "Leaderboard" is at index 5 in menu_options
                     self.game.state_manager.set_state("MainMenuState", selected_option=leaderboard_index)
     

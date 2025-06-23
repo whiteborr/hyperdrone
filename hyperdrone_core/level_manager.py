@@ -1,6 +1,8 @@
-# hyperdrone_core/level_manager.pyAdd commentMore actions
-import pygame
-import random
+# hyperdrone_core/level_manager.py
+from pygame.time import get_ticks
+from pygame.font import Font
+from pygame.transform import smoothscale
+from pygame.draw import rect as draw_rect
 import logging
 
 from settings_manager import get_setting, set_setting, get_asset_path
@@ -33,12 +35,17 @@ class LevelManager:
         # Ring animation will calculate positions dynamically to match UI exactly
         
         # Level timer variables
-        self.level_start_time = pygame.time.get_ticks()
+        self.level_start_time = get_ticks()
         self.level_timer_duration = get_setting("progression", "LEVEL_TIMER_DURATION", 120000)
         self.level_timer_warning = get_setting("progression", "LEVEL_TIMER_WARNING_THRESHOLD", 30000)
         self.border_flash_state = False
         self.last_border_flash_time = 0
         self.border_flash_interval = 500  # Flash every 500ms when time is low
+        
+        # Timer pause functionality
+        self.timer_paused = False
+        self.pause_start_time = 0
+        self.total_paused_time = 0
         
         # Level state variables
         self.all_enemies_killed_this_level = False
@@ -60,9 +67,12 @@ class LevelManager:
         self.animating_rings_to_hud = []
         
         # Reset timer
-        self.level_start_time = pygame.time.get_ticks()
+        self.level_start_time = get_ticks()
         self.border_flash_state = False
         self.last_border_flash_time = 0
+        self.timer_paused = False
+        self.pause_start_time = 0
+        self.total_paused_time = 0
         
         self.all_enemies_killed_this_level = False
         self.level_cleared_pending_animation = False
@@ -117,7 +127,7 @@ class LevelManager:
         if ring_index < self.total_rings_per_level:
             self.animating_rings_to_hud.append({
                 'pos': list(start_pos),
-                'start_time': pygame.time.get_ticks(),
+                'start_time': get_ticks(),
                 'duration': 1000,  # 1 second animation
                 'start_pos': start_pos,
                 'target_pos': (target_x, target_y)
@@ -143,7 +153,7 @@ class LevelManager:
     
     def draw_ring_animations(self, surface, ring_icon):
         """Draw ring animations on the surface"""
-        current_time = pygame.time.get_ticks()
+        current_time = get_ticks()
         
         # Draw level border with timer only for regular maze mode, not for MazeChapter2
         current_game_state = self.game_controller.state_manager.get_current_state_id()
@@ -171,14 +181,29 @@ class LevelManager:
                 if ring_icon:
                     tile_size = get_setting("gameplay", "TILE_SIZE", 80)
                     icon_size = int(tile_size * 0.3 * (1 + 0.5 * (1 - progress)))  # Shrink as it moves
-                    scaled_icon = pygame.transform.smoothscale(ring_icon, (icon_size, icon_size))
+                    scaled_icon = smoothscale(ring_icon, (icon_size, icon_size))
                     icon_rect = scaled_icon.get_rect(center=(x, y))
                     surface.blit(scaled_icon, icon_rect)
                 
+    def pause_timer(self):
+        """Pause the level timer"""
+        if not self.timer_paused:
+            self.timer_paused = True
+            self.pause_start_time = get_ticks()
+    
+    def resume_timer(self):
+        """Resume the level timer"""
+        if self.timer_paused:
+            self.timer_paused = False
+            self.total_paused_time += get_ticks() - self.pause_start_time
+            self.pause_start_time = 0
+    
     def _draw_level_timer_border(self, surface, current_time):
         """Draw a border around the screen that shows the level timer"""
-        # Calculate remaining time
-        elapsed_time = current_time - self.level_start_time
+        # Calculate remaining time accounting for paused time
+        elapsed_time = current_time - self.level_start_time - self.total_paused_time
+        if self.timer_paused:
+            elapsed_time -= current_time - self.pause_start_time
         remaining_time = max(0, self.level_timer_duration - elapsed_time)
         
         # Format time as MM:SS
@@ -187,7 +212,7 @@ class LevelManager:
         time_str = f"{minutes:02}:{seconds:02}"
         
         # Draw timer text
-        font = pygame.font.Font(None, 36)
+        font = Font(None, 36)
         text_surf = font.render(time_str, True, WHITE)
         width = get_setting("display", "WIDTH", 1920)
         text_rect = text_surf.get_rect(center=(width // 2, 30))
@@ -209,18 +234,21 @@ class LevelManager:
         # Draw border (4 lines around the screen)
         border_width = 4
         height = get_setting("display", "HEIGHT", 1080)
-        pygame.draw.rect(surface, border_color, (0, 0, width, height), border_width)
+        draw_rect(surface, border_color, (0, 0, width, height), border_width)
     
     def check_level_clear_condition(self):
         """
         Check if the level has been cleared and progress to the next level if so.
         Completion requires all enemies to be defeated and all essential collectibles to be gathered.
         """
-        current_time = pygame.time.get_ticks()
+        current_time = get_ticks()
         current_game_state = self.game_controller.state_manager.get_current_state_id()
 
-        # Check for timeout in regular maze mode
-        if current_game_state == "PlayingState" and current_time - self.level_start_time >= self.level_timer_duration:
+        # Check for timeout in regular maze mode (accounting for paused time)
+        elapsed_time = current_time - self.level_start_time - self.total_paused_time
+        if self.timer_paused:
+            elapsed_time -= current_time - self.pause_start_time
+        if current_game_state == "PlayingState" and elapsed_time >= self.level_timer_duration:
             if self.game_controller.player and self.game_controller.player.alive:
                 self.game_controller._handle_player_death_or_life_loss("Time's up!")
             return False
@@ -292,9 +320,12 @@ class LevelManager:
         self.animating_rings_to_hud = []
         
         # Reset level timer
-        self.level_start_time = pygame.time.get_ticks()
+        self.level_start_time = get_ticks()
         self.border_flash_state = False
         self.last_border_flash_time = 0
+        self.timer_paused = False
+        self.pause_start_time = 0
+        self.total_paused_time = 0
         
         # Clear all items
         if hasattr(self.game_controller, 'item_manager'):

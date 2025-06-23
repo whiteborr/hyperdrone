@@ -6,7 +6,16 @@ import math
 import json
 import logging
 
-import pygame
+from pygame import init as pygame_init, quit as pygame_quit
+from pygame.mixer import init as mixer_init
+from pygame.mouse import set_visible
+from pygame.display import Info, set_mode, set_caption, flip
+from pygame.time import Clock, get_ticks
+from pygame.event import get as event_get
+from pygame.sprite import Group, GroupSingle, collide_rect, spritecollide
+from pygame.transform import scale
+from pygame.font import Font
+from pygame import FULLSCREEN, QUIT, error as pygame_error
 
 from .state_manager import StateManager
 from .event_manager import EventManager
@@ -54,33 +63,33 @@ class GameController:
         level_manager (LevelManager): Manages level progression and scoring
     """
     def __init__(self):
-        pygame.init()
-        pygame.mixer.init()
+        pygame_init()
+        mixer_init()
         
-        pygame.mouse.set_visible(False)
+        set_visible(False)
 
         try:
-            info = pygame.display.Info()
+            info = Info()
             detected_width, detected_height = info.current_w, info.current_h
             final_width = max(1920, detected_width)
             final_height = max(1080, detected_height)
             set_setting("display", "WIDTH", final_width)
             set_setting("display", "HEIGHT", final_height)
             logger_gc.info(f"Screen resolution set to: {final_width}x{final_height}")
-        except pygame.error as e:
+        except pygame_error as e:
             logger_gc.error(f"Could not detect screen size: {e}. Using default 1920x1080.")
 
-        self.screen_flags = pygame.FULLSCREEN if get_setting("display", "FULLSCREEN_MODE", False) else 0
-        self.screen = pygame.display.set_mode((get_setting("display", "WIDTH", 1920), 
+        self.screen_flags = FULLSCREEN if get_setting("display", "FULLSCREEN_MODE", False) else 0
+        self.screen = set_mode((get_setting("display", "WIDTH", 1920), 
                                               get_setting("display", "HEIGHT", 1080)), self.screen_flags)
-        pygame.display.set_caption("HYPERDRONE")
+        set_caption("HYPERDRONE")
 
         self.asset_manager = AssetManager(base_asset_folder_name="assets")
         self.drone_system = DroneSystem()
         
         self._preload_all_assets()
 
-        self.clock = pygame.time.Clock()
+        self.clock = Clock()
         
         self.player = None
         self.maze = None
@@ -92,23 +101,23 @@ class GameController:
         self.paused = False
         self.is_build_phase = False
         
-        self.collectible_rings_group = pygame.sprite.Group()
-        self.power_ups_group = pygame.sprite.Group()
-        self.core_fragments_group = pygame.sprite.Group()
-        self.vault_logs_group = pygame.sprite.Group()
-        self.glyph_tablets_group = pygame.sprite.Group()
-        self.architect_echoes_group = pygame.sprite.Group()
-        self.alien_terminals_group = pygame.sprite.Group()
-        self.architect_vault_puzzle_terminals_group = pygame.sprite.Group()
-        self.explosion_particles_group = pygame.sprite.Group()
-        self.escape_zone_group = pygame.sprite.GroupSingle()
-        self.reactor_group = pygame.sprite.GroupSingle()
-        self.turrets_group = pygame.sprite.Group()
-        self.corrupted_logs_group = pygame.sprite.Group()
-        self.quantum_circuitry_group = pygame.sprite.GroupSingle()
-        self.spawned_barricades_group = pygame.sprite.Group()
-        self.glitching_walls_group = pygame.sprite.Group()
-        self.energy_particles_group = pygame.sprite.Group()
+        self.collectible_rings_group = Group()
+        self.power_ups_group = Group()
+        self.core_fragments_group = Group()
+        self.vault_logs_group = Group()
+        self.glyph_tablets_group = Group()
+        self.architect_echoes_group = Group()
+        self.alien_terminals_group = Group()
+        self.architect_vault_puzzle_terminals_group = Group()
+        self.explosion_particles_group = Group()
+        self.escape_zone_group = GroupSingle()
+        self.reactor_group = GroupSingle()
+        self.turrets_group = Group()
+        self.corrupted_logs_group = Group()
+        self.quantum_circuitry_group = GroupSingle()
+        self.spawned_barricades_group = Group()
+        self.glitching_walls_group = Group()
+        self.energy_particles_group = Group()
         self.animating_fragments_to_hud = []
 
         self.player_actions = PlayerActions(self)
@@ -197,8 +206,8 @@ class GameController:
         
         self.story_manager.start_story()
 
-        self.STORY_FONT_TITLE = pygame.font.Font(None, 48)
-        self.STORY_FONT_BODY = pygame.font.Font(None, 28)
+        self.STORY_FONT_TITLE = Font(None, 48)
+        self.STORY_FONT_BODY = Font(None, 28)
         self.STORY_TEXT_COLOR = (220, 220, 220)
         self.STORY_TITLE_COLOR = (255, 255, 255)
         
@@ -218,9 +227,9 @@ class GameController:
         while True:
             delta_time_ms = self.clock.tick(get_setting("display", "FPS", 60))
             
-            events = pygame.event.get()
+            events = event_get()
             for event in events:
-                if event.type == pygame.QUIT:
+                if event.type == QUIT:
                     self.quit_game()
             
             current_state = self.state_manager.get_current_state()
@@ -239,7 +248,7 @@ class GameController:
                     self.hud_container.trigger_pulse()
                     particle.kill()
             
-            current_time_ms = pygame.time.get_ticks()
+            current_time_ms = get_ticks()
             if current_state:
                 self.ui_flow_controller.update(current_time_ms, delta_time_ms, current_state.get_state_id())
             
@@ -272,7 +281,7 @@ class GameController:
             # Draw fade transition
             self.state_manager.draw_fade_transition(self.screen)
 
-            pygame.display.flip()
+            flip()
 
     def handle_state_transition(self, new_state, old_state, **kwargs):
         self.paused = False
@@ -301,7 +310,7 @@ class GameController:
     def quit_game(self):
         if self.drone_system: 
             self.drone_system._save_unlocks()
-        pygame.quit()
+        pygame_quit()
         sys.exit()
         
     def play_sound(self, key, vol=0.7, volume_override=None):
@@ -430,6 +439,10 @@ class GameController:
         )
 
     def _handle_player_death_or_life_loss(self, reason=""):
+        if hasattr(self, '_death_handled') and self._death_handled:
+            return  # Already handled
+            
+        self._death_handled = True
         self.player.alive = False 
         self._create_explosion(self.player.x, self.player.y, 6, 'crash')
         self.lives -= 1
@@ -439,10 +452,11 @@ class GameController:
         if self.lives > 0:
             self.set_story_message(f"Lives remaining: {self.lives}", 2000)
             self._respawn_player()
+            self._death_handled = False  # Reset for next death
         else:
             logging.info("No lives remaining. Game over.")
             current_state_id = self.state_manager.get_current_state_id()
-            self.state_manager.set_state("GameOverState", previous_state=current_state_id)
+            self.state_manager.set_state("GameOverState", prev_state=current_state_id)
     
     def _create_explosion(self, x, y, num_particles=20, specific_sound_key=None, is_enemy=False):
         orange_color = get_setting("colors", "ORANGE", (255, 165, 0))
@@ -555,11 +569,11 @@ class GameController:
         if not self.player or not hasattr(self.player, 'rect'):
             return None
             
-        for ring in pygame.sprite.spritecollide(self.player, self.collectible_rings_group, True):
+        for ring in spritecollide(self.player, self.collectible_rings_group, True):
             self.level_manager.collect_ring(ring.rect.center)
             self.play_sound('collect_ring')
             
-        for powerup in pygame.sprite.spritecollide(self.player, self.power_ups_group, True):
+        for powerup in spritecollide(self.player, self.power_ups_group, True):
             if isinstance(powerup, WeaponUpgradeItem):
                 powerup.apply_effect(self.player)
                 self.play_sound('weapon_upgrade_collect')
@@ -572,7 +586,7 @@ class GameController:
                 self.play_sound('collect_ring')
                 
         for fragment in list(self.core_fragments_group):
-            if not isinstance(fragment, OrichalcFragment) and pygame.sprite.collide_rect(self.player, fragment):
+            if not isinstance(fragment, OrichalcFragment) and collide_rect(self.player, fragment):
                 fragment.kill()
                 fragment_pos = (fragment.center_x, fragment.center_y)
                 fragment_id_val = fragment.fragment_id
@@ -609,7 +623,7 @@ class GameController:
                 
                 self.animating_fragments_to_hud.append({
                     'pos': list(fragment_pos),
-                    'start_time': pygame.time.get_ticks(),
+                    'start_time': get_ticks(),
                     'duration': 1500,
                     'start_pos': fragment_pos,
                     'target_pos': target_pos,
@@ -621,20 +635,20 @@ class GameController:
                 self.event_manager.dispatch(event)
 
         collected_log_id = None
-        for log in pygame.sprite.spritecollide(self.player, self.corrupted_logs_group, True):
+        for log in spritecollide(self.player, self.corrupted_logs_group, True):
             if hasattr(log, 'apply_effect'):
                 log.apply_effect(self.player, self)
                 collected_log_id = log.log_id
         if collected_log_id:
             return collected_log_id
 
-        for qc in pygame.sprite.spritecollide(self.player, self.quantum_circuitry_group, True):
+        for qc in spritecollide(self.player, self.quantum_circuitry_group, True):
             if hasattr(qc, 'apply_effect'):
                 qc.apply_effect(self.player, self)
         
         for fragment in list(self.core_fragments_group):
             if isinstance(fragment, OrichalcFragment) and not fragment.collected:
-                if pygame.sprite.collide_rect(self.player, fragment):
+                if collide_rect(self.player, fragment):
                     particle = fragment.start_pickup_animation(self.hud_container)
                     self.energy_particles_group.add(particle)
                     fragment.apply_effect(self.player, self)
@@ -648,10 +662,10 @@ class GameController:
     def set_story_message(self, message, duration=5000):
         self.story_message = message
         self.story_message_active = True
-        self.story_message_end_time = pygame.time.get_ticks() + duration
+        self.story_message_end_time = get_ticks() + duration
     
     def _draw_fragment_animations(self):
-        current_time = pygame.time.get_ticks()
+        current_time = get_ticks()
         
         for i in range(len(self.animating_fragments_to_hud) - 1, -1, -1):
             fragment_data = self.animating_fragments_to_hud[i]
@@ -672,7 +686,7 @@ class GameController:
             if fragment_icon:
                 icon_size = self.ui_manager.ui_icon_size_fragments
                 
-                scaled_icon = pygame.transform.scale(fragment_icon, icon_size)
+                scaled_icon = scale(fragment_icon, icon_size)
                 icon_rect = scaled_icon.get_rect(center=(int(x), int(y)))
                 self.screen.blit(scaled_icon, icon_rect)
     

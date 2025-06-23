@@ -1,7 +1,6 @@
-# hyperdrone_core/drone_select_state.pyAdd commentMore actions
-import pygame
+# hyperdrone_core/drone_select_state.py
+from pygame import KEYDOWN, K_ESCAPE
 from .state import State
-from settings_manager import get_setting
 
 class DroneSelectState(State):
     def enter(self, previous_state=None, **kwargs):
@@ -9,8 +8,8 @@ class DroneSelectState(State):
     
     def handle_events(self, events):
         for event in events:
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_ESCAPE:
+            if event.type == KEYDOWN:
+                if event.key == K_ESCAPE:
                     drone_select_index = 1  # "Select Drone" is at index 1 in menu_options
                     self.game.state_manager.set_state("MainMenuState", selected_option=drone_select_index)
                 else:

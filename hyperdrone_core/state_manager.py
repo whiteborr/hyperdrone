@@ -1,5 +1,8 @@
-# hyperdrone_core/state_manager.pyAdd commentMore actions
-import pygame
+# hyperdrone_core/state_manager.py
+from pygame import Surface
+from pygame.mixer import music
+from pygame.time import get_ticks
+from pygame import error as pygame_error
 import os
 import time
 import logging
@@ -94,7 +97,7 @@ class StateManager:
         # Initialize fade surface
         screen_width = get_setting("display", "WIDTH", 1920)
         screen_height = get_setting("display", "HEIGHT", 1080)
-        self.fade_surface = pygame.Surface((screen_width, screen_height))
+        self.fade_surface = Surface((screen_width, screen_height))
         self.fade_surface.fill((0, 0, 0))
         
         # Initialize with default state (skip fade for initial state)
@@ -218,6 +221,7 @@ class StateManager:
         self.registry.register_transition("PlayingState", "ArchitectVaultIntroState")
         self.registry.register_transition("PlayingState", "MazeDefenseState")
         self.registry.register_transition("PlayingState", "BossFightState")
+        self.registry.register_transition("PlayingState", "StoryMapState")
 
         # Game over transitions
         self.registry.register_transition("GameOverState", "MainMenuState")
@@ -261,6 +265,7 @@ class StateManager:
         # Corrupted Sector transitions
         self.registry.register_transition("CorruptedSectorState", "GameOverState")
         self.registry.register_transition("CorruptedSectorState", "HarvestChamberState")
+        self.registry.register_transition("CorruptedSectorState", "StoryMapState")
 
         # Harvest Chamber transitions
         self.registry.register_transition("HarvestChamberState", "GameOverState")
@@ -283,20 +288,20 @@ class StateManager:
         if not music_path or not os.path.exists(music_path):
             logger.warning(f"Music file not found for key '{music_key}'")
             if self.current_music_context_key == music_key:
-                pygame.mixer.music.stop()
+                music.stop()
                 self.current_music_context_key = None
             return
 
         try:
-            pygame.mixer.music.load(music_path)
+            music.load(music_path)
             # Use new game volume setting
             game_volume = get_setting("audio", "VOLUME_GAME", 5) / 10.0
             base_volume = get_setting("display", "MUSIC_BASE_VOLUME", 0.5)
-            pygame.mixer.music.set_volume(base_volume * game_volume)
-            pygame.mixer.music.play(loops=loops)
+            music.set_volume(base_volume * game_volume)
+            music.play(loops=loops)
             self.current_music_context_key = music_key
             logger.info(f"Playing music for context key '{music_key}' at volume {game_volume}")
-        except pygame.error as e:
+        except pygame_error as e:
             logger.error(f"Error playing music '{music_path}': {e}")
             self.current_music_context_key = None
     
@@ -306,10 +311,10 @@ class StateManager:
             return
             
         # Update volume for currently playing music
-        if pygame.mixer.music.get_busy():
+        if music.get_busy():
             game_volume = get_setting("audio", "VOLUME_GAME", 5) / 10.0
             base_volume = get_setting("display", "MUSIC_BASE_VOLUME", 0.5)
-            pygame.mixer.music.set_volume(base_volume * game_volume)
+            music.set_volume(base_volume * game_volume)
             
         current_state_id = self.current_state.get_state_id()
         
@@ -342,17 +347,17 @@ class StateManager:
         music_key_for_state = music_map.get(current_state_id)
 
         if music_key_for_state:
-            if self.current_music_context_key != music_key_for_state or not pygame.mixer.music.get_busy():
+            if self.current_music_context_key != music_key_for_state or not music.get_busy():
                 self._play_music(music_key_for_state)
 
         if hasattr(self.game_controller, 'paused'):
             if self.game_controller.paused:
-                if pygame.mixer.music.get_busy():
-                    pygame.mixer.music.pause()
+                if music.get_busy():
+                    music.pause()
             else:
-                if not pygame.mixer.music.get_busy() and pygame.mixer.music.get_pos() > 0:
-                    pygame.mixer.music.unpause()
-                elif not pygame.mixer.music.get_busy() and self.current_music_context_key == music_key_for_state:
+                if not music.get_busy() and music.get_pos() > 0:
+                    music.unpause()
+                elif not music.get_busy() and self.current_music_context_key == music_key_for_state:
                     self._play_music(self.current_music_context_key)
     
     def set_state(self, state_id, **kwargs):
@@ -459,7 +464,7 @@ class StateManager:
                 self.fade_alpha = 0
                 self.fading_in = False
             
-        current_time = pygame.time.get_ticks()
+        current_time = get_ticks()
         current_state_id = self.current_state.get_state_id()
         
         # Handle timed transitions

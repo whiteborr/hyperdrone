@@ -1,5 +1,11 @@
 # ui/weapon_shop_ui.py
-import pygame
+import os
+from pygame import Surface, Rect, SRCALPHA, K_y, K_n, K_ESCAPE, K_LEFT, K_RIGHT, K_RETURN
+from pygame.display import get_surface
+from pygame.font import Font
+from pygame.draw import rect as draw_rect, polygon, circle
+from pygame.transform import scale, flip, rotate
+from pygame.time import get_ticks
 from constants import (
     WHITE, CYAN, GREEN, YELLOW, RED, GOLD, GREY, WEAPON_MODE_NAMES,
     WEAPON_MODE_DEFAULT, WEAPON_MODE_TRI_SHOT, WEAPON_MODE_RAPID_SINGLE, 
@@ -49,7 +55,7 @@ class WeaponShopUI:
             return None
             
         if self.show_confirmation:
-            if key == pygame.K_y:
+            if key == K_y:
                 weapon_mode = self.available_weapons[self.selected_weapon]
                 cost = self.weapon_shop.purchase_weapon(weapon_mode, self.fragments_count)
                 if cost > 0:
@@ -65,20 +71,20 @@ class WeaponShopUI:
                             self.game_controller.player.unlock_weapon_mode(weapon_mode)
                     self.show_confirmation = False
                     return cost
-            elif key == pygame.K_n or key == pygame.K_ESCAPE:
+            elif key == K_n or key == K_ESCAPE:
                 self.show_confirmation = False
             return None
             
         if not self.available_weapons:
             return None
             
-        if key == pygame.K_LEFT:
+        if key == K_LEFT:
             self.selected_weapon = (self.selected_weapon - 1) % len(self.available_weapons)
-        elif key == pygame.K_RIGHT:
+        elif key == K_RIGHT:
             self.selected_weapon = (self.selected_weapon + 1) % len(self.available_weapons)
-        elif key == pygame.K_RETURN:
+        elif key == K_RETURN:
             self.show_confirmation = True
-        elif key == pygame.K_ESCAPE:
+        elif key == K_ESCAPE:
             self.hide()
             if hasattr(self, 'game_controller'):
                 self.game_controller.paused = False
@@ -90,13 +96,13 @@ class WeaponShopUI:
             return
         
         self.mouse_pos = mouse_pos
-        width, height = pygame.display.get_surface().get_size()
+        width, height = get_surface().get_size()
         shop_width, shop_height = 600, 450
         shop_x = (width - shop_width) // 2
         shop_y = (height - shop_height) // 2
         
         # Check for mouse clicks on weapon area
-        weapon_area = pygame.Rect(shop_x + 50, shop_y + 100, shop_width - 100, 200)
+        weapon_area = Rect(shop_x + 50, shop_y + 100, shop_width - 100, 200)
         if weapon_area.collidepoint(mouse_pos) and mouse_pressed[0]:
             self.show_confirmation = True
         
@@ -109,7 +115,7 @@ class WeaponShopUI:
         height = screen.get_height()
         
         # Background
-        overlay = pygame.Surface((width, height), pygame.SRCALPHA)
+        overlay = Surface((width, height), SRCALPHA)
         overlay.fill((0, 0, 0, 180))
         screen.blit(overlay, (0, 0))
         
@@ -119,10 +125,10 @@ class WeaponShopUI:
         inv_x = (width - 750 - inv_width - 20) // 2
         inv_y = (height - inv_height) // 2
         
-        inv_surface = pygame.Surface((inv_width, inv_height), pygame.SRCALPHA)
+        inv_surface = Surface((inv_width, inv_height), SRCALPHA)
         inv_surface.fill((20, 20, 40, 240))
         screen.blit(inv_surface, (inv_x, inv_y))
-        pygame.draw.rect(screen, GOLD, (inv_x, inv_y, inv_width, inv_height), 2)
+        draw_rect(screen, GOLD, (inv_x, inv_y, inv_width, inv_height), 2)
         
         # Shop window (right side)
         shop_width = 750
@@ -130,15 +136,15 @@ class WeaponShopUI:
         shop_x = inv_x + inv_width + 20
         shop_y = (height - shop_height) // 2
         
-        shop_surface = pygame.Surface((shop_width, shop_height), pygame.SRCALPHA)
+        shop_surface = Surface((shop_width, shop_height), SRCALPHA)
         shop_surface.fill((30, 30, 50, 240))
         screen.blit(shop_surface, (shop_x, shop_y))
-        pygame.draw.rect(screen, CYAN, (shop_x, shop_y, shop_width, shop_height), 2)
+        draw_rect(screen, CYAN, (shop_x, shop_y, shop_width, shop_height), 2)
         
         # HUD-like frame over panels
-        frame_surface = pygame.Surface((width, height), pygame.SRCALPHA)
-        pygame.draw.rect(frame_surface, (50, 200, 255, 40), (inv_x - 5, inv_y - 5, inv_width + 10, inv_height + 10), border_radius=12)
-        pygame.draw.rect(frame_surface, (50, 200, 255, 40), (shop_x - 5, shop_y - 5, shop_width + 10, shop_height + 10), border_radius=12)
+        frame_surface = Surface((width, height), SRCALPHA)
+        draw_rect(frame_surface, (50, 200, 255, 40), (inv_x - 5, inv_y - 5, inv_width + 10, inv_height + 10), border_radius=12)
+        draw_rect(frame_surface, (50, 200, 255, 40), (shop_x - 5, shop_y - 5, shop_width + 10, shop_height + 10), border_radius=12)
         screen.blit(frame_surface, (0, 0))
         
         # Draw inventory panel content
@@ -148,7 +154,8 @@ class WeaponShopUI:
         self._draw_corner_borders(screen, shop_x, shop_y, shop_width, shop_height)
         
         # Title with drop shadow
-        font_title = pygame.font.Font("assets/fonts/neuropol.otf", 32)
+        font_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "assets", "fonts", "neuropol.otf")
+        font_title = Font(font_path, 32)
         # Shadow
         title_shadow = font_title.render("WEAPON SHOP", True, (0, 0, 0))
         screen.blit(title_shadow, (shop_x + 22, shop_y + 22))
@@ -168,8 +175,10 @@ class WeaponShopUI:
         """Draw single weapon page"""
         import math
         
+        font_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "assets", "fonts", "neuropol.otf")
+        
         if not self.available_weapons:
-            font_ui = pygame.font.Font("assets/fonts/neuropol.otf", 24)
+            font_ui = Font(font_path, 24)
             no_weapons_surf = font_ui.render("All weapons purchased!", True, GREEN)
             screen.blit(no_weapons_surf, (shop_x + 20, shop_y + 80))
             return
@@ -181,29 +190,29 @@ class WeaponShopUI:
         stats = self.weapon_shop.get_weapon_stats(weapon_mode)
         
         # Pulsing glow for selected weapon panel
-        pulse_alpha = int(128 + 127 * math.sin(pygame.time.get_ticks() * 0.005))
-        glow_surface = pygame.Surface((shop_width - 40, 200), pygame.SRCALPHA)
-        pygame.draw.rect(glow_surface, (255, 215, 0, pulse_alpha), glow_surface.get_rect(), 4, border_radius=10)
+        pulse_alpha = int(128 + 127 * math.sin(get_ticks() * 0.005))
+        glow_surface = Surface((shop_width - 40, 200), SRCALPHA)
+        draw_rect(glow_surface, (255, 215, 0, pulse_alpha), glow_surface.get_rect(), 4, border_radius=10)
         screen.blit(glow_surface, (shop_x + 20, shop_y + 100))
         
         # Arrow buttons for navigation
         arrow_color = CYAN
         arrow_size = 30
         # Left arrow
-        pygame.draw.polygon(screen, arrow_color, [
+        polygon(screen, arrow_color, [
             (shop_x + 10, shop_y + 200),
             (shop_x + 10 + arrow_size, shop_y + 200 - arrow_size//2),
             (shop_x + 10 + arrow_size, shop_y + 200 + arrow_size//2)
         ])
         # Right arrow
-        pygame.draw.polygon(screen, arrow_color, [
+        polygon(screen, arrow_color, [
             (shop_x + shop_width - 10, shop_y + 200),
             (shop_x + shop_width - 10 - arrow_size, shop_y + 200 - arrow_size//2),
             (shop_x + shop_width - 10 - arrow_size, shop_y + 200 + arrow_size//2)
         ])
         
         # Page indicator
-        font_small = pygame.font.Font("assets/fonts/neuropol.otf", 18)
+        font_small = Font(font_path, 18)
         page_text = f"{self.selected_weapon + 1} / {len(self.available_weapons)}"
         page_surf = font_small.render(page_text, True, WHITE)
         screen.blit(page_surf, (shop_x + shop_width - 80, shop_y + 60))
@@ -212,15 +221,15 @@ class WeaponShopUI:
         icon = self.asset_manager.get_weapon_icon(weapon_mode)
         if icon:
             # Glow behind icon
-            glow = pygame.Surface((90, 90), pygame.SRCALPHA)
-            pygame.draw.circle(glow, (255, 255, 100, 80), (45, 45), 40)
+            glow = Surface((90, 90), SRCALPHA)
+            circle(glow, (255, 255, 100, 80), (45, 45), 40)
             screen.blit(glow, (shop_x + 45, shop_y + 95))
             
-            icon_scaled = pygame.transform.scale(icon, (80, 80))
+            icon_scaled = scale(icon, (80, 80))
             screen.blit(icon_scaled, (shop_x + 50, shop_y + 100))
         
         # Weapon name with drop shadow
-        font_title = pygame.font.Font("assets/fonts/neuropol.otf", 36)
+        font_title = Font(font_path, 36)
         name_color = GOLD if can_afford else RED
         # Shadow
         shadow = font_title.render(weapon_name, True, (0, 0, 0))
@@ -230,7 +239,7 @@ class WeaponShopUI:
         screen.blit(name_surf, (shop_x + 150, shop_y + 110))
         
         # Price with drop shadow
-        font_sub = pygame.font.Font("assets/fonts/neuropol.otf", 24)
+        font_sub = Font(font_path, 24)
         price_color = GREEN if can_afford else RED
         price_text = f"Cost: {price} cores"
         # Shadow
@@ -241,7 +250,7 @@ class WeaponShopUI:
         screen.blit(price_surf, (shop_x + 150, shop_y + 150))
         
         # Stats with drop shadows
-        font_stats = pygame.font.Font("assets/fonts/neuropol.otf", 20)
+        font_stats = Font(font_path, 20)
         stats_y = shop_y + 220
         
         # Stats title
@@ -276,16 +285,17 @@ class WeaponShopUI:
         conf_y = shop_y + (shop_height - conf_height) // 2
         
         # Fade-in effect
-        elapsed = pygame.time.get_ticks() % 500
+        elapsed = get_ticks() % 500
         fade_alpha = min(255, int((elapsed / 500) * 255))
         
-        conf_surface = pygame.Surface((conf_width, conf_height), pygame.SRCALPHA)
+        conf_surface = Surface((conf_width, conf_height), SRCALPHA)
         conf_surface.fill((50, 50, 80, 250))
         conf_surface.set_alpha(fade_alpha)
         screen.blit(conf_surface, (conf_x, conf_y))
-        pygame.draw.rect(screen, YELLOW, (conf_x, conf_y, conf_width, conf_height), 2)
+        draw_rect(screen, YELLOW, (conf_x, conf_y, conf_width, conf_height), 2)
         
-        font_ui = pygame.font.Font("assets/fonts/neuropol.otf", 20)
+        font_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "assets", "fonts", "neuropol.otf")
+        font_ui = Font(font_path, 20)
         
         # Confirmation text with drop shadows
         lines = [
@@ -309,7 +319,8 @@ class WeaponShopUI:
     
     def _draw_instructions(self, screen, shop_x, shop_y, shop_width, shop_height):
         """Draw control instructions"""
-        font_small = pygame.font.Font("assets/fonts/neuropol.otf", 18)
+        font_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "assets", "fonts", "neuropol.otf")
+        font_small = Font(font_path, 18)
         instructions = [
             "LEFT/RIGHT: Navigate",
             "ENTER: Purchase",
@@ -323,8 +334,9 @@ class WeaponShopUI:
     
     def _draw_inventory_panel(self, screen, inv_x, inv_y, inv_width, inv_height):
         """Draw drone and weapon inventory panel with enhanced visuals"""
-        font_title = pygame.font.Font("assets/fonts/neuropol.otf", 24)
-        font_ui = pygame.font.Font("assets/fonts/neuropol.otf", 18)
+        font_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "assets", "fonts", "neuropol.otf")
+        font_title = Font(font_path, 24)
+        font_ui = Font(font_path, 18)
         
         # Panel title with drop shadow
         title_shadow = font_title.render("INVENTORY", True, (0, 0, 0))
@@ -336,11 +348,11 @@ class WeaponShopUI:
         cores_icon = self.asset_manager.get_image('images/collectibles/orichalc_fragment_container.png')
         if cores_icon:
             # Glow behind icon
-            glow = pygame.Surface((30, 30), pygame.SRCALPHA)
-            pygame.draw.circle(glow, (255, 255, 100, 60), (15, 15), 12)
+            glow = Surface((30, 30), SRCALPHA)
+            circle(glow, (255, 255, 100, 60), (15, 15), 12)
             screen.blit(glow, (inv_x + inv_width - 85, inv_y + 7))
             
-            icon_scaled = pygame.transform.scale(cores_icon, (20, 20))
+            icon_scaled = scale(cores_icon, (20, 20))
             screen.blit(icon_scaled, (inv_x + inv_width - 80, inv_y + 12))
         
         # Cores text with shadow - get current cores from drone system
@@ -371,11 +383,11 @@ class WeaponShopUI:
             drone_image = self.asset_manager.get_image(drone_image_key)
             if drone_image:
                 # Glow behind drone image
-                glow = pygame.Surface((70, 70), pygame.SRCALPHA)
-                pygame.draw.circle(glow, (100, 150, 255, 60), (35, 35), 30)
+                glow = Surface((70, 70), SRCALPHA)
+                circle(glow, (100, 150, 255, 60), (35, 35), 30)
                 screen.blit(glow, (inv_x + 5, inv_y + 95))
                 
-                drone_scaled = pygame.transform.scale(drone_image, (60, 60))
+                drone_scaled = scale(drone_image, (60, 60))
                 screen.blit(drone_scaled, (inv_x + 10, inv_y + 100))
         
         # Owned weapons section with shadows
@@ -395,11 +407,11 @@ class WeaponShopUI:
                 weapon_icon = self.asset_manager.get_weapon_icon(weapon_mode)
                 if weapon_icon:
                     # Small glow behind weapon icon
-                    glow = pygame.Surface((30, 30), pygame.SRCALPHA)
-                    pygame.draw.circle(glow, (100, 255, 100, 40), (15, 15), 12)
+                    glow = Surface((30, 30), SRCALPHA)
+                    circle(glow, (100, 255, 100, 40), (15, 15), 12)
                     screen.blit(glow, (inv_x + 10, inv_y + y_offset - 7))
                     
-                    icon_scaled = pygame.transform.scale(weapon_icon, (24, 24))
+                    icon_scaled = scale(weapon_icon, (24, 24))
                     screen.blit(icon_scaled, (inv_x + 15, inv_y + y_offset - 2))
                 
                 # Draw weapon name with shadow
@@ -422,9 +434,9 @@ class WeaponShopUI:
         
         # Create rotated versions with SRCALPHA
         top_left = self.corner_overlay
-        top_right = pygame.transform.flip(self.corner_overlay, True, False)
-        bottom_left = pygame.transform.flip(self.corner_overlay, False, True)
-        bottom_right = pygame.transform.rotate(self.corner_overlay, 180)
+        top_right = flip(self.corner_overlay, True, False)
+        bottom_left = flip(self.corner_overlay, False, True)
+        bottom_right = rotate(self.corner_overlay, 180)
         
         # Draw corners
         screen.blit(top_left, (x, y))

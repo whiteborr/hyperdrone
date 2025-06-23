@@ -1,6 +1,10 @@
-import pygame
-import math
-import random
+from pygame import Surface, SRCALPHA, BLEND_RGBA_ADD
+from pygame.sprite import Group
+from pygame.time import get_ticks
+from pygame.transform import rotate, smoothscale
+from pygame.mask import from_surface
+from math import radians, cos, sin
+from random import randint, uniform
 import logging
 
 from settings_manager import get_setting
@@ -21,14 +25,14 @@ class PowerUpManager:
         self.speed_boost_duration = 0
         self.speed_boost_multiplier = 1.0
         self.propulsion_active = False
-        self.propulsion_particles = pygame.sprite.Group()
+        self.propulsion_particles = Group()
         self.last_particle_time = 0
         self.original_player_speed = self.player.speed
     
     def activate_shield(self, duration_ms):
         self.shield_active = True
         self.shield_duration = duration_ms
-        self.shield_end_time = pygame.time.get_ticks() + duration_ms
+        self.shield_end_time = get_ticks() + duration_ms
     
     def arm_speed_boost(self, duration_ms, multiplier=1.5):
         self.speed_boost_armed = True
@@ -38,7 +42,7 @@ class PowerUpManager:
     def activate_speed_boost(self):
         if self.speed_boost_armed:
             self.speed_boost_active = True
-            self.speed_boost_end_time = pygame.time.get_ticks() + self.speed_boost_duration
+            self.speed_boost_end_time = get_ticks() + self.speed_boost_duration
             self.player.speed = self.original_player_speed * self.speed_boost_multiplier
             self.activate_shield(self.speed_boost_duration)
             self.propulsion_active = True
@@ -70,19 +74,19 @@ class PowerUpManager:
         self.propulsion_particles.update()
 
     def _create_propulsion_particles(self, is_boosting):
-        angle_rad = math.radians(self.player.angle + 180)
+        angle_rad = radians(self.player.angle + 180)
         base_offset = self.player.rect.width / 2.5
         
-        spawn_x = self.player.x + math.cos(angle_rad) * base_offset
-        spawn_y = self.player.y + math.sin(angle_rad) * base_offset
+        spawn_x = self.player.x + cos(angle_rad) * base_offset
+        spawn_y = self.player.y + sin(angle_rad) * base_offset
 
-        num_particles = random.randint(2, 3) if is_boosting else 1
+        num_particles = randint(2, 3) if is_boosting else 1
         
         for _ in range(num_particles):
             if is_boosting:
-                speed = random.uniform(get_setting("particles", "THRUST_PARTICLE_SPEED_MIN_BLAST", 2.0), 
+                speed = uniform(get_setting("particles", "THRUST_PARTICLE_SPEED_MIN_BLAST", 2.0), 
                                       get_setting("particles", "THRUST_PARTICLE_SPEED_MAX_BLAST", 4.0))
-                size = random.uniform(get_setting("particles", "THRUST_PARTICLE_START_SIZE_BLAST_MIN", 2.0), 
+                size = uniform(get_setting("particles", "THRUST_PARTICLE_START_SIZE_BLAST_MIN", 2.0), 
                                      get_setting("particles", "THRUST_PARTICLE_START_SIZE_BLAST_MAX", 4.0))
                 lifetime = get_setting("particles", "THRUST_PARTICLE_LIFETIME_BLAST", 20)
             else:
@@ -90,8 +94,8 @@ class PowerUpManager:
                 max_speed = get_setting("particles", "THRUST_PARTICLE_SPEED_MAX_BLAST", 4.0) * 0.5
                 min_size = get_setting("particles", "THRUST_PARTICLE_START_SIZE_BLAST_MIN", 2.0) * 0.4
                 max_size = get_setting("particles", "THRUST_PARTICLE_START_SIZE_BLAST_MAX", 4.0) * 0.6
-                speed = random.uniform(min_speed, max_speed)
-                size = random.uniform(min_size, max_size)
+                speed = uniform(min_speed, max_speed)
+                size = uniform(min_size, max_size)
                 lifetime = int(get_setting("particles", "THRUST_PARTICLE_LIFETIME_BLAST", 20) * 0.7)
 
             particle = Particle(
@@ -115,14 +119,14 @@ class PowerUpManager:
         if self.shield_active and self.player.rect and hasattr(self.player, 'original_image'):
             
             # 1. Get the current rotated image of the player drone to match its orientation.
-            rotated_image = pygame.transform.rotate(self.player.original_image, -self.player.angle)
+            rotated_image = rotate(self.player.original_image, -self.player.angle)
             
             # 2. Create a mask from the drone's image to get its exact pixel-perfect shape.
-            mask = pygame.mask.from_surface(rotated_image)
+            mask = from_surface(rotated_image)
             
             # 3. Create a new surface from the mask, which will be our glow color.
             # We can also add a pulsing alpha to make it feel more alive.
-            pulse_alpha = 100 + (math.sin(pygame.time.get_ticks() * 0.008) + 1) * 75 # Varies between 100-250
+            pulse_alpha = 100 + (sin(get_ticks() * 0.008) + 1) * 75 # Varies between 100-250
             glow_color = (150, 220, 255, pulse_alpha) # A nice cyan-white shield color
             
             # This creates a colored silhouette of the drone's shape.
@@ -131,7 +135,7 @@ class PowerUpManager:
             # 4. To create the "glow" effect, we will blit this silhouette multiple times with slight offsets.
             # This is a classic and efficient way to simulate a bloom or glow effect in Pygame.
             glow_surface_size = (glow_silhouette.get_width() + 8, glow_silhouette.get_height() + 8)
-            glow_surface = pygame.Surface(glow_surface_size, pygame.SRCALPHA)
+            glow_surface = Surface(glow_surface_size, SRCALPHA)
             
             # Blit the silhouette at four corners to create the outline.
             glow_surface.blit(glow_silhouette, (0, 4))
@@ -146,11 +150,11 @@ class PowerUpManager:
             if camera:
                 screen_rect = camera.apply_to_rect(glow_rect)
                 if screen_rect.width > 0 and screen_rect.height > 0:
-                    scaled_glow_surface = pygame.transform.smoothscale(glow_surface, screen_rect.size)
+                    scaled_glow_surface = smoothscale(glow_surface, screen_rect.size)
                     # Using BLEND_RGBA_ADD makes the glow brighter and more "energetic".
-                    surface.blit(scaled_glow_surface, screen_rect, special_flags=pygame.BLEND_RGBA_ADD)
+                    surface.blit(scaled_glow_surface, screen_rect, special_flags=BLEND_RGBA_ADD)
             else:
-                surface.blit(glow_surface, glow_rect, special_flags=pygame.BLEND_RGBA_ADD)
+                surface.blit(glow_surface, glow_rect, special_flags=BLEND_RGBA_ADD)
 
     def handle_damage(self, amount):
         return self.shield_active

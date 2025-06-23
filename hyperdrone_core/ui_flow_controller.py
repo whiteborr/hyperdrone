@@ -1,6 +1,8 @@
-# hyperdrone_core/ui_flow_controller.pyAdd commentMore actions
-import pygame
-import random
+# hyperdrone_core/ui_flow_controller.py
+from pygame.time import get_ticks
+from pygame.key import name as key_name
+from pygame import K_UP, K_DOWN, K_LEFT, K_RIGHT, K_RETURN, K_SPACE, K_ESCAPE, K_BACKSPACE, K_w, K_s, K_a, K_d, K_r, K_l, K_m, K_q
+from random import randint, uniform
 import logging
 
 from settings_manager import get_setting
@@ -75,6 +77,7 @@ class UIFlowController:
         state_handlers = {
             GAME_STATE_MAIN_MENU: self._handle_main_menu_input,
             GAME_STATE_DRONE_SELECT: self._handle_drone_select_input,
+            "drone_select": self._handle_drone_select_input,  # Add support for string-based state name
             GAME_STATE_SETTINGS: self._handle_settings_input,
             "SettingsState": self._handle_settings_input,  # Add support for string-based state name
             GAME_STATE_LEADERBOARD: self._handle_leaderboard_input,
@@ -109,7 +112,7 @@ class UIFlowController:
                     star[1] += star[2] * (delta_time_ms / 1000.0)
                     # Reset star if it goes off-screen
                     if star[1] > height:
-                        star[0] = random.randint(0, width)
+                        star[0] = randint(0, width)
                         star[1] = 0
 
     def _create_stars(self, num_stars):
@@ -118,10 +121,10 @@ class UIFlowController:
         width = get_setting("display", "WIDTH", 1920)
         height = get_setting("display", "HEIGHT", 1080)
         for _ in range(num_stars):
-            x = random.randint(0, width)
-            y = random.randint(0, height)
-            speed = random.uniform(10, 50)
-            size = random.uniform(0.5, 2)
+            x = randint(0, width)
+            y = randint(0, height)
+            speed = uniform(10, 50)
+            size = uniform(0.5, 2)
             stars.append([x, y, speed, size])
         return stars
 
@@ -169,7 +172,7 @@ class UIFlowController:
     def initialize_game_intro(self, intro_data):
         self.intro_screens_data = intro_data
         self.current_intro_screen_index = 0
-        self.intro_screen_start_time = pygame.time.get_ticks()
+        self.intro_screen_start_time = get_ticks()
         self.intro_sequence_finished = False
 
     def reset_ui_flow_states(self):
@@ -185,15 +188,15 @@ class UIFlowController:
         logger.info("UIFlowController: UI states reset.")
         
     def _handle_main_menu_input(self, key):
-        if key == pygame.K_UP or key == pygame.K_w:
+        if key == K_UP or key == K_w:
             self.selected_menu_option = (self.selected_menu_option - 1) % len(self.menu_options)
             self.game_controller.play_sound('ui_select')
             return True
-        elif key == pygame.K_DOWN or key == pygame.K_s:
+        elif key == K_DOWN or key == K_s:
             self.selected_menu_option = (self.selected_menu_option + 1) % len(self.menu_options)
             self.game_controller.play_sound('ui_select')
             return True
-        elif key == pygame.K_RETURN or key == pygame.K_SPACE:
+        elif key == K_RETURN or key == K_SPACE:
             selected_action = self.menu_options[self.selected_menu_option]
             logger.info(f"Main menu action selected: {selected_action}")
             self.game_controller.play_sound('ui_confirm')
@@ -212,15 +215,15 @@ class UIFlowController:
         if not self.drone_select_options: return False
         num_options = len(self.drone_select_options)
         
-        if key == pygame.K_LEFT or key == pygame.K_a:
+        if key == K_LEFT or key == K_a:
             self.selected_drone_preview_index = (self.selected_drone_preview_index - 1 + num_options) % num_options
             self.game_controller.play_sound('ui_select')
             return True
-        elif key == pygame.K_RIGHT or key == pygame.K_d:
+        elif key == K_RIGHT or key == K_d:
             self.selected_drone_preview_index = (self.selected_drone_preview_index + 1) % num_options
             self.game_controller.play_sound('ui_select')
             return True
-        elif key == pygame.K_RETURN or key == pygame.K_SPACE:
+        elif key == K_RETURN or key == K_SPACE:
             selected_id = self.drone_select_options[self.selected_drone_preview_index]
             if self.drone_system.is_drone_unlocked(selected_id):
                 self.drone_system.set_selected_drone(selected_id)
@@ -241,15 +244,15 @@ class UIFlowController:
         selected_item = self.settings_items_data[self.selected_setting_index]
         item_key = selected_item["key"]
         
-        if key == pygame.K_UP or key == pygame.K_w:
+        if key == K_UP or key == K_w:
             self.selected_setting_index = (self.selected_setting_index - 1 + len(self.settings_items_data)) % len(self.settings_items_data)
             self.game_controller.play_sound('ui_select', 0.5)
             return True
-        elif key == pygame.K_DOWN or key == pygame.K_s:
+        elif key == K_DOWN or key == K_s:
             self.selected_setting_index = (self.selected_setting_index + 1) % len(self.settings_items_data)
             self.game_controller.play_sound('ui_select', 0.5)
             return True
-        elif key == pygame.K_RETURN:
+        elif key == K_RETURN:
             if selected_item["type"] == "action":
                 if item_key == "RESET_SETTINGS_ACTION":
                     # Reset settings to defaults
@@ -279,8 +282,8 @@ class UIFlowController:
                 return True
         
         direction = 0
-        if key == pygame.K_LEFT or key == pygame.K_a: direction = -1
-        elif key == pygame.K_RIGHT or key == pygame.K_d: direction = 1
+        if key == K_LEFT or key == K_a: direction = -1
+        elif key == K_RIGHT or key == K_d: direction = 1
         
         if direction != 0:
             category = selected_item.get("category", "gameplay")
@@ -406,7 +409,7 @@ class UIFlowController:
             self.scene_manager.set_state("StoryMapState")
 
     def _handle_leaderboard_input(self, key):
-        if key == pygame.K_RETURN or key == pygame.K_q or key == pygame.K_ESCAPE:
+        if key == K_RETURN or key == K_q or key == K_ESCAPE:
             leaderboard_index = self.menu_options.index("Leaderboard") if "Leaderboard" in self.menu_options else 0
             self.scene_manager.set_state(GAME_STATE_MAIN_MENU, selected_option=leaderboard_index)
             return True
@@ -444,17 +447,17 @@ class UIFlowController:
         return True
 
     def _handle_enter_name_input(self, key):
-        if key == pygame.K_RETURN:
+        if key == K_RETURN:
             if len(self.player_name_input_cache) > 0:
                 leaderboard.add_score(self.player_name_input_cache, self.game_controller.score, self.game_controller.level)
                 self.scene_manager.set_state(GAME_STATE_LEADERBOARD)
             return True
-        elif key == pygame.K_BACKSPACE:
+        elif key == K_BACKSPACE:
             self.player_name_input_cache = self.player_name_input_cache[:-1]
             return True
         elif len(self.player_name_input_cache) < 6:
             try:
-                char = pygame.key.name(key).upper()
+                char = key_name(key).upper()
                 if len(char) == 1 and char.isalpha():
                     self.player_name_input_cache += char
                     return True
@@ -467,27 +470,27 @@ class UIFlowController:
         if score_is_high and not settings_modified:
             self.scene_manager.set_state(GAME_STATE_ENTER_NAME)
         else:
-            if key == pygame.K_r: self.scene_manager.set_state(GAME_STATE_PLAYING, action="restart")
-            elif key == pygame.K_l: self.scene_manager.set_state(GAME_STATE_LEADERBOARD)
-            elif key == pygame.K_m: self.scene_manager.set_state(GAME_STATE_MAIN_MENU)
-            elif key == pygame.K_q: self.game_controller.quit_game()
+            if key == K_r: self.scene_manager.set_state(GAME_STATE_PLAYING, action="restart")
+            elif key == K_l: self.scene_manager.set_state(GAME_STATE_LEADERBOARD)
+            elif key == K_m: self.scene_manager.set_state(GAME_STATE_MAIN_MENU)
+            elif key == K_q: self.game_controller.quit_game()
         return True
 
     def _handle_vault_result_input(self, key):
-        if key == pygame.K_RETURN or key == pygame.K_m or key == pygame.K_SPACE:
+        if key == K_RETURN or key == K_m or key == K_SPACE:
             self.scene_manager.set_state(GAME_STATE_MAIN_MENU)
             return True
         return False
         
     def _handle_game_intro_input(self, key):
-        if key == pygame.K_SPACE or key == pygame.K_RETURN:
+        if key == K_SPACE or key == K_RETURN:
             if self.current_intro_screen_index >= len(self.intro_screens_data) - 1:
                 self.intro_sequence_finished = True
             else:
                 self.current_intro_screen_index += 1
-                self.intro_screen_start_time = pygame.time.get_ticks()
+                self.intro_screen_start_time = get_ticks()
             return True
-        elif key == pygame.K_ESCAPE:
+        elif key == K_ESCAPE:
             settings_index = self.menu_options.index("Settings") if "Settings" in self.menu_options else 0
             self.scene_manager.set_state(GAME_STATE_MAIN_MENU, selected_option=settings_index)
             return True
@@ -499,7 +502,7 @@ class UIFlowController:
             self.intro_sequence_finished = True
         else:
             self.current_intro_screen_index += 1
-            self.intro_screen_start_time = pygame.time.get_ticks()
+            self.intro_screen_start_time = get_ticks()
             
     def skip_intro(self):
         """Skip the intro sequence."""

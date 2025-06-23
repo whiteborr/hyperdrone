@@ -1,7 +1,7 @@
-# hyperdrone_core/item_manager.pyAdd commentMore actions
-import random
-import pygame
-import math
+# hyperdrone_core/item_manager.py
+from random import random, choice, shuffle
+from pygame.time import get_ticks
+from math import hypot
 import logging
 
 from entities.collectibles import (
@@ -49,7 +49,7 @@ class ItemManager:
         if current_time_ms - self.last_powerup_spawn_time > self.powerup_spawn_interval:
             self.last_powerup_spawn_time = current_time_ms
 
-            if random.random() < self.powerup_spawn_chance:
+            if random() < self.powerup_spawn_chance:
                 self._spawn_random_powerup(maze)
 
         # Ensure all rings are spawned at the beginning
@@ -70,7 +70,7 @@ class ItemManager:
         for pos in walkable_tiles:
             too_close = False
             for ring in self.collectible_rings_group:
-                if math.hypot(pos[0] - ring.rect.centerx, pos[1] - ring.rect.centery) < tile_size * 3:
+                if hypot(pos[0] - ring.rect.centerx, pos[1] - ring.rect.centery) < tile_size * 3:
                     too_close = True
                     break
 
@@ -80,7 +80,7 @@ class ItemManager:
         if not valid_positions:
             return False
 
-        spawn_pos = random.choice(valid_positions)
+        spawn_pos = choice(valid_positions)
 
         new_ring = CollectibleRing(spawn_pos[0], spawn_pos[1])
         self.collectible_rings_group.add(new_ring)
@@ -106,15 +106,15 @@ class ItemManager:
         for pos in walkable_tiles:
             too_close = False
             for powerup in self.power_ups_group:
-                if math.hypot(pos[0] - powerup.rect.centerx, pos[1] - powerup.rect.centery) < tile_size * 4:
+                if hypot(pos[0] - powerup.rect.centerx, pos[1] - powerup.rect.centery) < tile_size * 4:
                     too_close = True
                     break
             if not too_close: valid_positions.append(pos)
 
         if not valid_positions: return False
 
-        spawn_pos = random.choice(valid_positions)
-        powerup_type = random.choice(powerup_types)
+        spawn_pos = choice(valid_positions)
+        powerup_type = choice(powerup_types)
 
         if powerup_type == "weapon": new_powerup = WeaponUpgradeItem(spawn_pos[0], spawn_pos[1], asset_manager=self.asset_manager)
         elif powerup_type == "shield": new_powerup = ShieldItem(spawn_pos[0], spawn_pos[1], asset_manager=self.asset_manager)
@@ -135,7 +135,7 @@ class ItemManager:
             logger.warning("Cannot spawn corrupted logs: no walkable tiles found")
             return
 
-        random.shuffle(walkable_tiles)
+        shuffle(walkable_tiles)
 
         for log_id in log_ids_to_spawn:
             if not walkable_tiles:
@@ -157,7 +157,7 @@ class ItemManager:
     def reset_for_level(self):
         """Reset item manager state for a new level"""
         self.spawned_rings_count = 0
-        self.last_powerup_spawn_time = pygame.time.get_ticks()
+        self.last_powerup_spawn_time = get_ticks()
 
         # Clear all collectible groups
         self.clear_all_items()
@@ -235,7 +235,7 @@ class ItemManager:
             # Check against other important items to avoid overlap
             for item_group in [self.collectible_rings_group, self.power_ups_group, self.core_fragments_group]:
                 for item in item_group:
-                    if math.hypot(pos[0] - item.rect.centerx, pos[1] - item.rect.centery) < tile_size * 3:
+                    if hypot(pos[0] - item.rect.centerx, pos[1] - item.rect.centery) < tile_size * 3:
                         too_close = True
                         break
                 if too_close:
@@ -247,7 +247,7 @@ class ItemManager:
             logger.warning("Cannot spawn core fragment: no valid positions found")
             return False
             
-        spawn_pos = random.choice(valid_positions)
+        spawn_pos = choice(valid_positions)
 
         # 4. Spawn the CoreFragmentItem using the correct ID and config details
         new_fragment = CoreFragmentItem(
@@ -272,7 +272,7 @@ class ItemManager:
             logger.warning("Cannot spawn rings: no walkable tiles found")
             return
 
-        random.shuffle(walkable_tiles)
+        shuffle(walkable_tiles)
 
         rings_to_spawn = self.max_rings_per_level - self.spawned_rings_count
         logger.info(f"Attempting to spawn {rings_to_spawn} rings for level {self.game_controller.level_manager.level}")
@@ -288,7 +288,7 @@ class ItemManager:
         for pos in walkable_tiles:
             too_close = False
             for existing_pos in positions:
-                if math.hypot(pos[0] - existing_pos[0], pos[1] - existing_pos[1]) < min_spacing:
+                if hypot(pos[0] - existing_pos[0], pos[1] - existing_pos[1]) < min_spacing:
                     too_close = True
                     break
 
@@ -326,7 +326,7 @@ class ItemManager:
             # Check against other items to avoid overlap
             for item_group in [self.collectible_rings_group, self.power_ups_group, self.core_fragments_group]:
                 for item in item_group:
-                    if math.hypot(pos[0] - item.rect.centerx, pos[1] - item.rect.centery) < tile_size * 4:
+                    if hypot(pos[0] - item.rect.centerx, pos[1] - item.rect.centery) < tile_size * 4:
                         too_close = True
                         break
                 if too_close:
@@ -338,7 +338,7 @@ class ItemManager:
             logger.warning("Cannot spawn weapons upgrade shop: no valid positions found")
             return False
             
-        spawn_pos = random.choice(valid_positions)
+        spawn_pos = choice(valid_positions)
         shop_item = WeaponsUpgradeShopItem(spawn_pos[0], spawn_pos[1], asset_manager=self.asset_manager)
         self.power_ups_group.add(shop_item)
         logger.info(f"Spawned weapons upgrade shop at {spawn_pos}")

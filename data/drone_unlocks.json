@@ -5,8 +5,8 @@
     "selected_drone_id": "DRONE",
     "cores": 0,
     "unlocked_lore_ids": [
-        "architect_legacy_intro",
-        "drone_DRONE"
+        "drone_DRONE",
+        "architect_legacy_intro"
     ],
     "collected_core_fragments": [],
     "architect_vault_completed": false,

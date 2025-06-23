@@ -8,7 +8,7 @@
   },
   "audio": {
     "VOLUME_FX": 1,
-    "VOLUME_GAME": 10
+    "VOLUME_GAME": 3
   },
   "gameplay": {
     "PLAYER_MAX_HEALTH": 100,

@@ -1,5 +1,5 @@
-# hyperdrone_core/codex_state.pyAdd commentMore actions
-import pygame
+# hyperdrone_core/codex_state.py
+from pygame import KEYDOWN, K_ESCAPE
 from .state import State
 from settings_manager import get_setting
 
@@ -9,8 +9,8 @@ class CodexState(State):
     
     def handle_events(self, events):
         for event in events:
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_ESCAPE:
+            if event.type == KEYDOWN:
+                if event.key == K_ESCAPE:
                     codex_index = 3  # "Codex" is at index 3 in menu_options
                     self.game.state_manager.set_state("MainMenuState", selected_option=codex_index)
                 else:

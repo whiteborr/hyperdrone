@@ -1,7 +1,6 @@
-# hyperdrone_core/game_over_state.pyAdd commentMore actions
-import pygame
+# hyperdrone_core/game_over_state.py
+from pygame import KEYDOWN, K_UP, K_DOWN, K_RETURN, K_SPACE
 from .state import State
-from settings_manager import get_setting
 
 class GameOverState(State):
     def enter(self, previous_state=None, **kwargs):
@@ -10,18 +9,18 @@ class GameOverState(State):
         self.options = ["Continue", "Main Menu"]
         
         # Store the previous state for potential continuation
-        self.previous_state = previous_state
+        self.previous_state = kwargs.get('prev_state', previous_state)
     
     def handle_events(self, events):
         for event in events:
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_UP:
+            if event.type == KEYDOWN:
+                if event.key == K_UP:
                     self.selected_option = (self.selected_option - 1) % len(self.options)
                     self.game.play_sound('menu_move')
-                elif event.key == pygame.K_DOWN:
+                elif event.key == K_DOWN:
                     self.selected_option = (self.selected_option + 1) % len(self.options)
                     self.game.play_sound('menu_move')
-                elif event.key == pygame.K_RETURN or event.key == pygame.K_SPACE:
+                elif event.key == K_RETURN or event.key == K_SPACE:
                     self.game.play_sound('menu_select')
                     if self.selected_option == 0:  # Continue
                         # Always reset lives to 3 when continuing

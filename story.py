@@ -90,17 +90,29 @@ class StoryManager:
         if start_chapter_index >= 1: # Starting at Ch 2 or later, grant Earth
             self.drone_system.collect_core_fragment("cf_earth")
             self.drone_system.unlock_drone("VANTIS")
+            # Grant basic weapons that would have been purchased in Chapter 1
+            self.drone_system.add_owned_weapon(1)  # Tri-shot
+            self.drone_system.add_owned_weapon(2)  # Rapid single
             
         if start_chapter_index >= 2: # Starting at Ch 3 or later, grant Fire
             self.drone_system.collect_core_fragment("cf_fire")
             self.drone_system.add_defeated_boss("MAZE_GUARDIAN") # Also mark boss as defeated
             self.drone_system.unlock_drone("STRIX")
+            # Grant additional weapons
+            self.drone_system.add_owned_weapon(3)  # Rapid tri
+            self.drone_system.add_owned_weapon(4)  # Big shot
             
         if start_chapter_index >= 3: # Starting at Ch 4 or later, grant Air
             self.drone_system.collect_core_fragment("cf_air")
+            # Grant more advanced weapons
+            self.drone_system.add_owned_weapon(5)  # Bounce
+            self.drone_system.add_owned_weapon(6)  # Pierce
             
         if start_chapter_index >= 4: # Starting at Ch 5 or later, grant Water
             self.drone_system.collect_core_fragment("cf_water")
+            # Grant final weapons
+            self.drone_system.add_owned_weapon(7)  # Heatseeker
+            self.drone_system.add_owned_weapon(8)  # Heatseeker plus bullets
 
     def start_story(self):
         """Begins the story by setting the current chapter based on settings."""
@@ -129,23 +141,26 @@ class StoryManager:
         return None
 
     def advance_chapter(self):
-        """Moves the story to the next chapter and triggers a state change if necessary."""
+        """Moves the story to the next chapter and returns to StoryMapState."""
         current_chap = self.get_current_chapter()
         if current_chap and current_chap.is_complete():
+            completed_chapter_title = current_chap.title
+            
             if self.current_chapter_index < len(self.chapters) - 1:
                 self.current_chapter_index += 1
                 next_chap = self.get_current_chapter()
                 logging.info(f"--- Advanced to Chapter: {next_chap.title} ---")
                 
-                # Use the stored state_manager reference to change the game state
-                if next_chap.next_state_id and self.state_manager:
-                    logging.info(f"Transitioning to game state: {next_chap.next_state_id}")
-                    self.state_manager.set_state(next_chap.next_state_id)
+                # Return to StoryMapState with completion info
+                if self.state_manager:
+                    self.state_manager.set_state("StoryMapState", 
+                                                chapter_completed=True, 
+                                                completed_chapter=completed_chapter_title)
             else:
                 self.current_chapter_index = -1
                 logging.info("--- Congratulations! You have completed the story! ---")
                 if self.state_manager:
-                    self.state_manager.set_state("MainMenuState") # Or a "CreditsState"
+                    self.state_manager.set_state("MainMenuState")
         elif current_chap:
             logging.warning("Cannot advance: Current chapter is not yet complete.")
         else:
@@ -185,3 +200,11 @@ class StoryManager:
             # Note: The 'collect_all' and 'kill_all' objectives for Chapter 1
             # are handled directly in the PlayingState's update loop for now.
             # This event handler is for specific, event-driven objectives.
+    
+    def check_and_advance_chapter(self):
+        """Check if current chapter is complete and advance if so."""
+        current_chapter = self.get_current_chapter()
+        if current_chapter and current_chapter.is_complete():
+            self.advance_chapter()
+            return True
+        return False

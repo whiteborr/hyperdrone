@@ -1,5 +1,7 @@
-# hyperdrone_core/playing_state.pyAdd commentMore actions
-import pygame
+# hyperdrone_core/playing_state.py
+from pygame.sprite import spritecollide
+from pygame.time import get_ticks
+from pygame import KEYDOWN, KEYUP, K_p, K_TAB
 from .state import State
 from settings_manager import get_setting
 
@@ -18,7 +20,7 @@ class PlayingState(State):
             
         # Check bullet collisions with enemies
         for bullet in self.game.player.bullets_group:
-            for enemy in pygame.sprite.spritecollide(bullet, enemy_sprites, False):
+            for enemy in spritecollide(bullet, enemy_sprites, False):
                 if enemy.alive and bullet.alive:
                     # Apply damage to enemy
                     enemy.take_damage(bullet.damage)
@@ -36,7 +38,7 @@ class PlayingState(State):
         # Check missile collisions with enemies
         if hasattr(self.game.player, 'missiles_group'):
             for missile in self.game.player.missiles_group:
-                for enemy in pygame.sprite.spritecollide(missile, enemy_sprites, False):
+                for enemy in spritecollide(missile, enemy_sprites, False):
                     if enemy.alive and missile.alive:
                         enemy.take_damage(missile.damage)
                         # Create larger explosion for missile hits
@@ -110,7 +112,7 @@ class PlayingState(State):
         self.game.camera = None
         
         # Start level timer
-        self.game.level_timer_start_ticks = pygame.time.get_ticks()
+        self.game.level_timer_start_ticks = get_ticks()
         self.game.level_time_remaining_ms = get_setting("gameplay", "LEVEL_TIMER_DURATION", 180000)
         
         # Reset item manager and spawn collectibles
@@ -127,20 +129,20 @@ class PlayingState(State):
     def handle_events(self, events):
         """Handle input events specific to playing state"""
         for event in events:
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_p:
+            if event.type == KEYDOWN:
+                if event.key == K_p:
                     self.game.toggle_pause()
-                elif event.key == pygame.K_TAB:
+                elif event.key == K_TAB:
                     if self.game.player:
                         self.game.player.cycle_weapon_state()
                 else:
                     self.game.player_actions.handle_key_down(event)
-            elif event.type == pygame.KEYUP:
+            elif event.type == KEYUP:
                 self.game.player_actions.handle_key_up(event)
     
     def update(self, delta_time):
         """Update game logic for playing state"""
-        current_time_ms = pygame.time.get_ticks()
+        current_time_ms = get_ticks()
         
         if not self.game.player:
             return

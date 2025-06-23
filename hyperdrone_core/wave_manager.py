@@ -1,6 +1,3 @@
-import pygame
-import random
-import math
 import logging
 
 from settings_manager import get_setting

@@ -1,5 +1,6 @@
-# hyperdrone_core/ring_puzzle_state.pyAdd commentMore actions
-import pygame
+# hyperdrone_core/ring_puzzle_state.py
+from pygame.font import Font
+from pygame import KEYDOWN, K_ESCAPE
 from .state import State
 from settings_manager import get_setting
 
@@ -11,8 +12,8 @@ class RingPuzzleState(State):
     
     def handle_events(self, events):
         for event in events:
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_ESCAPE:
+            if event.type == KEYDOWN:
+                if event.key == K_ESCAPE:
                     self.game.puzzle_controller.exit_ring_puzzle(puzzle_was_solved=False)
                 else:
                     self.game.puzzle_controller.handle_input(event, "ring_puzzle_active")
@@ -30,7 +31,7 @@ class RingPuzzleState(State):
             height = get_setting("display", "HEIGHT", 1080)
             
             surface.fill(dark_grey)
-            font = self.game.asset_manager.get_font("medium_text", 48) or pygame.font.Font(None, 48)
+            font = self.game.asset_manager.get_font("medium_text", 48) or Font(None, 48)
             fallback_surf = font.render("Loading Puzzle...", True, white)
             surface.blit(fallback_surf, fallback_surf.get_rect(
                 center=(width // 2, height // 2)))

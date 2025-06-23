@@ -1,8 +1,15 @@
-# hyperdrone_core/ring_puzzle_module.pyAdd commentMore actions
-import pygame
-import os
-import math
-import random
+# hyperdrone_core/ring_puzzle_module.py
+from pygame import Surface, SRCALPHA, KEYDOWN, QUIT, K_ESCAPE, K_r, K_1, K_2, K_3, K_4, K_5, K_6, K_7, K_8, K_9
+from pygame.draw import circle, line
+from pygame.font import Font, SysFont
+from pygame.transform import rotate
+from pygame.display import set_mode, set_caption, flip
+from pygame.time import Clock
+from pygame.event import get as event_get
+from pygame import init as pygame_init, quit as pygame_quit
+from os.path import splitext
+from math import isclose, radians, cos, sin
+from random import randint
 import traceback
 import logging
 
@@ -36,7 +43,7 @@ class Ring:
         self.screen_center = screen_center
 
         # Construct the asset key from the filename (e.g., "ring1.png" -> "ring_puzzle_ring1_img")
-        base_name = os.path.splitext(image_filename)[0] # "ring1"
+        base_name = splitext(image_filename)[0] # "ring1"
         asset_key = f"ring_puzzle_{base_name}_img"
 
         # Get the pre-loaded image from the asset manager
@@ -45,9 +52,9 @@ class Ring:
         # Fallback if the image wasn't loaded
         if self.original_image is None:
             logger.warning(f"Ring '{self.image_filename}': Image for key '{asset_key}' not found. Using fallback.")
-            self.original_image = pygame.Surface((100, 100), pygame.SRCALPHA)
-            pygame.draw.circle(self.original_image, (128, 128, 128), (50, 50), 45, 5)
-            font = pygame.font.SysFont(None, 20)
+            self.original_image = Surface((100, 100), SRCALPHA)
+            circle(self.original_image, (128, 128, 128), (50, 50), 45, 5)
+            font = SysFont(None, 20)
             text_surf = font.render("IMG ERR", True, WHITE)
             text_rect = text_surf.get_rect(center=(50,50))
             self.original_image.blit(text_surf, text_rect)
@@ -65,19 +72,19 @@ class Ring:
         self.current_angle %= 360
         # logger.debug(f"Ring {self.image_filename}: Rotated from {old_angle:.2f} to {self.current_angle:.2f} (step: {self.rotation_step:.2f})")
         
-        self.image = pygame.transform.rotate(self.original_image, -self.current_angle)
+        self.image = rotate(self.original_image, -self.current_angle)
         self.rect = self.image.get_rect(center=self.screen_center)
 
     def set_angle(self, angle):
         self.current_angle = angle % 360
         # logger.debug(f"Ring {self.image_filename}: Angle set to {self.current_angle:.2f}")
-        self.image = pygame.transform.rotate(self.original_image, -self.current_angle)
+        self.image = rotate(self.original_image, -self.current_angle)
         self.rect = self.image.get_rect(center=self.screen_center)
 
     def is_aligned(self):
         angle_mod_360 = self.current_angle % 360
-        return math.isclose(angle_mod_360, 0.0, abs_tol=1e-5) or \
-               math.isclose(angle_mod_360, 360.0, abs_tol=1e-5)
+        return isclose(angle_mod_360, 0.0, abs_tol=1e-5) or \
+               isclose(angle_mod_360, 360.0, abs_tol=1e-5)
 
     def draw(self, surface):
         surface.blit(self.image, self.rect)
@@ -119,13 +126,13 @@ class RingPuzzle:
         self.small_font = self.asset_manager.get_font("small_text", 24) # e.g. "small_text_24"
         
         # Fallback if fonts are not loaded
-        if not self.font: self.font = pygame.font.Font(None, 48)
-        if not self.small_font: self.small_font = pygame.font.Font(None, 24)
+        if not self.font: self.font = Font(None, 48)
+        if not self.small_font: self.small_font = Font(None, 24)
 
         self.max_ring_dim = 0 
         if self.rings and self.rings[-1].original_image:
             try: 
-                last_ring_rect = pygame.transform.rotate(self.rings[-1].original_image, 0).get_rect()
+                last_ring_rect = rotate(self.rings[-1].original_image, 0).get_rect()
                 self.max_ring_dim = max(last_ring_rect.width, last_ring_rect.height) * 1.1
             except AttributeError: 
                  logger.warning("Could not determine max_ring_dim from ring images, using default.")
@@ -135,8 +142,8 @@ class RingPuzzle:
 
         if self.max_ring_dim <=0: self.max_ring_dim = 300
         
-        self.glow_surface = pygame.Surface((int(self.max_ring_dim), int(self.max_ring_dim)), pygame.SRCALPHA)
-        pygame.draw.circle(self.glow_surface, HIGHLIGHT_GREEN, 
+        self.glow_surface = Surface((int(self.max_ring_dim), int(self.max_ring_dim)), SRCALPHA)
+        circle(self.glow_surface, HIGHLIGHT_GREEN, 
                            (int(self.max_ring_dim) // 2, int(self.max_ring_dim) // 2), 
                            int(self.max_ring_dim) // 2, int(self.max_ring_dim * 0.05)) 
         self.glow_rect = self.glow_surface.get_rect(center=self.screen_center)
@@ -155,7 +162,7 @@ class RingPuzzle:
         while attempts < max_attempts:
             for ring_idx, ring in enumerate(self.rings):
                 if ring.segments > 1:
-                    random_steps = random.randint(1, ring.segments - 1)
+                    random_steps = randint(1, ring.segments - 1)
                     ring.set_angle(random_steps * ring.rotation_step)
                 else:
                     ring.set_angle(0) 
@@ -182,11 +189,11 @@ class RingPuzzle:
     def handle_input(self, event):
         # (This method's logic remains the same)
         if not self.active: return
-        if event.type == pygame.KEYDOWN:
+        if event.type == KEYDOWN:
             key_to_ring_index = {
-                pygame.K_1: 0, pygame.K_2: 1, pygame.K_3: 2,
-                pygame.K_4: 3, pygame.K_5: 4, pygame.K_6: 5,
-                pygame.K_7: 6, pygame.K_8: 7, pygame.K_9: 8,
+                K_1: 0, K_2: 1, K_3: 2,
+                K_4: 3, K_5: 4, K_6: 5,
+                K_7: 6, K_8: 7, K_9: 8,
             }
             ring_index_to_rotate = key_to_ring_index.get(event.key)
             if ring_index_to_rotate is not None and ring_index_to_rotate < len(self.rings):
@@ -214,9 +221,9 @@ class RingPuzzle:
              outermost_ring_radius = self.rings[-1].original_image.get_height() / 2 
              marker_y_start = self.screen_center[1] - outermost_ring_radius - 10
              marker_y_end = self.screen_center[1] - outermost_ring_radius - 30
-             pygame.draw.line(surface, GREEN, (self.screen_center[0], marker_y_start), (self.screen_center[0], marker_y_end), 3)
+             line(surface, GREEN, (self.screen_center[0], marker_y_start), (self.screen_center[0], marker_y_end), 3)
         else: 
-            pygame.draw.line(surface, GREEN, (self.screen_center[0], self.screen_center[1] - 50), (self.screen_center[0], self.screen_center[1] - 70), 3)
+            line(surface, GREEN, (self.screen_center[0], self.screen_center[1] - 50), (self.screen_center[0], self.screen_center[1] - 70), 3)
 
         if self.solved_once: 
             if not self.active : 
@@ -241,11 +248,11 @@ class RingPuzzle:
             surface.blit(instr_surf, instr_rect)
 
 if __name__ == '__main__':
-    pygame.init()
+    pygame_init()
     screen_width, screen_height = 800, 600
-    screen = pygame.display.set_mode((screen_width, screen_height))
-    pygame.display.set_caption("Ring Puzzle Test")
-    clock = pygame.time.Clock()
+    screen = set_mode((screen_width, screen_height))
+    set_caption("Ring Puzzle Test")
+    clock = Clock()
 
     # --- MOCK ASSET MANAGER FOR TESTING ---
     class MockAssetManager:
@@ -260,7 +267,7 @@ if __name__ == '__main__':
             if cache_key in self.fonts:
                 return self.fonts[cache_key]
             try: # Fallback to system font for testing
-                font = pygame.font.Font(None, size)
+                font = Font(None, size)
                 self.fonts[cache_key] = font
                 return font
             except:
@@ -277,9 +284,9 @@ if __name__ == '__main__':
         dummy_ring_configs.append((filename, segments))
         
         ring_size = ring_base_size + i * 80 
-        img_surf = pygame.Surface((ring_size, ring_size), pygame.SRCALPHA)
-        pygame.draw.circle(img_surf, ring_colors[i], (ring_size // 2, ring_size // 2), ring_size // 2 - 5, 10)
-        marker_font = pygame.font.SysFont(None, int(ring_size*0.15))
+        img_surf = Surface((ring_size, ring_size), SRCALPHA)
+        circle(img_surf, ring_colors[i], (ring_size // 2, ring_size // 2), ring_size // 2 - 5, 10)
+        marker_font = SysFont(None, int(ring_size*0.15))
         for seg_idx in range(segments):
             angle_deg = (seg_idx / segments) * 360; angle_rad = math.radians(angle_deg - 90) 
             radius_for_symbol = ring_size // 2 - 25 
@@ -308,11 +315,11 @@ if __name__ == '__main__':
 
     running = True
     while running:
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT: running = False
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_ESCAPE: running = False
-                if event.key == pygame.K_r: 
+        for event in event_get():
+            if event.type == QUIT: running = False
+            if event.type == KEYDOWN:
+                if event.key == K_ESCAPE: running = False
+                if event.key == K_r: 
                     logger.info("--- Resetting puzzle from test block ---")
                     puzzle.reset()
             if puzzle_active_in_game: puzzle.handle_input(event)
@@ -320,6 +327,6 @@ if __name__ == '__main__':
         if puzzle_active_in_game: puzzle.update()
         screen.fill(DARK_GREY) 
         if puzzle_active_in_game: puzzle.draw(screen)
-        pygame.display.flip()
+        flip()
         clock.tick(60)
-    pygame.quit()
+    pygame_quit()

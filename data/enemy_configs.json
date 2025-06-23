@@ -86,7 +86,7 @@
         "dash_cooldown_max": 5000
       },
       "assets": {
-        "sprite_asset_key": "TR-3B_enemy_sprite_key",
+        "sprite_asset_key": "images/enemies/TR-3B_enemy.png",
         "shoot_sound_key": "enemy_shoot"
       },
       "weapon": {

@@ -1,4 +1,5 @@
-import pygame.sprite
+from pygame.sprite import Group
+from pygame import Surface
 import logging
 from random import choice, randint
 from typing import List, Tuple, Dict, Optional
@@ -28,8 +29,8 @@ class TowerDefenseManager:
         self.path_manager.tower_defense_manager = self
         
         # Sprite groups
-        self.enemies_group = pygame.sprite.Group()
-        self.towers_group = pygame.sprite.Group()
+        self.enemies_group = Group()
+        self.towers_group = Group()
         
         # Wave management
         self.current_wave = 0
@@ -238,7 +239,7 @@ class TowerDefenseManager:
             self.wave_active = False
             logger.info(f"Wave {self.current_wave} complete")
             
-    def draw(self, surface: pygame.Surface, camera=None):
+    def draw(self, surface: Surface, camera=None):
         """Draw all game elements"""
         # Draw enemies (path drawing disabled when camera is None)
         if camera is not None:

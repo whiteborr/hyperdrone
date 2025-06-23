@@ -518,32 +518,278 @@ class UIManager:
             self.screen.blit(text_surf, text_rect)
 
     def draw_drone_select_menu(self):
+        from pygame import Rect
+        from pygame.draw import rect as draw_rect
+        
         self._draw_star_background()
         title_surf = self._render_text_safe("Select Drone", "large_text", GOLD, fallback_size=48)
-        self.screen.blit(title_surf, title_surf.get_rect(center=(self._cached_width // 2, 80)))
+        title_rect = title_surf.get_rect(center=(self._cached_width // 2, 70))
+        self.screen.blit(title_surf, title_rect)
         
         ui_flow = self.game_controller.ui_flow_controller
-        if not ui_flow.drone_select_options: return
-
-        selected_drone_id = ui_flow.drone_select_options[ui_flow.selected_drone_preview_index]
-        drone_config = self.drone_system.get_drone_config(selected_drone_id)
-        is_unlocked = self.drone_system.is_drone_unlocked(selected_drone_id)
-
-        sprite_asset_key = drone_config.get("sprite_path", "").replace("assets/","")
-        sprite_surf = self.asset_manager.get_image(sprite_asset_key, scale_to_size=(256, 256))
-        if sprite_surf: self.screen.blit(sprite_surf, sprite_surf.get_rect(center=(self._cached_width/2, self._cached_height/2 - 100)))
-
-        name_surf = self._render_text_safe(drone_config.get("name"), "medium_text", WHITE if is_unlocked else GREY, fallback_size=48)
-        self.screen.blit(name_surf, name_surf.get_rect(center=(self._cached_width/2, self._cached_height/2 + 100)))
+        drone_options_ids = getattr(ui_flow, 'drone_select_options', [])
+        selected_preview_idx = getattr(ui_flow, 'selected_drone_preview_index', 0)
         
-        desc_surf = self._render_text_safe(drone_config.get("description"), "ui_text", CYAN, fallback_size=24)
-        self.screen.blit(desc_surf, desc_surf.get_rect(center=(self._cached_width/2, self._cached_height/2 + 150)))
+        if not drone_options_ids:
+            no_drones_surf = self._render_text_safe("NO DRONES AVAILABLE", "large_text", RED, fallback_size=48)
+            self.screen.blit(no_drones_surf, no_drones_surf.get_rect(center=(self._cached_width // 2, self._cached_height // 2)))
+            return
+        
+        current_drone_id = drone_options_ids[selected_preview_idx]
+        drone_config = self.drone_system.get_drone_config(current_drone_id)
+        drone_stats = self.drone_system.get_drone_stats(current_drone_id, is_in_architect_vault=False)
+        is_unlocked = self.drone_system.is_drone_unlocked(current_drone_id)
+        is_currently_equipped = (current_drone_id == self.drone_system.get_selected_drone_id())
+        
+        # Get drone image
+        drone_image_surf = None
+        if hasattr(self.game_controller, 'drone_main_display_cache'):
+            drone_image_surf = self.game_controller.drone_main_display_cache.get(current_drone_id)
+        
+        if not drone_image_surf:
+            sprite_asset_key = drone_config.get("sprite_path", "").replace("assets/", "")
+            drone_image_surf = self.asset_manager.get_image(sprite_asset_key, scale_to_size=(200, 200))
+        
+        img_width = drone_image_surf.get_width() if drone_image_surf else 200
+        img_height = drone_image_surf.get_height() if drone_image_surf else 200
+        
+        # Drone name
+        name_text = drone_config.get("name", "N/A")
+        name_surf_temp = self._render_text_safe(name_text, "medium_text", WHITE, fallback_size=36)
+        name_height = name_surf_temp.get_height()
+        
+        # Stats
+        hp_stat = drone_stats.get("hp")
+        speed_stat = drone_stats.get("speed")
+        turn_speed_stat = drone_stats.get("turn_speed")
+        fire_rate_mult = drone_stats.get("fire_rate_multiplier", 1.0)
+        special_ability_key = drone_stats.get("special_ability")
+        
+        hp_display = str(hp_stat) if hp_stat is not None else "N/A"
+        speed_display = f"{speed_stat:.1f}" if isinstance(speed_stat, (int, float)) else "N/A"
+        turn_speed_display = f"{turn_speed_stat:.1f}" if isinstance(turn_speed_stat, (int, float)) else "N/A"
+        
+        fire_rate_text = f"{fire_rate_mult:.2f}x mult"
+        if fire_rate_mult == 1.0:
+            fire_rate_text = "Normal"
+        elif fire_rate_mult < 1.0:
+            fire_rate_text += " (Faster)"
+        else:
+            fire_rate_text += " (Slower)"
+        
+        special_ability_name = "None"
+        if special_ability_key == "phantom_cloak":
+            special_ability_name = "Phantom Cloak"
+        elif special_ability_key == "omega_boost":
+            special_ability_name = "Omega Boost"
+        elif special_ability_key == "energy_shield_pulse":
+            special_ability_name = "Shield Pulse"
+        
+        stats_data_tuples = [
+            ("HP:", hp_display),
+            ("Speed:", speed_display),
+            ("Turn Speed:", turn_speed_display),
+            ("Fire Rate:", fire_rate_text),
+            ("Special:", special_ability_name)
+        ]
+        
+        # Create stats surfaces
+        stats_content_surfaces = []
+        max_stat_label_w = 0
+        max_stat_value_w = 0
+        stat_line_h = 30
+        
+        for label_str, value_str in stats_data_tuples:
+            label_color = (173, 216, 230) if is_unlocked else GREY  # LIGHT_BLUE equivalent
+            value_color = WHITE if is_unlocked else GREY
+            label_s = self._render_text_safe(label_str, "ui_text", label_color, fallback_size=24)
+            value_s = self._render_text_safe(value_str, "ui_text", value_color, fallback_size=24)
+            stats_content_surfaces.append((label_s, value_s))
+            max_stat_label_w = max(max_stat_label_w, label_s.get_width())
+            max_stat_value_w = max(max_stat_value_w, value_s.get_width())
+        
+        # Stats box dimensions
+        stats_box_padding = 15
+        stats_box_visual_width = max_stat_label_w + max_stat_value_w + 3 * stats_box_padding
+        stats_box_visual_height = (len(stats_content_surfaces) * stat_line_h) + 2 * stats_box_padding
+        
+        # Description
+        desc_text = drone_config.get("description", "")
+        desc_color_final = (200, 200, 200) if is_unlocked else (100, 100, 100)
+        desc_max_width_for_card = self._cached_width * 0.45
+        desc_lines_surfs = []
+        
+        words = desc_text.split(' ')
+        current_line_text_desc = ""
+        desc_font = self.asset_manager.get_font("ui_text", 24) or Font(None, 24)
+        
+        for word in words:
+            test_line = current_line_text_desc + word + " "
+            if desc_font.size(test_line)[0] < desc_max_width_for_card:
+                current_line_text_desc = test_line
+            else:
+                if current_line_text_desc:
+                    desc_lines_surfs.append(self._render_text_safe(current_line_text_desc.strip(), "ui_text", desc_color_final, fallback_size=24))
+                current_line_text_desc = word + " "
+        
+        if current_line_text_desc:
+            desc_lines_surfs.append(self._render_text_safe(current_line_text_desc.strip(), "ui_text", desc_color_final, fallback_size=24))
+        
+        total_desc_height = sum(s.get_height() for s in desc_lines_surfs) + (len(desc_lines_surfs) - 1) * 3 if desc_lines_surfs else 0
+        
+        # Unlock text
+        unlock_text_str = ""
+        unlock_text_color = WHITE
+        unlock_condition = drone_config.get("unlock_condition", {})
         
         if not is_unlocked:
-            unlock_cond = drone_config.get("unlock_condition", {})
-            unlock_desc = unlock_cond.get("description", "Locked")
-            unlock_surf = self._render_text_safe(unlock_desc, "ui_text", RED, fallback_size=28)
-            self.screen.blit(unlock_surf, unlock_surf.get_rect(center=(self._cached_width/2, self._cached_height/2 + 200)))
+            condition_text_str = unlock_condition.get("description", "Locked")
+            unlock_cost_val = unlock_condition.get("value")
+            type_is_cores_unlock = unlock_condition.get("type") == "cores"
+            unlock_text_str = condition_text_str
+            
+            if type_is_cores_unlock and unlock_cost_val is not None:
+                can_afford = self.drone_system.get_cores() >= unlock_cost_val
+                unlock_text_str = f"Unlock: {unlock_cost_val} 💠 "
+                unlock_text_str += "(ENTER)" if can_afford else "(Not Enough Cores)"
+                unlock_text_color = GREEN if can_afford else YELLOW
+            else:
+                unlock_text_color = YELLOW
+        elif is_currently_equipped:
+            unlock_text_str = "EQUIPPED"
+            unlock_text_color = GREEN
+        else:
+            unlock_text_str = "Press ENTER to Select"
+            unlock_text_color = CYAN
+        
+        unlock_info_surf = self._render_text_safe(unlock_text_str, "ui_text", unlock_text_color, fallback_size=28)
+        unlock_info_height = unlock_info_surf.get_height() if unlock_info_surf else 0
+        
+        # Card layout
+        spacing_between_elements = 15
+        padding_inside_card = 25
+        
+        card_content_total_h = (img_height + spacing_between_elements + name_height + spacing_between_elements + 
+                               stats_box_visual_height + spacing_between_elements + total_desc_height + 
+                               spacing_between_elements + unlock_info_height)
+        
+        max_content_width_for_card = max(
+            img_width,
+            name_surf_temp.get_width(),
+            stats_box_visual_width,
+            max(s.get_width() for s in desc_lines_surfs) if desc_lines_surfs else 0,
+            unlock_info_surf.get_width() if unlock_info_surf else 0
+        )
+        
+        card_w = max_content_width_for_card + 2 * padding_inside_card
+        card_w = min(card_w, self._cached_width * 0.6)
+        card_h = card_content_total_h + 2 * padding_inside_card + 20
+        
+        title_bottom = title_rect.bottom if title_rect else 100
+        main_card_x = (self._cached_width - card_w) // 2
+        main_card_y = title_bottom + 40
+        
+        main_card_rect = Rect(main_card_x, main_card_y, card_w, card_h)
+        
+        # Draw card background
+        card_bg = Surface((card_w, card_h), SRCALPHA)
+        card_bg.fill((25, 30, 40, 230))
+        self.screen.blit(card_bg, main_card_rect.topleft)
+        draw_rect(self.screen, GOLD, main_card_rect, 3)
+        
+        current_y_in_card = main_card_rect.top + padding_inside_card
+        
+        # Draw drone image
+        if drone_image_surf:
+            display_drone_image = drone_image_surf
+            if not is_unlocked:
+                temp_img = drone_image_surf.copy()
+                temp_img.set_alpha(100)
+                display_drone_image = temp_img
+            
+            final_img_rect = display_drone_image.get_rect(centerx=main_card_rect.centerx, top=current_y_in_card)
+            self.screen.blit(display_drone_image, final_img_rect)
+            current_y_in_card = final_img_rect.bottom + spacing_between_elements
+        else:
+            current_y_in_card += img_height + spacing_between_elements
+        
+        # Draw name
+        name_color_final = WHITE if is_unlocked else GREY
+        name_surf_final = self._render_text_safe(name_text, "medium_text", name_color_final, fallback_size=36)
+        final_name_rect = name_surf_final.get_rect(centerx=main_card_rect.centerx, top=current_y_in_card)
+        self.screen.blit(name_surf_final, final_name_rect)
+        current_y_in_card = final_name_rect.bottom + spacing_between_elements
+        
+        # Draw stats box
+        final_stats_box_draw_rect = Rect(main_card_rect.centerx - stats_box_visual_width // 2, current_y_in_card, 
+                                        stats_box_visual_width, stats_box_visual_height)
+        
+        stats_bg = Surface((stats_box_visual_width, stats_box_visual_height), SRCALPHA)
+        stats_bg.fill((40, 45, 55, 200))
+        self.screen.blit(stats_bg, final_stats_box_draw_rect.topleft)
+        draw_rect(self.screen, CYAN, final_stats_box_draw_rect, 1)
+        
+        stat_y_pos_render = final_stats_box_draw_rect.top + stats_box_padding
+        for i, (label_s, value_s) in enumerate(stats_content_surfaces):
+            self.screen.blit(label_s, (final_stats_box_draw_rect.left + stats_box_padding, stat_y_pos_render))
+            self.screen.blit(value_s, (final_stats_box_draw_rect.right - stats_box_padding - value_s.get_width(), stat_y_pos_render))
+            stat_y_pos_render += max(label_s.get_height(), value_s.get_height()) + (5 if i < len(stats_content_surfaces) - 1 else 0)
+        
+        current_y_in_card = final_stats_box_draw_rect.bottom + spacing_between_elements
+        
+        # Draw description
+        desc_start_y_render = current_y_in_card
+        for line_surf in desc_lines_surfs:
+            self.screen.blit(line_surf, line_surf.get_rect(centerx=main_card_rect.centerx, top=desc_start_y_render))
+            desc_start_y_render += line_surf.get_height() + 3
+        
+        current_y_in_card = desc_start_y_render + 5
+        
+        # Draw unlock info
+        if unlock_info_surf:
+            unlock_info_rect = unlock_info_surf.get_rect(centerx=main_card_rect.centerx, top=current_y_in_card)
+            self.screen.blit(unlock_info_surf, unlock_info_rect)
+        
+        # Draw navigation arrows
+        arrow_font = self.asset_manager.get_font("large_text", 48) or Font(None, 48)
+        left_arrow_surf = arrow_font.render("◀", True, WHITE if len(drone_options_ids) > 1 else GREY)
+        right_arrow_surf = arrow_font.render("▶", True, WHITE if len(drone_options_ids) > 1 else GREY)
+        
+        arrow_y_center = main_card_rect.centery
+        arrow_padding_from_card_edge = 40
+        
+        if len(drone_options_ids) > 1:
+            left_arrow_rect = left_arrow_surf.get_rect(centery=arrow_y_center, right=main_card_rect.left - arrow_padding_from_card_edge)
+            self.screen.blit(left_arrow_surf, left_arrow_rect)
+            right_arrow_rect = right_arrow_surf.get_rect(centery=arrow_y_center, left=main_card_rect.right + arrow_padding_from_card_edge)
+            self.screen.blit(right_arrow_surf, right_arrow_rect)
+        
+        # Instructions
+        instr_text = "LEFT/RIGHT: Cycle | ENTER: Select/Unlock | ESC: Back"
+        instr_surf = self._render_text_safe(instr_text, "ui_text", self.INSTRUCTION_TEXT_COLOR, fallback_size=24)
+        instr_bg_box = Surface((instr_surf.get_width() + self.INSTRUCTION_PADDING_X, 
+                              instr_surf.get_height() + self.INSTRUCTION_PADDING_Y), SRCALPHA)
+        instr_bg_box.fill(self.INSTRUCTION_BG_COLOR)
+        instr_bg_box.blit(instr_surf, instr_surf.get_rect(center=(instr_bg_box.get_width() // 2, instr_bg_box.get_height() // 2)))
+        self.screen.blit(instr_bg_box, instr_bg_box.get_rect(center=(self._cached_width // 2, self.BOTTOM_INSTRUCTION_CENTER_Y)))
+        
+        # Player cores display
+        cores_label_text_surf = self._render_text_safe(f"Player Cores: ", "ui_text", GOLD, fallback_size=24)
+        cores_value_text_surf = self._render_text_safe(f"{self.drone_system.get_cores()}", "ui_text", GOLD, fallback_size=24)
+        cores_emoji_surf = self._render_text_safe(" 💠", "ui_text", GOLD, fallback_size=24)
+        
+        total_cores_display_width = cores_label_text_surf.get_width() + cores_value_text_surf.get_width() + cores_emoji_surf.get_width()
+        cores_start_x = self._cached_width - 20 - total_cores_display_width
+        
+        max_element_height_cores = max(cores_label_text_surf.get_height(), cores_value_text_surf.get_height(), cores_emoji_surf.get_height())
+        cores_y_baseline = self.BOTTOM_INSTRUCTION_CENTER_Y - (instr_bg_box.get_height() // 2) - 10 - max_element_height_cores
+        current_x_offset_cores = cores_start_x
+        
+        self.screen.blit(cores_label_text_surf, (current_x_offset_cores, cores_y_baseline + (max_element_height_cores - cores_label_text_surf.get_height()) // 2))
+        current_x_offset_cores += cores_label_text_surf.get_width()
+        self.screen.blit(cores_value_text_surf, (current_x_offset_cores, cores_y_baseline + (max_element_height_cores - cores_value_text_surf.get_height()) // 2))
+        current_x_offset_cores += cores_value_text_surf.get_width()
+        self.screen.blit(cores_emoji_surf, (current_x_offset_cores, cores_y_baseline + (max_element_height_cores - cores_emoji_surf.get_height()) // 2))
 
     def draw_gameplay_hud(self, player_active_abilities_data=None):
         player = self.game_controller.player
@@ -617,7 +863,14 @@ class UIManager:
             direct_key = f"images/collectibles/core_fragment_{fragment_id}.png"
             return self.asset_manager.get_image(direct_key, scale_to_size=self.ui_icon_size_fragments)
         elif fragment_id == "orichalc_fragment_container":
-            return self.asset_manager.get_image("ORICHALC_FRAGMENT_CONTAINER", scale_to_size=self.ui_icon_size_fragments)
+            icon = self.asset_manager.get_image("ORICHALC_FRAGMENT_CONTAINER", scale_to_size=self.ui_icon_size_fragments)
+            if icon:
+                # Remove transparency by converting to RGB
+                non_transparent_icon = Surface(self.ui_icon_size_fragments).convert()
+                non_transparent_icon.fill(BLACK)
+                non_transparent_icon.blit(icon, (0, 0))
+                return non_transparent_icon
+            return icon
         return None
 
     def _draw_active_abilities_hud(self, active_abilities_data):

@@ -1,7 +1,7 @@
-# hyperdrone_core/pathfinding.pyAdd commentMore actions
-import heapq
-import math
-import random
+# hyperdrone_core/pathfinding.py
+from heapq import heappush, heappop
+from math import sqrt, cos, sin, radians
+from random import randint
 import logging
 
 logger = logging.getLogger(__name__)
@@ -79,7 +79,7 @@ def a_star_search(maze_grid, start_pos_grid, end_pos_grid, maze_rows, maze_cols)
     # Initialize open and closed lists
     open_list = []
     closed_set = set()
-    heapq.heappush(open_list, (0, start_node))
+    heappush(open_list, (0, start_node))
     
     # Initialize g_score map
     g_score = {(r, c): float('inf') for r in range(maze_rows) for c in range(maze_cols)}
@@ -92,7 +92,7 @@ def a_star_search(maze_grid, start_pos_grid, end_pos_grid, maze_rows, maze_cols)
     while open_list:
         # Get the node with the lowest f_cost (most promising path)
         # Priority queue ensures we always get the best candidate first
-        _, current_node = heapq.heappop(open_list)
+        _, current_node = heappop(open_list)
         
         # Skip nodes that were already processed (can happen with duplicate entries)
         if current_node.position not in open_set_hash:
@@ -136,7 +136,7 @@ def a_star_search(maze_grid, start_pos_grid, end_pos_grid, maze_rows, maze_cols)
             # Only add to open list if we haven't found a better path to this position
             # This prevents redundant exploration of suboptimal paths
             if not any(n[1] == neighbor and neighbor.g_cost >= n[1].g_cost for n in open_list):
-                heapq.heappush(open_list, (neighbor.f_cost, neighbor))
+                heappush(open_list, (neighbor.f_cost, neighbor))
                 open_set_hash.add(neighbor.position)
     
     # No path found
@@ -230,8 +230,8 @@ def find_wall_follow_target(maze, current_grid_pos, maze_rows, maze_cols):
     
     # If no good wall-following path found, try a random walkable cell
     for _ in range(10):  # Try up to 10 random positions
-        rand_row = random.randint(max(0, current_grid_pos[0] - 5), min(maze_rows - 1, current_grid_pos[0] + 5))
-        rand_col = random.randint(max(0, current_grid_pos[1] - 5), min(maze_cols - 1, current_grid_pos[1] + 5))
+        rand_row = randint(max(0, current_grid_pos[0] - 5), min(maze_rows - 1, current_grid_pos[0] + 5))
+        rand_col = randint(max(0, current_grid_pos[1] - 5), min(maze_cols - 1, current_grid_pos[1] + 5))
         
         if maze.grid[rand_row][rand_col] == 0:  # Walkable
             return (rand_row, rand_col)
@@ -266,7 +266,7 @@ def find_alternative_target(maze, current_grid_pos, primary_target_grid, maze_ro
     dir_col = primary_target_grid[1] - current_grid_pos[1]
     
     # Normalize direction
-    magnitude = math.sqrt(dir_row**2 + dir_col**2)
+    magnitude = sqrt(dir_row**2 + dir_col**2)
     if magnitude > 0:
         dir_row /= magnitude
         dir_col /= magnitude
@@ -275,9 +275,9 @@ def find_alternative_target(maze, current_grid_pos, primary_target_grid, maze_ro
     for distance in range(3, max_distance + 1):
         for angle_offset in [0, 15, -15, 30, -30, 45, -45]:
             # Calculate rotated direction
-            angle_rad = math.radians(angle_offset)
-            rotated_row = dir_row * math.cos(angle_rad) - dir_col * math.sin(angle_rad)
-            rotated_col = dir_row * math.sin(angle_rad) + dir_col * math.cos(angle_rad)
+            angle_rad = radians(angle_offset)
+            rotated_row = dir_row * cos(angle_rad) - dir_col * sin(angle_rad)
+            rotated_col = dir_row * sin(angle_rad) + dir_col * cos(angle_rad)
             
             # Calculate target position
             target_row = int(current_grid_pos[0] + rotated_row * distance)
@@ -297,7 +297,7 @@ def find_alternative_target(maze, current_grid_pos, primary_target_grid, maze_ro
                     
                     if path and len(path) > 1:
                         # Calculate distance to primary target
-                        dist_to_primary = math.sqrt(
+                        dist_to_primary = sqrt(
                             (target_row - primary_target_grid[0])**2 + 
                             (target_col - primary_target_grid[1])**2
                         )

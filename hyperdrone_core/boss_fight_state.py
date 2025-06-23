@@ -1,6 +1,9 @@
-# hyperdrone_core/boss_fight_state.pyAdd commentMore actions
-import pygame
-import random
+# hyperdrone_core/boss_fight_state.py
+from pygame.time import get_ticks
+from pygame.font import Font
+from pygame.sprite import spritecollide
+from pygame import KEYDOWN, KEYUP, K_p
+from random import randint, choice
 import logging
 from .state import State
 from settings_manager import get_setting
@@ -63,7 +66,7 @@ class BossFightState(State):
         ]
         self.enemies_spawned_in_wave = 0
         self.enemies_to_kill_in_wave = 0
-        self.wave_start_time = pygame.time.get_ticks()
+        self.wave_start_time = get_ticks()
         self.spawn_delay = 1000  # ms between enemy spawns
         self.last_spawn_time = 0
         self.boss_spawned = False
@@ -82,7 +85,7 @@ class BossFightState(State):
             self.enemies_to_kill_in_wave = wave_def[0]  # Count
             self.current_enemy_type = wave_def[1]  # Enemy type
             self.enemies_spawned_in_wave = 0
-            self.wave_start_time = pygame.time.get_ticks()
+            self.wave_start_time = get_ticks()
             self.last_spawn_time = 0
             logger.info(f"Starting wave {self.current_wave}/{self.total_waves} with {self.enemies_to_kill_in_wave} {self.current_enemy_type} enemies")
             self.game.set_story_message(f"Wave {self.current_wave}/{self.total_waves}: Defeat the guardian's minions!", 3000)
@@ -121,8 +124,8 @@ class BossFightState(State):
                 width = get_setting("display", "WIDTH", 1920)
                 height = get_setting("display", "HEIGHT", 1080)
                 game_area_x_offset = self.game.maze.game_area_x_offset if self.game.maze else 0
-                x = random.randint(game_area_x_offset + 100, width - 100)
-                y = random.randint(50, height - 50)
+                x = randint(game_area_x_offset + 100, width - 100)
+                y = randint(50, height - 50)
             else:
                 # Find perimeter tiles (tiles near the edge of the maze)
                 width = get_setting("display", "WIDTH", 1920)
@@ -147,7 +150,7 @@ class BossFightState(State):
                     perimeter_tiles = walkable_tiles
                 
                 # Choose a random perimeter tile
-                x, y = random.choice(perimeter_tiles)
+                x, y = choice(perimeter_tiles)
             
             # Use the enemy type defined for the current wave
             enemy_type = self.current_enemy_type
@@ -158,7 +161,7 @@ class BossFightState(State):
     
     def update(self, delta_time):
         """Update all entities and check for the end of the fight."""
-        current_time = pygame.time.get_ticks()
+        current_time = get_ticks()
 
         # If player doesn't exist, something is wrong, exit to prevent crash.
         if not self.game.player:
@@ -232,7 +235,7 @@ class BossFightState(State):
             
         # Check bullet collisions with enemies
         for bullet in self.game.player.bullets_group:
-            for enemy in pygame.sprite.spritecollide(bullet, enemy_sprites, False):
+            for enemy in spritecollide(bullet, enemy_sprites, False):
                 if enemy.alive and bullet.alive:
                     # Apply damage to enemy
                     enemy.take_damage(bullet.damage)
@@ -250,7 +253,7 @@ class BossFightState(State):
         # Check missile collisions with enemies
         if hasattr(self.game.player, 'missiles_group'):
             for missile in self.game.player.missiles_group:
-                for enemy in pygame.sprite.spritecollide(missile, enemy_sprites, False):
+                for enemy in spritecollide(missile, enemy_sprites, False):
                     if enemy.alive and missile.alive:
                         enemy.take_damage(missile.damage)
                         # Create larger explosion for missile hits
@@ -263,12 +266,12 @@ class BossFightState(State):
     def handle_events(self, events):
         """Handle player input during the boss fight."""
         for event in events:
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_p:
+            if event.type == KEYDOWN:
+                if event.key == K_p:
                     self.game.toggle_pause()
                 else:
                     self.game.player_actions.handle_key_down(event)
-            elif event.type == pygame.KEYUP:
+            elif event.type == KEYUP:
                 self.game.player_actions.handle_key_up(event)
 
     def draw(self, surface):
@@ -289,7 +292,7 @@ class BossFightState(State):
         
         # Draw wave information
         if not self.boss_spawned:
-            font = pygame.font.Font(None, 36)
+            font = Font(None, 36)
             wave_text = f"Wave {self.current_wave}/{self.total_waves}"
             enemies_text = f"Enemies: {self.enemies_to_kill_in_wave - len(self.game.combat_controller.enemy_manager.get_sprites())}/{self.enemies_to_kill_in_wave}"
             

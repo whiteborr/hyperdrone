@@ -1,12 +1,11 @@
-import pygame
-import random
+from pygame.sprite import Group
 import json
 import os
 import logging
 from entities import Enemy, SentinelDrone
 from entities.defense_drone import DefenseDrone
 from entities.tr3b_enemy import TR3BEnemy
-from settings_manager import get_setting, set_setting, get_asset_path
+from settings_manager import get_setting
 
 logger = logging.getLogger(__name__)
 
@@ -14,7 +13,7 @@ class EnemyManager:
     def __init__(self, game_controller_ref, asset_manager):
         self.game_controller = game_controller_ref
         self.asset_manager = asset_manager
-        self.enemies = pygame.sprite.Group()
+        self.enemies = Group()
         self.tile_size = get_setting("gameplay", "TILE_SIZE", 80)
         
         # Load enemy configurations from JSON file

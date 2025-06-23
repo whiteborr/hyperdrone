@@ -1,6 +1,8 @@
-# hyperdrone_core/corrupted_sector_state.pyAdd commentMore actions
-import pygame
-import random
+# hyperdrone_core/corrupted_sector_state.py
+from pygame.sprite import spritecollide
+from pygame.time import get_ticks
+from pygame import KEYDOWN, KEYUP, K_p
+from random import shuffle
 import logging
 from .state import State
 from settings_manager import get_setting
@@ -24,7 +26,7 @@ class CorruptedSectorState(State):
             
         # Check bullet collisions with enemies
         for bullet in self.game.player.bullets_group:
-            for enemy in pygame.sprite.spritecollide(bullet, enemy_sprites, False):
+            for enemy in spritecollide(bullet, enemy_sprites, False):
                 if enemy.alive and bullet.alive:
                     enemy.take_damage(bullet.damage)
                     if bullet.max_pierces > 0:
@@ -39,7 +41,7 @@ class CorruptedSectorState(State):
         # Check missile collisions with enemies
         if hasattr(self.game.player, 'missiles_group'):
             for missile in self.game.player.missiles_group:
-                for enemy in pygame.sprite.spritecollide(missile, enemy_sprites, False):
+                for enemy in spritecollide(missile, enemy_sprites, False):
                     if enemy.alive and missile.alive:
                         enemy.take_damage(missile.damage)
                         if hasattr(enemy, 'rect') and enemy.rect:
@@ -86,7 +88,7 @@ class CorruptedSectorState(State):
                        distance_to_player > 3:  # Keep walls at least 3 tiles away from player
                         walkable_cells.append((r, c))
         
-        random.shuffle(walkable_cells)
+        shuffle(walkable_cells)
 
         # Get number of walls to spawn from settings
         num_walls_to_spawn = get_setting("hazards", "GLITCH_WALL_COUNT", 8)  # Reduced count
@@ -146,7 +148,7 @@ class CorruptedSectorState(State):
              
     def update(self, delta_time):
         """Update game logic for the corrupted sector."""
-        current_time_ms = pygame.time.get_ticks()
+        current_time_ms = get_ticks()
 
         if not self.game.player:
             self.game.state_manager.set_state("MainMenuState")
@@ -181,12 +183,12 @@ class CorruptedSectorState(State):
     def handle_events(self, events):
         """Handle player input."""
         for event in events:
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_p:
+            if event.type == KEYDOWN:
+                if event.key == K_p:
                     self.game.toggle_pause()
                 else:
                     self.game.player_actions.handle_key_down(event)
-            elif event.type == pygame.KEYUP:
+            elif event.type == KEYUP:
                 self.game.player_actions.handle_key_up(event)
 
     def draw(self, surface):

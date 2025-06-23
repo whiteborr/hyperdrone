@@ -1,8 +1,11 @@
 # entities/energy_particle.py
-import pygame
-import math
+from pygame import Surface, SRCALPHA
+from pygame.sprite import Sprite
+from pygame.draw import circle
+from pygame.transform import smoothscale
+from math import hypot
 
-class EnergyParticle(pygame.sprite.Sprite):
+class EnergyParticle(Sprite):
     """
     An animated particle that can use a custom image and travels from a start
     point to a target, shrinking over its journey.
@@ -30,14 +33,14 @@ class EnergyParticle(pygame.sprite.Sprite):
             self.original_image = None
 
         # Initial render and rect setup
-        self.image = pygame.Surface((self.start_size, self.start_size), pygame.SRCALPHA)
+        self.image = Surface((self.start_size, self.start_size), SRCALPHA)
         self.rect = self.image.get_rect(center=(int(self.x), int(self.y)))
         self._update_image()
 
         # Velocity calculation
         dx = target_x - start_x
         dy = target_y - start_y
-        self.total_distance = math.hypot(dx, dy)
+        self.total_distance = hypot(dx, dy)
         if self.total_distance == 0: self.total_distance = 1 # Avoid division by zero
         self.velocity = (dx / self.total_distance * self.speed, dy / self.total_distance * self.speed)
 
@@ -50,13 +53,13 @@ class EnergyParticle(pygame.sprite.Sprite):
         
         if self.image_provided:
             # Scale the provided image to the current size
-            self.image = pygame.transform.smoothscale(self.original_image, (size, size))
+            self.image = smoothscale(self.original_image, (size, size))
         else:
             # Fallback drawing logic if no image was provided
-            self.image = pygame.Surface((size*2, size*2), pygame.SRCALPHA)
+            self.image = Surface((size*2, size*2), SRCALPHA)
             self.image.fill((0, 0, 0, 0))
-            pygame.draw.circle(self.image, (255, 215, 0), (size, size), size // 2)
-            pygame.draw.circle(self.image, (255, 255, 180, 120), (size, size), size, 2)
+            circle(self.image, (255, 215, 0), (size, size), size // 2)
+            circle(self.image, (255, 255, 180, 120), (size, size), size, 2)
         
         self.rect = self.image.get_rect(center=current_center)
 
@@ -71,7 +74,7 @@ class EnergyParticle(pygame.sprite.Sprite):
         self.y += self.velocity[1]
         
         # Calculate progress to target
-        distance_traveled = math.hypot(self.x - self.start_pos[0], self.y - self.start_pos[1])
+        distance_traveled = hypot(self.x - self.start_pos[0], self.y - self.start_pos[1])
         progress = min(1.0, distance_traveled / self.total_distance)
         
         # Interpolate size from start_size to end_size based on progress (shrinking effect)
@@ -81,7 +84,7 @@ class EnergyParticle(pygame.sprite.Sprite):
         self._update_image()
 
         # Check for arrival
-        if math.hypot(self.target_pos[0] - self.x, self.target_pos[1] - self.y) < self.speed:
+        if hypot(self.target_pos[0] - self.x, self.target_pos[1] - self.y) < self.speed:
             self.arrived = True
             
     def has_arrived(self):

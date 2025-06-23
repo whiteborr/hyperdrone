@@ -1,5 +1,8 @@
-# hyperdrone_core/camera.pyAdd commentMore actions
-import pygame
+# hyperdrone_core/camera.py
+from pygame.math import Vector2
+from pygame import Rect
+from pygame.mouse import get_pos as mouse_get_pos
+from pygame.display import get_surface
 from settings_manager import get_setting
 
 class Camera:
@@ -7,7 +10,7 @@ class Camera:
     Manages the game view, handling scrolling (panning) and zooming.
     """
     def __init__(self, map_width_pixels, map_height_pixels):
-        self.offset = pygame.math.Vector2(0, 0)
+        self.offset = Vector2(0, 0)
         self.map_width = map_width_pixels
         self.map_height = map_height_pixels
         self.zoom_level = 1.0
@@ -23,7 +26,7 @@ class Camera:
         screen_x = zoomed_x - self.offset.x
         screen_y = zoomed_y - self.offset.y
         
-        return pygame.Rect(screen_x, screen_y, zoomed_width, zoomed_height)
+        return Rect(screen_x, screen_y, zoomed_width, zoomed_height)
 
     def apply_to_pos(self, pos):
         """Applies zoom and offset to a single (x, y) world position tuple."""
@@ -49,7 +52,7 @@ class Camera:
 
     def zoom(self, factor):
         """Adjusts the zoom level, keeping the view centered on the mouse."""
-        mouse_pos_screen = pygame.mouse.get_pos()
+        mouse_pos_screen = mouse_get_pos()
         mouse_pos_world_before = self.screen_to_world(mouse_pos_screen)
 
         self.zoom_level *= factor
@@ -65,7 +68,7 @@ class Camera:
 
     def clamp_offset(self):
         """Ensures the camera doesn't scroll too far beyond the map edges."""
-        screen_w, screen_h = pygame.display.get_surface().get_size()
+        screen_w, screen_h = get_surface().get_size()
         
         zoomed_map_width = self.map_width * self.zoom_level
         zoomed_map_height = self.map_height * self.zoom_level

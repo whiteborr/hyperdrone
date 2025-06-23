@@ -1,7 +1,7 @@
-# hyperdrone_core/combat_controller.pyAdd commentMore actions
-import pygame
-import math
-import random
+# hyperdrone_core/combat_controller.py
+from pygame.sprite import Group, groupcollide, spritecollide, collide_rect_ratio
+from math import hypot
+from random import random, choice
 import logging
 
 from settings_manager import get_setting
@@ -41,10 +41,10 @@ class CombatController:
         self.enemy_manager = EnemyManager(game_controller_ref, self.asset_manager)
         self.wave_manager = WaveManager(game_controller_ref) 
 
-        self.turrets_group = pygame.sprite.Group() 
-        self.power_ups_group = pygame.sprite.Group()
-        self.explosion_particles_group = pygame.sprite.Group()
-        self.spawned_barricades_group = pygame.sprite.Group() 
+        self.turrets_group = Group() 
+        self.power_ups_group = Group()
+        self.explosion_particles_group = Group()
+        self.spawned_barricades_group = Group() 
 
         self.maze_guardian = None
         self.boss_active = False
@@ -57,13 +57,13 @@ class CombatController:
         self.player = player
         self.maze = maze
         self.core_reactor = core_reactor 
-        self.turrets_group = turrets_group if turrets_group is not None else pygame.sprite.Group()
-        self.power_ups_group = power_ups_group if power_ups_group is not None else pygame.sprite.Group()
-        self.explosion_particles_group = explosion_particles_group if explosion_particles_group is not None else pygame.sprite.Group()
+        self.turrets_group = turrets_group if turrets_group is not None else Group()
+        self.power_ups_group = power_ups_group if power_ups_group is not None else Group()
+        self.explosion_particles_group = explosion_particles_group if explosion_particles_group is not None else Group()
         if self.player and hasattr(self.player, 'spawned_barricades_group'):
             self.spawned_barricades_group = self.player.spawned_barricades_group
         else:
-            self.spawned_barricades_group = pygame.sprite.Group()
+            self.spawned_barricades_group = Group()
 
         self.maze_guardian = None
         self.boss_active = False
@@ -138,13 +138,13 @@ class CombatController:
             return
 
         for turret in self.turrets_group:
-            turret_projectiles = pygame.sprite.Group()
+            turret_projectiles = Group()
             if hasattr(turret, 'bullets'): turret_projectiles.add(turret.bullets)
             if hasattr(turret, 'missiles'): turret_projectiles.add(turret.missiles)
             if hasattr(turret, 'lightning_zaps'): turret_projectiles.add(turret.lightning_zaps)
 
             collision_func = lambda proj, enemy: proj.rect.colliderect(enemy.rect)
-            hits = pygame.sprite.groupcollide(turret_projectiles, enemies_to_check, False, False, collision_func)
+            hits = groupcollide(turret_projectiles, enemies_to_check, False, False, collision_func)
             
             for projectile, enemies_hit in hits.items():
                 if not projectile.alive: continue
@@ -161,7 +161,7 @@ class CombatController:
                         
                         if not projectile.alive: break
             
-            hits_barricades = pygame.sprite.groupcollide(turret_projectiles, self.spawned_barricades_group, False, False, collision_func)
+            hits_barricades = groupcollide(turret_projectiles, self.spawned_barricades_group, False, False, collision_func)
             for projectile, barricades_hit in hits_barricades.items():
                 if not projectile.alive: continue
                 for barricade in barricades_hit:
@@ -175,7 +175,7 @@ class CombatController:
 
 
     def _handle_player_projectile_collisions(self):
-        player_projectiles = pygame.sprite.Group()
+        player_projectiles = Group()
         if hasattr(self.player, 'bullets_group'): player_projectiles.add(self.player.bullets_group)
         if hasattr(self.player, 'missiles_group'): player_projectiles.add(self.player.missiles_group)
         if hasattr(self.player, 'lightning_zaps_group'): player_projectiles.add(self.player.lightning_zaps_group)
@@ -197,7 +197,7 @@ class CombatController:
 
         # Handle regular enemies
         collision_func = lambda proj, enemy: proj.rect.colliderect(getattr(enemy, 'collision_rect', enemy.rect))
-        hits = pygame.sprite.groupcollide(player_projectiles, self.enemy_manager.get_sprites(), False, False, collision_func)
+        hits = groupcollide(player_projectiles, self.enemy_manager.get_sprites(), False, False, collision_func)
         
         for projectile, enemies_hit in hits.items():
             if not projectile.alive: continue
@@ -217,7 +217,7 @@ class CombatController:
                     
                     if not projectile.alive: break
         
-        hits_barricades = pygame.sprite.groupcollide(player_projectiles, self.spawned_barricades_group, False, False, collision_func)
+        hits_barricades = groupcollide(player_projectiles, self.spawned_barricades_group, False, False, collision_func)
         for projectile, barricades_hit in hits_barricades.items():
             if not projectile.alive: continue
             for barricade in barricades_hit:
@@ -231,7 +231,7 @@ class CombatController:
 
 
     def _handle_enemy_projectile_collisions(self, current_game_state):
-        all_hostile_projectiles = pygame.sprite.Group()
+        all_hostile_projectiles = Group()
         for enemy in self.enemy_manager.get_sprites():
             if hasattr(enemy, 'bullets'): all_hostile_projectiles.add(enemy.bullets)
         if self.boss_active and self.maze_guardian and self.maze_guardian.alive:
@@ -240,12 +240,12 @@ class CombatController:
 
         # Player collision
         if self.player and self.player.alive:
-            player_hits = pygame.sprite.spritecollide(self.player, all_hostile_projectiles, True, pygame.sprite.collide_rect_ratio(0.7))
+            player_hits = spritecollide(self.player, all_hostile_projectiles, True, collide_rect_ratio(0.7))
             for projectile in player_hits:
                 self.player.take_damage(projectile.damage, sound_key_on_hit='crash')
                 if not self.player.alive: self.game_controller._handle_player_death_or_life_loss("Drone Destroyed!")
         
-        hits_barricades = pygame.sprite.groupcollide(all_hostile_projectiles, self.spawned_barricades_group, True, False, pygame.sprite.collide_rect_ratio(0.7))
+        hits_barricades = groupcollide(all_hostile_projectiles, self.spawned_barricades_group, True, False, collide_rect_ratio(0.7))
         for projectile, barricades_hit in hits_barricades.items():
             if not projectile.alive: continue
             for barricade in barricades_hit:
@@ -258,9 +258,9 @@ class CombatController:
         # Turret and Reactor collision in Defense Mode
         if current_game_state == GAME_STATE_MAZE_DEFENSE:
             if self.turrets_group:
-                pygame.sprite.groupcollide(all_hostile_projectiles, self.turrets_group, True, False)
+                groupcollide(all_hostile_projectiles, self.turrets_group, True, False)
             if self.core_reactor and self.core_reactor.alive:
-                reactor_hits = pygame.sprite.spritecollide(self.core_reactor, all_hostile_projectiles, True)
+                reactor_hits = spritecollide(self.core_reactor, all_hostile_projectiles, True)
                 for projectile in reactor_hits:
                     self.core_reactor.take_damage(projectile.damage, self.game_controller)
                     if not self.core_reactor.alive: self.game_controller.state_manager.set_state(GAME_STATE_GAME_OVER)
@@ -268,7 +268,7 @@ class CombatController:
     def _handle_physical_collisions(self, current_game_state):
         # Player-enemy collisions
         if self.player and self.player.alive:
-            enemy_hits = pygame.sprite.spritecollide(self.player, self.enemy_manager.get_sprites(), False, pygame.sprite.collide_rect_ratio(0.7))
+            enemy_hits = spritecollide(self.player, self.enemy_manager.get_sprites(), False, collide_rect_ratio(0.7))
             for enemy in enemy_hits:
                 if enemy.alive: 
                     self.player.take_damage(34, sound_key_on_hit='crash') 
@@ -291,7 +291,7 @@ class CombatController:
                 def on_solid_wall_hit(player, wall):
                     return wall.is_solid
 
-                glitch_wall_hits = pygame.sprite.spritecollide(
+                glitch_wall_hits = spritecollide(
                     self.player, 
                     self.game_controller.glitching_walls_group, 
                     False,
@@ -305,12 +305,12 @@ class CombatController:
                         return
 
         if self.player and self.player.alive:
-            player_barricade_hits = pygame.sprite.spritecollide(self.player, self.spawned_barricades_group, False, pygame.sprite.collide_rect_ratio(0.9))
+            player_barricade_hits = spritecollide(self.player, self.spawned_barricades_group, False, collide_rect_ratio(0.9))
             for barricade in player_barricade_hits:
                 if barricade.alive:
                     dx = self.player.x - barricade.x
                     dy = self.player.y - barricade.y
-                    dist = math.hypot(dx, dy)
+                    dist = hypot(dx, dy)
                     if dist > 0:
                         overlap = (self.player.rect.width / 2 + barricade.rect.width / 2) - dist
                         if overlap > 0:
@@ -324,7 +324,7 @@ class CombatController:
         if current_game_state == GAME_STATE_MAZE_DEFENSE and self.core_reactor and self.core_reactor.alive:
             # Check tower defense manager enemies instead of enemy manager
             enemies_to_check = self.game_controller.tower_defense_manager.enemies_group if hasattr(self.game_controller, 'tower_defense_manager') else self.enemy_manager.get_sprites()
-            reactor_hits = pygame.sprite.spritecollide(self.core_reactor, enemies_to_check, True, pygame.sprite.collide_rect_ratio(0.7))
+            reactor_hits = spritecollide(self.core_reactor, enemies_to_check, True, collide_rect_ratio(0.7))
             for enemy in reactor_hits:
                 damage = getattr(enemy, 'contact_damage', 25)
                 logger.info(f"Enemy hit core reactor for {damage} damage")
@@ -336,14 +336,14 @@ class CombatController:
         
         for enemy in list(self.enemy_manager.get_sprites()):
             if enemy.alive:
-                enemy_barricade_hits = pygame.sprite.spritecollide(enemy, self.spawned_barricades_group, False, pygame.sprite.collide_rect_ratio(0.7))
+                enemy_barricade_hits = spritecollide(enemy, self.spawned_barricades_group, False, collide_rect_ratio(0.7))
                 for barricade in enemy_barricade_hits:
                     if barricade.alive:
                         enemy.take_damage(10)
                         barricade.take_damage(enemy.contact_damage)
                         dx = enemy.x - barricade.x
                         dy = enemy.y - barricade.y
-                        dist = math.hypot(dx, dy)
+                        dist = hypot(dx, dy)
                         if dist > 0:
                             overlap = (enemy.rect.width / 2 + barricade.rect.width / 2) - dist
                             if overlap > 0:
@@ -354,7 +354,7 @@ class CombatController:
 
 
     def _handle_player_power_up_collisions(self):
-        powerup_hits = pygame.sprite.spritecollide(self.player, self.power_ups_group, True, pygame.sprite.collide_rect_ratio(0.7))
+        powerup_hits = spritecollide(self.player, self.power_ups_group, True, collide_rect_ratio(0.7))
         for item in powerup_hits:
             if hasattr(item, 'apply_effect'):
                 item.apply_effect(self.player, self.game_controller)
@@ -369,7 +369,7 @@ class CombatController:
         if current_game_state == GAME_STATE_PLAYING: 
             spawn_chance = get_setting("powerups", "POWERUP_SPAWN_CHANCE", 0.05)
             fps = get_setting("display", "FPS", 60)
-            if random.random() < (spawn_chance / fps if fps > 0 else 0.01):
+            if random() < (spawn_chance / fps if fps > 0 else 0.01):
                 if len(self.power_ups_group) < get_setting("powerups", "MAX_POWERUPS_ON_SCREEN", 2):
                     self._try_spawn_powerup_item_internal()
 
@@ -379,7 +379,7 @@ class CombatController:
         if not spawn_pos: return
         
         powerup_types = ["weapon_upgrade", "shield", "speed_boost"]
-        chosen_type = random.choice(powerup_types)
+        chosen_type = choice(powerup_types)
         
         if chosen_type == "weapon_upgrade": new_powerup = WeaponUpgradeItem(spawn_pos[0], spawn_pos[1], asset_manager=self.asset_manager)
         elif chosen_type == "shield": new_powerup = ShieldItem(spawn_pos[0], spawn_pos[1], asset_manager=self.asset_manager)
