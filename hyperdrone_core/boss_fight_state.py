@@ -44,14 +44,26 @@ class BossFightState(State):
                 player_spawn_pos[0], player_spawn_pos[1], drone_id, drone_stats,
                 self.game.asset_manager, sprite_key, 'crash', self.game.drone_system
             )
+            # Set initial weapon based on owned weapons
+            owned_weapons = self.game.drone_system.get_owned_weapons()
+            if owned_weapons and 0 not in owned_weapons:
+                owned_weapons = [0] + owned_weapons
+            if owned_weapons:
+                self.game.player.set_weapon_mode(owned_weapons[0])
         else:
             self.game.player.reset(player_spawn_pos[0], player_spawn_pos[1])
+            # Ensure weapon sprite is updated after reset
+            self.game.player._update_drone_sprite()
         
         # Set up combat controller for the boss fight
         self.game.combat_controller.set_active_entities(
             player=self.game.player,
             maze=self.game.maze
         )
+        
+        # Update UI manager to reflect current weapon
+        if hasattr(self.game, 'ui_manager'):
+            self.game.ui_manager.update_weapon_icon_surface(self.game.player.current_weapon_mode)
         # Ensure enemy group is clear before boss minions are spawned
         self.game.combat_controller.enemy_manager.reset_all()
         
@@ -210,10 +222,15 @@ class BossFightState(State):
                 self.game.set_story_message("Congratulations! Maze Guardian defeated!", 3000)
                 return
                 
-            # After showing the victory message, advance to Chapter 3 and go to the story map
+            # After showing the victory message, show narrative transition then advance chapter
             if hasattr(self, 'victory_time') and current_time > self.victory_time:
                 self.game.story_manager.advance_chapter()
-                self.game.state_manager.set_state("StoryMapState")
+                # Trigger narrative transition with "Echo in the Code" story beat
+                self.game.state_manager.set_state(
+                    "NarrativeState",
+                    narrative_event_id="echo_02",  # "Echo in the Code" from memory_echoes
+                    next_state="StoryMapState"
+                )
                 return
 
         # Check if the player has been defeated

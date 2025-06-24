@@ -332,5 +332,111 @@
       "reward": "Crucial intel for the 'true' ending.",
       "emotion": "Anxiety and action as the drone fights humans who think it’s a threat. A moment of pride in defending itself but also foreboding."
     }
-  ]
+  ],
+  "narrative_events": {
+    "ai_messages": [
+      {
+        "id": "msg_01",
+        "source": "Vault Terminal Fragment, Sector Echo-13",
+        "trigger": "enter_harvest_chamber",
+        "message": "We didn't erase MH370. We harvested it."
+      },
+      {
+        "id": "msg_02",
+        "source": "Corrupted Vault AI",
+        "trigger": "enter_corruption_sector",
+        "message": "[Static]...to protect...[laughter]...to consume...[static]"
+      },
+      {
+        "id": "msg_03",
+        "source": "The Architect",
+        "trigger": "orichalc_core_final_choice",
+        "message": "I made it to protect. Now it feeds. Would you let it die… or evolve?"
+      }
+    ],
+    "memory_echoes": [
+      {
+        "id": "echo_01",
+        "title": "Black Box Fragment Log",
+        "trigger": "puzzle_outcome_echo_harvest_370",
+        "lines": [
+          "…we’re banking left… no control… tell the tower it’s not— [static]…",
+          "…external object detected. Lights—orbital? No, too close—",
+          "…Mayday—[voice overlaps]—it’s inside the plane—"
+        ]
+      },
+      {
+        "id": "echo_02",
+        "title": "Echo in the Code",
+        "trigger": "defeat_first_boss",
+        "lines": [
+          "After defeating the Maze Guardian, you discover a terminal that isn’t human-made.",
+          "It plays back a voice in unknown patterns.",
+          "Codex Entry unlocked: Vault Fragment 001."
+        ]
+      },
+      {
+        "id": "echo_03",
+        "title": "The Cloak That Sees",
+        "trigger": "unlock_phantom_drone",
+        "lines": [
+          "The new drone’s abilities appear pre-coded.",
+          "A recovered lab log suggests the drone mimicked its own movement during testing.",
+          "You realize the drone may be learning independently."
+        ]
+      },
+      {
+        "id": "echo_04",
+        "title": "The Black Triangle",
+        "trigger": "reach_vault_beta",
+        "lines": [
+          "The room contains a partial TR-3B schematic.",
+          "Holographic glyphs light up as you approach.",
+          "Surveillance drones appear to scan you. You are no longer the only one exploring the Vault."
+        ]
+      },
+      {
+        "id": "echo_05",
+        "title": "The Exodus Engine",
+        "trigger": "complete_architects_vault",
+        "lines": [
+          "You find a non-human propulsion device suspended in a zero-gravity chamber.",
+          "It's a ship fragment.",
+          "The Architect AI has been guiding you toward activating it."
+        ]
+      }
+    ],
+    "story_beats": [
+        {
+          "id": "sb_01",
+          "trigger": "defeat_first_boss",
+          "title": "Echo in the Code",
+          "description": "After defeating the Maze Guardian, you discover a terminal that isn’t human-made. It plays back a voice in unknown patterns. Codex Entry unlocked: *Vault Fragment 001*."
+        },
+        {
+          "id": "sb_02",
+          "trigger": "unlock_phantom_drone",
+          "title": "The Cloak That Sees",
+          "description": "The new drone’s abilities appear pre-coded. A recovered lab log suggests the drone mimicked its own movement during testing. You realize the drone may be learning independently."
+        },
+        {
+          "id": "sb_03",
+          "trigger": "reach_vault_beta",
+          "title": "The Black Triangle",
+          "description": "The room contains a partial TR-3B schematic. Holographic glyphs light up as you approach. Surveillance drones appear to scan you. You are no longer the only one exploring the Vault."
+        },
+        {
+          "id": "sb_04",
+          "trigger": "fail_destroy_vault_beacon",
+          "title": "Sentinel Protocol",
+          "description": "Space Force interceptors begin appearing in regular waves. They're targeting Vault technology, not just you. Codex unlocked: *Sentinel-X Directive*."
+        },
+        {
+          "id": "sb_05",
+          "trigger": "complete_architects_vault",
+          "title": "The Exodus Engine",
+          "description": "You find a non-human propulsion device suspended in a zero-gravity chamber. It's a *ship fragment*. The Architect AI has been guiding you toward activating it."
+        }
+    ]
+  }
 }

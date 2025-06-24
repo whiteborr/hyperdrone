@@ -175,6 +175,50 @@
         "sprite_asset_key": "defense_drone_5_sprite_key"
       },
       "weapon": null
+    },
+    "tempest_boss": {
+      "name": "Tempest",
+      "class_name": "TempestBoss",
+      "stats": {
+        "health": 2500,
+        "speed": 3,
+        "score_value": 5000
+      },
+      "ai": {
+        "initial_behavior": "None"
+      },
+      "assets": {
+        "sprite_asset_key": "sprite_tempest_boss",
+        "shoot_sound_key": "sfx_enemy_shoot_heavy",
+        "death_sound_key": "sfx_explosion_large"
+      },
+      "weapon": {
+        "shoot_cooldown": 2000,
+        "bullet_damage": 15,
+        "bullet_speed": 5,
+        "bullet_size": 10
+      }
+    },
+    "tornado_minion": {
+      "name": "Tornado",
+      "class_name": "TornadoMinion",
+      "stats": {
+        "health": 20,
+        "speed": 4,
+        "score_value": 50
+      },
+      "ai": {
+        "initial_behavior": "None"
+      },
+      "assets": {
+        "sprite_asset_key": "sprite_tornado_minion",
+        "death_sound_key": "sfx_wind_dissipate"
+      },
+      "weapon": {
+        "shoot_cooldown": 99999,
+        "bullet_damage": 5, 
+        "contact_damage": 5
+      }
     }
   }
 }

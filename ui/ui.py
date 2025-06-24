@@ -224,7 +224,7 @@ class UIManager:
             "MainMenuState", "DroneSelectState", "SettingsState",
             "LeaderboardState", "CodexState",
             "ArchitectVaultSuccessState", "ArchitectVaultFailureState",
-            "GameOverState", "EnterNameState", "StoryMapState"
+            "GameOverState", "EnterNameState", "StoryMapState", "NarrativeState"
         ]
         
         if is_menu_like_state: 
@@ -241,7 +241,8 @@ class UIManager:
             "GameIntroScrollState": self.draw_game_intro_scroll,
             "StoryMapState": self.draw_story_map,
             "ArchitectVaultSuccessState": self.draw_architect_vault_success_overlay,
-            "ArchitectVaultFailureState": self.draw_architect_vault_failure_overlay
+            "ArchitectVaultFailureState": self.draw_architect_vault_failure_overlay,
+            "NarrativeState": self.draw_narrative_state
         }
 
         if current_state in state_draw_map:
@@ -457,71 +458,146 @@ class UIManager:
         self.screen.blit(text_surf, text_surf.get_rect(center=bg_rect.center))
 
     def draw_codex_screen(self):
-        self._draw_star_background()
-        ui_flow = self.game_controller.ui_flow_controller
-        font_title = self.asset_manager.get_font("large_text", 52) or Font(None, 52)
-        font_cat = self.asset_manager.get_font("medium_text", 36) or Font(None, 36)
-        font_entry = self.asset_manager.get_font("ui_text", 28) or Font(None, 28)
-        font_content = self.asset_manager.get_font("ui_text", 24) or Font(None, 24)
-        
-        width, height = self._cached_width, self._cached_height
-        
-        title_surf = font_title.render("CODEX", True, GOLD)
-        self.screen.blit(title_surf, title_surf.get_rect(center=(width / 2, 60)))
-        
-        if ui_flow.codex_current_view == "categories":
-            if not ui_flow.codex_categories_list:
-                no_entries_surf = font_cat.render("No lore entries unlocked yet!", True, WHITE)
-                self.screen.blit(no_entries_surf, no_entries_surf.get_rect(center=(width/2, 300)))
-                instruction_surf = font_entry.render("Explore the game to unlock lore entries", True, CYAN)
-                self.screen.blit(instruction_surf, instruction_surf.get_rect(center=(width/2, 350)))
+        self.screen.fill(BLACK)
+        if hasattr(self.game_controller, 'menu_stars') and self.game_controller.menu_stars:
+            for star_params in self.game_controller.menu_stars:
+                pygame.draw.circle(self.screen, (50,50,50), (int(star_params[0]), int(star_params[1])), star_params[3])
+        title_surf = self._render_text_safe("Lore Codex", "codex_title_font", GOLD)
+        title_rect = title_surf.get_rect(center=(self._cached_width // 2, 60)); self.screen.blit(title_surf, title_rect)
+        current_view = getattr(self.game_controller, 'codex_current_view', "categories")
+        padding = 50; list_panel_width = self._cached_width // 3 - padding * 1.5; list_panel_x = padding
+        content_panel_x = list_panel_x + list_panel_width + padding / 2
+        content_panel_width = self._cached_width - content_panel_x - padding
+        top_y_start = title_rect.bottom + 30; bottom_y_end = self._cached_height - 80
+        category_font = self.fonts.get("codex_category_font"); entry_font = self.fonts.get("codex_entry_font"); content_font = self.fonts.get("codex_content_font")
+        if not all([category_font, entry_font, content_font]):
+            fallback_surf = self._render_text_safe("Codex fonts loading...", "medium_text", WHITE)
+            self.screen.blit(fallback_surf, fallback_surf.get_rect(center=(self._cached_width // 2, self._cached_height // 2))); return
+        current_list_item_height_val = self.codex_list_item_height if self.codex_list_item_height > 0 else entry_font.get_height() + 15
+        content_line_height = content_font.get_linesize()
+        if self.codex_list_item_height == 0 and current_list_item_height_val > 0 :
+             self.codex_list_item_height = current_list_item_height_val
+             if self.codex_list_item_height > 0: self.codex_max_visible_items_list = (bottom_y_end - top_y_start) // self.codex_list_item_height
+             else: self.codex_max_visible_items_list = 1
+        available_height_for_content_text_calc = bottom_y_end - (top_y_start + category_font.get_height() + 20)
+        if self.codex_max_visible_lines_content == 0 and content_line_height > 0:
+             self.codex_max_visible_lines_content = available_height_for_content_text_calc // content_line_height if content_line_height > 0 else 1
+        nav_instr = ""; list_panel_rect = pygame.Rect(list_panel_x, top_y_start, list_panel_width, bottom_y_end - top_y_start)
+        current_list_y = top_y_start + 20 
+        if current_view == "categories":
+            categories = getattr(self.game_controller, 'codex_categories_list', [])
+            selected_category_idx = getattr(self.game_controller, 'codex_selected_category_index', 0)
+            if not categories:
+                no_lore_surf = self._render_text_safe("No lore unlocked.", "medium_text", WHITE)
+                self.screen.blit(no_lore_surf, no_lore_surf.get_rect(center=(self._cached_width // 2, self._cached_height // 2)))
             else:
-                start_y = 150
-                for i, cat_name in enumerate(ui_flow.codex_categories_list):
-                    color = YELLOW if i == ui_flow.codex_selected_category_index else WHITE
-                    cat_surf = font_cat.render(cat_name, True, color)
-                    self.screen.blit(cat_surf, cat_surf.get_rect(center=(width/2, start_y + i * 50)))
-        
-        elif ui_flow.codex_current_view == "entries":
-            cat_title_surf = font_cat.render(f"Category: {ui_flow.codex_current_category_name}", True, CYAN)
-            self.screen.blit(cat_title_surf, cat_title_surf.get_rect(center=(width/2, 140)))
-            start_y = 220
-            if not ui_flow.codex_entries_in_category_list:
-                no_entries_surf = font_entry.render("No entries in this category yet!", True, WHITE)
-                self.screen.blit(no_entries_surf, no_entries_surf.get_rect(center=(width/2, 300)))
+                max_visible = self.codex_max_visible_items_list if self.codex_max_visible_items_list > 0 else 1
+                start_idx = max(0, selected_category_idx - max_visible // 2); start_idx = min(start_idx, max(0, len(categories) - max_visible))
+                end_idx = min(len(categories), start_idx + max_visible)
+                for i_display, i_actual in enumerate(range(start_idx, end_idx)):
+                    category_name = categories[i_actual]; y_pos = current_list_y + i_display * self.codex_list_item_height
+                    color = YELLOW if i_actual == selected_category_idx else WHITE
+                    cat_surf = self._render_text_safe(category_name, "codex_category_font", color)
+                    self.screen.blit(cat_surf, (list_panel_x + 10, y_pos))
+            nav_instr = "UP/DOWN: Select | ENTER: View Entries | ESC: Main Menu"
+        elif current_view == "entries":
+            category_name = getattr(self.game_controller, 'codex_current_category_name', "Entries")
+            entries = getattr(self.game_controller, 'codex_entries_in_category_list', [])
+            selected_entry_idx = getattr(self.game_controller, 'codex_selected_entry_index_in_category', 0)
+            cat_title_surf = self._render_text_safe(f"{category_name}", "codex_category_font", GOLD)
+            self.screen.blit(cat_title_surf, (list_panel_x + 10, top_y_start))
+            current_list_y = top_y_start + cat_title_surf.get_height() + 15
+            if not entries:
+                no_entries_surf = self._render_text_safe("No entries here.", "codex_entry_font", GREY)
+                self.screen.blit(no_entries_surf, (list_panel_x + 20, current_list_y))
             else:
-                for i, entry_data in enumerate(ui_flow.codex_entries_in_category_list):
-                    color = YELLOW if i == ui_flow.codex_selected_entry_index_in_category else WHITE
-                    entry_surf = font_entry.render(entry_data.get("title", "Unknown"), True, color)
-                    self.screen.blit(entry_surf, (100, start_y + i * 40))
-                
-        elif ui_flow.codex_current_view == "content":
-            entry_details = self.drone_system.get_lore_entry_details(ui_flow.codex_selected_entry_id)
-            if entry_details:
-                content_title_surf = font_cat.render(entry_details.get("title", ""), True, GOLD)
-                self.screen.blit(content_title_surf, content_title_surf.get_rect(center=(width/2, 140)))
-                
-                content_text = entry_details.get("content", "No content available.")
-                wrapped_lines = self._wrap_text_with_font_obj(content_text, font_content, width - 200)
-                ui_flow.codex_current_entry_total_lines = len(wrapped_lines)
-
-                start_y, line_height = 220, font_content.get_linesize()
-                for i, line in enumerate(wrapped_lines[ui_flow.codex_content_scroll_offset:]):
-                    line_surf = font_content.render(line, True, WHITE)
-                    line_y = start_y + i * line_height
-                    if line_y > height - 100: break
-                    self.screen.blit(line_surf, (100, line_y))
-        
-        # Add navigation instructions
-        if ui_flow.codex_current_view == "categories":
-            instruction = "Use UP/DOWN to navigate, ENTER to select, ESC to return to menu"
-        elif ui_flow.codex_current_view == "entries":
-            instruction = "Use UP/DOWN to navigate, ENTER to view, ESC to go back"
-        else:
-            instruction = "Use UP/DOWN to scroll, ESC to go back"
-        
-        instruction_surf = font_content.render(instruction, True, CYAN)
-        self.screen.blit(instruction_surf, instruction_surf.get_rect(center=(width/2, height - 50)))
+                max_visible = self.codex_max_visible_items_list if self.codex_max_visible_items_list > 0 else 1
+                start_idx = max(0, selected_entry_idx - max_visible // 2); start_idx = min(start_idx, max(0, len(entries) - max_visible))
+                end_idx = min(len(entries), start_idx + max_visible)
+                for i_display, i_actual in enumerate(range(start_idx, end_idx)):
+                    entry_data = entries[i_actual]; y_pos = current_list_y + i_display * self.codex_list_item_height
+                    color = YELLOW if i_actual == selected_entry_idx else WHITE
+                    entry_title_surf = self._render_text_safe(entry_data.get("title", "Untitled"), "codex_entry_font", color)
+                    self.screen.blit(entry_title_surf, (list_panel_x + 20, y_pos))
+            nav_instr = "UP/DOWN: Select | ENTER: Read | ESC: Back to Categories"
+        elif current_view == "content":
+            selected_entry_id = getattr(self.game_controller, 'codex_selected_entry_id', None)
+            entry_data = self.drone_system.get_lore_entry_details(selected_entry_id) if selected_entry_id else None
+            category_name_reminder = getattr(self.game_controller, 'codex_current_category_name', "")
+            is_drone_entry = entry_data.get("category") == "Drones" if entry_data else False
+            is_race_entry = entry_data.get("category") == "Alien Races" if entry_data else False
+            image_path = entry_data.get("image") if entry_data else None
+            current_image_y_pos = top_y_start + 20
+            if category_name_reminder:
+                cat_reminder_surf = self._render_text_safe(f"{category_name_reminder}", "codex_entry_font", DARK_GREY)
+                self.screen.blit(cat_reminder_surf, (list_panel_x +10 , top_y_start )); current_image_y_pos = top_y_start + cat_reminder_surf.get_height() + 20
+            if entry_data:
+                content_title_surf = self._render_text_safe(entry_data.get("title", "Untitled"), "codex_category_font", GOLD)
+                self.screen.blit(content_title_surf, (content_panel_x, top_y_start))
+                content_text_render_y = top_y_start + content_title_surf.get_height() + 20; text_area_width = content_panel_width - 20
+                if is_drone_entry and image_path:
+                    if image_path not in self.codex_image_cache:
+                        try: self.codex_image_cache[image_path] = pygame.image.load(image_path).convert_alpha()
+                        except pygame.error as e: print(f"UIManager: Error loading Codex image '{image_path}': {e}"); self.codex_image_cache[image_path] = None
+                    cached_image = self.codex_image_cache.get(image_path)
+                    if cached_image:
+                        img_max_width = list_panel_width - 20; img_max_height = self._cached_height * 0.3
+                        original_w, original_h = cached_image.get_size(); aspect_ratio = original_h / original_w if original_w > 0 else 1
+                        scaled_w = img_max_width; scaled_h = int(scaled_w * aspect_ratio)
+                        if scaled_h > img_max_height: scaled_h = int(img_max_height); scaled_w = int(scaled_h / aspect_ratio if aspect_ratio > 0 else img_max_width)
+                        try:
+                            display_image = pygame.transform.smoothscale(cached_image, (scaled_w, scaled_h))
+                            self.screen.blit(display_image, (list_panel_x + (list_panel_width - scaled_w) // 2, current_image_y_pos))
+                        except pygame.error as e: print(f"UIManager: Error scaling Drone Codex image '{image_path}': {e}")
+                content_text = entry_data.get("content", "No content available."); scroll_offset_lines = getattr(self.game_controller, 'codex_content_scroll_offset', 0)
+                wrapped_lines = self._wrap_text(content_text, content_font, text_area_width)
+                if hasattr(self.game_controller, 'codex_current_entry_total_lines'): self.game_controller.codex_current_entry_total_lines = len(wrapped_lines)
+                text_content_area_available_height = bottom_y_end - content_text_render_y - 10; race_image_to_draw_below_text = None; scaled_race_img_h = 0
+                if is_race_entry and image_path:
+                    if image_path not in self.codex_image_cache:
+                        try: self.codex_image_cache[image_path] = pygame.image.load(image_path).convert_alpha()
+                        except pygame.error as e: print(f"UIManager: Error loading Race Codex image '{image_path}': {e}"); self.codex_image_cache[image_path] = None
+                    cached_race_image = self.codex_image_cache.get(image_path)
+                    if cached_race_image:
+                        img_max_width = content_panel_width * 0.6; img_max_height_race = self._cached_height * 0.25
+                        original_w, original_h = cached_race_image.get_size(); aspect_ratio = original_h / original_w if original_w > 0 else 1
+                        scaled_w = img_max_width; scaled_h = int(scaled_w * aspect_ratio)
+                        if scaled_h > img_max_height_race: scaled_h = int(img_max_height_race); scaled_w = int(scaled_h / aspect_ratio if aspect_ratio > 0 else img_max_width)
+                        if scaled_w > 0 and scaled_h > 0:
+                            try: race_image_to_draw_below_text = pygame.transform.smoothscale(cached_race_image, (scaled_w, scaled_h)); scaled_race_img_h = scaled_h; text_content_area_available_height -= (scaled_race_img_h + 20)
+                            except pygame.error as e: print(f"UIManager: Error scaling Race Codex image '{image_path}': {e}")
+                max_lines = text_content_area_available_height // content_line_height if content_line_height > 0 else 0
+                if max_lines <= 0 and wrapped_lines: max_lines = 1
+                lines_drawn_y_end = content_text_render_y
+                for i in range(max_lines):
+                    line_idx = scroll_offset_lines + i
+                    if 0 <= line_idx < len(wrapped_lines):
+                        line_surf = content_font.render(wrapped_lines[line_idx], True, WHITE)
+                        self.screen.blit(line_surf, (content_panel_x + 10, content_text_render_y + i * content_line_height))
+                        lines_drawn_y_end = content_text_render_y + (i + 1) * content_line_height
+                if race_image_to_draw_below_text:
+                    race_img_y_pos = lines_drawn_y_end + 20
+                    if race_img_y_pos + scaled_race_img_h < bottom_y_end:
+                        self.screen.blit(race_image_to_draw_below_text, (content_panel_x + (text_area_width - race_image_to_draw_below_text.get_width()) // 2, race_img_y_pos))
+                if len(wrapped_lines) > max_lines:
+                    if scroll_offset_lines > 0:
+                        scroll_up_surf = self._render_text_safe("▲ Up", "small_text", YELLOW)
+                        self.screen.blit(scroll_up_surf, (content_panel_x + text_area_width - scroll_up_surf.get_width(), content_text_render_y - 25))
+                    if scroll_offset_lines + max_lines < len(wrapped_lines):
+                        scroll_down_surf = self._render_text_safe("▼ Down", "small_text", YELLOW); scroll_down_y_pos = lines_drawn_y_end + 5
+                        if race_image_to_draw_below_text and (race_img_y_pos + scaled_race_img_h + scroll_down_surf.get_height() > bottom_y_end -5): scroll_down_y_pos = lines_drawn_y_end + 5
+                        elif not race_image_to_draw_below_text: scroll_down_y_pos = bottom_y_end - scroll_down_surf.get_height() -5
+                        self.screen.blit(scroll_down_surf, (content_panel_x + text_area_width - scroll_down_surf.get_width(), scroll_down_y_pos ))
+                nav_instr = "UP/DOWN: Scroll | ESC: Back to Entries List"
+            else:
+                no_content_surf = self._render_text_safe("Error: Could not load entry content.", "medium_text", RED)
+                self.screen.blit(no_content_surf, no_content_surf.get_rect(center=(content_panel_x + content_panel_width // 2, self._cached_height // 2)))
+                nav_instr = "ESC: Back"
+        else: nav_instr = "ESC: Main Menu"
+        nav_surf = self._render_text_safe(nav_instr, "small_text", self.INSTRUCTION_TEXT_COLOR)
+        nav_bg_box = pygame.Surface((nav_surf.get_width() + self.INSTRUCTION_PADDING_X, nav_surf.get_height() + self.INSTRUCTION_PADDING_Y), pygame.SRCALPHA)
+        nav_bg_box.fill(self.INSTRUCTION_BG_COLOR); nav_bg_box.blit(nav_surf, nav_surf.get_rect(center=(nav_bg_box.get_width() // 2, nav_bg_box.get_height() // 2)))
+        self.screen.blit(nav_bg_box, nav_bg_box.get_rect(center=(self._cached_width // 2, self.BOTTOM_INSTRUCTION_CENTER_Y)))
 
     def draw_main_menu(self):
         # Draw the main menu logo first.
@@ -1098,6 +1174,12 @@ class UIManager:
         height = get_setting("display", "HEIGHT", 1080)
         title_surf = self._render_text_safe("Mission Failed", "large_text", RED, fallback_size=48)
         self.screen.blit(title_surf, title_surf.get_rect(center=(width // 2, height//2)))
+    
+    def draw_narrative_state(self):
+        """Draw method for NarrativeState - handled by the state itself"""
+        # The NarrativeState handles its own drawing in its draw() method
+        # This is just a placeholder to satisfy the UI manager's state mapping
+        pass
 
     def draw_maze_defense_hud(self):
         width = get_setting("display", "WIDTH", 1920)

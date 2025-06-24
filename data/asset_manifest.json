@@ -18,13 +18,16 @@
     "menu_move": "sounds/menu_move.ogg",
     "menu_select": "sounds/ui_select.ogg",
     "BOSS_HIT_SOUND": "sounds/boss_hit.ogg",
-    "BOSS_DEATH_SOUND": "sounds/boss_death.ogg"
+    "BOSS_DEATH_SOUND": "sounds/boss_death.ogg",
+    "SFX_WIND_DISSIPATE": "sounds/wind_dissipate.ogg",
+    "SFX_GUST_ATTACK": "sounds/gust_attack.ogg"
   },
   "music": {
     "MENU_THEME_MUSIC": "sounds/menu_music.ogg",
     "GAMEPLAY_THEME_MUSIC": "sounds/gameplay_music.ogg",
     "DEFENSE_THEME_MUSIC": "sounds/defense_mode_music.ogg",
     "BOSS_THEME_MUSIC": "sounds/gameplay_music.ogg",
+    "WIND_BOSS_FIGHT": "sounds/defense_mode_music.ogg",
     "CORRUPTED_THEME_MUSIC": "sounds/gameplay_music.ogg",
     "SHMUP_THEME_MUSIC": "sounds/gameplay_music.ogg",
     "ARCHITECT_VAULT_THEME_MUSIC": "sounds/defense_mode_music.ogg"
@@ -77,7 +80,9 @@
     "DEFENSE_DRONE_2_SPRITE_KEY": "images/enemies/defense_drone_2.png",
     "DEFENSE_DRONE_3_SPRITE_KEY": "images/enemies/defense_drone_3.png",
     "DEFENSE_DRONE_4_SPRITE_KEY": "images/enemies/defense_drone_4.png",
-    "DEFENSE_DRONE_5_SPRITE_KEY": "images/enemies/defense_drone_5.png"
+    "DEFENSE_DRONE_5_SPRITE_KEY": "images/enemies/defense_drone_5.png",
+    "TEMPEST_BOSS": "images/enemies/tempest_boss.png",
+    "TORNADO_MINION": "images/enemies/tornado_minion.png"
   },
   "weapon_icons": {
     "0": "images/drones/drone_default.png",

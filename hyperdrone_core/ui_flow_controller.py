@@ -378,31 +378,8 @@ class UIFlowController:
         # Set the current chapter in the story manager
         story_manager.current_chapter_index = chapter_index
         
-        # Set up prerequisites based on chapter
-        if chapter_index >= 1:  # Chapter 2 or later
-            # Mark all objectives in previous chapters as complete but don't trigger completion logic
-            for i in range(chapter_index):
-                prev_chapter = story_manager.chapters[i]
-                for obj in prev_chapter.objectives:
-                    obj.completed = True  # Set directly without calling complete()
-                    
-            # For Chapter 2 (Guardian), unlock VANTIS drone
-            if chapter_index >= 1 and hasattr(self.game_controller, 'drone_system'):
-                self.game_controller.drone_system.unlock_drone("VANTIS")
-                
-            # For Chapter 3 (Corrupted Sector), defeat the Guardian boss
-            if chapter_index >= 2:
-                if hasattr(self.game_controller, 'drone_system'):
-                    # Add the boss to defeated_bosses directly
-                    self.game_controller.drone_system.add_defeated_boss("MAZE_GUARDIAN")
-                    self.game_controller.drone_system.unlock_drone("STRIX")
-                
-            # For Chapter 4 (Harvest Chamber), collect core fragments
-            if chapter_index >= 3:
-                if hasattr(self.game_controller, 'drone_system'):
-                    self.game_controller.drone_system.collect_core_fragment("alpha")
-                    self.game_controller.drone_system.collect_core_fragment("beta")
-                    self.game_controller.drone_system.collect_core_fragment("gamma")
+        # Apply chapter prerequisites using the story manager's method
+        story_manager._apply_chapter_prerequisites(chapter_index)
         
         # Launch the story map instead of directly launching the chapter
         if self.scene_manager:
@@ -417,31 +394,31 @@ class UIFlowController:
 
     def _handle_codex_input(self, key):
         if self.codex_current_view == "categories":
-            if key == pygame.K_ESCAPE:
+            if key == K_ESCAPE:
                 codex_index = self.menu_options.index("Codex") if "Codex" in self.menu_options else 0
                 self.scene_manager.set_state(GAME_STATE_MAIN_MENU, selected_option=codex_index)
                 return True
-            elif key in (pygame.K_UP, pygame.K_w): self.codex_selected_category_index = (self.codex_selected_category_index - 1 + len(self.codex_categories_list)) % len(self.codex_categories_list) if self.codex_categories_list else 0
-            elif key in (pygame.K_DOWN, pygame.K_s): self.codex_selected_category_index = (self.codex_selected_category_index + 1) % len(self.codex_categories_list) if self.codex_categories_list else 0
-            elif key == pygame.K_RETURN:
+            elif key in (K_UP, K_w): self.codex_selected_category_index = (self.codex_selected_category_index - 1 + len(self.codex_categories_list)) % len(self.codex_categories_list) if self.codex_categories_list else 0
+            elif key in (K_DOWN, K_s): self.codex_selected_category_index = (self.codex_selected_category_index + 1) % len(self.codex_categories_list) if self.codex_categories_list else 0
+            elif key == K_RETURN:
                 if self.codex_categories_list:
                     self.codex_current_view = "entries"
                     self.codex_current_category_name = self.codex_categories_list[self.codex_selected_category_index]
                     self.codex_entries_in_category_list = self.drone_system.get_unlocked_lore_entries_by_category(self.codex_current_category_name)
                     self.codex_selected_entry_index_in_category = 0
         elif self.codex_current_view == "entries":
-            if key == pygame.K_ESCAPE: self.codex_current_view = "categories"
-            elif key in (pygame.K_UP, pygame.K_w): self.codex_selected_entry_index_in_category = (self.codex_selected_entry_index_in_category - 1 + len(self.codex_entries_in_category_list)) % len(self.codex_entries_in_category_list) if self.codex_entries_in_category_list else 0
-            elif key in (pygame.K_DOWN, pygame.K_s): self.codex_selected_entry_index_in_category = (self.codex_selected_entry_index_in_category + 1) % len(self.codex_entries_in_category_list) if self.codex_entries_in_category_list else 0
-            elif key == pygame.K_RETURN:
+            if key == K_ESCAPE: self.codex_current_view = "categories"
+            elif key in (K_UP, K_w): self.codex_selected_entry_index_in_category = (self.codex_selected_entry_index_in_category - 1 + len(self.codex_entries_in_category_list)) % len(self.codex_entries_in_category_list) if self.codex_entries_in_category_list else 0
+            elif key in (K_DOWN, K_s): self.codex_selected_entry_index_in_category = (self.codex_selected_entry_index_in_category + 1) % len(self.codex_entries_in_category_list) if self.codex_entries_in_category_list else 0
+            elif key == K_RETURN:
                 if self.codex_entries_in_category_list:
                     self.codex_current_view = "content"
                     self.codex_selected_entry_id = self.codex_entries_in_category_list[self.codex_selected_entry_index_in_category]['id']
                     self.codex_content_scroll_offset = 0
         elif self.codex_current_view == "content":
-            if key == pygame.K_ESCAPE: self.codex_current_view = "entries"
-            elif key in (pygame.K_UP, pygame.K_w): self.codex_content_scroll_offset = max(0, self.codex_content_scroll_offset - 1)
-            elif key in (pygame.K_DOWN, pygame.K_s): self.codex_content_scroll_offset = min(max(0, self.codex_current_entry_total_lines - 10), self.codex_content_scroll_offset + 1)
+            if key == K_ESCAPE: self.codex_current_view = "entries"
+            elif key in (K_UP, K_w): self.codex_content_scroll_offset = max(0, self.codex_content_scroll_offset - 1)
+            elif key in (K_DOWN, K_s): self.codex_content_scroll_offset = min(max(0, self.codex_current_entry_total_lines - 10), self.codex_content_scroll_offset + 1)
         
         self.game_controller.play_sound('ui_select', 0.5)
         return True

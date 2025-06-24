@@ -22,7 +22,18 @@
     "ENEMY_HEALTH": 25
   },
   "bosses": {
-    "MAZE_GUARDIAN_SPEED": 1
+    "MAZE_GUARDIAN_SPEED": 1,
+    "tempest": {
+      "SPEED": 3,
+      "GUST_COOLDOWN": 5000,
+      "GUST_SIZE": 30,
+      "TORNADO_COOLDOWN": 8000,
+      "TORNADO_COUNT": 3,
+      "TORNADO_LIFESPAN": 5000,
+      "TORNADO_SPEED": 4,
+      "CYCLONE_COOLDOWN": 10000,
+      "CYCLONE_PROJECTILES": 16
+    }
   },
   "powerups": {
     "SHIELD_POWERUP_DURATION": 10000,

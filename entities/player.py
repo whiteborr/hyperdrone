@@ -310,6 +310,10 @@ class PlayerDrone(BaseDrone):
         # Get owned weapons from drone system
         if hasattr(self, 'drone_system') and self.drone_system:
             owned_weapons = self.drone_system.get_owned_weapons()
+            # Always include default weapon (0) if not in owned list
+            if 0 not in owned_weapons:
+                owned_weapons = [0] + owned_weapons
+            
             if owned_weapons:
                 # Find current weapon index in owned weapons
                 try:
@@ -320,7 +324,6 @@ class PlayerDrone(BaseDrone):
                     # Current weapon not in owned list, use first owned weapon
                     self.current_weapon_mode = owned_weapons[0]
                 self.set_weapon_mode(self.current_weapon_mode)
-                self._update_drone_sprite()
                 return
         
         # Fallback to original behavior
@@ -328,12 +331,9 @@ class PlayerDrone(BaseDrone):
         self.weapon_mode_index = (self.weapon_mode_index + 1) % len(weapon_modes_sequence)
         self.current_weapon_mode = weapon_modes_sequence[self.weapon_mode_index]
         self.set_weapon_mode(self.current_weapon_mode)
-        self._update_drone_sprite()
 
     def set_weapon_mode(self, mode):
         """Set the current weapon strategy based on the weapon mode"""
-        # Always update weapon strategy
-            
         from .weapon_strategies import create_weapon_strategy
         
         self.current_weapon_mode = mode

@@ -122,7 +122,6 @@ class ItemCollectedEvent(GameEvent):
         self.item_type = item_type
         logging.info(f"ItemCollectedEvent dispatched: id={item_id}, type={item_type}")
 
-
 class BossDefeatedEvent(GameEvent):
     """Event triggered when a boss is defeated."""
     def __init__(self, boss_id):

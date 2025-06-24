@@ -41,9 +41,11 @@ from .architect_vault_states import (
     ArchitectVaultFailureState
 )
 from .boss_fight_state import BossFightState
+from .tempest_fight_state import TempestFightState
 from .corrupted_sector_state import CorruptedSectorState
 from .harvest_chamber_state import HarvestChamberState
 from .weapons_upgrade_shop_state import WeaponsUpgradeShopState
+from .narrative_state import NarrativeState
 
 logger = logging.getLogger(__name__)
 
@@ -106,7 +108,7 @@ class StateManager:
         self._update_music()  # Initial music play
     
     def _register_state_classes(self):
-        """Register all available state classes"""
+        """Initializes the state registry with all available state classes."""
         # Define state classes
         state_classes = {
             "PlayingState": PlayingState,
@@ -132,7 +134,9 @@ class StateManager:
             "BossFightState": BossFightState,
             "CorruptedSectorState": CorruptedSectorState,
             "HarvestChamberState": HarvestChamberState,
-            "WeaponsUpgradeShopState": WeaponsUpgradeShopState
+            "WeaponsUpgradeShopState": WeaponsUpgradeShopState,
+            "NarrativeState": NarrativeState,
+            "TempestFightState": TempestFightState
         }
         
         # Register states with both the local cache and the central registry
@@ -221,6 +225,7 @@ class StateManager:
         self.registry.register_transition("PlayingState", "ArchitectVaultIntroState")
         self.registry.register_transition("PlayingState", "MazeDefenseState")
         self.registry.register_transition("PlayingState", "BossFightState")
+        self.registry.register_transition("PlayingState", "TempestFightState")
         self.registry.register_transition("PlayingState", "StoryMapState")
 
         # Game over transitions
@@ -261,6 +266,7 @@ class StateManager:
         self.registry.register_transition("BossFightState", "GameOverState")
         self.registry.register_transition("BossFightState", "CorruptedSectorState")
         self.registry.register_transition("BossFightState", "StoryMapState")
+        self.registry.register_transition("TempestFightState", "StoryMapState")
 
         # Corrupted Sector transitions
         self.registry.register_transition("CorruptedSectorState", "GameOverState")
@@ -270,6 +276,18 @@ class StateManager:
         # Harvest Chamber transitions
         self.registry.register_transition("HarvestChamberState", "GameOverState")
         self.registry.register_transition("HarvestChamberState", "MainMenuState") # Placeholder for now
+        
+        # Narrative state transitions
+        self.registry.register_transition("BossFightState", "NarrativeState")
+        self.registry.register_transition("CorruptedSectorState", "NarrativeState")
+        self.registry.register_transition("HarvestChamberState", "NarrativeState")
+        self.registry.register_transition("PlayingState", "NarrativeState")
+        self.registry.register_transition("NarrativeState", "StoryMapState")
+        self.registry.register_transition("NarrativeState", "MainMenuState")
+        self.registry.register_transition("NarrativeState", "PlayingState")
+        self.registry.register_transition("NarrativeState", "BossFightState")
+        self.registry.register_transition("NarrativeState", "CorruptedSectorState")
+        self.registry.register_transition("NarrativeState", "HarvestChamberState")
     
     def get_current_state(self):
         """Returns the current state object."""
@@ -341,7 +359,8 @@ class StateManager:
             "ArchitectVaultGauntletState": "architect_vault_theme",
             "ArchitectVaultExtractionState": "architect_vault_theme",
             "ArchitectVaultSuccessState": "menu_theme",
-            "ArchitectVaultFailureState": "menu_theme"
+            "ArchitectVaultFailureState": "menu_theme",
+            "NarrativeState": "architect_vault_theme"
         }
 
         music_key_for_state = music_map.get(current_state_id)
