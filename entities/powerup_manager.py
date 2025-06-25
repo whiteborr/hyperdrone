@@ -11,6 +11,7 @@ from logging import getLogger, debug
 from settings_manager import get_setting
 from constants import FLAME_COLORS
 from .particle import Particle
+from .jet_stream_particle import JetstreamManager
 
 logger = getLogger(__name__)
 
@@ -27,6 +28,7 @@ class PowerUpManager:
         self.speed_boost_multiplier = 1.0
         self.propulsion_active = False
         self.propulsion_particles = Group()
+        self.jetstream_manager = None
         self.last_particle_time = 0
         self.original_player_speed = self.player.speed
     
@@ -63,6 +65,9 @@ class PowerUpManager:
                 self.speed_boost_active = False
                 self.propulsion_active = False
                 self.player.speed = self.original_player_speed
+                # Deactivate jetstream when boost ends
+                if self.jetstream_manager:
+                    self.jetstream_manager.set_active(False)
                 debug("Speed boost deactivated")
             else:
                 # If boost is active, check if it's time to spawn particles
@@ -73,48 +78,66 @@ class PowerUpManager:
             
         # This will update any remaining particles until they fade out
         self.propulsion_particles.update()
+        if self.jetstream_manager:
+            self.jetstream_manager.update()
 
     def _create_propulsion_particles(self, is_boosting):
-        angle_rad = radians(self.player.angle + 180)
-        base_offset = self.player.rect.width / 2.5
+        # Check if player is using PHANTOM drone
+        is_phantom = hasattr(self.player, 'drone_id') and self.player.drone_id == 'PHANTOM'
         
-        spawn_x = self.player.x + cos(angle_rad) * base_offset
-        spawn_y = self.player.y + sin(angle_rad) * base_offset
+        if is_phantom:
+            # Use jet stream particles for PHANTOM drone
+            self._create_jet_stream_particles()
+        else:
+            # Use regular particles for other drones
+            angle_rad = radians(self.player.angle + 180)
+            base_offset = self.player.rect.width / 2.5
+            
+            spawn_x = self.player.x + cos(angle_rad) * base_offset
+            spawn_y = self.player.y + sin(angle_rad) * base_offset
 
-        num_particles = randint(2, 3) if is_boosting else 1
-        
-        for _ in range(num_particles):
-            if is_boosting:
-                speed = uniform(get_setting("particles", "THRUST_PARTICLE_SPEED_MIN_BLAST", 2.0), 
-                                      get_setting("particles", "THRUST_PARTICLE_SPEED_MAX_BLAST", 4.0))
-                size = uniform(get_setting("particles", "THRUST_PARTICLE_START_SIZE_BLAST_MIN", 2.0), 
-                                     get_setting("particles", "THRUST_PARTICLE_START_SIZE_BLAST_MAX", 4.0))
-                lifetime = get_setting("particles", "THRUST_PARTICLE_LIFETIME_BLAST", 20)
-            else:
-                min_speed = get_setting("particles", "THRUST_PARTICLE_SPEED_MIN_BLAST", 2.0) * 0.5
-                max_speed = get_setting("particles", "THRUST_PARTICLE_SPEED_MAX_BLAST", 4.0) * 0.5
-                min_size = get_setting("particles", "THRUST_PARTICLE_START_SIZE_BLAST_MIN", 2.0) * 0.4
-                max_size = get_setting("particles", "THRUST_PARTICLE_START_SIZE_BLAST_MAX", 4.0) * 0.6
-                speed = uniform(min_speed, max_speed)
-                size = uniform(min_size, max_size)
-                lifetime = int(get_setting("particles", "THRUST_PARTICLE_LIFETIME_BLAST", 20) * 0.7)
+            num_particles = randint(2, 3) if is_boosting else 1
+            
+            for _ in range(num_particles):
+                if is_boosting:
+                    speed = uniform(get_setting("particles", "THRUST_PARTICLE_SPEED_MIN_BLAST", 2.0), 
+                                          get_setting("particles", "THRUST_PARTICLE_SPEED_MAX_BLAST", 4.0))
+                    size = uniform(get_setting("particles", "THRUST_PARTICLE_START_SIZE_BLAST_MIN", 2.0), 
+                                         get_setting("particles", "THRUST_PARTICLE_START_SIZE_BLAST_MAX", 4.0))
+                    lifetime = get_setting("particles", "THRUST_PARTICLE_LIFETIME_BLAST", 20)
+                else:
+                    min_speed = get_setting("particles", "THRUST_PARTICLE_SPEED_MIN_BLAST", 2.0) * 0.5
+                    max_speed = get_setting("particles", "THRUST_PARTICLE_SPEED_MAX_BLAST", 4.0) * 0.5
+                    min_size = get_setting("particles", "THRUST_PARTICLE_START_SIZE_BLAST_MIN", 2.0) * 0.4
+                    max_size = get_setting("particles", "THRUST_PARTICLE_START_SIZE_BLAST_MAX", 4.0) * 0.6
+                    speed = uniform(min_speed, max_speed)
+                    size = uniform(min_size, max_size)
+                    lifetime = int(get_setting("particles", "THRUST_PARTICLE_LIFETIME_BLAST", 20) * 0.7)
 
-            particle = Particle(
-                x=spawn_x, y=spawn_y,
-                color_list=FLAME_COLORS,
-                min_speed=speed, max_speed=speed,
-                min_size=size, max_size=size,
-                lifetime_frames=lifetime,
-                base_angle_deg=self.player.angle + 180,
-                spread_angle_deg=get_setting("particles", "THRUST_PARTICLE_SPREAD_ANGLE", 15),
-                blast_mode=True
-            )
-            self.propulsion_particles.add(particle)
+                particle = Particle(
+                    x=spawn_x, y=spawn_y,
+                    color_list=FLAME_COLORS,
+                    min_speed=speed, max_speed=speed,
+                    min_size=size, max_size=size,
+                    lifetime_frames=lifetime,
+                    base_angle_deg=self.player.angle + 180,
+                    spread_angle_deg=get_setting("particles", "THRUST_PARTICLE_SPREAD_ANGLE", 15),
+                    blast_mode=True
+                )
+                self.propulsion_particles.add(particle)
+                
+    def _create_jet_stream_particles(self):
+        """Create jet stream manager for PHANTOM drone"""
+        if not self.jetstream_manager:
+            self.jetstream_manager = JetstreamManager(self.player, self.propulsion_particles)
+        self.jetstream_manager.set_active(True)
             
     def draw(self, surface, camera=None):
         """Draws all power-up effects, including the drone's shield glow."""
         # First, draw the propulsion particles so they appear behind everything.
         self.propulsion_particles.draw(surface, camera)
+        
+        # Jetstream particles are automatically drawn via propulsion_particles group
         
         # --- NEW SHIELD GLOW LOGIC ---
         if self.shield_active and self.player.rect and hasattr(self.player, 'original_image'):

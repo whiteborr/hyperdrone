@@ -158,7 +158,7 @@ class SpeedBoostItem(Collectible):
         if self.update_collectible_state(item_lifetime_ms=powerup_lifetime): self.kill(); return True
         return False
 
-    def apply_effect(self, player_drone):
+    def apply_effect(self, player_drone, game_controller=None):
         if hasattr(player_drone, 'arm_speed_boost'): 
             player_drone.arm_speed_boost(self.effect_duration_ms, self.speed_multiplier)
             # Don't auto-activate - wait for UP key press

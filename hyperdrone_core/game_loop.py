@@ -447,14 +447,14 @@ class GameController:
         self._create_explosion(self.player.x, self.player.y, 6, 'crash')
         self.lives -= 1
         
-        logging.info(f"Player died. Lives remaining: {self.lives}")
+        logger_gc.info(f"Player died. Lives remaining: {self.lives}")
         
         if self.lives > 0:
             self.set_story_message(f"Lives remaining: {self.lives}", 2000)
             self._respawn_player()
             self._death_handled = False  # Reset for next death
         else:
-            logging.info("No lives remaining. Game over.")
+            logger_gc.info("No lives remaining. Game over.")
             current_state_id = self.state_manager.get_current_state_id()
             self.state_manager.set_state("GameOverState", prev_state=current_state_id)
     

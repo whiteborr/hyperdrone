@@ -129,23 +129,8 @@ class PlayerDrone(BaseDrone):
                 
     def _update_drone_sprite(self):
         """Update the drone sprite based on the current weapon mode"""
-        # Cache weapon sprite mappings as class attribute
-        if not hasattr(self.__class__, '_weapon_sprite_names'):
-            self.__class__._weapon_sprite_names = {
-                WEAPON_MODE_DEFAULT: "default",
-                WEAPON_MODE_TRI_SHOT: "tri_shot",
-                WEAPON_MODE_RAPID_SINGLE: "rapid_single",
-                WEAPON_MODE_RAPID_TRI: "rapid_tri_shot",
-                WEAPON_MODE_BIG_SHOT: "big_shot",
-                WEAPON_MODE_BOUNCE: "bounce",
-                WEAPON_MODE_PIERCE: "pierce",
-                WEAPON_MODE_HEATSEEKER: "heatseeker",
-                WEAPON_MODE_HEATSEEKER_PLUS_BULLETS: "heatseeker_plus_bullets",
-                WEAPON_MODE_LIGHTNING: "lightning"
-            }
-        
-        weapon_sprite_name = self._weapon_sprite_names.get(self.current_weapon_mode, "default")
-        weapon_sprite_key = f"drone_{weapon_sprite_name}"
+        # Use drone-specific weapon sprite from asset manifest
+        weapon_sprite_key = f"{self.drone_id}_WEAPON_{self.current_weapon_mode}"
         
         # Try weapon-specific sprite first, then fallback
         loaded_image = (self.asset_manager.get_image(weapon_sprite_key) or 

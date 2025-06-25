@@ -1,101 +1,214 @@
-# entities/jet_stream_particle.py
+# entities/jetstream_particle.py
+
 import pygame
-from math import sin, cos, radians
-from random import uniform
+from pygame.sprite import Sprite
+from pygame.draw import circle
+from pygame import Surface, SRCALPHA
+from random import choice, uniform
+from math import radians, cos, sin
 
-class JetStreamParticle(pygame.sprite.Sprite):
+# --- Local Definitions for Colors ---
+# These would typically be in a constants file, but are included here for completeness.
+FLAME_COLORS = [(255, 100, 0), (255, 150, 0), (255, 200, 50), (255, 80, 0)]
+JETSTREAM_COLORS = [(100, 150, 255), (120, 170, 255), (150, 200, 255)]
+JETSTREAM_SIDE_COLORS = [(200, 220, 255), (220, 235, 255)]
+
+# --- Base Particle Class (from particle.py) ---
+# Included here so this file is self-contained and doesn't depend on another file.
+
+class Particle(Sprite):
     """
-    A persistent visual effect that creates a jet stream exhaust trail.
-    It attaches to a parent sprite (the player drone) and updates its
-    position and angle every frame to match.
+    A single particle used for effects like explosions or jetstreams.
+    It moves, shrinks, and fades over its lifetime.
     """
-    def __init__(self, parent_drone, offset_vector):
+    def __init__(self, x, y, color_list, 
+                 min_speed, max_speed, 
+                 min_size, max_size, 
+                 gravity=0.1, shrink_rate=0.1, lifetime_frames=30,
+                 base_angle_deg=None, spread_angle_deg=360,
+                 x_offset=0, y_offset=0,
+                 blast_mode=False):
         """
-        Initializes the JetStreamParticle.
-
-        Args:
-            parent_drone: The sprite this jet stream is attached to.
-            offset_vector: An (x, y) tuple for the stream's position relative 
-                           to the parent's center (e.g., (0, 15) for a side engine).
+        Initializes a particle with various properties.
         """
         super().__init__()
-        self.parent = parent_drone
-        self.offset = pygame.math.Vector2(offset_vector)
+        
+        self.x, self.y = float(x + x_offset), float(y + y_offset)
+        self.blast_mode = blast_mode
+        self.lifetime = lifetime_frames
 
-        # The image and rect will be created dynamically in the update() method,
-        # so we start with a placeholder.
-        self.image = pygame.Surface([1, 1], pygame.SRCALPHA)
-        self.rect = self.image.get_rect()
+        # --- Set particle properties ---
+        if self.blast_mode:
+            # Used for explosion-like effects
+            self.color = choice(FLAME_COLORS)
+            self.size = uniform(min_size, max_size)
+            speed = uniform(min_speed, max_speed)
+        else:
+            # Used for jetstream-like effects
+            self.color = choice(color_list)
+            self.size = uniform(min_size, max_size)
+            speed = uniform(min_speed, max_speed)
+            self.gravity = gravity
+            self.shrink_rate = shrink_rate
+
+        self.initial_size = self.size
+        self.current_lifetime = 0
+        
+        # --- Calculate initial velocity ---
+        angle = base_angle_deg if base_angle_deg is not None else uniform(0, 360)
+        angle += uniform(-spread_angle_deg / 2, spread_angle_deg / 2)
+        angle_rad = radians(angle)
+        
+        self.vx, self.vy = cos(angle_rad) * speed, sin(angle_rad) * speed
+        
+        # --- Create the particle's visual surface ---
+        surf_dim = int(self.initial_size * 2) + 2
+        self.image = Surface([surf_dim, surf_dim], SRCALPHA)
+        self.rect = self.image.get_rect(center=(int(self.x), int(self.y)))
+        self._redraw_image()
+
+    def _redraw_image(self):
+        """
+        Internal function to draw the particle onto its Surface.
+        The alpha value is based on the particle's remaining lifetime.
+        """
+        self.image.fill((0, 0, 0, 0)) # Transparent background
+        center_pos = self.image.get_width() // 2
+        draw_size = int(self.size)
+        if draw_size < 1:
+            return
+
+        # Fade the particle out over its life
+        life_ratio = 1.0 - (self.current_lifetime / self.lifetime)
+        current_alpha = int(255 * (life_ratio ** 1.5))
+        
+        if current_alpha > 0:
+            draw_color = (*self.color[:3], current_alpha)
+            circle(self.image, draw_color, (center_pos, center_pos), draw_size)
 
     def update(self):
         """
-        Recalculates the position, angle, and appearance of the jet stream
-        based on the parent drone's current state.
+        Updates the particle's position, size, and lifetime each frame.
+        The particle is killed when its lifetime expires or it becomes too small.
         """
-        # Determine the stream's length and intensity based on drone state
-        is_cruising = getattr(self.parent, 'is_cruising', False)
-        is_boosting = hasattr(self.parent, 'powerup_manager') and self.parent.powerup_manager.speed_boost_active
+        self.current_lifetime += 1
+        if self.current_lifetime >= self.lifetime:
+            self.kill()
+            return
 
-        if not is_cruising:
-            self.image = pygame.Surface([1, 1], pygame.SRCALPHA) # Effectively invisible
-            self.rect = self.image.get_rect()
+        self.x += self.vx
+        self.y += self.vy
+
+        if self.blast_mode:
+            life_ratio = 1.0 - (self.current_lifetime / self.lifetime)
+            self.size = self.initial_size * life_ratio
+        else:
+            self.size -= self.shrink_rate
+
+        if self.size < 0.5:
+            self.kill()
             return
             
-        base_length = 120 if is_boosting else 70
-        length_variation = uniform(0.95, 1.05)
-        current_length = base_length * length_variation
+        self._redraw_image()
+        self.rect.center = (int(self.x), int(self.y))
 
-        # Get the drone's current angle and position
-        drone_angle_rad = radians(self.parent.angle)
-        drone_pos = pygame.math.Vector2(self.parent.rect.center)
+# --- New Jetstream Manager Class ---
 
-        # Rotate the offset vector to find the stream's base position on the drone
-        rotated_offset = self.offset.rotate(-self.parent.angle)
-        start_pos = drone_pos + rotated_offset
-
-        # Calculate the end position of the stream
-        end_pos_x = start_pos.x - cos(drone_angle_rad) * current_length
-        end_pos_y = start_pos.y - sin(drone_angle_rad) * current_length
-        end_pos = pygame.math.Vector2(end_pos_x, end_pos_y)
-
-        # Dynamically redraw the sprite
-        self._redraw(start_pos, end_pos, is_boosting)
-
-    def _redraw(self, start, end, is_boosting):
+class JetstreamManager:
+    """
+    Manages a three-stream particle jet effect for a target sprite.
+    
+    This class creates a central jetstream and two smaller, flanking jetstreams.
+    It is not a sprite itself, but rather a manager that creates and holds a group
+    of Particle sprites. It should be updated each frame to emit new particles.
+    """
+    def __init__(self, target, particle_group):
         """
-        Creates the visual representation of the jet stream on a new surface.
-        This uses several layered lines to create a glowing effect.
+        Initializes the Jetstream manager.
+        
+        Args:
+            target (Sprite): The sprite to attach the jetstream to (e.g., the player).
+                             The target must have 'rect' and 'angle' attributes.
+            particle_group (Group): The main sprite group to which particles will be added
+                                    for rendering and updates.
         """
-        # Create a surface just large enough to contain the jet stream line
-        padding = 20
-        min_x, max_x = min(start.x, end.x), max(start.x, end.x)
-        min_y, max_y = min(start.y, end.y), max(start.y, end.y)
-        width = max_x - min_x + padding
-        height = max_y - min_y + padding
+        self.target = target
+        self.particle_group = particle_group
+        self.is_active = False
+
+        # --- Configuration for the main jetstream ---
+        self.main_jet_config = {
+            "color_list": JETSTREAM_COLORS,
+            "min_speed": 2.5, "max_speed": 4.5,
+            "min_size": 3, "max_size": 6,
+            "spread_angle_deg": 25,
+            "shrink_rate": 0.15,
+            "lifetime_frames": 40
+        }
+
+        # --- Configuration for the side jetstreams (smaller and weaker) ---
+        self.side_jet_config = {
+            "color_list": JETSTREAM_SIDE_COLORS,
+            "min_speed": 2.0, "max_speed": 3.5,
+            "min_size": 1, "max_size": 4,
+            "spread_angle_deg": 20,
+            "shrink_rate": 0.12,
+            "lifetime_frames": 30
+        }
         
-        self.image = pygame.Surface([width, height], pygame.SRCALPHA)
-        self.rect = self.image.get_rect(topleft=(min_x - padding / 2, min_y - padding / 2))
+        # --- Calculate offsets based on the target's size ---
+        # How far behind the target's center the jets originate
+        self.rear_offset = self.target.rect.width / 2 if hasattr(self.target, 'rect') else 20
+        # How far to the side of the center line the side jets are
+        self.side_offset = self.target.rect.width / 3 if hasattr(self.target, 'rect') else 15
 
-        # Remap global coordinates to the local surface
-        local_start = start - self.rect.topleft
-        local_end = end - self.rect.topleft
+    def set_active(self, active_state):
+        """Activates or deactivates the jetstream particle emission."""
+        self.is_active = active_state
 
-        # Draw the stream with a gradient effect for a "glow"
-        outer_width = 14 if is_boosting else 10
-        mid_width = 9 if is_boosting else 6
-        inner_width = 4 if is_boosting else 2
+    def update(self):
+        """
+        Update the jetstream, emitting new particles if active.
+        This should be called every frame from the main game loop.
+        """
+        if not self.is_active or not hasattr(self.target, 'rect') or not hasattr(self.target, 'angle'):
+            return
+
+        # Calculate the base angle for the jetstream (opposite to the target's facing angle)
+        base_angle_deg = self.target.angle + 180 
+        angle_rad = radians(self.target.angle)
+
+        # --- Calculate Emitter Positions ---
+        # 1. Find the central point at the rear of the target
+        rear_x = self.target.rect.centerx - self.rear_offset * cos(angle_rad)
+        rear_y = self.target.rect.centery - self.rear_offset * sin(angle_rad)
+
+        # 2. Emit the central particle for this frame
+        self._emit_particle(rear_x, rear_y, base_angle_deg, self.main_jet_config)
+
+        # 3. Find the positions for the side jets using a perpendicular vector
+        perp_angle_rad = radians(self.target.angle - 90)
+        side_dx = self.side_offset * cos(perp_angle_rad)
+        side_dy = self.side_offset * sin(perp_angle_rad)
+
+        # Define points for the two side jets
+        left_jet_x, left_jet_y = rear_x - side_dx, rear_y - side_dy
+        right_jet_x, right_jet_y = rear_x + side_dx, rear_y + side_dy
         
-        # 1. Outer glow (Faint Orange)
-        pygame.draw.line(self.image, (255, 150, 0, 100), local_start, local_end, outer_width)
-        # 2. Middle core (Bright Yellow)
-        pygame.draw.line(self.image, (255, 255, 0, 150), local_start, local_end, mid_width)
-        # 3. Inner core (Bright White)
-        pygame.draw.line(self.image, (255, 255, 255, 200), local_start, local_end, inner_width)
+        # 4. Emit the two side particles for this frame
+        self._emit_particle(left_jet_x, left_jet_y, base_angle_deg, self.side_jet_config)
+        self._emit_particle(right_jet_x, right_jet_y, base_angle_deg, self.side_jet_config)
 
-
-    def draw(self, surface, camera=None):
-        # This custom draw method is needed because the rect is already in world coordinates
-        if camera:
-            surface.blit(self.image, camera.apply_to_rect(self.rect))
-        else:
-            surface.blit(self.image, self.rect)
+    def _emit_particle(self, x, y, base_angle, config):
+        """Helper function to create a single particle and add it to the main group."""
+        p = Particle(
+            x=x, y=y,
+            color_list=config["color_list"],
+            min_speed=config["min_speed"], max_speed=config["max_speed"],
+            min_size=config["min_size"], max_size=config["max_size"],
+            shrink_rate=config["shrink_rate"],
+            lifetime_frames=config["lifetime_frames"],
+            base_angle_deg=base_angle,
+            spread_angle_deg=config["spread_angle_deg"]
+        )
+        self.particle_group.add(p)
