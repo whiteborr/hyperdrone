@@ -5,41 +5,41 @@ from pygame.font import Font
 from pygame.transform import smoothscale
 from pygame.draw import rect as draw_rect
 from pygame import Surface, SRCALPHA, error as pygame_error
-import os
-import logging
+from os.path import dirname, abspath, join, exists, normpath, splitext
+from logging import getLogger, error, warning, info, debug
 from settings_manager import get_asset_path, get_setting
 
-logger = logging.getLogger(__name__)
+logger = getLogger(__name__)
 
 class AssetManager:
     """
     Manages loading and caching of game assets like images, sounds, and fonts.
     """
     def __init__(self, base_asset_folder_name="assets"):
-        script_dir = os.path.dirname(os.path.abspath(__file__))
-        project_root = os.path.dirname(script_dir)
-        self.base_asset_path = os.path.join(project_root, base_asset_folder_name)
+        script_dir = dirname(abspath(__file__))
+        project_root = dirname(script_dir)
+        self.base_asset_path = join(project_root, base_asset_folder_name)
         
         self.images = {}
         self.sounds = {}
         self.fonts = {}
         self.music_paths = {}
 
-        if not os.path.exists(self.base_asset_path):
-            logger.error(f"AssetManager: CRITICAL - Base asset path does not exist at '{self.base_asset_path}'!")
-        logger.info(f"AssetManager initialized with absolute base path: '{self.base_asset_path}'")
+        if not exists(self.base_asset_path):
+            error(f"AssetManager: CRITICAL - Base asset path does not exist at '{self.base_asset_path}'!")
+        info(f"AssetManager initialized with absolute base path: '{self.base_asset_path}'")
 
     def _get_full_path(self, relative_path):
         # A simple check to ensure the relative_path is a string and could be a path
-        if not isinstance(relative_path, str) or not os.path.splitext(relative_path)[1]:
+        if not isinstance(relative_path, str) or not splitext(relative_path)[1]:
             # If it's not a string or has no file extension, it's probably not a valid asset path.
             # This will prevent emojis or other non-path strings from being processed.
-            logger.warning(f"AssetManager: '{relative_path}' was passed as a relative path but is not a valid file path string. Skipping.")
+            warning(f"AssetManager: '{relative_path}' was passed as a relative path but is not a valid file path string. Skipping.")
             return None
 
         # Join the paths and normalize them for the current OS to fix mixed separators
-        full_path = os.path.join(self.base_asset_path, relative_path)
-        return os.path.normpath(full_path)
+        full_path = join(self.base_asset_path, relative_path)
+        return normpath(full_path)
 
     def load_image(self, relative_path, key=None, use_convert_alpha=True, colorkey=None):
         """Loads an image and caches its original, unscaled version."""
@@ -50,8 +50,8 @@ class AssetManager:
         if full_path is None: # The check in _get_full_path determined it's not a valid path
             return None
 
-        if not os.path.exists(full_path):
-            logger.error(f"AssetManager: Image file not found at '{full_path}' for key '{key}'.")
+        if not exists(full_path):
+            error(f"AssetManager: Image file not found at '{full_path}' for key '{key}'.")
             return None
         try:
             image = image_load(full_path)
@@ -60,7 +60,7 @@ class AssetManager:
             self.images[key] = image
             return image
         except pygame_error as e:
-            logger.error(f"AssetManager: Pygame error loading image '{full_path}': {e}")
+            error(f"AssetManager: Pygame error loading image '{full_path}': {e}")
             return None
 
     def get_image(self, key, scale_to_size=None, default_surface_params=None):
@@ -72,10 +72,10 @@ class AssetManager:
             manifest_path = settings_manager.get_asset_path("images", key)
             if manifest_path:
                 original_image = self.load_image(manifest_path, key)
-            elif os.path.exists(self._get_full_path(key) or ""):
+            elif exists(self._get_full_path(key) or ""):
                 original_image = self.load_image(key)
             else:
-                logger.warning(f"AssetManager: Image with key or path '{key}' not found.")
+                warning(f"AssetManager: Image with key or path '{key}' not found.")
                 if default_surface_params: return self._create_fallback_surface(**default_surface_params)
                 return None
 
@@ -93,7 +93,7 @@ class AssetManager:
             self.images[scaled_key] = scaled_image
             return scaled_image
         except (ValueError, TypeError, pygame_error) as e:
-            logger.error(f"AssetManager: Error scaling image for key '{key}' to {scale_to_size}: {e}")
+            error(f"AssetManager: Error scaling image for key '{key}' to {scale_to_size}: {e}")
             return original_image
         
     def _create_fallback_surface(self, size=(32,32), color=(128,0,128), text=None, text_color=(255,255,255), font_key=None, font_size=20):
@@ -104,7 +104,7 @@ class AssetManager:
                 if not font: font = Font(None, font_size)
                 text_surf = font.render(str(text), True, text_color)
                 surface.blit(text_surf, text_surf.get_rect(center=(size[0]//2, size[1]//2)))
-            except Exception as e: logger.error(f"AssetManager: Error rendering fallback text '{text}': {e}")
+            except Exception as e: error(f"AssetManager: Error rendering fallback text '{text}': {e}")
         draw_rect(surface, (200,200,200), surface.get_rect(), 1); return surface
 
     def load_sound(self, relative_path, key=None):
@@ -115,16 +115,16 @@ class AssetManager:
         if full_path is None:
             return None
 
-        if not os.path.exists(full_path):
-            logger.error(f"AssetManager: Sound file not found: '{full_path}'.")
+        if not exists(full_path):
+            error(f"AssetManager: Sound file not found: '{full_path}'.")
             return None
         try:
             sound = Sound(full_path); self.sounds[key] = sound; return sound
-        except pygame_error as e: logger.error(f"AssetManager: Error loading sound '{full_path}': {e}"); return None
+        except pygame_error as e: error(f"AssetManager: Error loading sound '{full_path}': {e}"); return None
 
     def get_sound(self, key):
         sound = self.sounds.get(key)
-        if not sound: logger.warning(f"AssetManager: Sound with key '{key}' not found.")
+        if not sound: warning(f"AssetManager: Sound with key '{key}' not found.")
         return sound
 
     def load_font(self, relative_path, size, base_key):
@@ -139,17 +139,17 @@ class AssetManager:
             # Use full_path directly, which can be None for system default font
             font = Font(full_path, size)
             self.fonts[font_cache_key] = font
-            logger.debug(f"AssetManager: Loaded font '{full_path or 'System Font'}' size {size} as '{font_cache_key}'.")
+            debug(f"AssetManager: Loaded font '{full_path or 'System Font'}' size {size} as '{font_cache_key}'.")
             return font
         except (pygame_error, FileNotFoundError) as e: # Catch FileNotFoundError as well
-            logger.error(f"AssetManager: Pygame error loading font '{full_path or 'System Font'}' size {size}: {e}")
+            error(f"AssetManager: Pygame error loading font '{full_path or 'System Font'}' size {size}: {e}")
             try:
-                logger.warning(f"AssetManager: Attempting fallback to system font for key '{base_key}' size {size}.")
+                warning(f"AssetManager: Attempting fallback to system font for key '{base_key}' size {size}.")
                 font = Font(None, size)
                 self.fonts[font_cache_key] = font
                 return font
             except pygame_error as e_sys:
-                logger.error(f"AssetManager: Pygame error loading system font as fallback: {e_sys}")
+                error(f"AssetManager: Pygame error loading system font as fallback: {e_sys}")
                 return None
 
     def get_font(self, base_key, size):
@@ -157,7 +157,7 @@ class AssetManager:
         cache_key = f"{base_key}_{size}"
         font = self.fonts.get(cache_key)
         if not font:
-            logger.warning(f"AssetManager: Font '{cache_key}' not found. Check manifest or use load_font first.")
+            warning(f"AssetManager: Font '{cache_key}' not found. Check manifest or use load_font first.")
             try:
                 return Font(None, size)
             except pygame_error:
@@ -172,7 +172,7 @@ class AssetManager:
         if relative_path:
             full_path = self._get_full_path(relative_path)
             return full_path
-        logger.warning(f"AssetManager: Music path for key '{key}' not found.")
+        warning(f"AssetManager: Music path for key '{key}' not found.")
         return None
     
     def get_weapon_icon(self, weapon_mode):
@@ -185,17 +185,17 @@ class AssetManager:
         return None
 
     def preload_manifest(self, manifest_dict):
-        logger.info("AssetManager: Starting preload from manifest...")
+        info("AssetManager: Starting preload from manifest...")
         if "images" in manifest_dict:
             for key, config in manifest_dict["images"].items():
                 if not config.get("path"): 
-                    logger.error(f"AssetManager (Manifest): Path missing for image key '{key}'."); continue
+                    error(f"AssetManager (Manifest): Path missing for image key '{key}'."); continue
                 self.load_image(config["path"], key=key)
         
         if "sounds" in manifest_dict:
             for key, path in manifest_dict["sounds"].items():
                 if not path: 
-                    logger.error(f"AssetManager (Manifest): Path missing for sound key '{key}'."); continue
+                    error(f"AssetManager (Manifest): Path missing for sound key '{key}'."); continue
                 self.load_sound(path, key=key)
         
         if "fonts" in manifest_dict:
@@ -203,7 +203,7 @@ class AssetManager:
                 font_path = config.get("path")
                 sizes_to_load = config.get("sizes", [])
                 if not isinstance(sizes_to_load, list):
-                    logger.error(f"AssetManager (Manifest): 'sizes' for font key '{base_key}' must be a list of integers.")
+                    error(f"AssetManager (Manifest): 'sizes' for font key '{base_key}' must be a list of integers.")
                     continue
                 for size in sizes_to_load:
                     self.load_font(font_path, size, base_key=base_key)
@@ -211,10 +211,10 @@ class AssetManager:
         if "music" in manifest_dict:
             for key, path in manifest_dict["music"].items():
                 if not path: 
-                    logger.error(f"AssetManager (Manifest): Path missing for music key '{key}'."); continue
+                    error(f"AssetManager (Manifest): Path missing for music key '{key}'."); continue
                 self.add_music_path(key, path)
                 
-        logger.info("AssetManager: Preload from manifest complete.")
+        info("AssetManager: Preload from manifest complete.")
         
     def preload_game_assets(self):
         """Preloads all game assets needed for HYPERDRONE."""
@@ -286,6 +286,7 @@ class AssetManager:
                 'missile_launch': get_asset_path("sounds", "MISSILE_LAUNCH_SOUND"),
                 'prototype_drone_explode': get_asset_path("sounds", "PROTOTYPE_DRONE_EXPLODE_SOUND"),
                 'turret_placement': get_asset_path("sounds", "TURRET_PLACE_SOUND"),
+                'lore_unlock': "sounds/lore_unlock.ogg",
             },
             "fonts": {
                 "ui_text": {"path": get_asset_path("fonts", "UI_TEXT_FONT"), "sizes": [28, 24, 20, 16, 32, 56]},
@@ -335,4 +336,4 @@ class AssetManager:
                 asset_manifest["images"][asset_key] = {"path": asset_key, "alpha": True}
         
         self.preload_manifest(asset_manifest)
-        logger.info("AssetManager: All game assets preloaded.")
+        info("AssetManager: All game assets preloaded.")

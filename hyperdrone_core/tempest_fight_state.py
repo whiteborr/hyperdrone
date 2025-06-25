@@ -1,6 +1,6 @@
 # hyperdrone_core/tempest_fight_state.py
-
-import pygame
+from pygame.time import set_timer
+from pygame import USEREVENT
 from .state import State
 from settings_manager import get_setting
 from entities.collectibles import CoreFragmentItem
@@ -55,12 +55,12 @@ class TempestFightState(State):
             self.game.collectibles_group.add(fragment)
             
             # Transition to the story map after a short delay
-            pygame.time.set_timer(pygame.USEREVENT + 1, 3000, 1) # 3-second delay
+            set_timer(USEREVENT + 1, 3000, 1) # 3-second delay
 
     def handle_events(self, events):
         self.game.player.handle_events(events)
         for event in events:
-            if event.type == pygame.USEREVENT + 1:
+            if event.type == USEREVENT + 1:
                 # Transition after delay
                 self.game.level_manager.set_level(self.next_level)
                 self.game.state_manager.set_state('StoryMapState')

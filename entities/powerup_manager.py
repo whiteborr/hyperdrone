@@ -1,3 +1,4 @@
+# entities/powerup_manager.py
 from pygame import Surface, SRCALPHA, BLEND_RGBA_ADD
 from pygame.sprite import Group
 from pygame.time import get_ticks
@@ -5,13 +6,13 @@ from pygame.transform import rotate, smoothscale
 from pygame.mask import from_surface
 from math import radians, cos, sin
 from random import randint, uniform
-import logging
+from logging import getLogger, debug
 
 from settings_manager import get_setting
 from constants import FLAME_COLORS
 from .particle import Particle
 
-logger = logging.getLogger(__name__)
+logger = getLogger(__name__)
 
 class PowerUpManager:
     def __init__(self, player_ref):
@@ -53,7 +54,7 @@ class PowerUpManager:
         # Update shield timer
         if self.shield_active and current_time_ms > self.shield_end_time:
             self.shield_active = False
-            logger.debug("Shield deactivated")
+            debug("Shield deactivated")
         
         # Update speed boost timer and create exhaust particles ONLY if the boost is active
         if self.speed_boost_active:
@@ -62,7 +63,7 @@ class PowerUpManager:
                 self.speed_boost_active = False
                 self.propulsion_active = False
                 self.player.speed = self.original_player_speed
-                logger.debug("Speed boost deactivated")
+                debug("Speed boost deactivated")
             else:
                 # If boost is active, check if it's time to spawn particles
                 particle_spawn_interval = 30  # Controls the density of the trail

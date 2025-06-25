@@ -155,18 +155,13 @@ class OrichalcPickupSystem:
         current_chapter = self.game_controller.story_manager.get_current_chapter()
         if (current_state in ["PlayingState", "BonusLevelPlayingState"] and 
             current_chapter and current_chapter.chapter_id == "chapter_1"):
-            orichalc_count = self.game_controller.drone_system.get_cores()
+            orichalc_count = self.game_controller.drone_system.get_orichalc_fragments()
             self.hud_container.draw(surface, orichalc_count)
             
     def get_fragment_count(self):
         """Get current orichalc fragment count"""
-        return self.game_controller.drone_system.get_cores()
+        return self.game_controller.drone_system.get_orichalc_fragments()
         
     def spend_fragments(self, amount):
         """Spend orichalc fragments"""
-        current_count = self.get_fragment_count()
-        if current_count >= amount:
-            new_count = current_count - amount
-            self.game_controller.drone_system.set_cores(new_count)
-            return True
-        return False
+        return self.game_controller.drone_system.spend_orichalc_fragments(amount)

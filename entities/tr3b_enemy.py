@@ -1,12 +1,12 @@
 # entities/tr3b_enemy.py
 from math import hypot
 from random import random, randint
-import logging
+from logging import getLogger
 from .enemy import Enemy
 from settings_manager import get_setting
 from ai.behaviors import TRBPatrolBehavior, TRBDashBehavior, ChasePlayerBehavior
 
-logger = logging.getLogger(__name__)
+logger = getLogger(__name__)
 
 class TR3BEnemy(Enemy):
     """

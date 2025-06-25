@@ -2,11 +2,11 @@
 from pygame.time import get_ticks
 from pygame.font import Font
 from pygame import Surface, KEYDOWN, K_SPACE, K_RETURN
-import logging
-import json
+from logging import getLogger
+from json import load
 from .state import State
 
-logger = logging.getLogger(__name__)
+logger = getLogger(__name__)
 
 class NarrativeState(State):
     """
@@ -50,7 +50,7 @@ class NarrativeState(State):
         """Load narrative event from lore_entries.json"""
         try:
             with open('data/lore_entries.json', 'r') as f:
-                data = json.load(f)
+                data = load(f)
                 
             # Check memory echoes
             for echo in data.get('narrative_events', {}).get('memory_echoes', []):

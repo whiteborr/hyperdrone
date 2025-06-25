@@ -1,13 +1,14 @@
-import logging
+# hyperdrone_core/wave_manager.py
+from logging import getLogger, basicConfig, INFO
 
 from settings_manager import get_setting
 
 # Get build phase duration from settings
 BUILD_PHASE_DEFAULT_DURATION_MS = get_setting("defense", "DEFENSE_BUILD_PHASE_DURATION_MS", 30000)
 
-logger = logging.getLogger(__name__)
-if not logging.getLogger().hasHandlers():
-    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(name)s - %(message)s')
+logger = getLogger(__name__)
+if not getLogger().hasHandlers():
+    basicConfig(level=INFO, format='%(asctime)s - %(levelname)s - %(name)s - %(message)s')
 
 class WaveManager:
     def __init__(self, game_controller_ref):

@@ -1,4 +1,4 @@
-# hyperdrone_core/__init__.pyAdd commentMore actions
+# hyperdrone_core/__init__.py
 
 # Import the main GameController class to be accessible when importing hyperdrone_core
 from .game_loop import GameController
@@ -24,7 +24,7 @@ from .asset_manager import AssetManager
 from .camera import Camera
 
 # Import the leaderboard module directly if it contains functions to be used
-from . import leaderboard
+
 
 # Define what is available for import when using 'from hyperdrone_core import *'
 __all__ = [
@@ -43,5 +43,5 @@ __all__ = [
     "UIFlowController",
     "AssetManager",
     "Camera",
-    "leaderboard"
+
 ]

@@ -2,7 +2,7 @@
 from random import random, choice, shuffle
 from pygame.time import get_ticks
 from math import hypot
-import logging
+from logging import getLogger, debug, warning, error, info
 
 from entities.collectibles import (
     Ring as CollectibleRing, WeaponUpgradeItem, ShieldItem, SpeedBoostItem,
@@ -11,7 +11,7 @@ from entities.collectibles import (
 )
 from settings_manager import get_setting, settings_manager
 
-logger = logging.getLogger(__name__)
+logger = getLogger(__name__)
 
 class ItemManager:
     def __init__(self, game_controller_ref, asset_manager):
@@ -85,7 +85,7 @@ class ItemManager:
         new_ring = CollectibleRing(spawn_pos[0], spawn_pos[1])
         self.collectible_rings_group.add(new_ring)
         self.spawned_rings_count += 1
-        logger.debug(f"Spawned ring at {spawn_pos}, total: {self.spawned_rings_count}")
+        debug(f"Spawned ring at {spawn_pos}, total: {self.spawned_rings_count}")
         return True
 
     def _spawn_random_powerup(self, maze):
@@ -121,38 +121,38 @@ class ItemManager:
         else: new_powerup = SpeedBoostItem(spawn_pos[0], spawn_pos[1], asset_manager=self.asset_manager)
 
         self.power_ups_group.add(new_powerup)
-        logger.debug(f"Spawned {powerup_type} powerup at {spawn_pos}")
+        debug(f"Spawned {powerup_type} powerup at {spawn_pos}")
         return True
 
     def spawn_corrupted_logs(self, maze, log_ids_to_spawn):
         """Spawns specified corrupted logs in the maze."""
         if not maze:
-            logger.warning("Cannot spawn corrupted logs: maze is None")
+            warning("Cannot spawn corrupted logs: maze is None")
             return
 
         walkable_tiles = maze.get_walkable_tiles_abs()
         if not walkable_tiles:
-            logger.warning("Cannot spawn corrupted logs: no walkable tiles found")
+            warning("Cannot spawn corrupted logs: no walkable tiles found")
             return
 
         shuffle(walkable_tiles)
 
         for log_id in log_ids_to_spawn:
             if not walkable_tiles:
-                logger.error(f"Ran out of walkable tiles to spawn log: {log_id}")
+                error(f"Ran out of walkable tiles to spawn log: {log_id}")
                 break
 
             spawn_pos = walkable_tiles.pop()
             new_log = CorruptedLogItem(spawn_pos[0], spawn_pos[1], log_id, asset_manager=self.asset_manager)
             self.corrupted_logs_group.add(new_log)
-            logger.info(f"Spawned Corrupted Log '{log_id}' at {spawn_pos}")
+            info(f"Spawned Corrupted Log '{log_id}' at {spawn_pos}")
 
     def spawn_quantum_circuitry(self, x, y):
         """Spawns the Quantum Circuitry at a specific location."""
         from entities.collectibles import QuantumCircuitryItem
         circuitry = QuantumCircuitryItem(x, y, asset_manager=self.asset_manager)
         self.quantum_circuitry_group.add(circuitry)
-        logger.info(f"Spawned Quantum Circuitry at ({x}, {y})")
+        info(f"Spawned Quantum Circuitry at ({x}, {y})")
 
     def reset_for_level(self):
         """Reset item manager state for a new level"""
@@ -189,14 +189,14 @@ class ItemManager:
     def _spawn_core_fragment(self, maze):
         """Spawn the next uncollected, required core fragment."""
         if not maze:
-            logger.warning("Cannot spawn core fragment: maze is None")
+            warning("Cannot spawn core fragment: maze is None")
             return False
 
         # Check if we're in Chapter 1 and not on the 4th level yet
         current_chapter = self.game_controller.story_manager.get_current_chapter()
         if current_chapter and current_chapter.chapter_id == "chapter_1":
             if self.game_controller.level_manager.chapter1_level < self.game_controller.level_manager.chapter1_max_levels:
-                logger.info(f"Skipping core fragment spawn - Chapter 1 Level {self.game_controller.level_manager.chapter1_level} (fragment only appears on level 4)")
+                info(f"Skipping core fragment spawn - Chapter 1 Level {self.game_controller.level_manager.chapter1_level} (fragment only appears on level 4)")
                 return False
 
         # 1. Get all fragment configs and the IDs of already collected fragments
@@ -219,13 +219,13 @@ class ItemManager:
         
         # If all required fragments are collected or none are defined, do nothing
         if not fragment_to_spawn_details:
-            logger.info("No more required core fragments to spawn for this level.")
+            info("No more required core fragments to spawn for this level.")
             return False
 
         # 3. Find a safe, non-overlapping position to spawn the item
         walkable_tiles = maze.get_walkable_tiles_abs()
         if not walkable_tiles:
-            logger.warning("Cannot spawn core fragment: no walkable tiles found")
+            warning("Cannot spawn core fragment: no walkable tiles found")
             return False
             
         valid_positions = []
@@ -244,7 +244,7 @@ class ItemManager:
                 valid_positions.append(pos)
                 
         if not valid_positions:
-            logger.warning("Cannot spawn core fragment: no valid positions found")
+            warning("Cannot spawn core fragment: no valid positions found")
             return False
             
         spawn_pos = choice(valid_positions)
@@ -258,24 +258,24 @@ class ItemManager:
             asset_manager=self.asset_manager
         )
         self.core_fragments_group.add(new_fragment)
-        logger.info(f"Spawned core fragment '{fragment_to_spawn_details['name']}' at {spawn_pos}")
+        info(f"Spawned core fragment '{fragment_to_spawn_details['name']}' at {spawn_pos}")
         return True
 
     def _spawn_all_rings(self, maze):
         """Spawn all rings at once at the beginning of the level"""
         if not maze:
-            logger.warning("Cannot spawn rings: maze is None")
+            warning("Cannot spawn rings: maze is None")
             return
 
         walkable_tiles = maze.get_walkable_tiles_abs()
         if not walkable_tiles:
-            logger.warning("Cannot spawn rings: no walkable tiles found")
+            warning("Cannot spawn rings: no walkable tiles found")
             return
 
         shuffle(walkable_tiles)
 
         rings_to_spawn = self.max_rings_per_level - self.spawned_rings_count
-        logger.info(f"Attempting to spawn {rings_to_spawn} rings for level {self.game_controller.level_manager.level}")
+        info(f"Attempting to spawn {rings_to_spawn} rings for level {self.game_controller.level_manager.level}")
 
         self.collectible_rings_group.empty()
         self.spawned_rings_count = 0
@@ -306,17 +306,17 @@ class ItemManager:
         if spawned > 0 and len(self.power_ups_group) == 0:
             self._spawn_random_powerup(maze)
 
-        logger.info(f"Successfully spawned {spawned} rings for level {self.game_controller.level_manager.level}")
+        info(f"Successfully spawned {spawned} rings for level {self.game_controller.level_manager.level}")
     
     def _spawn_weapons_upgrade_shop(self, maze):
         """Spawn weapons upgrade shop at a walkable position"""
         if not maze:
-            logger.warning("Cannot spawn weapons upgrade shop: maze is None")
+            warning("Cannot spawn weapons upgrade shop: maze is None")
             return False
             
         walkable_tiles = maze.get_walkable_tiles_abs()
         if not walkable_tiles:
-            logger.warning("Cannot spawn weapons upgrade shop: no walkable tiles found")
+            warning("Cannot spawn weapons upgrade shop: no walkable tiles found")
             return False
             
         valid_positions = []
@@ -335,11 +335,11 @@ class ItemManager:
                 valid_positions.append(pos)
                 
         if not valid_positions:
-            logger.warning("Cannot spawn weapons upgrade shop: no valid positions found")
+            warning("Cannot spawn weapons upgrade shop: no valid positions found")
             return False
             
         spawn_pos = choice(valid_positions)
         shop_item = WeaponsUpgradeShopItem(spawn_pos[0], spawn_pos[1], asset_manager=self.asset_manager)
         self.power_ups_group.add(shop_item)
-        logger.info(f"Spawned weapons upgrade shop at {spawn_pos}")
+        info(f"Spawned weapons upgrade shop at {spawn_pos}")
         return True

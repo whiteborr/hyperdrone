@@ -1,8 +1,7 @@
 # entities/tempest_boss.py
-
-import pygame
-import random
-import math
+from pygame.time import get_ticks
+from random import randint
+from math import hypot, atan2, radians
 from .enemy import Enemy
 from .tornado_minion import TornadoMinion
 from .bullet import Bullet
@@ -19,13 +18,13 @@ class TempestBoss(Enemy):
         self.enraged_threshold = self.health / 2
 
         # Timers for special attacks
-        self.last_gust_attack = pygame.time.get_ticks()
+        self.last_gust_attack = get_ticks()
         self.gust_attack_cooldown = get_setting("bosses", "tempest", "GUST_COOLDOWN", 5000)
 
-        self.last_tornado_spawn = pygame.time.get_ticks()
+        self.last_tornado_spawn = get_ticks()
         self.tornado_spawn_cooldown = get_setting("bosses", "tempest", "TORNADO_COOLDOWN", 8000)
         
-        self.last_cyclone_burst = pygame.time.get_ticks()
+        self.last_cyclone_burst = get_ticks()
         self.cyclone_burst_cooldown = get_setting("bosses", "tempest", "CYCLONE_COOLDOWN", 10000)
 
         self.speed = get_setting("bosses", "tempest", "SPEED", 3)
@@ -47,11 +46,11 @@ class TempestBoss(Enemy):
 
     def _update_ai(self, player):
         """Handles the boss's attack patterns based on its current phase."""
-        current_time = pygame.time.get_ticks()
+        current_time = get_ticks()
 
         # Move towards the player
         dx, dy = player.rect.centerx - self.rect.centerx, player.rect.centery - self.rect.centery
-        dist = math.hypot(dx, dy)
+        dist = hypot(dx, dy)
         if dist != 0:
             self.x += dx / dist * self.speed
             self.y += dy / dist * self.speed
@@ -79,7 +78,7 @@ class TempestBoss(Enemy):
         # A gust projectile would be a custom bullet type.
         # For simplicity, we'll use a large, slow standard bullet.
         dx, dy = player.rect.centerx - self.rect.centerx, player.rect.centery - self.rect.centery
-        angle = math.atan2(dy, dx)
+        angle = atan2(dy, dx)
         
         gust_bullet = Bullet(
             self.game,
@@ -100,8 +99,8 @@ class TempestBoss(Enemy):
         print("Tempest spawned Tornado Minions!")
         num_tornadoes = get_setting("bosses", "tempest", "TORNADO_COUNT", 3)
         for _ in range(num_tornadoes):
-            spawn_x = self.rect.centerx + random.randint(-50, 50)
-            spawn_y = self.rect.centery + random.randint(-50, 50)
+            spawn_x = self.rect.centerx + randint(-50, 50)
+            spawn_y = self.rect.centery + randint(-50, 50)
             self.game.enemy_manager.spawn_enemy_by_id("tornado_minion", spawn_x, spawn_y)
 
     def cyclone_burst(self):
@@ -110,7 +109,7 @@ class TempestBoss(Enemy):
         num_projectiles = get_setting("bosses", "tempest", "CYCLONE_PROJECTILES", 16)
         for i in range(num_projectiles):
             angle = (360 / num_projectiles) * i
-            rad_angle = math.radians(angle)
+            rad_angle = radians(angle)
             cyclone_bullet = Bullet(
                 self.game,
                 self.rect.centerx,

@@ -1,19 +1,21 @@
-import json
-import os
-import logging
+# hyperdrone_core/leaderboard.py
+from json import load, dump, JSONDecodeError
+from os.path import join, exists
+from os import makedirs, remove
+from logging import getLogger
 
 from settings_manager import get_setting, set_setting, save_settings
 
-logger = logging.getLogger(__name__)
+logger = getLogger(__name__)
 
 DATA_DIR = "data" #
-LEADERBOARD_FULL_PATH = os.path.join(DATA_DIR, get_setting("progression", "LEADERBOARD_FILE_NAME", "leaderboard.json")) #
+LEADERBOARD_FULL_PATH = join(DATA_DIR, get_setting("progression", "LEADERBOARD_FILE_NAME", "leaderboard.json")) #
 
 def _ensure_data_dir_exists(): #
     """Ensures the data directory exists. Creates it if not."""
-    if not os.path.exists(DATA_DIR): #
+    if not exists(DATA_DIR): #
         try: #
-            os.makedirs(DATA_DIR) #
+            makedirs(DATA_DIR) #
             logger.info(f"Leaderboard: Created data directory at '{DATA_DIR}'") #
         except OSError as e: #
             logger.error(f"Leaderboard: Error creating data directory '{DATA_DIR}': {e}") #
@@ -28,14 +30,14 @@ def load_scores(): #
         return [] #
 
     # Update path to use the leaderboard file name from settings
-    current_leaderboard_path = os.path.join(DATA_DIR, get_setting("progression", "LEADERBOARD_FILE_NAME", "leaderboard.json"))
+    current_leaderboard_path = join(DATA_DIR, get_setting("progression", "LEADERBOARD_FILE_NAME", "leaderboard.json"))
 
-    if not os.path.exists(current_leaderboard_path): #
+    if not exists(current_leaderboard_path): #
         logger.info(f"Leaderboard: File '{current_leaderboard_path}' not found. Returning empty list.") #
         return [] #
     try: #
         with open(current_leaderboard_path, 'r') as f: #
-            scores = json.load(f) #
+            scores = load(f) #
             if not isinstance(scores, list): #
                 logger.warning(f"Leaderboard: Data in '{current_leaderboard_path}' is not a list. Resetting.") #
                 return [] #
@@ -45,7 +47,7 @@ def load_scores(): #
                     return [] #
             scores.sort(key=lambda x: (-int(x.get(KEY_LEADERBOARD_SCORE, 0)), -int(x.get(KEY_LEADERBOARD_LEVEL, 0)), str(x.get(KEY_LEADERBOARD_NAME, 'ZZZ')))) #
             return scores #
-    except (IOError, json.JSONDecodeError) as e: #
+    except (IOError, JSONDecodeError) as e: #
         logger.error(f"Leaderboard: Error loading or parsing '{current_leaderboard_path}': {e}. Returning empty list.") #
         return [] #
     except Exception as e: #
@@ -59,12 +61,12 @@ def save_scores(scores): #
         return #
 
     # Update path to use the leaderboard file name from settings
-    current_leaderboard_path = os.path.join(DATA_DIR, get_setting("progression", "LEADERBOARD_FILE_NAME", "leaderboard.json"))
+    current_leaderboard_path = join(DATA_DIR, get_setting("progression", "LEADERBOARD_FILE_NAME", "leaderboard.json"))
 
     try: #
         scores.sort(key=lambda x: (-int(x.get('score', 0)), -int(x.get('level', 0)), str(x.get('name', 'ZZZ')))) #
         with open(current_leaderboard_path, 'w') as f: #
-            json.dump(scores, f, indent=4) #
+            dump(scores, f, indent=4) #
     except IOError as e: #
         logger.error(f"Leaderboard: Error: Could not save scores to '{current_leaderboard_path}': {e}") #
     except Exception as e: #
@@ -163,11 +165,11 @@ if __name__ == '__main__': #
     LEADERBOARD_FILE_NAME_TEST = get_setting("progression", "LEADERBOARD_FILE_NAME", "test_leaderboard.json")
     LEADERBOARD_MAX_ENTRIES_TEST = get_setting("progression", "LEADERBOARD_MAX_ENTRIES", 5)
     
-    LEADERBOARD_FULL_PATH_TEST = os.path.join(DATA_DIR, LEADERBOARD_FILE_NAME_TEST) #
+    LEADERBOARD_FULL_PATH_TEST = join(DATA_DIR, LEADERBOARD_FILE_NAME_TEST) #
     print(f"Self-test using temporary file: {LEADERBOARD_FULL_PATH_TEST} and Max Entries: {LEADERBOARD_MAX_ENTRIES_TEST}") #
 
-    if LEADERBOARD_FILE_NAME_TEST == "test_leaderboard.json" and os.path.exists(LEADERBOARD_FULL_PATH_TEST): #
-        os.remove(LEADERBOARD_FULL_PATH_TEST) #
+    if LEADERBOARD_FILE_NAME_TEST == "test_leaderboard.json" and exists(LEADERBOARD_FULL_PATH_TEST): #
+        remove(LEADERBOARD_FULL_PATH_TEST) #
         print(f"Removed test file: {LEADERBOARD_FULL_PATH_TEST}") #
 
     print("\nInitial scores (should be empty or from previous test run if not cleared):") #
@@ -203,6 +205,6 @@ if __name__ == '__main__': #
     add_score("INVALID", "notascore", 10) #
 
     # Keep test file for inspection if needed, otherwise uncomment to remove.
-    # if LEADERBOARD_FILE_NAME_TEST == "test_leaderboard.json" and os.path.exists(LEADERBOARD_FULL_PATH_TEST):
-    #     os.remove(LEADERBOARD_FULL_PATH_TEST)
+    # if LEADERBOARD_FILE_NAME_TEST == "test_leaderboard.json" and exists(LEADERBOARD_FULL_PATH_TEST):
+    #     remove(LEADERBOARD_FULL_PATH_TEST)
     #     print(f"Removed test file: {LEADERBOARD_FULL_PATH_TEST} at end of test.")

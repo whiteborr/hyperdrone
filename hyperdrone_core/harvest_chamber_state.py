@@ -7,13 +7,13 @@ from pygame.time import get_ticks
 from pygame.transform import rotate, scale
 from pygame import KEYDOWN, K_LEFT, K_RIGHT, K_UP, K_DOWN, K_a, K_d, K_w, K_s, K_SPACE, K_p
 from random import randint, choice, random
-import logging
+from logging import getLogger
 from math import sin, cos, atan2, pi, hypot
 from .state import State
 from settings_manager import get_setting
 from entities import Enemy 
 
-logger = logging.getLogger(__name__)
+logger = getLogger(__name__)
 
 class ScrollingBackground:
     """Manages the scrolling background for the Harvest Chamber."""

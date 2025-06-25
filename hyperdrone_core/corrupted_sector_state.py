@@ -3,12 +3,12 @@ from pygame.sprite import spritecollide
 from pygame.time import get_ticks
 from pygame import KEYDOWN, KEYUP, K_p
 from random import shuffle
-import logging
+from logging import getLogger, info, warning
 from .state import State
 from settings_manager import get_setting
 from entities import Maze, GlitchingWall, PlayerDrone
 
-logger = logging.getLogger(__name__)
+logger = getLogger(__name__)
 
 class CorruptedSectorState(State):
     """
@@ -107,7 +107,7 @@ class CorruptedSectorState(State):
 
     def enter(self, previous_state=None, **kwargs):
         """Initializes the corrupted sector level."""
-        logger.info("Entering CorruptedSectorState...")
+        info("Entering CorruptedSectorState...")
         self.game.maze = Maze(maze_type="corrupted")
 
         # --- Robust Player Initialization ---
@@ -144,7 +144,7 @@ class CorruptedSectorState(State):
 
         current_chapter = self.game.story_manager.get_current_chapter()
         if not (current_chapter and current_chapter.chapter_id == "chapter_3"):
-             logger.warning("Entered CorruptedSectorState but not on Chapter 3 in story.")
+             warning("Entered CorruptedSectorState but not on Chapter 3 in story.")
              
     def update(self, delta_time):
         """Update game logic for the corrupted sector."""
@@ -173,7 +173,7 @@ class CorruptedSectorState(State):
         if current_chapter and current_chapter.chapter_id == "chapter_3" and current_chapter.is_complete():
             self.game.story_manager.advance_chapter()
             self.game.state_manager.set_state("StoryMapState")
-            logger.info("Chapter 3 Complete! Transitioning...")
+            info("Chapter 3 Complete! Transitioning...")
 
         if not self.game.player.alive:
             self.game._handle_player_death_or_life_loss()

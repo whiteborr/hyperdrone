@@ -2,11 +2,11 @@
 from json import load, dump
 from os.path import exists, dirname
 from os import makedirs
-import logging
+from logging import getLogger
 from .drone_configs import DRONE_DATA
 from settings_manager import settings_manager
 
-logger = logging.getLogger(__name__)
+logger = getLogger(__name__)
 
 class DroneSystem:
     """
@@ -36,8 +36,11 @@ class DroneSystem:
         # NEW: Track unlocked active abilities
         self.unlocked_abilities = set()
         
-        # Track owned weapons
-        self.owned_weapons = [0]  # Start with default weapon
+        # Track owned weapons with levels (weapon_mode: level)
+        self.owned_weapons = {0: 1}  # Start with default weapon at level 1
+        
+        # Orichalc fragments for weapon upgrades
+        self.orichalc_fragments = 0
 
         # Vault status
         self.architect_vault_completed = False
@@ -93,11 +96,22 @@ class DroneSystem:
                     self.solved_puzzle_terminals.update(data.get(KEY_SOLVED_PUZZLE_TERMINALS, []))
                     self.defeated_bosses.update(data.get(KEY_DEFEATED_BOSSES, []))
                     self.unlocked_abilities.update(data.get('unlocked_abilities', [])) # NEW
-                    self.owned_weapons = data.get('owned_weapons', [0])
+                    # Handle both old list format and new dict format for owned_weapons
+                    owned_weapons_data = data.get('owned_weapons', {0: 1})
+                    if isinstance(owned_weapons_data, list):
+                        # Convert old list format to new dict format
+                        self.owned_weapons = {weapon: 1 for weapon in owned_weapons_data}
+                    else:
+                        # Convert string keys to integers to prevent duplicates
+                        self.owned_weapons = {int(k): v for k, v in owned_weapons_data.items()}
+                    self.orichalc_fragments = data.get('orichalc_fragments', 0)
             except IOError as e:
                 logger.error(f"Error loading save file '{self.SAVE_FILE}': {e}")
         else:
             logger.info(f"No save file found at '{self.SAVE_FILE}'. Starting with defaults.")
+            # Ensure default weapon is owned at level 1
+            if 0 not in self.owned_weapons:
+                self.owned_weapons[0] = 1
             self._save_unlocks() # Create a new save file with defaults
 
     def _save_unlocks(self):
@@ -123,7 +137,8 @@ class DroneSystem:
             KEY_SOLVED_PUZZLE_TERMINALS: list(self.solved_puzzle_terminals),
             KEY_DEFEATED_BOSSES: list(self.defeated_bosses),
             'unlocked_abilities': list(self.unlocked_abilities), # NEW
-            'owned_weapons': list(self.owned_weapons)
+            'owned_weapons': {str(k): v for k, v in self.owned_weapons.items()},
+            'orichalc_fragments': self.orichalc_fragments
         }
         try:
             makedirs(dirname(self.SAVE_FILE), exist_ok=True)
@@ -182,8 +197,10 @@ class DroneSystem:
         
         config = self.get_drone_config(drone_id)
         unlock_condition = config.get(KEY_UNLOCK_CONDITION, {})
-        unlock_type = unlock_condition.get(KEY_UNLOCK_TYPE)
-        unlock_value = unlock_condition.get(KEY_UNLOCK_VALUE)
+        unlock_type = unlock_condition.get("type")
+        unlock_value = unlock_condition.get("value")
+        
+        logger.info(f"Unlocking {drone_id}: type={unlock_type}, value={unlock_value}, player_cores={self.cores}")
 
         if unlock_type == "cores":
             if self.cores >= unlock_value:
@@ -191,8 +208,13 @@ class DroneSystem:
                 self.unlocked_drones.add(drone_id)
                 self._save_dirty = True
                 self._save_unlocks()
-                logger.info(f"Drone '{drone_id}' unlocked by spending {unlock_value} cores.")
+                # Force immediate save to ensure persistence
+                self._save_unlocks()
+                logger.info(f"Drone '{drone_id}' unlocked by spending {unlock_value} cores. Remaining cores: {self.cores}")
                 return True
+            else:
+                logger.info(f"Cannot unlock drone '{drone_id}': need {unlock_value} cores, have {self.cores}")
+                return False
         elif unlock_type == "boss":
              if unlock_value in self.defeated_bosses:
                 self.unlocked_drones.add(drone_id)
@@ -379,18 +401,61 @@ class DroneSystem:
         pass
     
     def add_owned_weapon(self, weapon_mode):
-        """Add a weapon to the player's owned weapons"""
+        """Add a weapon to the player's owned weapons at level 1"""
         if weapon_mode not in self.owned_weapons:
-            self.owned_weapons.append(weapon_mode)
+            self.owned_weapons[weapon_mode] = 1
             self._save_dirty = True
             self._save_unlocks()
-            logger.info(f"Weapon mode {weapon_mode} added to owned weapons")
+            logger.info(f"Weapon mode {weapon_mode} added to owned weapons at level 1")
             return True
         return False
     
     def get_owned_weapons(self):
-        """Get list of owned weapons"""
+        """Get dict of owned weapons with their levels"""
         return self.owned_weapons.copy()
+    
+    def get_weapon_level(self, weapon_mode):
+        """Get the level of a specific weapon"""
+        return self.owned_weapons.get(weapon_mode, 0)
+    
+    def upgrade_weapon(self, weapon_mode, max_level=5):
+        """Upgrade a weapon to the next level"""
+        current_level = self.get_weapon_level(weapon_mode)
+        if current_level == 0:
+            # Weapon not owned, add at level 1
+            self.owned_weapons[weapon_mode] = 1
+            self._save_dirty = True
+            self._save_unlocks()
+            logger.info(f"Weapon mode {weapon_mode} acquired at level 1")
+            return True
+        elif current_level < max_level:
+            self.owned_weapons[weapon_mode] = current_level + 1
+            self._save_dirty = True
+            self._save_unlocks()
+            logger.info(f"Weapon mode {weapon_mode} upgraded to level {current_level + 1}")
+            return True
+        return False
+    
+    def add_orichalc_fragments(self, amount):
+        """Add orichalc fragments"""
+        if amount > 0:
+            self.orichalc_fragments += amount
+            self._save_dirty = True
+            self._save_unlocks()
+            logger.info(f"Added {amount} orichalc fragments. Total: {self.orichalc_fragments}")
+    
+    def spend_orichalc_fragments(self, amount):
+        """Spend orichalc fragments if available"""
+        if self.orichalc_fragments >= amount:
+            self.orichalc_fragments -= amount
+            self._save_dirty = True
+            self._save_unlocks()
+            return True
+        return False
+    
+    def get_orichalc_fragments(self):
+        """Get current orichalc fragment count"""
+        return self.orichalc_fragments
     
     def _unlock_default_lore_entries(self):
         """Unlock some basic lore entries that should be available from the start"""

@@ -113,7 +113,13 @@ class PlayingState(State):
         
         # Start level timer
         self.game.level_timer_start_ticks = get_ticks()
-        self.game.level_time_remaining_ms = get_setting("gameplay", "LEVEL_TIMER_DURATION", 180000)
+        self.game.level_time_remaining_ms = get_setting("progression", "LEVEL_TIMER_DURATION", 120000)
+        
+        # Synchronize with level manager timer
+        if hasattr(self.game, 'level_manager'):
+            self.game.level_manager.level_start_time = self.game.level_timer_start_ticks
+            self.game.level_manager.timer_paused = False
+            self.game.level_manager.total_paused_time = 0
         
         # Reset item manager and spawn collectibles
         if hasattr(self.game, 'item_manager'):

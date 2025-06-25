@@ -5,7 +5,7 @@ from pygame import Surface, SRCALPHA
 from pygame.draw import circle, polygon, rect as draw_rect
 from pygame.time import get_ticks
 from pygame.transform import rotate
-import logging
+from logging import getLogger, error
 
 # Import from settings_manager for settings access
 from settings_manager import get_setting
@@ -14,11 +14,11 @@ from constants import PLAYER_BULLET_COLOR, RED, MISSILE_COLOR, LIGHTNING_COLOR, 
 try:
     from .particle import Particle
 except ImportError:
-    logging.error("Bullet: Could not import Particle from .particle. Using placeholder.")
+    error("Bullet: Could not import Particle from .particle. Using placeholder.")
     from pygame.sprite import Sprite
     class Particle(Sprite): pass
 
-logger = logging.getLogger(__name__)
+logger = getLogger(__name__)
 
 
 from pygame.sprite import Sprite

@@ -1,13 +1,13 @@
 # ai/pathfinding_component.py
 from math import hypot, degrees, atan2, cos, sin
 from random import choice, uniform
-import logging
+from logging import getLogger
 from pygame import Rect
 
 from hyperdrone_core.pathfinding import a_star_search, find_wall_follow_target, find_alternative_target
 from settings_manager import get_setting
 
-logger = logging.getLogger(__name__)
+logger = getLogger(__name__)
 
 class PathfinderComponent:
     def __init__(self, enemy):

@@ -1,17 +1,17 @@
 # entities/maze_chapter3.py
-import pygame.draw
+from pygame.draw import rect, circle, lines
 from pygame import Surface, SRCALPHA
 from random import choice
 from heapq import heappush, heappop
 from math import sin
-import logging
+from logging import getLogger, basicConfig, info, error, DEBUG
 
 from settings_manager import get_setting
 from constants import BLACK, BLUE, RED, GREEN, YELLOW, CYAN
 
-logger = logging.getLogger(__name__)
+logger = getLogger(__name__)
 if not logger.hasHandlers():
-    logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(name)s - %(message)s')
+    basicConfig(level=DEBUG, format='%(asctime)s - %(levelname)s - %(name)s - %(message)s')
 
 
 class MazeChapter3:
@@ -63,10 +63,10 @@ class MazeChapter3:
         self.initial_zoom_level = 0.4
         
         core_status_message = f"Core found at {self.core_reactor_grid_pos}" if self.core_reactor_grid_pos else "Core NOT found"
-        logger.info(f"MazeChapter3 post-init (id: {id(self)}). Type: {maze_type}, Offset: {game_area_x_offset}, Grid: {self.actual_maze_rows}x{self.actual_maze_cols}. {core_status_message}. Enemy spawns: {len(self.enemy_spawn_points_abs)}")
+        info(f"MazeChapter3 post-init (id: {id(self)}). Type: {maze_type}, Offset: {game_area_x_offset}, Grid: {self.actual_maze_rows}x{self.actual_maze_cols}. {core_status_message}. Enemy spawns: {len(self.enemy_spawn_points_abs)}")
         
         if not self.core_reactor_grid_pos :
-             logger.error(f"MazeChapter3 CRITICAL INIT CHECK: 'C' was NOT found in the generated grid. Check _build_tilemap and CORE_POS.")
+             error(f"MazeChapter3 CRITICAL INIT CHECK: 'C' was NOT found in the generated grid. Check _build_tilemap and CORE_POS.")
 
     def _build_tilemap(self):
         grid = [[0 for _ in range(self.actual_maze_cols)] for _ in range(self.actual_maze_rows)]
@@ -240,20 +240,20 @@ class MazeChapter3:
                     rect = (x, y, tile_size, tile_size)
 
                 if tile_type == 1:
-                    pygame.draw.rect(surface, self.wall_color, rect)
+                    rect(surface, self.wall_color, rect)
                 elif tile_type == 0:
-                    pygame.draw.rect(surface, self.path_color, rect)
+                    rect(surface, self.path_color, rect)
                 elif tile_type == 'C':
-                    pygame.draw.rect(surface, self.path_color, rect)
+                    rect(surface, self.path_color, rect)
                     center_pos = (x + tile_size // 2, y + tile_size // 2)
                     if camera:
                         center_pos = camera.apply_to_pos(center_pos)
                         radius = (tile_size // 3) * camera.zoom_level
                     else:
                         radius = tile_size // 3
-                    pygame.draw.circle(surface, CYAN, center_pos, radius)
+                    circle(surface, CYAN, center_pos, radius)
                 elif tile_type == 'T':
-                    pygame.draw.rect(surface, self.path_color, rect)
+                    rect(surface, self.path_color, rect)
                     if camera:
                         temp_surface_for_turret_spot = Surface((tile_size * camera.zoom_level, tile_size * camera.zoom_level), SRCALPHA)
                         temp_surface_for_turret_spot.fill(self.turret_spot_color)
@@ -262,9 +262,9 @@ class MazeChapter3:
                         temp_surface_for_turret_spot = Surface((tile_size, tile_size), SRCALPHA)
                         temp_surface_for_turret_spot.fill(self.turret_spot_color)
                         surface.blit(temp_surface_for_turret_spot, (x, y))
-                    pygame.draw.rect(surface, GREEN, rect, 1)
+                    rect(surface, GREEN, rect, 1)
                 elif tile_type == 'U':
-                    pygame.draw.rect(surface, self.path_color, rect)
+                    rect(surface, self.path_color, rect)
 
         if self.debug_mode:
             for r_spawn, c_spawn in self.ENEMY_SPAWN_GRID_POSITIONS:
@@ -275,15 +275,15 @@ class MazeChapter3:
                 else:
                     spawn_pos = (int(abs_spawn_x), int(abs_spawn_y))
                     radius = tile_size // 4
-                pygame.draw.circle(surface, (255, 0, 255), spawn_pos, radius)
+                circle(surface, (255, 0, 255), spawn_pos, radius)
             
             for (spawn_r, spawn_c), path_pixel_coords in self.enemy_paths_to_core.items():
                 if path_pixel_coords and len(path_pixel_coords) > 1:
                     if camera:
                         transformed_path = [camera.apply_to_pos(pos) for pos in path_pixel_coords]
-                        pygame.draw.lines(surface, (255, 165, 0), False, transformed_path, max(1, int(2 * camera.zoom_level)))
+                        lines(surface, (255, 165, 0), False, transformed_path, max(1, int(2 * camera.zoom_level)))
                     else:
-                        pygame.draw.lines(surface, (255, 165, 0), False, path_pixel_coords, 2) 
+                        lines(surface, (255, 165, 0), False, path_pixel_coords, 2) 
 
     def toggle_debug(self):
         self.debug_mode = not self.debug_mode

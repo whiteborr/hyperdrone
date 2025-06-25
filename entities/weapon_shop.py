@@ -33,8 +33,8 @@ class WeaponShop(Sprite):
         
         self.rect = self.image.get_rect(center=(x, y))
         
-        # Weapon prices in orichalc fragments
-        self.weapon_prices = {
+        # Base weapon prices for level 1 in orichalc fragments
+        self.base_weapon_prices = {
             WEAPON_MODE_TRI_SHOT: 5,
             WEAPON_MODE_RAPID_SINGLE: 8,
             WEAPON_MODE_RAPID_TRI: 12,
@@ -46,31 +46,43 @@ class WeaponShop(Sprite):
             WEAPON_MODE_LIGHTNING: 30
         }
         
-        # Track purchased weapons
-        self.purchased_weapons = set()
+        # Maximum weapon level
+        self.max_weapon_level = 5
         
         # Shop interaction state
         self.is_active = False
         self.interaction_range = get_setting("gameplay", "TILE_SIZE", 80) * 1.5
         
+    def get_weapon_upgrade_price(self, weapon_mode, current_level):
+        """Get the upgrade price for a weapon based on current level"""
+        base_price = self.base_weapon_prices.get(weapon_mode, 999)
+        if current_level == 0:
+            return base_price  # First acquisition
+        else:
+            # Upgrade cost increases with level
+            return int(base_price * (1.5 ** current_level))
+    
     def get_weapon_price(self, weapon_mode):
-        """Get the price of a weapon in orichalc fragments"""
-        return self.weapon_prices.get(weapon_mode, 999)
+        """Get the base price of a weapon (for backward compatibility)"""
+        return self.base_weapon_prices.get(weapon_mode, 999)
         
     def is_purchased(self, weapon_mode):
-        """Check if a weapon has been purchased"""
-        return weapon_mode in self.purchased_weapons
+        """Check if a weapon has been purchased (for backward compatibility)"""
+        return False  # Always allow upgrades in new system
         
-    def purchase_weapon(self, weapon_mode, current_fragments):
-        """Attempt to purchase a weapon. Returns cost if successful, 0 if failed"""
-        if weapon_mode in self.purchased_weapons:
-            return 0  # Already purchased
+    def upgrade_weapon(self, weapon_mode, current_level, current_fragments):
+        """Attempt to upgrade a weapon. Returns cost if successful, 0 if failed"""
+        if current_level >= self.max_weapon_level:
+            return 0  # Already at max level
             
-        cost = self.get_weapon_price(weapon_mode)
+        cost = self.get_weapon_upgrade_price(weapon_mode, current_level)
         if current_fragments >= cost:
-            self.purchased_weapons.add(weapon_mode)
             return cost
         return 0  # Not enough fragments
+    
+    def purchase_weapon(self, weapon_mode, current_fragments):
+        """Legacy method for backward compatibility"""
+        return self.upgrade_weapon(weapon_mode, 0, current_fragments)
         
     def can_interact(self, player_pos):
         """Check if player is close enough to interact with shop"""
@@ -79,9 +91,13 @@ class WeaponShop(Sprite):
         distance = ((player_pos[0] - self.center_x) ** 2 + (player_pos[1] - self.center_y) ** 2) ** 0.5
         return distance <= self.interaction_range
     
-    def get_weapon_stats(self, weapon_mode):
-        """Get weapon stats for display"""
-        stats = {
+    def get_max_weapon_level(self):
+        """Get maximum weapon level"""
+        return self.max_weapon_level
+    
+    def get_weapon_stats(self, weapon_mode, level=1):
+        """Get weapon stats for display with level scaling"""
+        base_stats = {
             WEAPON_MODE_TRI_SHOT: {"damage": "1x3", "rate": "Medium", "special": "Triple Shot"},
             WEAPON_MODE_RAPID_SINGLE: {"damage": "1x", "rate": "Fast", "special": "Rapid Fire"},
             WEAPON_MODE_RAPID_TRI: {"damage": "1x3", "rate": "Fast", "special": "Rapid Triple"},
@@ -92,7 +108,14 @@ class WeaponShop(Sprite):
             WEAPON_MODE_HEATSEEKER_PLUS_BULLETS: {"damage": "2x+1x", "rate": "Medium", "special": "Homing+Bullets"},
             WEAPON_MODE_LIGHTNING: {"damage": "4x", "rate": "Very Slow", "special": "Chain Lightning"}
         }
-        return stats.get(weapon_mode, {"damage": "1x", "rate": "Medium", "special": "Standard"})
+        stats = base_stats.get(weapon_mode, {"damage": "1x", "rate": "Medium", "special": "Standard"})
+        
+        # Add level indicator to damage if level > 1
+        if level > 1:
+            stats = stats.copy()
+            stats["damage"] = f"{stats['damage']} +{level-1}"
+        
+        return stats
         
     def update(self):
         """Update shop state"""

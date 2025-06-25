@@ -1,10 +1,8 @@
 # hyperdrone_core/state_transition_viewer.py
-from pygame import get_init, init as pygame_init, quit as pygame_quit
+from pygame import get_init, init as pygame_init, quit as pygame_quit, QUIT, KEYDOWN, K_ESCAPE
 from pygame.display import set_mode, set_caption, flip
 from pygame.font import SysFont
 from pygame.event import get as event_get
-from pygame import QUIT, KEYDOWN, K_ESCAPE
-import time
 from datetime import datetime
 
 class StateTransitionViewer:

@@ -1,9 +1,10 @@
+# entities/path_manager.py
 from heapq import heappush, heappop
-import logging
+from logging import getLogger, error, warning
 from typing import List, Tuple, Dict, Set, Optional
 from settings_manager import get_setting
 
-logger = logging.getLogger(__name__)
+logger = getLogger(__name__)
 
 class PathManager:
     """
@@ -20,7 +21,7 @@ class PathManager:
     def set_grid(self, grid: List[List[int]]):
         """Set the grid directly from a 2D array"""
         if not grid or not grid[0]:
-            logger.error("Invalid grid provided to PathManager")
+            error("Invalid grid provided to PathManager")
             return
         self.grid_height = len(grid)
         self.grid_width = len(grid[0])
@@ -65,7 +66,7 @@ class PathManager:
         Returns a list of (row, col) tuples representing the path
         """
         if not self.is_walkable(*start) or not self.is_walkable(*goal):
-            logger.warning(f"Start {start} or goal {goal} is not walkable")
+            warning(f"Start {start} or goal {goal} is not walkable")
             return []
             
         # Priority queue for A*
@@ -110,7 +111,7 @@ class PathManager:
                     f_score[neighbor] = tentative_g_score + self.heuristic(neighbor, goal)
                     heappush(open_set, (f_score[neighbor], neighbor))
                     
-        logger.warning(f"No path found from {start} to {goal}")
+        warning(f"No path found from {start} to {goal}")
         return []  # No path found
         
     def can_place_tower(self, row: int, col: int) -> bool:
@@ -131,7 +132,7 @@ class PathManager:
             return False
             
         if not self.goal_point or not self.spawn_points:
-            logger.error("Goal point or spawn points not set")
+            error("Goal point or spawn points not set")
             return False
             
         # Temporarily mark the tile as a tower

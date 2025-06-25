@@ -1,12 +1,13 @@
+# entities/enemy_pathfinder.py
 from pygame import Surface
 from pygame.sprite import Sprite
 from pygame.draw import lines, circle
-import logging
+from logging import getLogger, info, error
 from typing import List, Tuple, Optional
 from entities.path_manager import PathManager
 from constants import RED, GREEN, BLUE
 
-logger = logging.getLogger(__name__)
+logger = getLogger(__name__)
 
 class PathfindingEnemy(Sprite):
     """
@@ -28,7 +29,7 @@ class PathfindingEnemy(Sprite):
         self.x, self.y = float(pixel_pos[0] + 300), float(pixel_pos[1])
         
         # Debug: log the actual grid position being used
-        logger.info(f"Enemy created at grid {grid_pos}, pixel ({self.x}, {self.y})")
+        info(f"Enemy created at grid {grid_pos}, pixel ({self.x}, {self.y})")
         
         # Create a simple sprite
         self.size = path_manager.tile_size // 2
@@ -45,7 +46,7 @@ class PathfindingEnemy(Sprite):
     def calculate_path(self):
         """Calculate path from current position to goal"""
         if not self.path_manager.goal_point:
-            logger.error("Goal point not set in path manager")
+            error("Goal point not set in path manager")
             return
             
         # Convert pixel position to grid position (subtract game area offset first)
@@ -112,14 +113,14 @@ class PathfindingEnemy(Sprite):
             
     def reach_goal(self):
         """Called when enemy reaches the goal"""
-        logger.info("Enemy reached the goal!")
+        info("Enemy reached the goal!")
         # Find game controller through tower defense manager
         tower_defense_manager = getattr(self.path_manager, 'tower_defense_manager', None)
         if tower_defense_manager and hasattr(tower_defense_manager, 'game_controller'):
             game_controller = tower_defense_manager.game_controller
             if hasattr(game_controller, 'core_reactor') and game_controller.core_reactor:
                 damage = getattr(self, 'damage', 25)
-                logger.info(f"Enemy damaging core for {damage} damage")
+                info(f"Enemy damaging core for {damage} damage")
                 game_controller.core_reactor.take_damage(damage, game_controller)
         self.alive = False
         

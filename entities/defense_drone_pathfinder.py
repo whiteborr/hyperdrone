@@ -1,13 +1,14 @@
+# entities/defense_drone_pathfinder.py
 from pygame import Surface
 from pygame.transform import smoothscale
 from pygame.draw import rect as draw_rect
-import logging
+from logging import getLogger, warning, error
 from typing import List, Tuple, Optional
 from entities.path_manager import PathManager
 from entities.enemy_pathfinder import PathfindingEnemy
 from constants import RED, YELLOW, GREEN, WHITE, DARK_GREY
 
-logger = logging.getLogger(__name__)
+logger = getLogger(__name__)
 
 class DefenseDronePathfinder(PathfindingEnemy):
     """
@@ -28,7 +29,7 @@ class DefenseDronePathfinder(PathfindingEnemy):
     def load_sprite(self):
         """Load the proper sprite for this defense drone"""
         if not self.asset_manager:
-            logger.warning(f"No asset manager provided for DefenseDronePathfinder")
+            warning(f"No asset manager provided for DefenseDronePathfinder")
             return
             
         loaded_image = self.asset_manager.get_image(self.sprite_key)
@@ -41,9 +42,9 @@ class DefenseDronePathfinder(PathfindingEnemy):
                 self.rect = self.image.get_rect(center=(int(self.x), int(self.y)))
                 self.collision_rect = self.rect.inflate(-4, -4)
             except Exception as e:
-                logger.error(f"Error loading sprite for DefenseDronePathfinder: {e}")
+                error(f"Error loading sprite for DefenseDronePathfinder: {e}")
         else:
-            logger.warning(f"Could not load sprite with key '{self.sprite_key}' for DefenseDronePathfinder")
+            warning(f"Could not load sprite with key '{self.sprite_key}' for DefenseDronePathfinder")
             
     def draw(self, surface: Surface, camera=None):
         """Draw the enemy directly without camera transformation"""

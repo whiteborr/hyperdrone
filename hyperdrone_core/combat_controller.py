@@ -2,7 +2,7 @@
 from pygame.sprite import Group, groupcollide, spritecollide, collide_rect_ratio
 from math import hypot
 from random import random, choice
-import logging
+from logging import getLogger, info, error
 
 from settings_manager import get_setting
 from constants import (
@@ -22,7 +22,7 @@ from entities.temporary_barricade import TemporaryBarricade
 from .enemy_manager import EnemyManager
 from .wave_manager import WaveManager
 
-logger = logging.getLogger(__name__)
+logger = getLogger(__name__)
 
 class CombatController:
     """
@@ -327,11 +327,11 @@ class CombatController:
             reactor_hits = spritecollide(self.core_reactor, enemies_to_check, True, collide_rect_ratio(0.7))
             for enemy in reactor_hits:
                 damage = getattr(enemy, 'contact_damage', 25)
-                logger.info(f"Enemy hit core reactor for {damage} damage")
+                info(f"Enemy hit core reactor for {damage} damage")
                 self.core_reactor.take_damage(damage, self.game_controller) 
                 self.game_controller._create_enemy_explosion(enemy.rect.centerx, enemy.rect.centery)
                 if not self.core_reactor.alive: 
-                    logger.info("Core reactor destroyed!")
+                    info("Core reactor destroyed!")
                     self.game_controller.state_manager.set_state(GAME_STATE_GAME_OVER)
         
         for enemy in list(self.enemy_manager.get_sprites()):
@@ -417,7 +417,7 @@ class CombatController:
         # Check if there's already a turret at this position
         for turret in self.turrets_group:
             if turret.rect.collidepoint(world_pos):
-                logger.info("Cannot place turret - position already occupied")
+                info("Cannot place turret - position already occupied")
                 return False
             
         # world_pos is already in screen coordinates in this context
@@ -439,25 +439,25 @@ class CombatController:
                 break
                 
         if not clicked_turret:
-            logger.info("No turret found at clicked position for upgrade")
+            info("No turret found at clicked position for upgrade")
             return False
             
         # Check if turret can be upgraded
         if clicked_turret.upgrade_level >= clicked_turret.MAX_UPGRADE_LEVEL:
-            logger.info("Turret is already at maximum upgrade level")
+            info("Turret is already at maximum upgrade level")
             return False
             
         # Check if player has enough cores
         upgrade_cost = clicked_turret.UPGRADE_COST
         cores = self.game_controller.drone_system.get_cores()
         if cores < upgrade_cost:
-            logger.info(f"Not enough cores to upgrade turret (need {upgrade_cost})")
+            info(f"Not enough cores to upgrade turret (need {upgrade_cost})")
             return False
             
         # Upgrade the turret
         if clicked_turret.upgrade():
             self.game_controller.drone_system.spend_cores(upgrade_cost)
-            logger.info(f"Turret upgraded to level {clicked_turret.upgrade_level}")
+            info(f"Turret upgraded to level {clicked_turret.upgrade_level}")
             return True
             
         return False
@@ -482,15 +482,15 @@ class CombatController:
             self.game_controller.set_story_message("Maze Guardian defeated!", 3000)
             
         # Log the event
-        logger.info("Maze Guardian defeated!")
+        info("Maze Guardian defeated!")
         
     def _spawn_orichalc_fragment(self, x, y):
         """Spawn an orichalc fragment at the given position"""
-        logger.info(f"Spawning orichalc fragment at ({x}, {y})")
+        info(f"Spawning orichalc fragment at ({x}, {y})")
         from entities.orichalc_fragment import OrichalcFragment
         fragment = OrichalcFragment(x, y, asset_manager=self.asset_manager)
         if hasattr(self.game_controller, 'core_fragments_group'):
             self.game_controller.core_fragments_group.add(fragment)
-            logger.info(f"Added orichalc fragment to core_fragments_group, group size: {len(self.game_controller.core_fragments_group)}")
+            info(f"Added orichalc fragment to core_fragments_group, group size: {len(self.game_controller.core_fragments_group)}")
         else:
-            logger.error("game_controller does not have core_fragments_group")
+            error("game_controller does not have core_fragments_group")

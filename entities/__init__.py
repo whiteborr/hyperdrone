@@ -1,5 +1,4 @@
 # entities/__init__.py
-
 from .base_drone import BaseDrone
 from .player import PlayerDrone
 from .enemy import Enemy, SentinelDrone
@@ -19,7 +18,7 @@ from .turret import Turret
 from .maze import Maze
 from .maze_chapter3 import MazeChapter3
 from .temporary_barricade import TemporaryBarricade
-from .glitching_wall import GlitchingWall # <-- Import the new class
+from .glitching_wall import GlitchingWall
 from .weapon_shop import WeaponShop
 
 __all__ = [

@@ -1,13 +1,14 @@
+# hyperdrone_core/enemy_manager.py
 from pygame.sprite import Group
-import json
-import os
-import logging
+from json import load, JSONDecodeError
+from os.path import join
+from logging import getLogger
 from entities import Enemy, SentinelDrone
 from entities.defense_drone import DefenseDrone
 from entities.tr3b_enemy import TR3BEnemy
 from settings_manager import get_setting
 
-logger = logging.getLogger(__name__)
+logger = getLogger(__name__)
 
 class EnemyManager:
     def __init__(self, game_controller_ref, asset_manager):
@@ -18,11 +19,11 @@ class EnemyManager:
         
         # Load enemy configurations from JSON file
         self.enemy_configs = {}
-        config_path = os.path.join("data", "enemy_configs.json")
+        config_path = join("data", "enemy_configs.json")
         try:
             with open(config_path, 'r') as f:
-                self.enemy_configs = json.load(f)["enemies"]
-        except (FileNotFoundError, json.JSONDecodeError, KeyError) as e:
+                self.enemy_configs = load(f)["enemies"]
+        except (FileNotFoundError, JSONDecodeError, KeyError) as e:
             logger.error(f"Error loading enemy configs: {e}")
             # Fallback to default configs if file can't be loaded
 

@@ -1,15 +1,16 @@
+# drone_management/drone_configs.py
 """
 Defines the configurations for all available drones in the game.
 Each drone has a unique ID (the key in DRONE_DATA), a display name,
 paths to its sprite and icon, base statistics, an unlock condition,
 and a descriptive text.
 """
-import logging
+from logging import getLogger
 from constants import ARCHITECT_REWARD_BLUEPRINT_ID
 from settings_manager import get_setting
 
 # Configure logger
-logger = logging.getLogger(__name__)
+logger = getLogger(__name__)
 
 # Get player settings
 PLAYER_MAX_HEALTH = get_setting("gameplay", "PLAYER_MAX_HEALTH", 100)
@@ -127,7 +128,7 @@ DRONE_DATA = {
             "bullet_damage_multiplier": 1.0,
             "special_ability": "phantom_cloak"
         },
-        "unlock_condition": {"type": "cores", "value": 50, "description": "Unlock: 50000 Cores"},
+        "unlock_condition": {"type": "cores", "value": 50, "description": "Unlock: 50 Cores"},
         "description": "Features a shimmer-based cloaking device. Can briefly turn invisible but is delicate."
     },
     ARCHITECT_REWARD_BLUEPRINT_ID: {

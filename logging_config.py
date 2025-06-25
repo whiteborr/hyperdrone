@@ -1,9 +1,11 @@
-import logging
-import os
-import sys
+# logging_config.py
+from logging import getLogger, Formatter, StreamHandler, INFO
 from logging.handlers import RotatingFileHandler
+from os.path import join, dirname, abspath
+from os import makedirs
+from sys import stdout
 
-def setup_logging(log_level=logging.INFO):
+def setup_logging(log_level=INFO):
     """
     Configure logging for the entire application.
     
@@ -11,11 +13,11 @@ def setup_logging(log_level=logging.INFO):
         log_level: The logging level to use (default: logging.INFO)
     """
     # Create logs directory if it doesn't exist
-    logs_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'logs')
-    os.makedirs(logs_dir, exist_ok=True)
+    logs_dir = join(dirname(abspath(__file__)), 'logs')
+    makedirs(logs_dir, exist_ok=True)
     
     # Configure root logger
-    root_logger = logging.getLogger()
+    root_logger = getLogger()
     root_logger.setLevel(log_level)
     
     # Clear any existing handlers to avoid duplicate logs
@@ -24,18 +26,18 @@ def setup_logging(log_level=logging.INFO):
             root_logger.removeHandler(handler)
     
     # Create formatters
-    console_formatter = logging.Formatter('%(levelname)s: %(message)s')
-    file_formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    console_formatter = Formatter('%(levelname)s: %(message)s')
+    file_formatter = Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     
     # Console handler
-    console_handler = logging.StreamHandler(sys.stdout)
+    console_handler = StreamHandler(stdout)
     console_handler.setFormatter(console_formatter)
     console_handler.setLevel(log_level)
     root_logger.addHandler(console_handler)
     
     # File handler (rotating log file)
     file_handler = RotatingFileHandler(
-        os.path.join(logs_dir, 'hyperdrone.log'),
+        join(logs_dir, 'hyperdrone.log'),
         maxBytes=10*1024*1024,  # 10MB
         backupCount=5
     )

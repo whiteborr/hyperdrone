@@ -1,5 +1,5 @@
-# hyperdrone_core/event_batch.pyAdd commentMore actions
-import time
+# hyperdrone_core/event_batch.py
+from time import time
 from collections import defaultdict
 
 class EventBatch:
@@ -32,7 +32,7 @@ class EventBatch:
             bool: True if the batch should be dispatched, False otherwise
         """
         self.events.append(event)
-        current_time = time.time() * 1000  # Convert to milliseconds
+        current_time = time() * 1000  # Convert to milliseconds
         
         # Check if we should dispatch based on time window or batch size
         if (current_time - self.last_dispatch_time >= self.batch_window_ms or 
@@ -43,7 +43,7 @@ class EventBatch:
     def clear(self):
         """Clear the batch and update the last dispatch time."""
         self.events = []
-        self.last_dispatch_time = time.time() * 1000  # Convert to milliseconds
+        self.last_dispatch_time = time() * 1000  # Convert to milliseconds
         
     def get_events(self):
         """Get all events in the batch."""

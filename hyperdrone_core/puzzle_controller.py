@@ -1,8 +1,7 @@
 # hyperdrone_core/puzzle_controller.py
 from pygame.sprite import Group
 from pygame import KEYDOWN, K_ESCAPE, K_RETURN, K_SPACE, K_1, K_2, K_3
-import os 
-import logging
+from logging import getLogger
 
 from settings_manager import get_setting, settings_manager
 from constants import (
@@ -13,7 +12,7 @@ from constants import (
 from entities import AncientAlienTerminal
 from .ring_puzzle_module import RingPuzzle
 
-logger = logging.getLogger(__name__)
+logger = getLogger(__name__)
 
 class PuzzleController:
     """

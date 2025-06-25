@@ -2,9 +2,9 @@
 from heapq import heappush, heappop
 from math import sqrt, cos, sin, radians
 from random import randint
-import logging
+from logging import getLogger
 
-logger = logging.getLogger(__name__)
+logger = getLogger(__name__)
 
 class AStarNode:
     """Node class for A* pathfinding algorithm"""

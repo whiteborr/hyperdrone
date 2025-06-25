@@ -1,10 +1,10 @@
 # hyperdrone_core/game_loop.py
-import sys
-import os
-import random
-import math
-import json
-import logging
+from sys import exit
+from os.path import join, exists
+from random import uniform, choice, randint
+from math import cos, sin, radians
+from json import load
+from logging import getLogger
 
 from pygame import init as pygame_init, quit as pygame_quit
 from pygame.mixer import init as mixer_init
@@ -20,7 +20,7 @@ from pygame import FULLSCREEN, QUIT, error as pygame_error
 from .state_manager import StateManager
 from .event_manager import EventManager
 from .player_actions import PlayerActions
-from . import leaderboard
+from ui.leaderboard_ui import add_score, is_high_score, load_scores
 from .combat_controller import CombatController
 from .puzzle_controller import PuzzleController
 from .ui_flow_controller import UIFlowController
@@ -44,7 +44,7 @@ from settings_manager import get_setting, set_setting, save_settings, settings_m
 from entities.orichalc_fragment import OrichalcFragment
 from entities.orichalc_pickup_system import HUDContainer
 
-logger_gc = logging.getLogger(__name__)
+logger_gc = getLogger(__name__)
 
 class GameController:
     """
@@ -311,7 +311,7 @@ class GameController:
         if self.drone_system: 
             self.drone_system._save_unlocks()
         pygame_quit()
-        sys.exit()
+        exit()
         
     def play_sound(self, key, vol=0.7, volume_override=None):
         if not hasattr(self, 'asset_manager'):
@@ -335,11 +335,11 @@ class GameController:
             
     def _load_intro_data_from_json_internal(self):
         fallback_data = [{"text": "The Architect has vanished.", "image_path_key": "images/lore/scene1.png"}]
-        intro_file_path = os.path.join("data", "intro.json") 
-        if os.path.exists(intro_file_path):
+        intro_file_path = join("data", "intro.json") 
+        if exists(intro_file_path):
             try:
                 with open(intro_file_path, 'r', encoding='utf-8') as f:
-                    loaded_data = json.load(f)
+                    loaded_data = load(f)
                     if isinstance(loaded_data, list) and all("text" in item and "image_path" in item for item in loaded_data):
                         transformed_data = []
                         for item in loaded_data:
@@ -404,8 +404,8 @@ class GameController:
                 visible_walkable = [pos for pos in walkable if 0 < pos[0] < screen_width and 0 < pos[1] < screen_height]
                 
                 if visible_walkable:
-                    return random.choice(visible_walkable)
-                return random.choice(walkable)
+                    return choice(visible_walkable)
+                return choice(walkable)
         return (200, 200)
         
     def _respawn_player(self):
@@ -464,7 +464,7 @@ class GameController:
         red_color = get_setting("colors", "RED", (255, 0, 0))
         white_color = get_setting("colors", "WHITE", (255, 255, 255))
         
-        flash_size = random.uniform(3.0, 5.0) if is_enemy else 8.0
+        flash_size = uniform(3.0, 5.0) if is_enemy else 8.0
         self.explosion_particles_group.add(
             Particle(x, y, [white_color, yellow_color], 
                     min_speed=0.5, max_speed=1.0, 
@@ -480,14 +480,14 @@ class GameController:
             spread_angle = 15
             
             for _ in range(particle_count):
-                angle = random.uniform(0, 360)
-                distance = random.uniform(2.0, 4.0)
-                px = x + math.cos(math.radians(angle)) * distance
-                py = y + math.sin(math.radians(angle)) * distance
+                angle = uniform(0, 360)
+                distance = uniform(2.0, 4.0)
+                px = x + cos(radians(angle)) * distance
+                py = y + sin(radians(angle)) * distance
                 
-                size = random.uniform(1.5, 3.0)
-                speed = random.uniform(1.5, 3.0)
-                lifetime = random.randint(15, 25)
+                size = uniform(1.5, 3.0)
+                speed = uniform(1.5, 3.0)
+                lifetime = randint(15, 25)
                 
                 self.explosion_particles_group.add(
                     Particle(px, py, colors, 
@@ -500,10 +500,10 @@ class GameController:
         else:
             colors = [orange_color, yellow_color, red_color]
             for _ in range(num_particles):
-                angle = random.uniform(0, 360)
-                speed = random.uniform(2.0, 4.0)
-                size = random.uniform(2.0, 4.0)
-                lifetime = random.randint(20, 30)
+                angle = uniform(0, 360)
+                speed = uniform(2.0, 4.0)
+                size = uniform(2.0, 4.0)
+                lifetime = randint(20, 30)
                 
                 self.explosion_particles_group.add(
                     Particle(x, y, colors, 

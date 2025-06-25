@@ -1,5 +1,5 @@
 # entities/weapon_strategies.py
-import pygame.time
+from pygame.time import get_ticks
 from math import radians, cos, sin, sqrt
 from pygame import Surface, SRCALPHA
 from pygame.draw import circle
@@ -102,7 +102,7 @@ class BaseWeaponStrategy:
         Returns:
             bool: True if weapon fired successfully, False if on cooldown
         """
-        current_time_ms = pygame.time.get_ticks()
+        current_time_ms = get_ticks()
         if not self.can_shoot(current_time_ms):
             return False
             
@@ -129,7 +129,7 @@ class BaseWeaponStrategy:
     def can_shoot(self, current_time_ms=None):
         """Check if enough time has passed since the last shot"""
         if current_time_ms is None:
-            current_time_ms = pygame.time.get_ticks()
+            current_time_ms = get_ticks()
         return current_time_ms - self.last_shot_time > self.shoot_cooldown
     
     def _create_projectile(self, spawn_x, spawn_y, missile_sound_asset_key=None):
@@ -261,7 +261,7 @@ class HeatseekerPlusBulletsWeaponStrategy(BaseWeaponStrategy):
         self.last_bullet_time = 0  # Separate tracking for bullet firing
     
     def _create_projectile(self, spawn_x, spawn_y, missile_sound_asset_key=None):
-        current_time_ms = pygame.time.get_ticks()
+        current_time_ms = get_ticks()
         
         # Create heatseeker missile (on missile cooldown)
         if missile_sound_asset_key and self.asset_manager:
@@ -287,7 +287,7 @@ class HeatseekerPlusBulletsWeaponStrategy(BaseWeaponStrategy):
     
     def fire(self, sound_asset_key=None, missile_sound_asset_key=None):
         """Override fire method to handle separate cooldowns for missiles and bullets"""
-        current_time_ms = pygame.time.get_ticks()
+        current_time_ms = get_ticks()
         
         # Check if we can fire a missile (using the main cooldown)
         can_fire_missile = current_time_ms - self.last_shot_time > self.shoot_cooldown
@@ -339,14 +339,14 @@ class LightningWeaponStrategy(BaseWeaponStrategy):
         """Start charging the lightning weapon"""
         if not self.is_charging:
             self.is_charging = True
-            self.charge_start_time = pygame.time.get_ticks()
+            self.charge_start_time = get_ticks()
             
     def stop_charging_and_fire(self, sound_asset_key=None):
         """Stop charging and fire if fully charged"""
         if not self.is_charging:
             return False
             
-        current_time = pygame.time.get_ticks()
+        current_time = get_ticks()
         charge_time = current_time - self.charge_start_time
         
         self.is_charging = False
@@ -399,7 +399,7 @@ class LightningWeaponStrategy(BaseWeaponStrategy):
         """Get charging progress (0.0 to 1.0)"""
         if not self.is_charging:
             return 0.0
-        current_time = pygame.time.get_ticks()
+        current_time = get_ticks()
         charge_time = current_time - self.charge_start_time
         return min(1.0, charge_time / self.charge_duration)
         

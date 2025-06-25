@@ -1,11 +1,11 @@
 # entities/orichalc_fragment.py
-import pygame.sprite
-import pygame.transform
+from pygame.sprite import Sprite
+from pygame.transform import scale, rotate
 from pygame import Surface, SRCALPHA
 from math import sin
 from constants import GOLD
 
-class OrichalcFragment(pygame.sprite.Sprite):
+class OrichalcFragment(Sprite):
     def __init__(self, x, y, *, asset_manager):
         super().__init__()
         self.center_x, self.center_y = float(x), float(y)
@@ -13,7 +13,7 @@ class OrichalcFragment(pygame.sprite.Sprite):
         # Ensure you have "ORICHALC_FRAGMENT_ICON" defined in your asset_manifest.json
         self.original_icon = asset_manager.get_image("ORICHALC_FRAGMENT_ICON")
         if self.original_icon:
-            self.original_icon = pygame.transform.scale(self.original_icon, (self.fragment_size, self.fragment_size))
+            self.original_icon = scale(self.original_icon, (self.fragment_size, self.fragment_size))
         self.collected = False
         self.rotation_angle = 0
         self.pulse_time = 0
@@ -24,12 +24,12 @@ class OrichalcFragment(pygame.sprite.Sprite):
     def _render_fragment(self):
         self.image.fill((0, 0, 0, 0))
         if self.original_icon:
-            rotated_icon = pygame.transform.rotate(self.original_icon, self.rotation_angle)
+            rotated_icon = rotate(self.original_icon, self.rotation_angle)
             pulse_scale = 1.0 + 0.1 * sin(self.pulse_time)
             if pulse_scale != 1.0:
                 size = rotated_icon.get_size()
                 new_size = (int(size[0] * pulse_scale), int(size[1] * pulse_scale))
-                rotated_icon = pygame.transform.scale(rotated_icon, new_size)
+                rotated_icon = scale(rotated_icon, new_size)
             icon_rect = rotated_icon.get_rect(center=self.image.get_rect().center)
             self.image.blit(rotated_icon, icon_rect)
         
@@ -52,9 +52,9 @@ class OrichalcFragment(pygame.sprite.Sprite):
     def apply_effect(self, player_drone, game_controller_instance):
         if not self.collected:
             self.collected = True
-            # Add 1 core to player
+            # Add 1 orichalc fragment to player
             if hasattr(game_controller_instance, 'drone_system'):
-                game_controller_instance.drone_system.add_cores(1)
+                game_controller_instance.drone_system.add_orichalc_fragments(1)
             # Play collection sound
             if hasattr(game_controller_instance, 'play_sound'):
                 game_controller_instance.play_sound('collect_fragment')

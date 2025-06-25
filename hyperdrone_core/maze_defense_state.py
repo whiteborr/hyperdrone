@@ -2,11 +2,11 @@
 from pygame.mouse import set_visible, get_pos as mouse_get_pos
 from pygame.time import get_ticks
 from pygame import KEYDOWN, MOUSEBUTTONDOWN, K_p, K_SPACE
-import logging
+from logging import getLogger
 from .state import State
 from settings_manager import get_setting
 
-logger = logging.getLogger(__name__)
+logger = getLogger(__name__)
 
 class MazeDefenseState(State):
     """State for the maze defense gameplay mode"""

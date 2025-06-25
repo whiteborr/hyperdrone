@@ -1,6 +1,7 @@
+# entities/tower_defense_manager.py
 from pygame.sprite import Group
 from pygame import Surface
-import logging
+from logging import getLogger
 from random import choice, randint
 from typing import List, Tuple, Dict, Optional
 from entities.path_manager import PathManager
@@ -8,7 +9,7 @@ from entities.enemy_pathfinder import PathfindingEnemy
 from entities.turret import Turret
 from settings_manager import get_setting
 
-logger = logging.getLogger(__name__)
+logger = getLogger(__name__)
 
 class TowerDefenseManager:
     """

@@ -13,8 +13,8 @@ class WeaponsUpgradeShopState(State):
         if hasattr(self.game, 'level_manager') and self.game.level_manager.level in [2, 7]:
             self.game.level_manager.pause_timer()
         
-        # Get current cores count
-        fragments_count = self.game.drone_system.get_cores() if hasattr(self.game, 'drone_system') else 0
+        # Get current fragments count
+        fragments_count = self.game.drone_system.get_orichalc_fragments() if hasattr(self.game, 'drone_system') else 0
         
         # Create a mock weapon shop for the UI
         from entities.weapon_shop import WeaponShop
@@ -36,10 +36,8 @@ class WeaponsUpgradeShopState(State):
                 # Handle weapon shop input
                 result = self.weapon_shop_ui.handle_input(event.key)
                 if result and result > 0:
-                    # Deduct cores
-                    if hasattr(self.game, 'drone_system'):
-                        self.game.drone_system.spend_cores(result)
-                    self.weapon_shop_ui.fragments_count -= result
+                    # Fragments are already deducted in the UI handler
+                    pass
             
             elif event.type == MOUSEMOTION or event.type == MOUSEBUTTONDOWN:
                 mouse_pos = mouse_get_pos()

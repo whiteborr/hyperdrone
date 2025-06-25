@@ -1,12 +1,13 @@
-import pygame.sprite
-import pygame.draw
+# entities/particle.py
+from pygame.sprite import Sprite
+from pygame.draw import circle
 from pygame import Surface, SRCALPHA
 from random import choice, uniform
 from math import radians, cos, sin
 from settings_manager import get_setting
 from constants import FLAME_COLORS
 
-class Particle(pygame.sprite.Sprite):
+class Particle(Sprite):
     def __init__(self, x, y, color_list, 
                  min_speed, max_speed, 
                  min_size, max_size, 
@@ -57,7 +58,7 @@ class Particle(pygame.sprite.Sprite):
         
         if current_alpha > 0:
             draw_color = (*self.color[:3], current_alpha)
-            pygame.draw.circle(self.image, draw_color, (center_pos, center_pos), draw_size)
+            circle(self.image, draw_color, (center_pos, center_pos), draw_size)
 
     def update(self):
         self.current_lifetime += 1
@@ -94,6 +95,6 @@ class Particle(pygame.sprite.Sprite):
                     life_ratio = 1.0 - (self.current_lifetime / self.lifetime)
                     alpha = int(255 * (life_ratio ** 1.5))
                     color = (*self.color[:3], alpha)
-                    pygame.draw.circle(surface, color, draw_pos, draw_radius)
+                    circle(surface, color, draw_pos, draw_radius)
             else:
                 surface.blit(self.image, self.rect)

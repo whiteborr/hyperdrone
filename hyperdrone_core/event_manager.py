@@ -3,9 +3,8 @@ from pygame.event import get as event_get
 from pygame.key import get_pressed
 from pygame.time import get_ticks
 from pygame import QUIT, MOUSEWHEEL, KEYDOWN, KEYUP, MOUSEBUTTONDOWN, K_ESCAPE, K_LEFT, K_RIGHT, K_UP, K_DOWN, K_a, K_d, K_w, K_s, K_SPACE, K_p
-import sys
-import logging
-import time
+from logging import getLogger
+from time import time
 from collections import defaultdict
 
 from settings_manager import get_setting
@@ -18,7 +17,7 @@ from constants import (
 )
 from .event_batch import EventBatch
 
-logger = logging.getLogger(__name__)
+logger = getLogger(__name__)
 
 class EventManager:
     def __init__(self, game_controller_ref, scene_manager_ref, combat_controller_ref, puzzle_controller_ref, ui_flow_controller_ref):
@@ -237,7 +236,7 @@ class EventManager:
     
     def _process_timed_out_batches(self):
         """Process any event batches that have timed out."""
-        current_time = time.time() * 1000  # Convert to milliseconds
+        current_time = time() * 1000  # Convert to milliseconds
         
         for event_type, batch in list(self.event_batches.items()):
             if not batch.is_empty() and current_time - batch.last_dispatch_time >= batch.batch_window_ms:

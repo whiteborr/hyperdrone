@@ -1,14 +1,14 @@
 # entities/glitching_wall.py
-import pygame.sprite
-import pygame.draw
-import pygame.time
+from pygame.sprite import Sprite
+from pygame.draw import rect
+from pygame.time import get_ticks
 from pygame import Surface, SRCALPHA
 from random import randint, choice
 from math import sin
 from settings_manager import get_setting
 from constants import DARK_PURPLE, MAGENTA, WHITE
 
-class GlitchingWall(pygame.sprite.Sprite):
+class GlitchingWall(Sprite):
     """
     A wall that flickers in and out of existence, damaging the player on contact when solid.
     """
@@ -23,7 +23,7 @@ class GlitchingWall(pygame.sprite.Sprite):
 
         # State and timer
         self.is_solid = True
-        self.last_toggle_time = pygame.time.get_ticks() + randint(0, self.on_duration)
+        self.last_toggle_time = get_ticks() + randint(0, self.on_duration)
         self.pulse_timer = 0
 
         # Create the visual surface
@@ -49,17 +49,17 @@ class GlitchingWall(pygame.sprite.Sprite):
                 offset_x = randint(-4, 4)
                 offset_y = randint(-4, 4)
                 inner_rect = self.image.get_rect().inflate(-i * 6 + offset_x, -i * 6 + offset_y)
-                pygame.draw.rect(self.image, color, inner_rect, border_radius=3)
+                rect(self.image, color, inner_rect, border_radius=3)
             
             # White border to define the shape clearly
-            pygame.draw.rect(self.image, WHITE, self.image.get_rect(), 2, border_radius=3)
+            rect(self.image, WHITE, self.image.get_rect(), 2, border_radius=3)
         else:
             # Draw a faint, barely visible outline when the wall is off
-            pygame.draw.rect(self.image, (*DARK_PURPLE, 30), self.image.get_rect(), 2, border_radius=3)
+            rect(self.image, (*DARK_PURPLE, 30), self.image.get_rect(), 2, border_radius=3)
 
     def update(self):
         """Updates the wall's state based on its on/off timer."""
-        current_time = pygame.time.get_ticks()
+        current_time = get_ticks()
         
         # Determine the duration for the current state
         duration = self.on_duration if self.is_solid else self.off_duration

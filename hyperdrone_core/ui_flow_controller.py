@@ -3,7 +3,7 @@ from pygame.time import get_ticks
 from pygame.key import name as key_name
 from pygame import K_UP, K_DOWN, K_LEFT, K_RIGHT, K_RETURN, K_SPACE, K_ESCAPE, K_BACKSPACE, K_w, K_s, K_a, K_d, K_r, K_l, K_m, K_q
 from random import randint, uniform
-import logging
+from logging import getLogger, info
 
 from settings_manager import get_setting
 from constants import (
@@ -14,9 +14,9 @@ from constants import (
     GAME_STATE_ARCHITECT_VAULT_SUCCESS, GAME_STATE_ARCHITECT_VAULT_FAILURE,
     KEY_DEFEATED_BOSSES
 )
-from . import leaderboard
+from ui.leaderboard_ui import add_score, is_high_score, load_scores
 
-logger = logging.getLogger(__name__)
+logger = getLogger(__name__)
 
 class UIFlowController:
     """
@@ -61,7 +61,7 @@ class UIFlowController:
         self.intro_screen_start_time = 0
         self.intro_sequence_finished = False
         
-        logger.info("UIFlowController initialized.")
+        info("UIFlowController initialized.")
 
 
     def set_dependencies(self, scene_manager, ui_manager, drone_system):
@@ -147,7 +147,7 @@ class UIFlowController:
         self.selected_setting_index = 0
 
     def initialize_leaderboard(self):
-        self.leaderboard_scores = leaderboard.load_scores()
+        self.leaderboard_scores = load_scores()
 
     def initialize_codex(self):
         if not self.drone_system: return
@@ -185,7 +185,7 @@ class UIFlowController:
         self.codex_current_view = "categories"
         self.codex_selected_category_index = 0
         self.codex_content_scroll_offset = 0
-        logger.info("UIFlowController: UI states reset.")
+        info("UIFlowController: UI states reset.")
         
     def _handle_main_menu_input(self, key):
         if key == K_UP or key == K_w:
@@ -198,7 +198,7 @@ class UIFlowController:
             return True
         elif key == K_RETURN or key == K_SPACE:
             selected_action = self.menu_options[self.selected_menu_option]
-            logger.info(f"Main menu action selected: {selected_action}")
+            info(f"Main menu action selected: {selected_action}")
             self.game_controller.play_sound('ui_confirm')
             if selected_action == "Start Game": self.scene_manager.set_state(GAME_STATE_GAME_INTRO_SCROLL)
 
@@ -232,8 +232,11 @@ class UIFlowController:
                 drone_select_index = self.menu_options.index("Select Drone") if "Select Drone" in self.menu_options else 0
                 self.scene_manager.set_state(GAME_STATE_MAIN_MENU, selected_option=drone_select_index)
             else:
-                if self.drone_system.unlock_drone(selected_id):
+                unlock_result = self.drone_system.unlock_drone(selected_id)
+                logger.info(f"Unlock attempt for {selected_id}: {unlock_result}")
+                if unlock_result:
                     self.game_controller.play_sound('lore_unlock')
+                    # Don't reinitialize - just stay on the same drone for potential equipping
                 else:
                     self.game_controller.play_sound('ui_denied')
             return True
@@ -426,7 +429,7 @@ class UIFlowController:
     def _handle_enter_name_input(self, key):
         if key == K_RETURN:
             if len(self.player_name_input_cache) > 0:
-                leaderboard.add_score(self.player_name_input_cache, self.game_controller.score, self.game_controller.level)
+                add_score(self.player_name_input_cache, self.game_controller.score, self.game_controller.level)
                 self.scene_manager.set_state(GAME_STATE_LEADERBOARD)
             return True
         elif key == K_BACKSPACE:
@@ -442,7 +445,7 @@ class UIFlowController:
         return False
 
     def _handle_game_over_input(self, key):
-        score_is_high = leaderboard.is_high_score(self.game_controller.score, self.game_controller.level)
+        score_is_high = is_high_score(self.game_controller.score, self.game_controller.level)
         settings_modified = get_setting("gameplay", "SETTINGS_MODIFIED", False)
         if score_is_high and not settings_modified:
             self.scene_manager.set_state(GAME_STATE_ENTER_NAME)

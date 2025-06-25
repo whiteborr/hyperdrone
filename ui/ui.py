@@ -2,7 +2,7 @@
 from os.path import exists
 from math import ceil
 from random import random
-import logging
+from logging import getLogger, warning, error, basicConfig, INFO
 
 from pygame import Surface, SRCALPHA, Rect
 from pygame.draw import rect as draw_rect, circle, line as draw_line
@@ -20,12 +20,12 @@ from constants import (
 try:
     from .build_menu import BuildMenu
 except ImportError:
-    logging.warning("UIManager: Could not import BuildMenu. Build UI will not be available.")
+    warning("UIManager: Could not import BuildMenu. Build UI will not be available.")
     BuildMenu = None 
 
-logger = logging.getLogger(__name__)
-if not logging.getLogger().hasHandlers():
-    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - [%(name)s] - %(message)s')
+logger = getLogger(__name__)
+if not getLogger().hasHandlers():
+    basicConfig(level=INFO, format='%(asctime)s - %(levelname)s - [%(name)s] - %(message)s')
 
 
 class UIManager:
@@ -72,7 +72,8 @@ class UIManager:
 
         self._load_ui_assets_from_manager()
         self.update_player_life_icon_surface()
-        logger.info("UIManager initialized and UI assets loaded via AssetManager.")
+        from logging import info
+        info("UIManager initialized and UI assets loaded via AssetManager.")
 
     def _load_ui_assets_from_manager(self):
         self.ui_asset_surfaces["ring_icon"] = self.asset_manager.get_image("ring_ui_icon", scale_to_size=self.ui_icon_size_rings)
@@ -82,7 +83,7 @@ class UIManager:
         if not self.ui_asset_surfaces["ring_icon_empty"]: self.ui_asset_surfaces["ring_icon_empty"] = self._create_fallback_icon_surface(self.ui_icon_size_rings, "O", GREY)
 
         self.ui_asset_surfaces["menu_background"] = self.asset_manager.get_image("menu_logo_hyperdrone")
-        if not self.ui_asset_surfaces["menu_background"]: logger.warning("UIManager: Menu background 'menu_logo_hyperdrone' not found in AssetManager.")
+        if not self.ui_asset_surfaces["menu_background"]: warning("UIManager: Menu background 'menu_logo_hyperdrone' not found in AssetManager.")
 
         self.ui_asset_surfaces["core_fragment_empty_icon"] = self.asset_manager.get_image("core_fragment_empty_icon", scale_to_size=self.ui_icon_size_fragments)
         if not self.ui_asset_surfaces["core_fragment_empty_icon"]: self.ui_asset_surfaces["core_fragment_empty_icon"] = self._create_fallback_icon_surface(self.ui_icon_size_fragments, "F", DARK_GREY, text_color=GREY)
@@ -105,7 +106,7 @@ class UIManager:
                     if loaded_icon: 
                         self.ui_asset_surfaces["core_fragment_icons"][frag_id] = loaded_icon
                     else:
-                        logger.warning(f"UIManager: Core fragment icon for ID '{frag_id}' not found. Using fallback.")
+                        warning(f"UIManager: Core fragment icon for ID '{frag_id}' not found. Using fallback.")
                         self.ui_asset_surfaces["core_fragment_icons"][frag_id] = self._create_fallback_icon_surface(self.ui_icon_size_fragments, frag_id[:1] if frag_id else "!", PURPLE)
         
         reactor_icon_asset = self.asset_manager.get_image("reactor_hud_icon_key", scale_to_size=self.ui_icon_size_reactor)
@@ -115,7 +116,7 @@ class UIManager:
         # NEW: Load ability icon
         self.ui_asset_surfaces["ability_icon_placeholder"] = self.asset_manager.get_image("ability_icon_placeholder", scale_to_size=self.ui_icon_size_ability)
         if not self.ui_asset_surfaces["ability_icon_placeholder"]:
-            logger.warning("UIManager: Ability icon placeholder not found. Using fallback.")
+            warning("UIManager: Ability icon placeholder not found. Using fallback.")
             self.ui_asset_surfaces["ability_icon_placeholder"] = self._create_fallback_icon_surface(self.ui_icon_size_ability, "A", (100, 200, 255))
 
     def update_player_life_icon_surface(self):
@@ -128,37 +129,15 @@ class UIManager:
             rotated_icon = rotate(loaded_icon, 90)
             self.ui_asset_surfaces["current_drone_life_icon"] = rotated_icon
         else:
-            logger.warning(f"UIManager: Life icon for drone '{selected_drone_id}' (key: '{life_icon_asset_key}') not found. Using fallback.")
+            warning(f"UIManager: Life icon for drone '{selected_drone_id}' (key: '{life_icon_asset_key}') not found. Using fallback.")
             self.ui_asset_surfaces["current_drone_life_icon"] = self._create_fallback_icon_surface(size=self.ui_icon_size_lives, text="L", color=CYAN)
             
     def update_weapon_icon_surface(self, weapon_mode):
         """Update the weapon icon in the HUD based on the current weapon mode"""
-        # Map weapon modes to their sprite names
-        from constants import (
-            WEAPON_MODE_DEFAULT, WEAPON_MODE_TRI_SHOT, WEAPON_MODE_RAPID_SINGLE, WEAPON_MODE_RAPID_TRI,
-            WEAPON_MODE_BIG_SHOT, WEAPON_MODE_BOUNCE, WEAPON_MODE_PIERCE,
-            WEAPON_MODE_HEATSEEKER, WEAPON_MODE_HEATSEEKER_PLUS_BULLETS,
-            WEAPON_MODE_LIGHTNING
-        )
+        selected_drone_id = self.drone_system.get_selected_drone_id()
         
-        weapon_sprite_names = {
-            WEAPON_MODE_DEFAULT: "default",
-            WEAPON_MODE_TRI_SHOT: "tri_shot",
-            WEAPON_MODE_RAPID_SINGLE: "rapid_single",
-            WEAPON_MODE_RAPID_TRI: "rapid_tri_shot",
-            WEAPON_MODE_BIG_SHOT: "big_shot",
-            WEAPON_MODE_BOUNCE: "bounce",
-            WEAPON_MODE_PIERCE: "pierce",
-            WEAPON_MODE_HEATSEEKER: "heatseeker",
-            WEAPON_MODE_HEATSEEKER_PLUS_BULLETS: "heatseeker_plus_bullets",
-            WEAPON_MODE_LIGHTNING: "lightning"
-        }
-        
-        # Get the weapon sprite name
-        weapon_sprite_name = weapon_sprite_names.get(weapon_mode, "default")
-        
-        # Try to load the weapon-specific drone sprite for the HUD
-        weapon_sprite_key = f"drone_{weapon_sprite_name}"
+        # Try to load drone-specific weapon sprite from asset manifest
+        weapon_sprite_key = f"{selected_drone_id}_WEAPON_{weapon_mode}"
         loaded_icon = self.asset_manager.get_image(weapon_sprite_key, scale_to_size=(64, 64))
         
         # If not found, use the generic weapon icon
@@ -169,8 +148,7 @@ class UIManager:
         if loaded_icon:
             self.ui_asset_surfaces["current_weapon_icon"] = loaded_icon
         else:
-            logger.warning(f"UIManager: Weapon icon for mode '{weapon_mode}' not found. Using fallback.")
-            # Use CYAN which is already imported at the top of the file
+            warning(f"UIManager: Weapon icon for drone '{selected_drone_id}' mode '{weapon_mode}' not found. Using fallback.")
             self.ui_asset_surfaces["current_weapon_icon"] = self._create_fallback_icon_surface(size=(64, 64), text="W", color=CYAN)
 
     def _create_fallback_icon_surface(self, size=(30,30), text="?", color=GREY, text_color=WHITE, font_key="ui_text"):
@@ -182,7 +160,7 @@ class UIManager:
             try:
                 text_surf = font_to_use.render(text, True, text_color)
                 surface.blit(text_surf, text_surf.get_rect(center=(size[0] // 2, size[1] // 2)))
-            except Exception as e: logger.error(f"UIManager: Error rendering fallback icon text '{text}' with font key '{font_key}': {e}")
+            except Exception as e: error(f"UIManager: Error rendering fallback icon text '{text}' with font key '{font_key}': {e}")
         return surface
 
     def _render_text_safe(self, text, font_key, color, fallback_size=24):
@@ -190,7 +168,7 @@ class UIManager:
         if not font: font = Font(None, fallback_size)
         try: return font.render(str(text), True, color)
         except Exception as e:
-            logger.error(f"UIManager: Error rendering text '{text}' with font key '{font_key}': {e}")
+            error(f"UIManager: Error rendering text '{text}' with font key '{font_key}': {e}")
             return Font(None, fallback_size).render("ERR", True, RED)
 
     def _wrap_text(self, text, font_key_for_size_calc, size_for_font, max_width):
@@ -461,18 +439,17 @@ class UIManager:
         self.screen.fill(BLACK)
         if hasattr(self.game_controller, 'menu_stars') and self.game_controller.menu_stars:
             for star_params in self.game_controller.menu_stars:
-                pygame.draw.circle(self.screen, (50,50,50), (int(star_params[0]), int(star_params[1])), star_params[3])
-        title_surf = self._render_text_safe("Lore Codex", "codex_title_font", GOLD)
+                circle(self.screen, (50,50,50), (int(star_params[0]), int(star_params[1])), star_params[3])
+        title_surf = self._render_text_safe("Lore Codex", "large_text", GOLD)
         title_rect = title_surf.get_rect(center=(self._cached_width // 2, 60)); self.screen.blit(title_surf, title_rect)
         current_view = getattr(self.game_controller, 'codex_current_view', "categories")
         padding = 50; list_panel_width = self._cached_width // 3 - padding * 1.5; list_panel_x = padding
         content_panel_x = list_panel_x + list_panel_width + padding / 2
         content_panel_width = self._cached_width - content_panel_x - padding
         top_y_start = title_rect.bottom + 30; bottom_y_end = self._cached_height - 80
-        category_font = self.fonts.get("codex_category_font"); entry_font = self.fonts.get("codex_entry_font"); content_font = self.fonts.get("codex_content_font")
-        if not all([category_font, entry_font, content_font]):
-            fallback_surf = self._render_text_safe("Codex fonts loading...", "medium_text", WHITE)
-            self.screen.blit(fallback_surf, fallback_surf.get_rect(center=(self._cached_width // 2, self._cached_height // 2))); return
+        category_font = self.asset_manager.get_font("ui_text", 32) or Font(None, 32)
+        entry_font = self.asset_manager.get_font("ui_text", 28) or Font(None, 28)
+        content_font = self.asset_manager.get_font("ui_text", 24) or Font(None, 24)
         current_list_item_height_val = self.codex_list_item_height if self.codex_list_item_height > 0 else entry_font.get_height() + 15
         content_line_height = content_font.get_linesize()
         if self.codex_list_item_height == 0 and current_list_item_height_val > 0 :
@@ -482,7 +459,7 @@ class UIManager:
         available_height_for_content_text_calc = bottom_y_end - (top_y_start + category_font.get_height() + 20)
         if self.codex_max_visible_lines_content == 0 and content_line_height > 0:
              self.codex_max_visible_lines_content = available_height_for_content_text_calc // content_line_height if content_line_height > 0 else 1
-        nav_instr = ""; list_panel_rect = pygame.Rect(list_panel_x, top_y_start, list_panel_width, bottom_y_end - top_y_start)
+        nav_instr = ""; list_panel_rect = Rect(list_panel_x, top_y_start, list_panel_width, bottom_y_end - top_y_start)
         current_list_y = top_y_start + 20 
         if current_view == "categories":
             categories = getattr(self.game_controller, 'codex_categories_list', [])
@@ -497,18 +474,18 @@ class UIManager:
                 for i_display, i_actual in enumerate(range(start_idx, end_idx)):
                     category_name = categories[i_actual]; y_pos = current_list_y + i_display * self.codex_list_item_height
                     color = YELLOW if i_actual == selected_category_idx else WHITE
-                    cat_surf = self._render_text_safe(category_name, "codex_category_font", color)
+                    cat_surf = self._render_text_safe(category_name, "ui_text", color)
                     self.screen.blit(cat_surf, (list_panel_x + 10, y_pos))
             nav_instr = "UP/DOWN: Select | ENTER: View Entries | ESC: Main Menu"
         elif current_view == "entries":
             category_name = getattr(self.game_controller, 'codex_current_category_name', "Entries")
             entries = getattr(self.game_controller, 'codex_entries_in_category_list', [])
             selected_entry_idx = getattr(self.game_controller, 'codex_selected_entry_index_in_category', 0)
-            cat_title_surf = self._render_text_safe(f"{category_name}", "codex_category_font", GOLD)
+            cat_title_surf = self._render_text_safe(f"{category_name}", "ui_text", GOLD)
             self.screen.blit(cat_title_surf, (list_panel_x + 10, top_y_start))
             current_list_y = top_y_start + cat_title_surf.get_height() + 15
             if not entries:
-                no_entries_surf = self._render_text_safe("No entries here.", "codex_entry_font", GREY)
+                no_entries_surf = self._render_text_safe("No entries here.", "ui_text", GREY)
                 self.screen.blit(no_entries_surf, (list_panel_x + 20, current_list_y))
             else:
                 max_visible = self.codex_max_visible_items_list if self.codex_max_visible_items_list > 0 else 1
@@ -517,7 +494,7 @@ class UIManager:
                 for i_display, i_actual in enumerate(range(start_idx, end_idx)):
                     entry_data = entries[i_actual]; y_pos = current_list_y + i_display * self.codex_list_item_height
                     color = YELLOW if i_actual == selected_entry_idx else WHITE
-                    entry_title_surf = self._render_text_safe(entry_data.get("title", "Untitled"), "codex_entry_font", color)
+                    entry_title_surf = self._render_text_safe(entry_data.get("title", "Untitled"), "ui_text", color)
                     self.screen.blit(entry_title_surf, (list_panel_x + 20, y_pos))
             nav_instr = "UP/DOWN: Select | ENTER: Read | ESC: Back to Categories"
         elif current_view == "content":
@@ -529,16 +506,22 @@ class UIManager:
             image_path = entry_data.get("image") if entry_data else None
             current_image_y_pos = top_y_start + 20
             if category_name_reminder:
-                cat_reminder_surf = self._render_text_safe(f"{category_name_reminder}", "codex_entry_font", DARK_GREY)
+                cat_reminder_surf = self._render_text_safe(f"{category_name_reminder}", "ui_text", DARK_GREY)
                 self.screen.blit(cat_reminder_surf, (list_panel_x +10 , top_y_start )); current_image_y_pos = top_y_start + cat_reminder_surf.get_height() + 20
             if entry_data:
-                content_title_surf = self._render_text_safe(entry_data.get("title", "Untitled"), "codex_category_font", GOLD)
+                content_title_surf = self._render_text_safe(entry_data.get("title", "Untitled"), "ui_text", GOLD)
                 self.screen.blit(content_title_surf, (content_panel_x, top_y_start))
                 content_text_render_y = top_y_start + content_title_surf.get_height() + 20; text_area_width = content_panel_width - 20
                 if is_drone_entry and image_path:
+                    if not hasattr(self, 'codex_image_cache'):
+                        self.codex_image_cache = {}
                     if image_path not in self.codex_image_cache:
-                        try: self.codex_image_cache[image_path] = pygame.image.load(image_path).convert_alpha()
-                        except pygame.error as e: print(f"UIManager: Error loading Codex image '{image_path}': {e}"); self.codex_image_cache[image_path] = None
+                        try: 
+                            from pygame.image import load as image_load
+                            self.codex_image_cache[image_path] = image_load(image_path).convert_alpha()
+                        except Exception as e: 
+                            print(f"UIManager: Error loading Codex image '{image_path}': {e}")
+                            self.codex_image_cache[image_path] = None
                     cached_image = self.codex_image_cache.get(image_path)
                     if cached_image:
                         img_max_width = list_panel_width - 20; img_max_height = self._cached_height * 0.3
@@ -546,17 +529,24 @@ class UIManager:
                         scaled_w = img_max_width; scaled_h = int(scaled_w * aspect_ratio)
                         if scaled_h > img_max_height: scaled_h = int(img_max_height); scaled_w = int(scaled_h / aspect_ratio if aspect_ratio > 0 else img_max_width)
                         try:
-                            display_image = pygame.transform.smoothscale(cached_image, (scaled_w, scaled_h))
+                            from pygame.transform import smoothscale
+                            display_image = smoothscale(cached_image, (scaled_w, scaled_h))
                             self.screen.blit(display_image, (list_panel_x + (list_panel_width - scaled_w) // 2, current_image_y_pos))
-                        except pygame.error as e: print(f"UIManager: Error scaling Drone Codex image '{image_path}': {e}")
+                        except Exception as e: print(f"UIManager: Error scaling Drone Codex image '{image_path}': {e}")
                 content_text = entry_data.get("content", "No content available."); scroll_offset_lines = getattr(self.game_controller, 'codex_content_scroll_offset', 0)
                 wrapped_lines = self._wrap_text(content_text, content_font, text_area_width)
                 if hasattr(self.game_controller, 'codex_current_entry_total_lines'): self.game_controller.codex_current_entry_total_lines = len(wrapped_lines)
                 text_content_area_available_height = bottom_y_end - content_text_render_y - 10; race_image_to_draw_below_text = None; scaled_race_img_h = 0
                 if is_race_entry and image_path:
+                    if not hasattr(self, 'codex_image_cache'):
+                        self.codex_image_cache = {}
                     if image_path not in self.codex_image_cache:
-                        try: self.codex_image_cache[image_path] = pygame.image.load(image_path).convert_alpha()
-                        except pygame.error as e: print(f"UIManager: Error loading Race Codex image '{image_path}': {e}"); self.codex_image_cache[image_path] = None
+                        try: 
+                            from pygame.image import load as image_load
+                            self.codex_image_cache[image_path] = image_load(image_path).convert_alpha()
+                        except Exception as e: 
+                            print(f"UIManager: Error loading Race Codex image '{image_path}': {e}")
+                            self.codex_image_cache[image_path] = None
                     cached_race_image = self.codex_image_cache.get(image_path)
                     if cached_race_image:
                         img_max_width = content_panel_width * 0.6; img_max_height_race = self._cached_height * 0.25
@@ -564,8 +554,12 @@ class UIManager:
                         scaled_w = img_max_width; scaled_h = int(scaled_w * aspect_ratio)
                         if scaled_h > img_max_height_race: scaled_h = int(img_max_height_race); scaled_w = int(scaled_h / aspect_ratio if aspect_ratio > 0 else img_max_width)
                         if scaled_w > 0 and scaled_h > 0:
-                            try: race_image_to_draw_below_text = pygame.transform.smoothscale(cached_race_image, (scaled_w, scaled_h)); scaled_race_img_h = scaled_h; text_content_area_available_height -= (scaled_race_img_h + 20)
-                            except pygame.error as e: print(f"UIManager: Error scaling Race Codex image '{image_path}': {e}")
+                            try: 
+                                from pygame.transform import smoothscale
+                                race_image_to_draw_below_text = smoothscale(cached_race_image, (scaled_w, scaled_h))
+                                scaled_race_img_h = scaled_h
+                                text_content_area_available_height -= (scaled_race_img_h + 20)
+                            except Exception as e: print(f"UIManager: Error scaling Race Codex image '{image_path}': {e}")
                 max_lines = text_content_area_available_height // content_line_height if content_line_height > 0 else 0
                 if max_lines <= 0 and wrapped_lines: max_lines = 1
                 lines_drawn_y_end = content_text_render_y
@@ -595,7 +589,7 @@ class UIManager:
                 nav_instr = "ESC: Back"
         else: nav_instr = "ESC: Main Menu"
         nav_surf = self._render_text_safe(nav_instr, "small_text", self.INSTRUCTION_TEXT_COLOR)
-        nav_bg_box = pygame.Surface((nav_surf.get_width() + self.INSTRUCTION_PADDING_X, nav_surf.get_height() + self.INSTRUCTION_PADDING_Y), pygame.SRCALPHA)
+        nav_bg_box = Surface((nav_surf.get_width() + self.INSTRUCTION_PADDING_X, nav_surf.get_height() + self.INSTRUCTION_PADDING_Y), SRCALPHA)
         nav_bg_box.fill(self.INSTRUCTION_BG_COLOR); nav_bg_box.blit(nav_surf, nav_surf.get_rect(center=(nav_bg_box.get_width() // 2, nav_bg_box.get_height() // 2)))
         self.screen.blit(nav_bg_box, nav_bg_box.get_rect(center=(self._cached_width // 2, self.BOTTOM_INSTRUCTION_CENTER_Y)))
 
@@ -952,7 +946,7 @@ class UIManager:
             self.ui_asset_surfaces["core_fragment_icons"][normalized_id] = icon_surface
             return icon_surface
         
-        logger.warning(f"UIManager: Scaled icon surface for fragment_id '{fragment_id}' not found. Using fallback.")
+        warning(f"UIManager: Scaled icon surface for fragment_id '{fragment_id}' not found. Using fallback.")
         return self._create_fallback_icon_surface(self.ui_icon_size_fragments, "?", PURPLE)
     
     def _normalize_fragment_id(self, fragment_id):

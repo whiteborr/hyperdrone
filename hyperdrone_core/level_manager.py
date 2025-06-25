@@ -3,7 +3,7 @@ from pygame.time import get_ticks
 from pygame.font import Font
 from pygame.transform import smoothscale
 from pygame.draw import rect as draw_rect
-import logging
+from logging import getLogger
 
 from settings_manager import get_setting, set_setting, get_asset_path
 from constants import (
@@ -12,7 +12,7 @@ from constants import (
 )
 from entities import PlayerDrone, Maze
 
-logger = logging.getLogger(__name__)
+logger = getLogger(__name__)
 
 class LevelManager:
     def __init__(self, game_controller_ref):

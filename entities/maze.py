@@ -1,13 +1,13 @@
 # entities/maze.py
-import pygame.draw
+from pygame.draw import line
 from pygame import Rect
 from random import shuffle
-import logging
+from logging import getLogger
 from math import sin
 from settings_manager import get_setting
 from constants import BLUE, RED, GOLD, ARCHITECT_VAULT_WALL_COLOR, DARK_PURPLE, WHITE
 
-logger = logging.getLogger(__name__)
+logger = getLogger(__name__)
 
 class Maze: 
     def __init__(self, game_area_x_offset=0, maze_type="standard"): 
@@ -120,14 +120,14 @@ class Maze:
             p1_relative, p2_relative = line_segment 
             abs_p1 = (p1_relative[0] + self.game_area_x_offset, p1_relative[1]) 
             abs_p2 = (p2_relative[0] + self.game_area_x_offset, p2_relative[1]) 
-            pygame.draw.line(surface, wall_color, abs_p1, abs_p2, wall_thickness)
+            line(surface, wall_color, abs_p1, abs_p2, wall_thickness)
             
         # Draw border lines
         for line_segment in self.border_lines:
             p1_relative, p2_relative = line_segment
             abs_p1 = (p1_relative[0] + self.game_area_x_offset, p1_relative[1])
             abs_p2 = (p2_relative[0] + self.game_area_x_offset, p2_relative[1])
-            pygame.draw.line(surface, border_color, abs_p1, abs_p2, border_thickness) 
+            line(surface, border_color, abs_p1, abs_p2, border_thickness) 
 
     def is_wall(self, obj_center_x_abs, obj_center_y_abs, obj_width, obj_height): 
         obj_rect = Rect(

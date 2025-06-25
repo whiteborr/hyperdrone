@@ -1,11 +1,12 @@
-import pygame.sprite
-import pygame.draw
+# entities/exhaust_particle.py
+from pygame.sprite import Sprite
+from pygame.draw import circle
 from pygame import Surface, SRCALPHA
 from random import choice, uniform, randint
 from math import radians, cos, sin
 from constants import FLAME_COLORS
 
-class ExhaustParticle(pygame.sprite.Sprite):
+class ExhaustParticle(Sprite):
     """A specialized particle class for exhaust flames"""
     
     def __init__(self, x, y, angle_deg):
@@ -43,7 +44,7 @@ class ExhaustParticle(pygame.sprite.Sprite):
         
         # Draw the flame particle
         center = (self.image.get_width() // 2, self.image.get_height() // 2)
-        pygame.draw.circle(
+        circle(
             self.image, 
             (*self.color[:3], alpha),  # RGB from color, alpha based on lifetime
             center, 

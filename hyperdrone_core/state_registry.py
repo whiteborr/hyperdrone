@@ -1,7 +1,7 @@
-# hyperdrone_core/state_registry.pyAdd commentMore actions
-import logging
+# hyperdrone_core/state_registry.py
+from logging import getLogger, warning, info
 
-logger = logging.getLogger(__name__)
+logger = getLogger(__name__)
 
 class StateRegistry:
     """
@@ -30,7 +30,7 @@ class StateRegistry:
             state_class: The state class to register
         """
         if state_id in self.states:
-            logger.warning(f"State '{state_id}' already registered, overwriting")
+            warning(f"State '{state_id}' already registered, overwriting")
         
         self.states[state_id] = state_class
         
@@ -38,7 +38,7 @@ class StateRegistry:
         if state_id not in self.allowed_transitions:
             self.allowed_transitions[state_id] = []
             
-        logger.info(f"Registered state: {state_id}")
+        info(f"Registered state: {state_id}")
     
     def register_transition(self, from_state, to_state):
         """
@@ -50,11 +50,11 @@ class StateRegistry:
         """
         # Ensure both states are registered
         if from_state not in self.states:
-            logger.warning(f"Cannot register transition: Source state '{from_state}' not registered")
+            warning(f"Cannot register transition: Source state '{from_state}' not registered")
             return False
             
         if to_state not in self.states:
-            logger.warning(f"Cannot register transition: Destination state '{to_state}' not registered")
+            warning(f"Cannot register transition: Destination state '{to_state}' not registered")
             return False
         
         # Add the allowed transition
@@ -63,7 +63,7 @@ class StateRegistry:
                 self.allowed_transitions[from_state] = []
             
             self.allowed_transitions[from_state].append(to_state)
-            logger.info(f"Registered transition: {from_state} -> {to_state}")
+            info(f"Registered transition: {from_state} -> {to_state}")
         
         return True
     

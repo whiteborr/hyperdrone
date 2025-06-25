@@ -2,13 +2,13 @@
 from math import hypot, degrees, atan2, radians, cos, sin, pi
 from random import randint, choice, random, uniform
 from pygame import Rect
-import logging
+from logging import getLogger
 
 # Import pathfinding module
 from hyperdrone_core.pathfinding import a_star_search, find_wall_follow_target, find_alternative_target
 from settings_manager import get_setting
 
-logger = logging.getLogger(__name__)
+logger = getLogger(__name__)
 
 class BaseBehavior:
     """

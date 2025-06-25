@@ -1,10 +1,10 @@
 # story.py
-import logging
+from logging import basicConfig, info, warning, error, debug, INFO
 from hyperdrone_core.game_events import GameEvent, ItemCollectedEvent, BossDefeatedEvent
 from settings_manager import get_setting
 
 # Using the existing logger is great.
-logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
+basicConfig(level=INFO, format='%(levelname)s: %(message)s')
 
 # This class represents a single, trackable objective.
 class Objective:
@@ -29,7 +29,7 @@ class Objective:
         """Marks the objective as complete."""
         if not self.is_complete:
             self.is_complete = True
-            logging.info(f"Objective COMPLETED: '{self.description}' ({self.objective_id})")
+            info(f"Objective COMPLETED: '{self.description}' ({self.objective_id})")
 
 class Chapter:
     """Acts as a blueprint for a single chapter in our story."""
@@ -60,7 +60,7 @@ class Chapter:
             if obj.objective_id == objective_id:
                 obj.complete()
                 return
-        logging.warning(f"Chapter '{self.title}': Tried to complete non-existent objective ID: '{objective_id}'")
+        warning(f"Chapter '{self.title}': Tried to complete non-existent objective ID: '{objective_id}'")
 
 class StoryManager:
     """The main controller for the game's narrative."""
@@ -80,7 +80,7 @@ class StoryManager:
         if not self.drone_system or start_chapter_index == 0:
             return
 
-        logging.info(f"Applying prerequisites for starting at Chapter {start_chapter_index + 1}.")
+        info(f"Applying prerequisites for starting at Chapter {start_chapter_index + 1}.")
         # Mark all previous chapters as complete
         for i in range(start_chapter_index):
             for obj in self.chapters[i].objectives:
@@ -117,7 +117,7 @@ class StoryManager:
     def start_story(self):
         """Begins the story by setting the current chapter based on settings."""
         if not self.chapters:
-            logging.error("No chapters in the story to start.")
+            error("No chapters in the story to start.")
             return
 
         start_chapter_id = get_setting("testing", "START_CHAPTER", "chapter_1")
@@ -132,7 +132,7 @@ class StoryManager:
         self.current_chapter_index = start_index
         self._apply_chapter_prerequisites(start_index)
         
-        logging.info(f"Story has started at Chapter {self.current_chapter_index + 1}!")
+        info(f"Story has started at Chapter {self.current_chapter_index + 1}!")
 
     def get_current_chapter(self):
         """Retrieves the chapter the player is currently on."""
@@ -149,7 +149,7 @@ class StoryManager:
             if self.current_chapter_index < len(self.chapters) - 1:
                 self.current_chapter_index += 1
                 next_chap = self.get_current_chapter()
-                logging.info(f"--- Advanced to Chapter: {next_chap.title} ---")
+                info(f"--- Advanced to Chapter: {next_chap.title} ---")
                 
                 # Return to StoryMapState with completion info
                 if self.state_manager:
@@ -158,13 +158,13 @@ class StoryManager:
                                                 completed_chapter=completed_chapter_title)
             else:
                 self.current_chapter_index = -1
-                logging.info("--- Congratulations! You have completed the story! ---")
+                info("--- Congratulations! You have completed the story! ---")
                 if self.state_manager:
                     self.state_manager.set_state("MainMenuState")
         elif current_chap:
-            logging.warning("Cannot advance: Current chapter is not yet complete.")
+            warning("Cannot advance: Current chapter is not yet complete.")
         else:
-            logging.warning("Story has not started or is already over.")
+            warning("Story has not started or is already over.")
 
     def complete_objective_by_id(self, objective_id):
         """Finds and completes a specific objective by its ID in the current chapter."""
@@ -172,7 +172,7 @@ class StoryManager:
         if current_chapter:
             current_chapter.complete_objective_by_id(objective_id)
         else:
-            logging.warning(f"No current chapter to complete objective: '{objective_id}'")
+            warning(f"No current chapter to complete objective: '{objective_id}'")
 
     def handle_game_event(self, event):
         """Processes game events to update objective status."""
@@ -180,7 +180,7 @@ class StoryManager:
         if not current_chapter:
             return
 
-        logging.debug(f"StoryManager processing event: {type(event).__name__}")
+        debug(f"StoryManager processing event: {type(event).__name__}")
 
         for objective in current_chapter.objectives:
             if objective.is_complete:

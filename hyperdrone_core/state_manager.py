@@ -3,9 +3,9 @@ from pygame import Surface
 from pygame.mixer import music
 from pygame.time import get_ticks
 from pygame import error as pygame_error
-import os
-import time
-import logging
+from os.path import exists
+from time import time
+from logging import getLogger
 from settings_manager import get_setting
 from constants import (
     GAME_STATE_PLAYING, GAME_STATE_MAZE_DEFENSE, GAME_STATE_MAIN_MENU,
@@ -47,7 +47,7 @@ from .harvest_chamber_state import HarvestChamberState
 from .weapons_upgrade_shop_state import WeaponsUpgradeShopState
 from .narrative_state import NarrativeState
 
-logger = logging.getLogger(__name__)
+logger = getLogger(__name__)
 
 class StateManager:
     """
@@ -303,7 +303,7 @@ class StateManager:
         """Helper function to load and play music using AssetManager."""
         music_path = self.asset_manager.get_music_path(music_key)
 
-        if not music_path or not os.path.exists(music_path):
+        if not music_path or not exists(music_path):
             logger.warning(f"Music file not found for key '{music_key}'")
             if self.current_music_context_key == music_key:
                 music.stop()
@@ -452,7 +452,7 @@ class StateManager:
         
         self.current_state = new_state
         
-        self.registry.record_transition(old_state_id, state_id, time.time())
+        self.registry.record_transition(old_state_id, state_id, time())
         
         logger.info(f"Game state changed from '{old_state_id}' to '{state_id}'")
         
@@ -534,7 +534,7 @@ class StateManager:
         
         self.current_state = new_state
         
-        self.registry.record_transition(old_state_id, state_id, time.time())
+        self.registry.record_transition(old_state_id, state_id, time())
         
         logger.info(f"Game state changed from '{old_state_id}' to '{state_id}'")
         

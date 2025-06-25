@@ -1,5 +1,5 @@
-# hyperdrone_core/game_events.pyAdd commentMore actions
-import logging
+# hyperdrone_core/game_events.py
+from logging import info
 from .event_batch import BatchedEvent
 
 class GameEvent:
@@ -120,10 +120,10 @@ class ItemCollectedEvent(GameEvent):
     def __init__(self, item_id, item_type='generic'):
         self.item_id = item_id
         self.item_type = item_type
-        logging.info(f"ItemCollectedEvent dispatched: id={item_id}, type={item_type}")
+        info(f"ItemCollectedEvent dispatched: id={item_id}, type={item_type}")
 
 class BossDefeatedEvent(GameEvent):
     """Event triggered when a boss is defeated."""
     def __init__(self, boss_id):
         self.boss_id = boss_id
-        logging.info(f"BossDefeatedEvent dispatched: id={boss_id}")
+        info(f"BossDefeatedEvent dispatched: id={boss_id}")

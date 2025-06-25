@@ -1,12 +1,12 @@
 # entities/maze_guardian.py
-import pygame.sprite
-import pygame.draw
-import pygame.time
-import pygame.transform
+from pygame.sprite import Group
+from pygame.draw import rect
+from pygame.time import get_ticks
+from pygame.transform import smoothscale
 from pygame import Surface, SRCALPHA, Rect
 from math import hypot, cos, sin, radians, degrees, atan2
 from random import choice, uniform, randint
-import logging
+from logging import getLogger
 
 from settings_manager import get_setting
 from constants import WHITE, BLACK, RED, YELLOW, ORANGE, DARK_GREY, GREEN
@@ -14,7 +14,7 @@ from .base_drone import BaseDrone
 from .enemy import SentinelDrone
 from .bullet import LaserBeam # Import the new LaserBeam class
 
-logger = logging.getLogger(__name__)
+logger = getLogger(__name__)
 
 class MazeGuardian(BaseDrone):
     def __init__(self, x, y, player_ref, maze_ref, combat_controller_ref, asset_manager): # Changed game_controller_ref to combat_controller_ref
@@ -43,18 +43,18 @@ class MazeGuardian(BaseDrone):
         self.corners = []
         self._initialize_corners()
 
-        self.last_laser_time = pygame.time.get_ticks() + 3000
+        self.last_laser_time = get_ticks() + 3000
         self.laser_cooldown = get_setting("bosses", "MAZE_GUARDIAN_LASER_COOLDOWN", 5000)
-        self.laser_beams = pygame.sprite.Group()
+        self.laser_beams = Group()
 
-        self.last_minion_spawn_time = pygame.time.get_ticks()
+        self.last_minion_spawn_time = get_ticks()
         self.minion_spawn_cooldown = get_setting("bosses", "MAZE_GUARDIAN_MINION_SPAWN_COOLDOWN_MS", 8000)
         
         self.target_pos = None
         self.move_timer = 0
         self.MOVE_INTERVAL = 3000
 
-        self.bullets = pygame.sprite.Group()
+        self.bullets = Group()
 
 
     def _load_sprite(self):
@@ -62,7 +62,7 @@ class MazeGuardian(BaseDrone):
         
         if loaded_image:
             try:
-                self.original_image = pygame.transform.smoothscale(loaded_image, self.visual_size)
+                self.original_image = smoothscale(loaded_image, self.visual_size)
             except (ValueError, pygame.error) as e:
                 logger.error(f"MazeGuardian: Error scaling sprite for key '{self.sprite_asset_key}': {e}")
                 self.original_image = None
@@ -73,7 +73,7 @@ class MazeGuardian(BaseDrone):
         if self.original_image is None:
             self.original_image = Surface(self.visual_size, SRCALPHA)
             self.original_image.fill(get_setting("bosses", "MAZE_GUARDIAN_COLOR", (80,0,120)))
-            pygame.draw.rect(self.original_image, WHITE, self.original_image.get_rect(), 3)
+            rect(self.original_image, WHITE, self.original_image.get_rect(), 3)
         
         self.image = self.original_image.copy()
 
@@ -285,9 +285,9 @@ class MazeGuardian(BaseDrone):
             for corner in self.corners:
                 corner_rect = corner['rect'].copy()
                 screen_corner_rect = camera.apply_to_rect(corner_rect)
-                pygame.draw.rect(surface, corner['color'], screen_corner_rect)
+                rect(surface, corner['color'], screen_corner_rect)
                 border_color = WHITE if corner['status'] != 'destroyed' else DARK_GREY
-                pygame.draw.rect(surface, border_color, screen_corner_rect, 2)
+                rect(surface, border_color, screen_corner_rect, 2)
                 
                 if corner['status'] != 'destroyed' and corner['health'] < corner['max_health']:
                     bar_width = screen_corner_rect.width * 0.8; bar_height = 4
@@ -296,15 +296,15 @@ class MazeGuardian(BaseDrone):
                     health_perc = corner['health'] / corner['max_health']
                     filled_width = bar_width * health_perc
                     fill_c = RED if health_perc < 0.33 else YELLOW if health_perc < 0.66 else GREEN
-                    pygame.draw.rect(surface, (50,50,50), (bar_x, bar_y, bar_width, bar_height))
-                    if filled_width > 0: pygame.draw.rect(surface, fill_c, (bar_x, bar_y, int(filled_width), bar_height))
-                    pygame.draw.rect(surface, WHITE, (bar_x, bar_y, bar_width, bar_height), 1)
+                    rect(surface, (50,50,50), (bar_x, bar_y, bar_width, bar_height))
+                    if filled_width > 0: rect(surface, fill_c, (bar_x, bar_y, int(filled_width), bar_height))
+                    rect(surface, WHITE, (bar_x, bar_y, bar_width, bar_height), 1)
         else:
             surface.blit(self.image, self.rect)
             for corner in self.corners:
-                pygame.draw.rect(surface, corner['color'], corner['rect'])
+                rect(surface, corner['color'], corner['rect'])
                 border_color = WHITE if corner['status'] != 'destroyed' else DARK_GREY
-                pygame.draw.rect(surface, border_color, corner['rect'], 2)
+                rect(surface, border_color, corner['rect'], 2)
                 if corner['status'] != 'destroyed' and corner['health'] < corner['max_health']:
                     bar_width = corner['rect'].width * 0.8; bar_height = 4
                     bar_x = corner['rect'].centerx - bar_width / 2
@@ -312,9 +312,9 @@ class MazeGuardian(BaseDrone):
                     health_perc = corner['health'] / corner['max_health']
                     filled_width = bar_width * health_perc
                     fill_c = RED if health_perc < 0.33 else YELLOW if health_perc < 0.66 else GREEN
-                    pygame.draw.rect(surface, (50,50,50), (bar_x, bar_y, bar_width, bar_height))
-                    if filled_width > 0: pygame.draw.rect(surface, fill_c, (bar_x, bar_y, int(filled_width), bar_height))
-                    pygame.draw.rect(surface, WHITE, (bar_x, bar_y, bar_width, bar_height), 1)
+                    rect(surface, (50,50,50), (bar_x, bar_y, bar_width, bar_height))
+                    if filled_width > 0: rect(surface, fill_c, (bar_x, bar_y, int(filled_width), bar_height))
+                    rect(surface, WHITE, (bar_x, bar_y, bar_width, bar_height), 1)
                     
         self.laser_beams.draw(surface)
         self.bullets.draw(surface)

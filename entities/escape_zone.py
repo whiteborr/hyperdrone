@@ -1,10 +1,11 @@
-import pygame.sprite
-import pygame.draw
+# entities/escape_zone.py
+from pygame.sprite import Sprite
+from pygame.draw import rect
 from pygame import Surface, SRCALPHA
 from math import sin
 from settings_manager import get_setting
 
-class EscapeZone(pygame.sprite.Sprite):
+class EscapeZone(Sprite):
     def __init__(self, x, y):
         super().__init__()
         self.size = int(get_setting("gameplay", "TILE_SIZE", 80) * 1.5) # Make it a bit larger than a tile
@@ -54,10 +55,10 @@ class EscapeZone(pygame.sprite.Sprite):
             if rect_size > 0: # Only draw if size is positive
                  # Ensure radius is valid for pygame.draw.rect
                 radius = min(radius, int(rect_size / 2))
-                pygame.draw.rect(self.image, temp_color, (offset, offset, rect_size, rect_size), border_radius=radius)
+                rect(self.image, temp_color, (offset, offset, rect_size, rect_size), border_radius=radius)
                 if i == 0: # Innermost rect a bit brighter and outlined
                     inner_color = (*base_color_rgb, min(255, rect_alpha + 50))
-                    pygame.draw.rect(self.image, inner_color, (offset, offset, rect_size, rect_size), border_radius=radius, width=2)
+                    rect(self.image, inner_color, (offset, offset, rect_size, rect_size), border_radius=radius, width=2)
 
 
     def update(self):

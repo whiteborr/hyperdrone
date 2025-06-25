@@ -4,7 +4,7 @@ from pygame.time import get_ticks
 from pygame.transform import smoothscale, rotate
 from pygame.draw import rect as draw_rect
 from math import radians, cos, sin
-import logging 
+from logging import getLogger 
 
 from settings_manager import get_setting
 from constants import (
@@ -26,7 +26,7 @@ from .weapon_strategies import (
 )
 
 
-logger = logging.getLogger(__name__)
+logger = getLogger(__name__)
 
 
 class PlayerDrone(BaseDrone):
@@ -309,7 +309,7 @@ class PlayerDrone(BaseDrone):
     def cycle_weapon_state(self):
         # Get owned weapons from drone system
         if hasattr(self, 'drone_system') and self.drone_system:
-            owned_weapons = self.drone_system.get_owned_weapons()
+            owned_weapons = list(self.drone_system.get_owned_weapons().keys())
             # Always include default weapon (0) if not in owned list
             if 0 not in owned_weapons:
                 owned_weapons = [0] + owned_weapons

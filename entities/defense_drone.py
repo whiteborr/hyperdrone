@@ -3,12 +3,12 @@ from pygame.sprite import Sprite
 from pygame import Surface, SRCALPHA
 from pygame.transform import rotate
 from pygame.draw import rect as draw_rect
-import logging
+from logging import getLogger
 
 from settings_manager import get_setting
 from constants import GREEN, YELLOW, RED, WHITE
 
-logger = logging.getLogger(__name__)
+logger = getLogger(__name__)
 
 class DefenseDrone(Sprite):
     def __init__(self, x, y, asset_manager, config, path_to_core=None, **kwargs):

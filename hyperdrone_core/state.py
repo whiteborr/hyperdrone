@@ -1,4 +1,4 @@
-# hyperdrone_core/state.pyAdd commentMore actions
+# hyperdrone_core/state.py
 class State:
     """Base State class for the State Design Pattern"""
     def __init__(self, game_controller):

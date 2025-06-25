@@ -3,12 +3,12 @@ from pygame.time import get_ticks
 from pygame.font import Font
 from pygame import Surface, KEYDOWN, K_SPACE, K_RETURN
 from pygame.math import Vector2
-import logging
-import json
+from logging import getLogger
+from json import load
 from .state import State
 from constants import GAME_STATE_PLAYING, GAME_STATE_BOSS_FIGHT, GAME_STATE_CORRUPTED_SECTOR, GAME_STATE_HARVEST_CHAMBER, GAME_STATE_MAZE_DEFENSE
 
-logger = logging.getLogger(__name__)
+logger = getLogger(__name__)
 
 class StoryMapState(State):
     """
@@ -150,7 +150,7 @@ class StoryMapState(State):
         """Load chapter data from lore_entries.json"""
         try:
             with open('data/lore_entries.json', 'r') as f:
-                data = json.load(f)
+                data = load(f)
                 return {chapter['id']: chapter for chapter in data.get('chapters', [])}
         except Exception as e:
             logger.warning(f"Could not load chapter data: {e}")

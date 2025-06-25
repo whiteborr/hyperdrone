@@ -10,12 +10,12 @@ from pygame import init as pygame_init, quit as pygame_quit
 from os.path import splitext
 from math import isclose, radians, cos, sin
 from random import randint
-import traceback
-import logging
+from traceback import print_exc
+from logging import getLogger
 
 from settings_manager import get_setting
 
-logger = logging.getLogger(__name__)
+logger = getLogger(__name__)
 
 # Get colors from settings
 WHITE = get_setting("colors", "WHITE", (255, 255, 255))
@@ -309,7 +309,7 @@ if __name__ == '__main__':
         puzzle_active_in_game = True 
     except Exception as e:
         logger.error(f"Failed to initialize puzzle for testing: {e}")
-        traceback.print_exc()
+        print_exc()
         pygame.quit()
         exit()
 
