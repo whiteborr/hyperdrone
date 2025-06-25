@@ -108,6 +108,9 @@ class LeaderboardUI:
         self.font_small = font.Font(font_path, 18)
         self.scanline_offset = 0
         self.scanline_alpha = 50
+        
+        from hyperdrone_core.asset_manager import AssetManager
+        self.asset_manager = AssetManager()
 
     def draw(self, screen):
         width, height = screen.get_size()
@@ -235,10 +238,11 @@ class LeaderboardUI:
             level_text = f"LVL: {level}"
             self._draw_text_with_shadow(screen, level_text, self.font_entry, color, (start_x + 450, y_pos))
             
-            # Special crown icon for 1st place
+            # Special trophy icon for 1st place
             if i == 0:
-                crown_text = "★"
-                self._draw_text_with_shadow(screen, crown_text, self.font_entry, GOLD, (start_x + 550, y_pos))
+                trophy_image = self.asset_manager.get_image("TROPHY_ICON")
+                if trophy_image:
+                    screen.blit(trophy_image, (start_x + 570, y_pos))
 
     def _draw_text_with_shadow(self, screen, text, font_obj, color, pos, shadow_color=(0, 0, 0), offset=(2, 2)):
         """Helper to draw text with a drop shadow."""

@@ -55,6 +55,7 @@ class MazeGuardian(BaseDrone):
         self.MOVE_INTERVAL = 3000
 
         self.bullets = Group()
+        self.objective_completed = False  # Flag to prevent multiple objective completions
 
 
     def _load_sprite(self):
@@ -181,7 +182,9 @@ class MazeGuardian(BaseDrone):
 
         if all(c['status'] == 'destroyed' for c in self.corners):
             self.alive = False
-            if self.combat_controller_ref.game_controller:
+            if self.combat_controller_ref.game_controller and not self.objective_completed:
+                self.objective_completed = True  # Set flag to prevent multiple completions
+                
                 # Play boss death sound
                 self.combat_controller_ref.game_controller.play_sound('prototype_drone_explode', 1.0)
                 
@@ -191,16 +194,11 @@ class MazeGuardian(BaseDrone):
                 # Drop fragment core assembler item
                 self._drop_fragment_core_assembler_item()
                 
-                # Complete chapter 2 objective before dispatching event
+                # Complete chapter 2 objective only if we're currently in chapter 2
                 if hasattr(self.combat_controller_ref.game_controller, 'story_manager'):
-                    # Temporarily set to chapter 2 to complete the objective
                     story_manager = self.combat_controller_ref.game_controller.story_manager
-                    current_index = story_manager.current_chapter_index
-                    if current_index > 1:  # If we're past chapter 2
-                        story_manager.current_chapter_index = 1  # Set to chapter 2 (0-indexed)
-                        story_manager.complete_objective_by_id('c2_defeat_guardian')
-                        story_manager.current_chapter_index = current_index  # Restore
-                    else:
+                    current_chapter = story_manager.get_current_chapter()
+                    if current_chapter and current_chapter.chapter_id == "chapter_2":
                         story_manager.complete_objective_by_id('c2_defeat_guardian')
                 
                 # Dispatch boss defeated event

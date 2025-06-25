@@ -149,7 +149,7 @@ class StoryMapState(State):
     def _load_chapter_data(self):
         """Load chapter data from lore_entries.json"""
         try:
-            with open('data/lore_entries.json', 'r') as f:
+            with open('data/lore_entries.json', 'r', encoding='utf-8') as f:
                 data = load(f)
                 return {chapter['id']: chapter for chapter in data.get('chapters', [])}
         except Exception as e:

@@ -1,0 +1,1025 @@
+2025-06-25 23:31:57,488 - settings_manager - INFO - Settings loaded successfully
+2025-06-25 23:31:57,488 - settings_manager - INFO - Asset manifest loaded successfully
+2025-06-25 23:31:57,514 - root - INFO - Starting Hyperdrone...
+2025-06-25 23:31:57,765 - hyperdrone_core.game_loop - INFO - Screen resolution set to: 1920x1200
+2025-06-25 23:31:57,785 - root - INFO - AssetManager initialized with absolute base path: 'C:\HYPERDRONE\assets'
+2025-06-25 23:31:57,786 - drone_management.drone_system - INFO - Successfully loaded and processed 37 lore entries.
+2025-06-25 23:31:57,787 - drone_management.drone_system - INFO - DroneSystem initialized. Unlocked: {'DRONE', 'PHANTOM'}. Selected: PHANTOM
+2025-06-25 23:31:57,787 - root - INFO - AssetManager: Starting preload from manifest...
+2025-06-25 23:31:58,192 - root - INFO - AssetManager: Preload from manifest complete.
+2025-06-25 23:31:58,193 - root - INFO - AssetManager: All game assets preloaded.
+2025-06-25 23:31:58,193 - hyperdrone_core.game_loop - INFO - GameController: All assets preloaded via AssetManager.
+2025-06-25 23:31:58,193 - hyperdrone_core.wave_manager - INFO - WaveManager initialized.
+2025-06-25 23:31:58,193 - hyperdrone_core.puzzle_controller - INFO - PuzzleController initialized.
+2025-06-25 23:31:58,193 - root - INFO - UIFlowController initialized.
+2025-06-25 23:31:58,195 - root - INFO - AssetManager initialized with absolute base path: 'C:\HYPERDRONE\assets'
+2025-06-25 23:31:58,303 - root - INFO - UIManager initialized and UI assets loaded via AssetManager.
+2025-06-25 23:31:58,323 - hyperdrone_core.event_manager - INFO - EventManager initialized.
+2025-06-25 23:31:58,323 - root - INFO - Story has started at Chapter 1!
+2025-06-25 23:31:58,324 - root - INFO - Registered state: PlayingState
+2025-06-25 23:31:58,324 - root - INFO - Registered state: MazeDefenseState
+2025-06-25 23:31:58,324 - root - INFO - Registered state: MainMenuState
+2025-06-25 23:31:58,324 - root - INFO - Registered state: GameOverState
+2025-06-25 23:31:58,324 - root - INFO - Registered state: LeaderboardState
+2025-06-25 23:31:58,324 - root - INFO - Registered state: SettingsState
+2025-06-25 23:31:58,325 - root - INFO - Registered state: DroneSelectState
+2025-06-25 23:31:58,325 - root - INFO - Registered state: CodexState
+2025-06-25 23:31:58,325 - root - INFO - Registered state: EnterNameState
+2025-06-25 23:31:58,325 - root - INFO - Registered state: GameIntroScrollState
+2025-06-25 23:31:58,325 - root - INFO - Registered state: RingPuzzleState
+2025-06-25 23:31:58,325 - root - INFO - Registered state: StoryMapState
+2025-06-25 23:31:58,325 - root - INFO - Registered state: BonusLevelStartState
+2025-06-25 23:31:58,325 - root - INFO - Registered state: BonusLevelPlayingState
+2025-06-25 23:31:58,325 - root - INFO - Registered state: ArchitectVaultIntroState
+2025-06-25 23:31:58,325 - root - INFO - Registered state: ArchitectVaultEntryPuzzleState
+2025-06-25 23:31:58,325 - root - INFO - Registered state: ArchitectVaultGauntletState
+2025-06-25 23:31:58,325 - root - INFO - Registered state: ArchitectVaultExtractionState
+2025-06-25 23:31:58,325 - root - INFO - Registered state: ArchitectVaultSuccessState
+2025-06-25 23:31:58,325 - root - INFO - Registered state: ArchitectVaultFailureState
+2025-06-25 23:31:58,325 - root - INFO - Registered state: BossFightState
+2025-06-25 23:31:58,325 - root - INFO - Registered state: CorruptedSectorState
+2025-06-25 23:31:58,325 - root - INFO - Registered state: HarvestChamberState
+2025-06-25 23:31:58,326 - root - INFO - Registered state: WeaponsUpgradeShopState
+2025-06-25 23:31:58,326 - root - INFO - Registered state: NarrativeState
+2025-06-25 23:31:58,326 - root - INFO - Registered state: TempestFightState
+2025-06-25 23:31:58,326 - root - INFO - Registered transition: MainMenuState -> StoryMapState
+2025-06-25 23:31:58,326 - root - INFO - Registered transition: MainMenuState -> SettingsState
+2025-06-25 23:31:58,326 - root - INFO - Registered transition: MainMenuState -> LeaderboardState
+2025-06-25 23:31:58,326 - root - INFO - Registered transition: MainMenuState -> DroneSelectState
+2025-06-25 23:31:58,326 - root - INFO - Registered transition: MainMenuState -> CodexState
+2025-06-25 23:31:58,326 - root - INFO - Registered transition: MainMenuState -> GameIntroScrollState
+2025-06-25 23:31:58,326 - root - INFO - Registered transition: MainMenuState -> MazeDefenseState
+2025-06-25 23:31:58,326 - root - INFO - Registered transition: MainMenuState -> WeaponsUpgradeShopState
+2025-06-25 23:31:58,326 - root - INFO - Registered transition: SettingsState -> MainMenuState
+2025-06-25 23:31:58,326 - root - INFO - Registered transition: SettingsState -> StoryMapState
+2025-06-25 23:31:58,326 - root - INFO - Registered transition: SettingsState -> CorruptedSectorState
+2025-06-25 23:31:58,326 - root - INFO - Registered transition: SettingsState -> PlayingState
+2025-06-25 23:31:58,326 - root - INFO - Registered transition: SettingsState -> BossFightState
+2025-06-25 23:31:58,326 - root - INFO - Registered transition: SettingsState -> HarvestChamberState
+2025-06-25 23:31:58,326 - root - INFO - Registered transition: LeaderboardState -> MainMenuState
+2025-06-25 23:31:58,326 - root - INFO - Registered transition: DroneSelectState -> MainMenuState
+2025-06-25 23:31:58,327 - root - INFO - Registered transition: CodexState -> MainMenuState
+2025-06-25 23:31:58,327 - root - INFO - Registered transition: WeaponsUpgradeShopState -> MainMenuState
+2025-06-25 23:31:58,327 - root - INFO - Registered transition: WeaponsUpgradeShopState -> PlayingState
+2025-06-25 23:31:58,327 - root - INFO - Registered transition: PlayingState -> WeaponsUpgradeShopState
+2025-06-25 23:31:58,327 - root - INFO - Registered transition: GameIntroScrollState -> StoryMapState
+2025-06-25 23:31:58,327 - root - INFO - Registered transition: StoryMapState -> PlayingState
+2025-06-25 23:31:58,327 - root - INFO - Registered transition: StoryMapState -> BossFightState
+2025-06-25 23:31:58,327 - root - INFO - Registered transition: StoryMapState -> CorruptedSectorState
+2025-06-25 23:31:58,327 - root - INFO - Registered transition: StoryMapState -> HarvestChamberState
+2025-06-25 23:31:58,327 - root - INFO - Registered transition: StoryMapState -> MazeDefenseState
+2025-06-25 23:31:58,327 - root - INFO - Registered transition: PlayingState -> GameOverState
+2025-06-25 23:31:58,327 - root - INFO - Registered transition: PlayingState -> RingPuzzleState
+2025-06-25 23:31:58,327 - root - INFO - Registered transition: PlayingState -> BonusLevelStartState
+2025-06-25 23:31:58,327 - root - INFO - Registered transition: PlayingState -> ArchitectVaultIntroState
+2025-06-25 23:31:58,327 - root - INFO - Registered transition: PlayingState -> MazeDefenseState
+2025-06-25 23:31:58,327 - root - INFO - Registered transition: PlayingState -> BossFightState
+2025-06-25 23:31:58,327 - root - INFO - Registered transition: PlayingState -> TempestFightState
+2025-06-25 23:31:58,327 - root - INFO - Registered transition: PlayingState -> StoryMapState
+2025-06-25 23:31:58,327 - root - INFO - Registered transition: GameOverState -> MainMenuState
+2025-06-25 23:31:58,328 - root - INFO - Registered transition: GameOverState -> EnterNameState
+2025-06-25 23:31:58,328 - root - INFO - Registered transition: GameOverState -> StoryMapState
+2025-06-25 23:31:58,328 - root - INFO - Registered transition: GameOverState -> PlayingState
+2025-06-25 23:31:58,328 - root - INFO - Registered transition: GameOverState -> MazeDefenseState
+2025-06-25 23:31:58,328 - root - INFO - Registered transition: GameOverState -> BossFightState
+2025-06-25 23:31:58,328 - root - INFO - Registered transition: GameOverState -> CorruptedSectorState
+2025-06-25 23:31:58,328 - root - INFO - Registered transition: GameOverState -> HarvestChamberState
+2025-06-25 23:31:58,328 - root - INFO - Registered transition: EnterNameState -> LeaderboardState
+2025-06-25 23:31:58,328 - root - INFO - Registered transition: RingPuzzleState -> PlayingState
+2025-06-25 23:31:58,328 - root - INFO - Registered transition: BonusLevelStartState -> BonusLevelPlayingState
+2025-06-25 23:31:58,328 - root - INFO - Registered transition: BonusLevelPlayingState -> PlayingState
+2025-06-25 23:31:58,328 - root - INFO - Registered transition: BonusLevelPlayingState -> GameOverState
+2025-06-25 23:31:58,328 - root - INFO - Registered transition: ArchitectVaultIntroState -> ArchitectVaultEntryPuzzleState
+2025-06-25 23:31:58,328 - root - INFO - Registered transition: ArchitectVaultEntryPuzzleState -> ArchitectVaultGauntletState
+2025-06-25 23:31:58,328 - root - INFO - Registered transition: ArchitectVaultGauntletState -> ArchitectVaultExtractionState
+2025-06-25 23:31:58,328 - root - INFO - Registered transition: ArchitectVaultExtractionState -> ArchitectVaultSuccessState
+2025-06-25 23:31:58,328 - root - INFO - Registered transition: ArchitectVaultExtractionState -> ArchitectVaultFailureState
+2025-06-25 23:31:58,328 - root - INFO - Registered transition: ArchitectVaultSuccessState -> PlayingState
+2025-06-25 23:31:58,328 - root - INFO - Registered transition: ArchitectVaultFailureState -> PlayingState
+2025-06-25 23:31:58,328 - root - INFO - Registered transition: MazeDefenseState -> PlayingState
+2025-06-25 23:31:58,329 - root - INFO - Registered transition: MazeDefenseState -> GameOverState
+2025-06-25 23:31:58,329 - root - INFO - Registered transition: BossFightState -> GameOverState
+2025-06-25 23:31:58,329 - root - INFO - Registered transition: BossFightState -> CorruptedSectorState
+2025-06-25 23:31:58,329 - root - INFO - Registered transition: BossFightState -> StoryMapState
+2025-06-25 23:31:58,329 - root - INFO - Registered transition: TempestFightState -> StoryMapState
+2025-06-25 23:31:58,329 - root - INFO - Registered transition: CorruptedSectorState -> GameOverState
+2025-06-25 23:31:58,329 - root - INFO - Registered transition: CorruptedSectorState -> HarvestChamberState
+2025-06-25 23:31:58,329 - root - INFO - Registered transition: CorruptedSectorState -> StoryMapState
+2025-06-25 23:31:58,329 - root - INFO - Registered transition: HarvestChamberState -> GameOverState
+2025-06-25 23:31:58,329 - root - INFO - Registered transition: HarvestChamberState -> MainMenuState
+2025-06-25 23:31:58,329 - root - INFO - Registered transition: BossFightState -> NarrativeState
+2025-06-25 23:31:58,329 - root - INFO - Registered transition: CorruptedSectorState -> NarrativeState
+2025-06-25 23:31:58,329 - root - INFO - Registered transition: HarvestChamberState -> NarrativeState
+2025-06-25 23:31:58,329 - root - INFO - Registered transition: PlayingState -> NarrativeState
+2025-06-25 23:31:58,330 - root - INFO - Registered transition: NarrativeState -> StoryMapState
+2025-06-25 23:31:58,330 - root - INFO - Registered transition: NarrativeState -> MainMenuState
+2025-06-25 23:31:58,330 - root - INFO - Registered transition: NarrativeState -> PlayingState
+2025-06-25 23:31:58,330 - root - INFO - Registered transition: NarrativeState -> BossFightState
+2025-06-25 23:31:58,330 - root - INFO - Registered transition: NarrativeState -> CorruptedSectorState
+2025-06-25 23:31:58,330 - root - INFO - Registered transition: NarrativeState -> HarvestChamberState
+2025-06-25 23:31:58,331 - hyperdrone_core.wave_manager - INFO - WaveManager: Reset for new Maze Defense session.
+2025-06-25 23:31:58,332 - hyperdrone_core.state_manager - INFO - Game state changed from 'None' to 'MainMenuState'
+2025-06-25 23:31:58,332 - hyperdrone_core.state_manager - INFO - Playing music for context key 'menu_theme' at volume 1.0
+2025-06-25 23:31:58,333 - hyperdrone_core.wave_manager - INFO - WaveManager: Reset for new Maze Defense session.
+2025-06-25 23:31:58,333 - hyperdrone_core.game_loop - INFO - GameController initialized successfully.
+2025-06-25 23:31:59,338 - root - INFO - Main menu action selected: Leaderboard
+2025-06-25 23:32:00,153 - hyperdrone_core.state_manager - INFO - Game state changed from 'MainMenuState' to 'LeaderboardState'
+2025-06-25 23:32:29,048 - hyperdrone_core.wave_manager - INFO - WaveManager: Reset for new Maze Defense session.
+2025-06-25 23:32:29,048 - hyperdrone_core.state_manager - INFO - Game state changed from 'LeaderboardState' to 'MainMenuState'
+2025-06-25 23:32:29,048 - hyperdrone_core.wave_manager - INFO - WaveManager: Reset for new Maze Defense session.
+2025-06-26 00:17:28,121 - settings_manager - INFO - Settings loaded successfully
+2025-06-26 00:17:28,121 - settings_manager - INFO - Asset manifest loaded successfully
+2025-06-26 00:17:28,148 - root - INFO - Starting Hyperdrone...
+2025-06-26 00:17:28,430 - hyperdrone_core.game_loop - INFO - Screen resolution set to: 1920x1200
+2025-06-26 00:17:28,451 - root - INFO - AssetManager initialized with absolute base path: 'C:\HYPERDRONE\assets'
+2025-06-26 00:17:28,451 - drone_management.drone_system - INFO - Successfully loaded and processed 37 lore entries.
+2025-06-26 00:17:28,458 - drone_management.drone_system - INFO - DroneSystem initialized. Unlocked: {'PHANTOM', 'DRONE'}. Selected: PHANTOM
+2025-06-26 00:17:28,458 - root - INFO - AssetManager: Starting preload from manifest...
+2025-06-26 00:17:28,862 - root - INFO - AssetManager: Preload from manifest complete.
+2025-06-26 00:17:28,862 - root - INFO - AssetManager: All game assets preloaded.
+2025-06-26 00:17:28,862 - hyperdrone_core.game_loop - INFO - GameController: All assets preloaded via AssetManager.
+2025-06-26 00:17:28,863 - hyperdrone_core.wave_manager - INFO - WaveManager initialized.
+2025-06-26 00:17:28,863 - hyperdrone_core.puzzle_controller - INFO - PuzzleController initialized.
+2025-06-26 00:17:28,863 - root - INFO - UIFlowController initialized.
+2025-06-26 00:17:28,865 - root - INFO - AssetManager initialized with absolute base path: 'C:\HYPERDRONE\assets'
+2025-06-26 00:17:28,972 - root - INFO - UIManager initialized and UI assets loaded via AssetManager.
+2025-06-26 00:17:28,992 - hyperdrone_core.event_manager - INFO - EventManager initialized.
+2025-06-26 00:17:28,992 - root - INFO - Story has started at Chapter 1!
+2025-06-26 00:17:28,993 - root - INFO - Registered state: PlayingState
+2025-06-26 00:17:28,993 - root - INFO - Registered state: MazeDefenseState
+2025-06-26 00:17:28,993 - root - INFO - Registered state: MainMenuState
+2025-06-26 00:17:28,993 - root - INFO - Registered state: GameOverState
+2025-06-26 00:17:28,993 - root - INFO - Registered state: LeaderboardState
+2025-06-26 00:17:28,993 - root - INFO - Registered state: SettingsState
+2025-06-26 00:17:28,993 - root - INFO - Registered state: DroneSelectState
+2025-06-26 00:17:28,994 - root - INFO - Registered state: CodexState
+2025-06-26 00:17:28,994 - root - INFO - Registered state: EnterNameState
+2025-06-26 00:17:28,994 - root - INFO - Registered state: GameIntroScrollState
+2025-06-26 00:17:28,994 - root - INFO - Registered state: RingPuzzleState
+2025-06-26 00:17:28,994 - root - INFO - Registered state: StoryMapState
+2025-06-26 00:17:28,994 - root - INFO - Registered state: BonusLevelStartState
+2025-06-26 00:17:28,994 - root - INFO - Registered state: BonusLevelPlayingState
+2025-06-26 00:17:28,994 - root - INFO - Registered state: ArchitectVaultIntroState
+2025-06-26 00:17:28,994 - root - INFO - Registered state: ArchitectVaultEntryPuzzleState
+2025-06-26 00:17:28,994 - root - INFO - Registered state: ArchitectVaultGauntletState
+2025-06-26 00:17:28,994 - root - INFO - Registered state: ArchitectVaultExtractionState
+2025-06-26 00:17:28,994 - root - INFO - Registered state: ArchitectVaultSuccessState
+2025-06-26 00:17:28,994 - root - INFO - Registered state: ArchitectVaultFailureState
+2025-06-26 00:17:28,994 - root - INFO - Registered state: BossFightState
+2025-06-26 00:17:28,994 - root - INFO - Registered state: CorruptedSectorState
+2025-06-26 00:17:28,994 - root - INFO - Registered state: HarvestChamberState
+2025-06-26 00:17:28,994 - root - INFO - Registered state: WeaponsUpgradeShopState
+2025-06-26 00:17:28,994 - root - INFO - Registered state: NarrativeState
+2025-06-26 00:17:28,995 - root - INFO - Registered state: TempestFightState
+2025-06-26 00:17:28,995 - root - INFO - Registered transition: MainMenuState -> StoryMapState
+2025-06-26 00:17:28,995 - root - INFO - Registered transition: MainMenuState -> SettingsState
+2025-06-26 00:17:28,995 - root - INFO - Registered transition: MainMenuState -> LeaderboardState
+2025-06-26 00:17:28,995 - root - INFO - Registered transition: MainMenuState -> DroneSelectState
+2025-06-26 00:17:28,995 - root - INFO - Registered transition: MainMenuState -> CodexState
+2025-06-26 00:17:28,995 - root - INFO - Registered transition: MainMenuState -> GameIntroScrollState
+2025-06-26 00:17:28,995 - root - INFO - Registered transition: MainMenuState -> MazeDefenseState
+2025-06-26 00:17:28,995 - root - INFO - Registered transition: MainMenuState -> WeaponsUpgradeShopState
+2025-06-26 00:17:28,995 - root - INFO - Registered transition: SettingsState -> MainMenuState
+2025-06-26 00:17:28,995 - root - INFO - Registered transition: SettingsState -> StoryMapState
+2025-06-26 00:17:28,995 - root - INFO - Registered transition: SettingsState -> CorruptedSectorState
+2025-06-26 00:17:28,995 - root - INFO - Registered transition: SettingsState -> PlayingState
+2025-06-26 00:17:28,995 - root - INFO - Registered transition: SettingsState -> BossFightState
+2025-06-26 00:17:28,995 - root - INFO - Registered transition: SettingsState -> HarvestChamberState
+2025-06-26 00:17:28,995 - root - INFO - Registered transition: LeaderboardState -> MainMenuState
+2025-06-26 00:17:28,995 - root - INFO - Registered transition: DroneSelectState -> MainMenuState
+2025-06-26 00:17:28,995 - root - INFO - Registered transition: CodexState -> MainMenuState
+2025-06-26 00:17:28,995 - root - INFO - Registered transition: WeaponsUpgradeShopState -> MainMenuState
+2025-06-26 00:17:28,995 - root - INFO - Registered transition: WeaponsUpgradeShopState -> PlayingState
+2025-06-26 00:17:28,995 - root - INFO - Registered transition: PlayingState -> WeaponsUpgradeShopState
+2025-06-26 00:17:28,996 - root - INFO - Registered transition: GameIntroScrollState -> StoryMapState
+2025-06-26 00:17:28,996 - root - INFO - Registered transition: StoryMapState -> PlayingState
+2025-06-26 00:17:28,996 - root - INFO - Registered transition: StoryMapState -> BossFightState
+2025-06-26 00:17:28,996 - root - INFO - Registered transition: StoryMapState -> CorruptedSectorState
+2025-06-26 00:17:28,996 - root - INFO - Registered transition: StoryMapState -> HarvestChamberState
+2025-06-26 00:17:28,996 - root - INFO - Registered transition: StoryMapState -> MazeDefenseState
+2025-06-26 00:17:28,996 - root - INFO - Registered transition: PlayingState -> GameOverState
+2025-06-26 00:17:28,996 - root - INFO - Registered transition: PlayingState -> RingPuzzleState
+2025-06-26 00:17:28,996 - root - INFO - Registered transition: PlayingState -> BonusLevelStartState
+2025-06-26 00:17:28,996 - root - INFO - Registered transition: PlayingState -> ArchitectVaultIntroState
+2025-06-26 00:17:28,996 - root - INFO - Registered transition: PlayingState -> MazeDefenseState
+2025-06-26 00:17:28,996 - root - INFO - Registered transition: PlayingState -> BossFightState
+2025-06-26 00:17:28,996 - root - INFO - Registered transition: PlayingState -> TempestFightState
+2025-06-26 00:17:28,996 - root - INFO - Registered transition: PlayingState -> StoryMapState
+2025-06-26 00:17:28,996 - root - INFO - Registered transition: GameOverState -> MainMenuState
+2025-06-26 00:17:28,996 - root - INFO - Registered transition: GameOverState -> EnterNameState
+2025-06-26 00:17:28,996 - root - INFO - Registered transition: GameOverState -> StoryMapState
+2025-06-26 00:17:28,996 - root - INFO - Registered transition: GameOverState -> PlayingState
+2025-06-26 00:17:28,997 - root - INFO - Registered transition: GameOverState -> MazeDefenseState
+2025-06-26 00:17:28,997 - root - INFO - Registered transition: GameOverState -> BossFightState
+2025-06-26 00:17:28,997 - root - INFO - Registered transition: GameOverState -> CorruptedSectorState
+2025-06-26 00:17:28,997 - root - INFO - Registered transition: GameOverState -> HarvestChamberState
+2025-06-26 00:17:28,997 - root - INFO - Registered transition: EnterNameState -> LeaderboardState
+2025-06-26 00:17:28,997 - root - INFO - Registered transition: RingPuzzleState -> PlayingState
+2025-06-26 00:17:28,997 - root - INFO - Registered transition: BonusLevelStartState -> BonusLevelPlayingState
+2025-06-26 00:17:28,997 - root - INFO - Registered transition: BonusLevelPlayingState -> PlayingState
+2025-06-26 00:17:28,997 - root - INFO - Registered transition: BonusLevelPlayingState -> GameOverState
+2025-06-26 00:17:28,997 - root - INFO - Registered transition: ArchitectVaultIntroState -> ArchitectVaultEntryPuzzleState
+2025-06-26 00:17:28,997 - root - INFO - Registered transition: ArchitectVaultEntryPuzzleState -> ArchitectVaultGauntletState
+2025-06-26 00:17:28,997 - root - INFO - Registered transition: ArchitectVaultGauntletState -> ArchitectVaultExtractionState
+2025-06-26 00:17:28,997 - root - INFO - Registered transition: ArchitectVaultExtractionState -> ArchitectVaultSuccessState
+2025-06-26 00:17:28,997 - root - INFO - Registered transition: ArchitectVaultExtractionState -> ArchitectVaultFailureState
+2025-06-26 00:17:28,998 - root - INFO - Registered transition: ArchitectVaultSuccessState -> PlayingState
+2025-06-26 00:17:28,998 - root - INFO - Registered transition: ArchitectVaultFailureState -> PlayingState
+2025-06-26 00:17:28,998 - root - INFO - Registered transition: MazeDefenseState -> PlayingState
+2025-06-26 00:17:28,998 - root - INFO - Registered transition: MazeDefenseState -> GameOverState
+2025-06-26 00:17:28,998 - root - INFO - Registered transition: BossFightState -> GameOverState
+2025-06-26 00:17:28,998 - root - INFO - Registered transition: BossFightState -> CorruptedSectorState
+2025-06-26 00:17:28,998 - root - INFO - Registered transition: BossFightState -> StoryMapState
+2025-06-26 00:17:28,998 - root - INFO - Registered transition: TempestFightState -> StoryMapState
+2025-06-26 00:17:28,998 - root - INFO - Registered transition: CorruptedSectorState -> GameOverState
+2025-06-26 00:17:28,998 - root - INFO - Registered transition: CorruptedSectorState -> HarvestChamberState
+2025-06-26 00:17:28,998 - root - INFO - Registered transition: CorruptedSectorState -> StoryMapState
+2025-06-26 00:17:28,998 - root - INFO - Registered transition: HarvestChamberState -> GameOverState
+2025-06-26 00:17:28,998 - root - INFO - Registered transition: HarvestChamberState -> MainMenuState
+2025-06-26 00:17:28,998 - root - INFO - Registered transition: BossFightState -> NarrativeState
+2025-06-26 00:17:28,998 - root - INFO - Registered transition: CorruptedSectorState -> NarrativeState
+2025-06-26 00:17:28,998 - root - INFO - Registered transition: HarvestChamberState -> NarrativeState
+2025-06-26 00:17:28,998 - root - INFO - Registered transition: PlayingState -> NarrativeState
+2025-06-26 00:17:28,999 - root - INFO - Registered transition: NarrativeState -> StoryMapState
+2025-06-26 00:17:28,999 - root - INFO - Registered transition: NarrativeState -> MainMenuState
+2025-06-26 00:17:28,999 - root - INFO - Registered transition: NarrativeState -> PlayingState
+2025-06-26 00:17:28,999 - root - INFO - Registered transition: NarrativeState -> BossFightState
+2025-06-26 00:17:28,999 - root - INFO - Registered transition: NarrativeState -> CorruptedSectorState
+2025-06-26 00:17:28,999 - root - INFO - Registered transition: NarrativeState -> HarvestChamberState
+2025-06-26 00:17:29,000 - hyperdrone_core.wave_manager - INFO - WaveManager: Reset for new Maze Defense session.
+2025-06-26 00:17:29,000 - hyperdrone_core.state_manager - INFO - Game state changed from 'None' to 'MainMenuState'
+2025-06-26 00:17:29,001 - hyperdrone_core.state_manager - INFO - Playing music for context key 'menu_theme' at volume 1.0
+2025-06-26 00:17:29,001 - hyperdrone_core.wave_manager - INFO - WaveManager: Reset for new Maze Defense session.
+2025-06-26 00:17:29,001 - hyperdrone_core.game_loop - INFO - GameController initialized successfully.
+2025-06-26 00:17:33,634 - root - INFO - Main menu action selected: Settings
+2025-06-26 00:17:34,462 - hyperdrone_core.state_manager - INFO - Game state changed from 'MainMenuState' to 'SettingsState'
+2025-06-26 00:17:36,576 - settings_manager - INFO - Settings saved successfully
+2025-06-26 00:17:36,754 - settings_manager - INFO - Settings saved successfully
+2025-06-26 00:17:36,919 - settings_manager - INFO - Settings saved successfully
+2025-06-26 00:17:37,102 - settings_manager - INFO - Settings saved successfully
+2025-06-26 00:17:37,807 - settings_manager - INFO - Settings saved successfully
+2025-06-26 00:18:05,200 - hyperdrone_core.wave_manager - INFO - WaveManager: Reset for new Maze Defense session.
+2025-06-26 00:18:05,200 - hyperdrone_core.state_manager - INFO - Game state changed from 'SettingsState' to 'MainMenuState'
+2025-06-26 00:18:05,200 - hyperdrone_core.wave_manager - INFO - WaveManager: Reset for new Maze Defense session.
+2025-06-26 00:18:06,983 - root - INFO - Main menu action selected: Select Drone
+2025-06-26 00:18:07,804 - hyperdrone_core.state_manager - INFO - Game state changed from 'MainMenuState' to 'DroneSelectState'
+2025-06-26 00:18:11,577 - hyperdrone_core.wave_manager - INFO - WaveManager: Reset for new Maze Defense session.
+2025-06-26 00:18:11,577 - hyperdrone_core.state_manager - INFO - Game state changed from 'DroneSelectState' to 'MainMenuState'
+2025-06-26 00:18:11,577 - hyperdrone_core.wave_manager - INFO - WaveManager: Reset for new Maze Defense session.
+2025-06-26 00:18:12,601 - root - INFO - Main menu action selected: Start Game
+2025-06-26 00:18:13,427 - hyperdrone_core.state_manager - INFO - Game state changed from 'MainMenuState' to 'GameIntroScrollState'
+2025-06-26 00:18:16,156 - hyperdrone_core.story_map_state - WARNING - Could not load chapter data: 'charmap' codec can't decode byte 0x9d in position 11435: character maps to <undefined>
+2025-06-26 00:18:16,156 - hyperdrone_core.story_map_state - INFO - Entering StoryMapState
+2025-06-26 00:18:16,156 - hyperdrone_core.state_manager - INFO - Game state changed from 'GameIntroScrollState' to 'StoryMapState'
+2025-06-26 00:18:17,137 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to playing for chapter chapter_1
+2025-06-26 00:18:17,154 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to playing for chapter chapter_1
+2025-06-26 00:18:17,171 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to playing for chapter chapter_1
+2025-06-26 00:18:17,188 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to playing for chapter chapter_1
+2025-06-26 00:18:17,204 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to playing for chapter chapter_1
+2025-06-26 00:18:17,220 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to playing for chapter chapter_1
+2025-06-26 00:18:17,237 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to playing for chapter chapter_1
+2025-06-26 00:18:17,254 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to playing for chapter chapter_1
+2025-06-26 00:18:17,270 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to playing for chapter chapter_1
+2025-06-26 00:18:17,286 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to playing for chapter chapter_1
+2025-06-26 00:18:17,302 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to playing for chapter chapter_1
+2025-06-26 00:18:17,319 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to playing for chapter chapter_1
+2025-06-26 00:18:17,334 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to playing for chapter chapter_1
+2025-06-26 00:18:17,351 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to playing for chapter chapter_1
+2025-06-26 00:18:17,369 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to playing for chapter chapter_1
+2025-06-26 00:18:17,385 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to playing for chapter chapter_1
+2025-06-26 00:18:17,402 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to playing for chapter chapter_1
+2025-06-26 00:18:17,419 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to playing for chapter chapter_1
+2025-06-26 00:18:17,434 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to playing for chapter chapter_1
+2025-06-26 00:18:17,451 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to playing for chapter chapter_1
+2025-06-26 00:18:17,468 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to playing for chapter chapter_1
+2025-06-26 00:18:17,485 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to playing for chapter chapter_1
+2025-06-26 00:18:17,501 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to playing for chapter chapter_1
+2025-06-26 00:18:17,517 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to playing for chapter chapter_1
+2025-06-26 00:18:17,534 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to playing for chapter chapter_1
+2025-06-26 00:18:17,550 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to playing for chapter chapter_1
+2025-06-26 00:18:17,567 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to playing for chapter chapter_1
+2025-06-26 00:18:17,583 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to playing for chapter chapter_1
+2025-06-26 00:18:17,599 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to playing for chapter chapter_1
+2025-06-26 00:18:17,615 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to playing for chapter chapter_1
+2025-06-26 00:18:17,632 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to playing for chapter chapter_1
+2025-06-26 00:18:17,649 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to playing for chapter chapter_1
+2025-06-26 00:18:17,665 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to playing for chapter chapter_1
+2025-06-26 00:18:17,682 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to playing for chapter chapter_1
+2025-06-26 00:18:17,698 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to playing for chapter chapter_1
+2025-06-26 00:18:17,715 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to playing for chapter chapter_1
+2025-06-26 00:18:17,732 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to playing for chapter chapter_1
+2025-06-26 00:18:17,749 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to playing for chapter chapter_1
+2025-06-26 00:18:17,765 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to playing for chapter chapter_1
+2025-06-26 00:18:17,782 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to playing for chapter chapter_1
+2025-06-26 00:18:17,798 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to playing for chapter chapter_1
+2025-06-26 00:18:17,816 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to playing for chapter chapter_1
+2025-06-26 00:18:17,831 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to playing for chapter chapter_1
+2025-06-26 00:18:17,847 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to playing for chapter chapter_1
+2025-06-26 00:18:17,864 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to playing for chapter chapter_1
+2025-06-26 00:18:17,880 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to playing for chapter chapter_1
+2025-06-26 00:18:17,895 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to playing for chapter chapter_1
+2025-06-26 00:18:17,913 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to playing for chapter chapter_1
+2025-06-26 00:18:17,930 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to playing for chapter chapter_1
+2025-06-26 00:18:17,946 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to playing for chapter chapter_1
+2025-06-26 00:18:17,961 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to playing for chapter chapter_1
+2025-06-26 00:18:17,962 - hyperdrone_core.story_map_state - INFO - Exiting StoryMapState to PlayingState
+2025-06-26 00:18:17,962 - hyperdrone_core.wave_manager - INFO - WaveManager: Reset for new Maze Defense session.
+2025-06-26 00:18:17,962 - hyperdrone_core.puzzle_controller - INFO - PuzzleController: All puzzle states reset.
+2025-06-26 00:18:17,962 - hyperdrone_core.enemy_manager - INFO - Level 1: Spawned 2 enemies out of 2 requested
+2025-06-26 00:18:17,963 - root - INFO - Attempting to spawn 5 rings for level 1
+2025-06-26 00:18:17,963 - root - INFO - Successfully spawned 5 rings for level 1
+2025-06-26 00:18:17,963 - root - INFO - Skipping core fragment spawn - Chapter 1 Level 1 (fragment only appears on level 4)
+2025-06-26 00:18:17,963 - root - INFO - Attempting to spawn 0 rings for level 1
+2025-06-26 00:18:17,963 - root - INFO - Successfully spawned 5 rings for level 1
+2025-06-26 00:18:17,963 - hyperdrone_core.state_manager - INFO - Game state changed from 'StoryMapState' to 'PlayingState'
+2025-06-26 00:18:17,965 - hyperdrone_core.state_manager - INFO - Playing music for context key 'gameplay_theme' at volume 0.5
+2025-06-26 00:18:26,581 - entities.enemy - INFO - Enemy died at position (429, 624)
+2025-06-26 00:18:26,603 - entities.enemy - INFO - Spawned orichalc fragment at (429, 624)
+2025-06-26 00:18:27,465 - drone_management.drone_system - INFO - Added 1 orichalc fragments. Total: 9
+2025-06-26 00:18:51,945 - entities.enemy - INFO - Enemy died at position (1867, 375)
+2025-06-26 00:18:51,946 - entities.enemy - INFO - Spawned orichalc fragment at (1867, 375)
+2025-06-26 00:18:52,822 - drone_management.drone_system - INFO - Added 1 orichalc fragments. Total: 10
+2025-06-26 00:19:18,603 - hyperdrone_core.level_manager - INFO - Level 1 cleared! Advancing to next level.
+2025-06-26 00:19:18,604 - hyperdrone_core.enemy_manager - INFO - Level 2: Spawned 3 enemies out of 3 requested
+2025-06-26 00:19:18,604 - root - INFO - Attempting to spawn 5 rings for level 2
+2025-06-26 00:19:18,605 - root - INFO - Successfully spawned 5 rings for level 2
+2025-06-26 00:19:18,605 - root - INFO - Skipping core fragment spawn - Chapter 1 Level 2 (fragment only appears on level 4)
+2025-06-26 00:19:18,608 - root - INFO - Spawned weapons upgrade shop at (200, 760)
+2025-06-26 00:19:28,887 - entities.enemy - INFO - Enemy died at position (1803, 453)
+2025-06-26 00:19:28,887 - entities.enemy - INFO - Spawned orichalc fragment at (1803, 453)
+2025-06-26 00:19:28,889 - drone_management.drone_system - INFO - Added 1 orichalc fragments. Total: 11
+2025-06-26 00:19:28,921 - entities.enemy - INFO - Enemy died at position (1839, 454)
+2025-06-26 00:19:28,921 - entities.enemy - INFO - Spawned orichalc fragment at (1839, 454)
+2025-06-26 00:19:28,923 - drone_management.drone_system - INFO - Added 1 orichalc fragments. Total: 12
+2025-06-26 00:19:32,023 - ai.pathfinding_component - WARNING - Enemy 1960263245712 stuck at (938.0, 782.0) trying to reach (1400.0, 760.0)
+2025-06-26 00:19:34,539 - ai.pathfinding_component - WARNING - Enemy 1960263245712 stuck at (938.0, 782.0) trying to reach (1720.0, 920.0)
+2025-06-26 00:19:37,054 - ai.pathfinding_component - WARNING - Enemy 1960263245712 stuck at (938.0, 782.0) trying to reach (1560.0, 920.0)
+2025-06-26 00:19:39,557 - ai.pathfinding_component - WARNING - Enemy 1960263245712 stuck at (938.0, 782.0) trying to reach (1320.0, 920.0)
+2025-06-26 00:19:42,065 - ai.pathfinding_component - WARNING - Enemy 1960263245712 stuck at (938.0, 782.0) trying to reach (1320.0, 920.0)
+2025-06-26 00:19:44,570 - ai.pathfinding_component - WARNING - Enemy 1960263245712 stuck at (938.0, 782.0) trying to reach (1320.0, 920.0)
+2025-06-26 00:19:47,087 - ai.pathfinding_component - WARNING - Enemy 1960263245712 stuck at (938.0, 782.0) trying to reach (1240.0, 840.0)
+2025-06-26 00:19:49,599 - ai.pathfinding_component - WARNING - Enemy 1960263245712 stuck at (938.0, 782.0) trying to reach None
+2025-06-26 00:19:52,106 - ai.pathfinding_component - WARNING - Enemy 1960263245712 stuck at (938.0, 782.0) trying to reach None
+2025-06-26 00:19:53,576 - entities.enemy - INFO - Enemy died at position (938, 782)
+2025-06-26 00:19:53,576 - entities.enemy - INFO - Spawned orichalc fragment at (938, 782)
+2025-06-26 00:19:58,786 - hyperdrone_core.level_manager - INFO - Level 2 cleared! Advancing to next level.
+2025-06-26 00:19:58,787 - hyperdrone_core.enemy_manager - INFO - Level 3: Spawned 4 enemies out of 4 requested
+2025-06-26 00:19:58,788 - root - INFO - Attempting to spawn 5 rings for level 3
+2025-06-26 00:19:58,788 - root - INFO - Successfully spawned 5 rings for level 3
+2025-06-26 00:19:58,788 - root - INFO - Skipping core fragment spawn - Chapter 1 Level 3 (fragment only appears on level 4)
+2025-06-26 00:20:04,892 - ai.pathfinding_component - WARNING - Enemy 1960263246992 stuck at (302.0, 298.0) trying to reach (600.0, 200.0)
+2025-06-26 00:20:07,402 - ai.pathfinding_component - WARNING - Enemy 1960263246992 stuck at (302.0, 298.0) trying to reach (1000.0, 120.0)
+2025-06-26 00:20:17,361 - ai.pathfinding_component - WARNING - Enemy 1960263242512 stuck at (938.0, 462.0) trying to reach (1560.0, 840.0)
+2025-06-26 00:20:19,865 - ai.pathfinding_component - WARNING - Enemy 1960263242512 stuck at (938.0, 462.0) trying to reach (1560.0, 440.0)
+2025-06-26 00:20:22,377 - ai.pathfinding_component - WARNING - Enemy 1960263242512 stuck at (938.0, 462.0) trying to reach None
+2025-06-26 00:20:23,047 - ai.pathfinding_component - WARNING - Enemy 1960263246672 stuck at (302.0, 298.0) trying to reach (1160.0, 280.0)
+2025-06-26 00:20:24,679 - entities.enemy - INFO - Enemy died at position (938, 462)
+2025-06-26 00:20:24,679 - entities.enemy - INFO - Spawned orichalc fragment at (938, 462)
+2025-06-26 00:20:24,926 - ai.pathfinding_component - WARNING - Enemy 1960263246992 stuck at (302.0, 298.0) trying to reach (1080.0, 360.0)
+2025-06-26 00:20:25,551 - ai.pathfinding_component - WARNING - Enemy 1960263246672 stuck at (302.0, 298.0) trying to reach None
+2025-06-26 00:20:25,861 - drone_management.drone_system - INFO - Added 1 orichalc fragments. Total: 13
+2025-06-26 00:20:27,433 - ai.pathfinding_component - WARNING - Enemy 1960263246992 stuck at (302.0, 298.0) trying to reach (920.0, 680.0)
+2025-06-26 00:20:28,063 - ai.pathfinding_component - WARNING - Enemy 1960263246672 stuck at (302.0, 298.0) trying to reach (920.0, 680.0)
+2025-06-26 00:20:29,945 - ai.pathfinding_component - WARNING - Enemy 1960263246992 stuck at (302.0, 298.0) trying to reach (680.0, 760.0)
+2025-06-26 00:20:30,573 - ai.pathfinding_component - WARNING - Enemy 1960263246672 stuck at (302.0, 298.0) trying to reach (600.0, 680.0)
+2025-06-26 00:20:32,452 - ai.pathfinding_component - WARNING - Enemy 1960263246992 stuck at (302.0, 298.0) trying to reach None
+2025-06-26 00:20:33,079 - ai.pathfinding_component - WARNING - Enemy 1960263246672 stuck at (302.0, 298.0) trying to reach None
+2025-06-26 00:20:34,718 - ai.pathfinding_component - WARNING - Enemy 1960263244432 stuck at (293.0, 681.0) trying to reach None
+2025-06-26 00:20:34,815 - entities.enemy - INFO - Enemy died at position (293, 681)
+2025-06-26 00:20:34,815 - entities.enemy - INFO - Spawned orichalc fragment at (293, 681)
+2025-06-26 00:20:34,963 - ai.pathfinding_component - WARNING - Enemy 1960263246992 stuck at (302.0, 298.0) trying to reach None
+2025-06-26 00:20:35,594 - ai.pathfinding_component - WARNING - Enemy 1960263246672 stuck at (302.0, 298.0) trying to reach None
+2025-06-26 00:20:36,352 - drone_management.drone_system - INFO - Added 1 orichalc fragments. Total: 14
+2025-06-26 00:20:37,473 - ai.pathfinding_component - WARNING - Enemy 1960263246992 stuck at (302.0, 298.0) trying to reach (280.0, 680.0)
+2025-06-26 00:20:38,105 - ai.pathfinding_component - WARNING - Enemy 1960263246672 stuck at (302.0, 298.0) trying to reach (360.0, 760.0)
+2025-06-26 00:20:39,979 - ai.pathfinding_component - WARNING - Enemy 1960263246992 stuck at (302.0, 298.0) trying to reach None
+2025-06-26 00:20:40,608 - ai.pathfinding_component - WARNING - Enemy 1960263246672 stuck at (302.0, 298.0) trying to reach None
+2025-06-26 00:20:42,332 - entities.enemy - INFO - Enemy died at position (302, 298)
+2025-06-26 00:20:42,332 - entities.enemy - INFO - Spawned orichalc fragment at (302, 298)
+2025-06-26 00:20:42,647 - entities.enemy - INFO - Enemy died at position (302, 298)
+2025-06-26 00:20:42,647 - entities.enemy - INFO - Spawned orichalc fragment at (302, 298)
+2025-06-26 00:20:42,711 - drone_management.drone_system - INFO - Added 1 orichalc fragments. Total: 15
+2025-06-26 00:20:42,712 - drone_management.drone_system - INFO - Added 1 orichalc fragments. Total: 16
+2025-06-26 00:20:43,777 - hyperdrone_core.level_manager - INFO - Level 3 cleared! Advancing to next level.
+2025-06-26 00:20:43,780 - hyperdrone_core.enemy_manager - INFO - Level 4: Spawned 5 enemies out of 5 requested
+2025-06-26 00:20:43,780 - root - INFO - Attempting to spawn 5 rings for level 4
+2025-06-26 00:20:43,782 - root - INFO - Successfully spawned 5 rings for level 4
+2025-06-26 00:20:43,782 - root - INFO - Skipping core fragment spawn - Chapter 1 Level 4 (fragment only appears on level 4)
+2025-06-26 00:20:44,190 - entities.enemy - INFO - Enemy died at position (159, 262)
+2025-06-26 00:20:44,191 - entities.enemy - INFO - Spawned orichalc fragment at (159, 262)
+2025-06-26 00:20:44,192 - drone_management.drone_system - INFO - Added 1 orichalc fragments. Total: 17
+2025-06-26 00:20:44,523 - entities.enemy - INFO - Enemy died at position (159, 262)
+2025-06-26 00:20:44,523 - entities.enemy - INFO - Spawned orichalc fragment at (159, 262)
+2025-06-26 00:20:44,524 - drone_management.drone_system - INFO - Added 1 orichalc fragments. Total: 18
+2025-06-26 00:20:48,488 - ai.pathfinding_component - WARNING - Enemy 1960263248592 stuck at (145.0, 621.0) trying to reach (600.0, 120.0)
+2025-06-26 00:20:48,537 - ai.pathfinding_component - WARNING - Enemy 1960263249232 stuck at (1100.0, 309.0) trying to reach (520.0, 120.0)
+2025-06-26 00:20:50,740 - ai.pathfinding_component - WARNING - Enemy 1960263592192 stuck at (460.0, 792.0) trying to reach (760.0, 280.0)
+2025-06-26 00:20:51,025 - ai.pathfinding_component - WARNING - Enemy 1960263248592 stuck at (145.0, 621.0) trying to reach (760.0, 280.0)
+2025-06-26 00:20:51,041 - ai.pathfinding_component - WARNING - Enemy 1960263249232 stuck at (1100.0, 309.0) trying to reach (760.0, 280.0)
+2025-06-26 00:20:53,245 - ai.pathfinding_component - WARNING - Enemy 1960263592192 stuck at (460.0, 792.0) trying to reach None
+2025-06-26 00:20:53,457 - entities.enemy - INFO - Enemy died at position (460, 792)
+2025-06-26 00:20:53,457 - entities.enemy - INFO - Spawned orichalc fragment at (460, 792)
+2025-06-26 00:20:53,541 - ai.pathfinding_component - WARNING - Enemy 1960263249232 stuck at (1100.0, 309.0) trying to reach None
+2025-06-26 00:20:53,542 - ai.pathfinding_component - WARNING - Enemy 1960263248592 stuck at (145.0, 621.0) trying to reach None
+2025-06-26 00:20:55,739 - drone_management.drone_system - INFO - Added 1 orichalc fragments. Total: 19
+2025-06-26 00:20:56,048 - ai.pathfinding_component - WARNING - Enemy 1960263249232 stuck at (1100.0, 309.0) trying to reach (520.0, 760.0)
+2025-06-26 00:20:56,049 - ai.pathfinding_component - WARNING - Enemy 1960263248592 stuck at (145.0, 621.0) trying to reach (520.0, 760.0)
+2025-06-26 00:20:58,557 - ai.pathfinding_component - WARNING - Enemy 1960263248592 stuck at (145.0, 621.0) trying to reach None
+2025-06-26 00:20:58,574 - ai.pathfinding_component - WARNING - Enemy 1960263249232 stuck at (1100.0, 309.0) trying to reach (1080.0, 600.0)
+2025-06-26 00:21:01,061 - ai.pathfinding_component - WARNING - Enemy 1960263248592 stuck at (145.0, 621.0) trying to reach None
+2025-06-26 00:21:01,077 - ai.pathfinding_component - WARNING - Enemy 1960263249232 stuck at (1100.0, 309.0) trying to reach (1080.0, 600.0)
+2025-06-26 00:21:03,319 - entities.enemy - INFO - Enemy died at position (145, 621)
+2025-06-26 00:21:03,320 - entities.enemy - INFO - Spawned orichalc fragment at (145, 621)
+2025-06-26 00:21:03,584 - ai.pathfinding_component - WARNING - Enemy 1960263249232 stuck at (1100.0, 309.0) trying to reach (1080.0, 600.0)
+2025-06-26 00:21:05,526 - drone_management.drone_system - INFO - Added 1 orichalc fragments. Total: 20
+2025-06-26 00:21:06,085 - ai.pathfinding_component - WARNING - Enemy 1960263249232 stuck at (1100.0, 309.0) trying to reach (1080.0, 600.0)
+2025-06-26 00:21:08,591 - ai.pathfinding_component - WARNING - Enemy 1960263249232 stuck at (1100.0, 309.0) trying to reach (1080.0, 600.0)
+2025-06-26 00:21:11,101 - ai.pathfinding_component - WARNING - Enemy 1960263249232 stuck at (1100.0, 309.0) trying to reach (1080.0, 600.0)
+2025-06-26 00:21:13,621 - ai.pathfinding_component - WARNING - Enemy 1960263249232 stuck at (1100.0, 309.0) trying to reach (1080.0, 840.0)
+2025-06-26 00:21:16,133 - ai.pathfinding_component - WARNING - Enemy 1960263249232 stuck at (1100.0, 309.0) trying to reach (1240.0, 680.0)
+2025-06-26 00:21:18,642 - ai.pathfinding_component - WARNING - Enemy 1960263249232 stuck at (1100.0, 309.0) trying to reach None
+2025-06-26 00:21:21,155 - ai.pathfinding_component - WARNING - Enemy 1960263249232 stuck at (1100.0, 309.0) trying to reach None
+2025-06-26 00:21:23,660 - ai.pathfinding_component - WARNING - Enemy 1960263249232 stuck at (1100.0, 309.0) trying to reach (1720.0, 280.0)
+2025-06-26 00:21:26,170 - ai.pathfinding_component - WARNING - Enemy 1960263249232 stuck at (1100.0, 309.0) trying to reach (1640.0, 120.0)
+2025-06-26 00:21:28,685 - ai.pathfinding_component - WARNING - Enemy 1960263249232 stuck at (1100.0, 309.0) trying to reach None
+2025-06-26 00:21:30,649 - entities.enemy - INFO - Enemy died at position (1100, 309)
+2025-06-26 00:21:30,650 - entities.enemy - INFO - Spawned orichalc fragment at (1100, 309)
+2025-06-26 00:21:32,484 - drone_management.drone_system - INFO - Added 1 orichalc fragments. Total: 21
+2025-06-26 00:21:34,382 - hyperdrone_core.level_manager - INFO - Level 4 cleared! Advancing to next level.
+2025-06-26 00:21:34,383 - hyperdrone_core.enemy_manager - INFO - Level 5: Spawned 6 enemies out of 6 requested
+2025-06-26 00:21:34,384 - root - INFO - Attempting to spawn 5 rings for level 5
+2025-06-26 00:21:34,384 - root - INFO - Successfully spawned 5 rings for level 5
+2025-06-26 00:21:34,384 - root - INFO - Skipping core fragment spawn - Chapter 1 Level 5 (fragment only appears on level 4)
+2025-06-26 00:21:34,908 - entities.enemy - INFO - Enemy died at position (1400, 796)
+2025-06-26 00:21:34,908 - entities.enemy - INFO - Spawned orichalc fragment at (1400, 796)
+2025-06-26 00:21:34,909 - drone_management.drone_system - INFO - Added 1 orichalc fragments. Total: 22
+2025-06-26 00:21:39,435 - ai.pathfinding_component - WARNING - Enemy 1960263248912 stuck at (1101.0, 785.0) trying to reach None
+2025-06-26 00:21:40,153 - ai.pathfinding_component - WARNING - Enemy 1960263250192 stuck at (1872.0, 378.0) trying to reach None
+2025-06-26 00:21:40,154 - ai.pathfinding_component - WARNING - Enemy 1960263243472 stuck at (1862.0, 889.0) trying to reach None
+2025-06-26 00:21:40,712 - entities.enemy - INFO - Enemy died at position (1862, 889)
+2025-06-26 00:21:40,713 - entities.enemy - INFO - Spawned orichalc fragment at (1862, 889)
+2025-06-26 00:21:41,945 - ai.pathfinding_component - WARNING - Enemy 1960263248912 stuck at (1101.0, 785.0) trying to reach (1560.0, 840.0)
+2025-06-26 00:21:43,135 - drone_management.drone_system - INFO - Added 1 orichalc fragments. Total: 23
+2025-06-26 00:21:44,453 - ai.pathfinding_component - WARNING - Enemy 1960263248912 stuck at (1101.0, 785.0) trying to reach None
+2025-06-26 00:21:44,832 - ai.pathfinding_component - WARNING - Enemy 1960263250192 stuck at (1872.0, 476.0) trying to reach None
+2025-06-26 00:21:45,935 - entities.enemy - INFO - Enemy died at position (1872, 476)
+2025-06-26 00:21:45,935 - entities.enemy - INFO - Spawned orichalc fragment at (1872, 476)
+2025-06-26 00:21:46,969 - ai.pathfinding_component - WARNING - Enemy 1960263248912 stuck at (1101.0, 785.0) trying to reach (1800.0, 760.0)
+2025-06-26 00:21:48,191 - drone_management.drone_system - INFO - Added 1 orichalc fragments. Total: 24
+2025-06-26 00:21:49,474 - ai.pathfinding_component - WARNING - Enemy 1960263248912 stuck at (1101.0, 785.0) trying to reach None
+2025-06-26 00:21:51,986 - ai.pathfinding_component - WARNING - Enemy 1960263248912 stuck at (1101.0, 785.0) trying to reach (1640.0, 600.0)
+2025-06-26 00:21:54,489 - ai.pathfinding_component - WARNING - Enemy 1960263248912 stuck at (1101.0, 785.0) trying to reach (1400.0, 200.0)
+2025-06-26 00:21:56,365 - entities.enemy - INFO - Enemy died at position (780, 153)
+2025-06-26 00:21:56,366 - entities.enemy - INFO - Spawned orichalc fragment at (780, 153)
+2025-06-26 00:21:56,992 - ai.pathfinding_component - WARNING - Enemy 1960263248912 stuck at (1101.0, 785.0) trying to reach (1000.0, 120.0)
+2025-06-26 00:21:58,465 - drone_management.drone_system - INFO - Added 1 orichalc fragments. Total: 25
+2025-06-26 00:21:59,497 - ai.pathfinding_component - WARNING - Enemy 1960263248912 stuck at (1101.0, 785.0) trying to reach (760.0, 200.0)
+2025-06-26 00:22:02,000 - ai.pathfinding_component - WARNING - Enemy 1960263248912 stuck at (1101.0, 785.0) trying to reach (920.0, 280.0)
+2025-06-26 00:22:04,505 - ai.pathfinding_component - WARNING - Enemy 1960263248912 stuck at (1101.0, 785.0) trying to reach (1000.0, 280.0)
+2025-06-26 00:22:07,010 - ai.pathfinding_component - WARNING - Enemy 1960263248912 stuck at (1101.0, 785.0) trying to reach (680.0, 120.0)
+2025-06-26 00:22:09,523 - ai.pathfinding_component - WARNING - Enemy 1960263248912 stuck at (1101.0, 785.0) trying to reach (1160.0, 120.0)
+2025-06-26 00:22:12,035 - ai.pathfinding_component - WARNING - Enemy 1960263248912 stuck at (1101.0, 785.0) trying to reach None
+2025-06-26 00:22:14,542 - ai.pathfinding_component - WARNING - Enemy 1960263248912 stuck at (1101.0, 785.0) trying to reach None
+2025-06-26 00:22:15,971 - ai.pathfinding_component - WARNING - Enemy 1960263249872 stuck at (120.0, 881.0) trying to reach None
+2025-06-26 00:22:15,972 - hyperdrone_core.level_manager - INFO - Level 5 cleared! Advancing to next level.
+2025-06-26 00:22:15,977 - hyperdrone_core.enemy_manager - INFO - Level 6: Spawned 7 enemies out of 7 requested
+2025-06-26 00:22:15,977 - root - INFO - Attempting to spawn 5 rings for level 6
+2025-06-26 00:22:15,978 - root - INFO - Successfully spawned 5 rings for level 6
+2025-06-26 00:22:15,978 - root - INFO - Skipping core fragment spawn - Chapter 1 Level 6 (fragment only appears on level 4)
+2025-06-26 00:22:18,778 - entities.enemy - INFO - Enemy died at position (1581, 146)
+2025-06-26 00:22:18,779 - entities.enemy - INFO - Spawned orichalc fragment at (1581, 146)
+2025-06-26 00:22:22,625 - entities.enemy - INFO - Enemy died at position (1578, 154)
+2025-06-26 00:22:22,626 - entities.enemy - INFO - Spawned orichalc fragment at (1578, 154)
+2025-06-26 00:22:25,284 - entities.enemy - INFO - Enemy died at position (1580, 148)
+2025-06-26 00:22:25,285 - entities.enemy - INFO - Spawned orichalc fragment at (1580, 148)
+2025-06-26 00:22:27,276 - entities.enemy - INFO - Enemy died at position (1580, 149)
+2025-06-26 00:22:27,276 - entities.enemy - INFO - Spawned orichalc fragment at (1580, 149)
+2025-06-26 00:22:29,987 - drone_management.drone_system - INFO - Added 1 orichalc fragments. Total: 26
+2025-06-26 00:22:29,989 - drone_management.drone_system - INFO - Added 1 orichalc fragments. Total: 27
+2025-06-26 00:22:29,990 - drone_management.drone_system - INFO - Added 1 orichalc fragments. Total: 28
+2025-06-26 00:22:30,000 - drone_management.drone_system - INFO - Added 1 orichalc fragments. Total: 29
+2025-06-26 00:22:36,678 - entities.enemy - INFO - Enemy died at position (788, 435)
+2025-06-26 00:22:36,679 - entities.enemy - INFO - Spawned orichalc fragment at (788, 435)
+2025-06-26 00:22:37,045 - drone_management.drone_system - INFO - Added 1 orichalc fragments. Total: 30
+2025-06-26 00:22:48,519 - ai.pathfinding_component - WARNING - Enemy 1960263246672 stuck at (1100.0, 464.0) trying to reach (920.0, 360.0)
+2025-06-26 00:22:51,020 - ai.pathfinding_component - WARNING - Enemy 1960263246672 stuck at (1100.0, 464.0) trying to reach (1320.0, 280.0)
+2025-06-26 00:22:53,522 - ai.pathfinding_component - WARNING - Enemy 1960263246672 stuck at (1100.0, 464.0) trying to reach (1080.0, 280.0)
+2025-06-26 00:22:56,034 - ai.pathfinding_component - WARNING - Enemy 1960263246672 stuck at (1100.0, 464.0) trying to reach None
+2025-06-26 00:22:58,551 - ai.pathfinding_component - WARNING - Enemy 1960263246672 stuck at (1100.0, 464.0) trying to reach (1400.0, 120.0)
+2025-06-26 00:23:01,052 - ai.pathfinding_component - WARNING - Enemy 1960263246672 stuck at (1100.0, 464.0) trying to reach (1560.0, 440.0)
+2025-06-26 00:23:03,140 - entities.enemy - INFO - Enemy died at position (1875, 756)
+2025-06-26 00:23:03,140 - entities.enemy - INFO - Spawned orichalc fragment at (1875, 756)
+2025-06-26 00:23:03,273 - drone_management.drone_system - INFO - Added 1 orichalc fragments. Total: 31
+2025-06-26 00:23:03,565 - ai.pathfinding_component - WARNING - Enemy 1960263246672 stuck at (1100.0, 464.0) trying to reach (1880.0, 680.0)
+2025-06-26 00:23:06,070 - ai.pathfinding_component - WARNING - Enemy 1960263246672 stuck at (1100.0, 464.0) trying to reach (1720.0, 760.0)
+2025-06-26 00:23:08,572 - ai.pathfinding_component - WARNING - Enemy 1960263246672 stuck at (1100.0, 464.0) trying to reach (1400.0, 600.0)
+2025-06-26 00:23:10,378 - entities.enemy - INFO - Enemy died at position (1100, 464)
+2025-06-26 00:23:10,378 - entities.enemy - INFO - Spawned orichalc fragment at (1100, 464)
+2025-06-26 00:23:10,657 - drone_management.drone_system - INFO - Added 1 orichalc fragments. Total: 32
+2025-06-26 00:23:15,602 - hyperdrone_core.level_manager - INFO - Level 6 cleared! Advancing to next level.
+2025-06-26 00:23:15,603 - hyperdrone_core.enemy_manager - INFO - Level 7: Spawned 7 enemies out of 7 requested
+2025-06-26 00:23:15,603 - root - INFO - Attempting to spawn 5 rings for level 7
+2025-06-26 00:23:15,603 - root - INFO - Successfully spawned 5 rings for level 7
+2025-06-26 00:23:15,604 - root - INFO - Spawned core fragment 'Air Core Fragment' at (920, 760)
+2025-06-26 00:23:15,605 - root - INFO - Spawned weapons upgrade shop at (360, 440)
+2025-06-26 00:23:15,962 - entities.enemy - INFO - Enemy died at position (920, 718)
+2025-06-26 00:23:15,962 - entities.enemy - INFO - Spawned orichalc fragment at (920, 718)
+2025-06-26 00:23:15,964 - drone_management.drone_system - INFO - Added 1 orichalc fragments. Total: 33
+2025-06-26 00:23:17,028 - root - INFO - ItemCollectedEvent dispatched: id=cf_air, type=core_fragment
+2025-06-26 00:23:19,582 - ai.pathfinding_component - WARNING - Enemy 1960263247952 stuck at (1112.0, 140.0) trying to reach (760.0, 680.0)
+2025-06-26 00:23:20,615 - ai.pathfinding_component - WARNING - Enemy 1960263253072 stuck at (148.0, 300.0) trying to reach (680.0, 440.0)
+2025-06-26 00:23:20,876 - ai.pathfinding_component - WARNING - Enemy 1960263251472 stuck at (1098.0, 474.0) trying to reach (680.0, 440.0)
+2025-06-26 00:23:21,572 - entities.enemy - INFO - Enemy died at position (765, 568)
+2025-06-26 00:23:21,572 - entities.enemy - INFO - Spawned orichalc fragment at (765, 568)
+2025-06-26 00:23:21,734 - ai.pathfinding_component - WARNING - Enemy 1960263253392 stuck at (140.0, 632.0) trying to reach (760.0, 520.0)
+2025-06-26 00:23:22,099 - ai.pathfinding_component - WARNING - Enemy 1960263247952 stuck at (1112.0, 140.0) trying to reach (760.0, 520.0)
+2025-06-26 00:23:22,399 - drone_management.drone_system - INFO - Added 1 orichalc fragments. Total: 34
+2025-06-26 00:23:23,117 - ai.pathfinding_component - WARNING - Enemy 1960263253072 stuck at (148.0, 300.0) trying to reach (760.0, 600.0)
+2025-06-26 00:23:23,383 - ai.pathfinding_component - WARNING - Enemy 1960263251472 stuck at (1098.0, 474.0) trying to reach (760.0, 680.0)
+2025-06-26 00:23:24,238 - ai.pathfinding_component - WARNING - Enemy 1960263253392 stuck at (140.0, 632.0) trying to reach None
+2025-06-26 00:23:24,604 - ai.pathfinding_component - WARNING - Enemy 1960263247952 stuck at (1112.0, 140.0) trying to reach (920.0, 600.0)
+2025-06-26 00:23:25,620 - ai.pathfinding_component - WARNING - Enemy 1960263253072 stuck at (148.0, 300.0) trying to reach (920.0, 520.0)
+2025-06-26 00:23:25,896 - ai.pathfinding_component - WARNING - Enemy 1960263251472 stuck at (1098.0, 474.0) trying to reach (920.0, 520.0)
+2025-06-26 00:23:26,075 - ai.pathfinding_component - WARNING - Enemy 1960263252112 stuck at (140.0, 632.0) trying to reach (920.0, 360.0)
+2025-06-26 00:23:26,752 - ai.pathfinding_component - WARNING - Enemy 1960263253392 stuck at (140.0, 632.0) trying to reach (920.0, 360.0)
+2025-06-26 00:23:27,114 - ai.pathfinding_component - WARNING - Enemy 1960263247952 stuck at (1112.0, 140.0) trying to reach None
+2025-06-26 00:23:28,128 - ai.pathfinding_component - WARNING - Enemy 1960263253072 stuck at (148.0, 300.0) trying to reach (760.0, 120.0)
+2025-06-26 00:23:28,410 - ai.pathfinding_component - WARNING - Enemy 1960263251472 stuck at (1098.0, 474.0) trying to reach (760.0, 200.0)
+2025-06-26 00:23:29,296 - ai.pathfinding_component - WARNING - Enemy 1960263253392 stuck at (140.0, 632.0) trying to reach (600.0, 200.0)
+2025-06-26 00:23:29,622 - ai.pathfinding_component - WARNING - Enemy 1960263247952 stuck at (1112.0, 140.0) trying to reach (600.0, 200.0)
+2025-06-26 00:23:30,636 - ai.pathfinding_component - WARNING - Enemy 1960263253072 stuck at (148.0, 300.0) trying to reach None
+2025-06-26 00:23:30,912 - ai.pathfinding_component - WARNING - Enemy 1960263251472 stuck at (1098.0, 474.0) trying to reach None
+2025-06-26 00:23:31,799 - ai.pathfinding_component - WARNING - Enemy 1960263253392 stuck at (140.0, 632.0) trying to reach None
+2025-06-26 00:23:32,129 - ai.pathfinding_component - WARNING - Enemy 1960263247952 stuck at (1112.0, 140.0) trying to reach (760.0, 200.0)
+2025-06-26 00:23:32,775 - ai.pathfinding_component - WARNING - Enemy 1960263252112 stuck at (140.0, 632.0) trying to reach (760.0, 200.0)
+2025-06-26 00:23:33,152 - ai.pathfinding_component - WARNING - Enemy 1960263253072 stuck at (148.0, 300.0) trying to reach (840.0, 120.0)
+2025-06-26 00:23:33,413 - ai.pathfinding_component - WARNING - Enemy 1960263251472 stuck at (1098.0, 474.0) trying to reach (840.0, 120.0)
+2025-06-26 00:23:34,327 - ai.pathfinding_component - WARNING - Enemy 1960263253392 stuck at (140.0, 632.0) trying to reach (760.0, 200.0)
+2025-06-26 00:23:34,642 - ai.pathfinding_component - WARNING - Enemy 1960263247952 stuck at (1112.0, 140.0) trying to reach (920.0, 360.0)
+2025-06-26 00:23:35,660 - ai.pathfinding_component - WARNING - Enemy 1960263253072 stuck at (148.0, 300.0) trying to reach (920.0, 600.0)
+2025-06-26 00:23:35,924 - ai.pathfinding_component - WARNING - Enemy 1960263251472 stuck at (1098.0, 474.0) trying to reach (920.0, 600.0)
+2025-06-26 00:23:37,145 - ai.pathfinding_component - WARNING - Enemy 1960263247952 stuck at (1112.0, 140.0) trying to reach (840.0, 760.0)
+2025-06-26 00:23:38,167 - ai.pathfinding_component - WARNING - Enemy 1960263253072 stuck at (148.0, 300.0) trying to reach (760.0, 520.0)
+2025-06-26 00:23:38,430 - ai.pathfinding_component - WARNING - Enemy 1960263251472 stuck at (1098.0, 474.0) trying to reach (680.0, 440.0)
+2025-06-26 00:23:39,351 - ai.pathfinding_component - WARNING - Enemy 1960263252112 stuck at (140.0, 632.0) trying to reach None
+2025-06-26 00:23:39,449 - ai.pathfinding_component - WARNING - Enemy 1960263253392 stuck at (140.0, 632.0) trying to reach None
+2025-06-26 00:23:39,649 - ai.pathfinding_component - WARNING - Enemy 1960263247952 stuck at (1112.0, 140.0) trying to reach None
+2025-06-26 00:23:40,680 - ai.pathfinding_component - WARNING - Enemy 1960263253072 stuck at (148.0, 300.0) trying to reach None
+2025-06-26 00:23:40,943 - ai.pathfinding_component - WARNING - Enemy 1960263251472 stuck at (1098.0, 474.0) trying to reach None
+2025-06-26 00:23:41,603 - hyperdrone_core.state_manager - INFO - Game state changed from 'PlayingState' to 'WeaponsUpgradeShopState'
+2025-06-26 00:23:41,604 - hyperdrone_core.state_manager - INFO - Playing music for context key 'menu_theme' at volume 0.5
+2025-06-26 00:23:53,403 - drone_management.drone_system - INFO - Weapon mode 7 acquired at level 1
+2025-06-26 00:23:53,403 - entities.player - INFO - Player unlocked weapon mode: 7
+2025-06-26 00:24:08,760 - drone_management.drone_system - INFO - Weapon mode 2 upgraded to level 2
+2025-06-26 00:24:12,031 - hyperdrone_core.wave_manager - INFO - WaveManager: Reset for new Maze Defense session.
+2025-06-26 00:24:12,031 - hyperdrone_core.puzzle_controller - INFO - PuzzleController: All puzzle states reset.
+2025-06-26 00:24:12,032 - hyperdrone_core.enemy_manager - INFO - Level 7: Spawned 7 enemies out of 7 requested
+2025-06-26 00:24:12,032 - root - INFO - Attempting to spawn 5 rings for level 7
+2025-06-26 00:24:12,033 - root - INFO - Successfully spawned 5 rings for level 7
+2025-06-26 00:24:12,033 - root - INFO - Spawned core fragment 'Earth Core Fragment' at (920, 920)
+2025-06-26 00:24:12,033 - root - INFO - Attempting to spawn 0 rings for level 7
+2025-06-26 00:24:12,033 - root - INFO - Successfully spawned 5 rings for level 7
+2025-06-26 00:24:12,033 - hyperdrone_core.state_manager - INFO - Game state changed from 'WeaponsUpgradeShopState' to 'PlayingState'
+2025-06-26 00:24:12,035 - hyperdrone_core.state_manager - INFO - Playing music for context key 'gameplay_theme' at volume 0.5
+2025-06-26 00:24:12,572 - entities.enemy - INFO - Enemy died at position (1684, 760)
+2025-06-26 00:24:12,573 - entities.enemy - INFO - Spawned orichalc fragment at (1684, 760)
+2025-06-26 00:24:12,574 - drone_management.drone_system - INFO - Added 1 orichalc fragments. Total: 3
+2025-06-26 00:24:13,678 - entities.enemy - INFO - Enemy died at position (1725, 796)
+2025-06-26 00:24:13,679 - entities.enemy - INFO - Spawned orichalc fragment at (1725, 796)
+2025-06-26 00:24:13,680 - drone_management.drone_system - INFO - Added 1 orichalc fragments. Total: 4
+2025-06-26 00:24:15,265 - entities.enemy - INFO - Enemy died at position (1681, 755)
+2025-06-26 00:24:15,265 - entities.enemy - INFO - Spawned orichalc fragment at (1681, 755)
+2025-06-26 00:24:15,267 - drone_management.drone_system - INFO - Added 1 orichalc fragments. Total: 5
+2025-06-26 00:24:15,938 - entities.enemy - INFO - Enemy died at position (1578, 784)
+2025-06-26 00:24:15,938 - entities.enemy - INFO - Spawned orichalc fragment at (1578, 784)
+2025-06-26 00:24:18,399 - ai.pathfinding_component - WARNING - Enemy 1960263242832 stuck at (1434.0, 458.0) trying to reach (1720.0, 760.0)
+2025-06-26 00:24:18,744 - ai.pathfinding_component - WARNING - Enemy 1960263246672 stuck at (469.0, 780.0) trying to reach (440.0, 520.0)
+2025-06-26 00:24:20,080 - entities.enemy - INFO - Enemy died at position (1434, 458)
+2025-06-26 00:24:20,080 - entities.enemy - INFO - Spawned orichalc fragment at (1434, 458)
+2025-06-26 00:24:20,723 - drone_management.drone_system - INFO - Added 1 orichalc fragments. Total: 6
+2025-06-26 00:24:21,250 - ai.pathfinding_component - WARNING - Enemy 1960263246672 stuck at (469.0, 780.0) trying to reach (440.0, 520.0)
+2025-06-26 00:24:24,441 - entities.player - INFO - Player unlocked active ability: temporary_barricade
+2025-06-26 00:24:24,441 - root - INFO - ItemCollectedEvent dispatched: id=cf_earth, type=core_fragment
+2025-06-26 00:24:24,623 - entities.enemy - INFO - Enemy died at position (617, 768)
+2025-06-26 00:24:24,624 - entities.enemy - INFO - Spawned orichalc fragment at (617, 768)
+2025-06-26 00:24:30,856 - drone_management.drone_system - INFO - Added 1 orichalc fragments. Total: 7
+2025-06-26 00:24:40,963 - drone_management.drone_system - INFO - Added 1 orichalc fragments. Total: 8
+2025-06-26 00:24:41,699 - entities.enemy - INFO - Enemy died at position (212, 906)
+2025-06-26 00:24:41,699 - entities.enemy - INFO - Spawned orichalc fragment at (212, 906)
+2025-06-26 00:24:41,700 - root - INFO - Objective COMPLETED: 'Neutralize initial defense drones' (c1_clear_hostiles)
+2025-06-26 00:24:43,445 - drone_management.drone_system - INFO - Added 1 orichalc fragments. Total: 9
+2025-06-26 00:24:48,587 - root - INFO - Objective COMPLETED: 'Gather energy signatures (Collect all Rings)' (c1_collect_rings)
+2025-06-26 00:24:48,587 - root - INFO - --- Advanced to Chapter: Chapter 2: The Guardian ---
+2025-06-26 00:24:49,405 - hyperdrone_core.story_map_state - WARNING - Could not load chapter data: 'charmap' codec can't decode byte 0x9d in position 11435: character maps to <undefined>
+2025-06-26 00:24:49,405 - hyperdrone_core.story_map_state - INFO - Entering StoryMapState
+2025-06-26 00:24:49,405 - hyperdrone_core.story_map_state - INFO - Showing completion summary for Chapter 1: The Anomaly
+2025-06-26 00:24:49,405 - hyperdrone_core.state_manager - INFO - Game state changed from 'PlayingState' to 'StoryMapState'
+2025-06-26 00:24:49,406 - hyperdrone_core.state_manager - INFO - Playing music for context key 'menu_theme' at volume 0.5
+2025-06-26 00:24:55,165 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to boss_fight for chapter chapter_2
+2025-06-26 00:24:55,181 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to boss_fight for chapter chapter_2
+2025-06-26 00:24:55,199 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to boss_fight for chapter chapter_2
+2025-06-26 00:24:55,216 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to boss_fight for chapter chapter_2
+2025-06-26 00:24:55,232 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to boss_fight for chapter chapter_2
+2025-06-26 00:24:55,249 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to boss_fight for chapter chapter_2
+2025-06-26 00:24:55,266 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to boss_fight for chapter chapter_2
+2025-06-26 00:24:55,282 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to boss_fight for chapter chapter_2
+2025-06-26 00:24:55,299 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to boss_fight for chapter chapter_2
+2025-06-26 00:24:55,315 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to boss_fight for chapter chapter_2
+2025-06-26 00:24:55,332 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to boss_fight for chapter chapter_2
+2025-06-26 00:24:55,348 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to boss_fight for chapter chapter_2
+2025-06-26 00:24:55,364 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to boss_fight for chapter chapter_2
+2025-06-26 00:24:55,380 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to boss_fight for chapter chapter_2
+2025-06-26 00:24:55,398 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to boss_fight for chapter chapter_2
+2025-06-26 00:24:55,414 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to boss_fight for chapter chapter_2
+2025-06-26 00:24:55,430 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to boss_fight for chapter chapter_2
+2025-06-26 00:24:55,447 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to boss_fight for chapter chapter_2
+2025-06-26 00:24:55,464 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to boss_fight for chapter chapter_2
+2025-06-26 00:24:55,480 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to boss_fight for chapter chapter_2
+2025-06-26 00:24:55,497 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to boss_fight for chapter chapter_2
+2025-06-26 00:24:55,512 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to boss_fight for chapter chapter_2
+2025-06-26 00:24:55,529 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to boss_fight for chapter chapter_2
+2025-06-26 00:24:55,546 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to boss_fight for chapter chapter_2
+2025-06-26 00:24:55,562 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to boss_fight for chapter chapter_2
+2025-06-26 00:24:55,579 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to boss_fight for chapter chapter_2
+2025-06-26 00:24:55,596 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to boss_fight for chapter chapter_2
+2025-06-26 00:24:55,612 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to boss_fight for chapter chapter_2
+2025-06-26 00:24:55,629 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to boss_fight for chapter chapter_2
+2025-06-26 00:24:55,645 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to boss_fight for chapter chapter_2
+2025-06-26 00:24:55,660 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to boss_fight for chapter chapter_2
+2025-06-26 00:24:55,679 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to boss_fight for chapter chapter_2
+2025-06-26 00:24:55,695 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to boss_fight for chapter chapter_2
+2025-06-26 00:24:55,712 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to boss_fight for chapter chapter_2
+2025-06-26 00:24:55,729 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to boss_fight for chapter chapter_2
+2025-06-26 00:24:55,746 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to boss_fight for chapter chapter_2
+2025-06-26 00:24:55,761 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to boss_fight for chapter chapter_2
+2025-06-26 00:24:55,778 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to boss_fight for chapter chapter_2
+2025-06-26 00:24:55,795 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to boss_fight for chapter chapter_2
+2025-06-26 00:24:55,810 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to boss_fight for chapter chapter_2
+2025-06-26 00:24:55,826 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to boss_fight for chapter chapter_2
+2025-06-26 00:24:55,843 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to boss_fight for chapter chapter_2
+2025-06-26 00:24:55,860 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to boss_fight for chapter chapter_2
+2025-06-26 00:24:55,876 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to boss_fight for chapter chapter_2
+2025-06-26 00:24:55,893 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to boss_fight for chapter chapter_2
+2025-06-26 00:24:55,910 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to boss_fight for chapter chapter_2
+2025-06-26 00:24:55,926 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to boss_fight for chapter chapter_2
+2025-06-26 00:24:55,942 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to boss_fight for chapter chapter_2
+2025-06-26 00:24:55,958 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to boss_fight for chapter chapter_2
+2025-06-26 00:24:55,975 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to boss_fight for chapter chapter_2
+2025-06-26 00:24:55,992 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to boss_fight for chapter chapter_2
+2025-06-26 00:24:55,993 - hyperdrone_core.story_map_state - INFO - Exiting StoryMapState to BossFightState
+2025-06-26 00:24:55,993 - root - INFO - Entering BossFightState...
+2025-06-26 00:24:55,993 - root - INFO - Starting wave 1/3 with 5 prototype_enemy enemies
+2025-06-26 00:24:55,993 - hyperdrone_core.state_manager - INFO - Game state changed from 'StoryMapState' to 'BossFightState'
+2025-06-26 00:24:55,994 - hyperdrone_core.state_manager - INFO - Playing music for context key 'boss_theme' at volume 0.5
+2025-06-26 00:24:56,017 - root - INFO - Spawned prototype_enemy 1/5 for wave 1
+2025-06-26 00:24:57,017 - root - INFO - Spawned prototype_enemy 2/5 for wave 1
+2025-06-26 00:24:58,022 - root - INFO - Spawned prototype_enemy 3/5 for wave 1
+2025-06-26 00:24:59,026 - entities.enemy - INFO - Enemy died at position (120, 494)
+2025-06-26 00:24:59,027 - entities.enemy - INFO - Spawned orichalc fragment at (120, 494)
+2025-06-26 00:24:59,027 - root - INFO - Spawned prototype_enemy 4/5 for wave 1
+2025-06-26 00:25:00,041 - root - INFO - Spawned prototype_enemy 5/5 for wave 1
+2025-06-26 00:25:00,350 - ai.pathfinding_component - WARNING - Enemy 1960263253712 stuck at (938.0, 120.0) trying to reach None
+2025-06-26 00:25:08,646 - ai.pathfinding_component - WARNING - Enemy 1960263253712 stuck at (1504.0, 120.0) trying to reach None
+2025-06-26 00:25:08,809 - ai.pathfinding_component - WARNING - Enemy 1960263250832 stuck at (1648.0, 120.0) trying to reach None
+2025-06-26 00:25:08,956 - ai.pathfinding_component - WARNING - Enemy 1960263248912 stuck at (1880.0, 280.0) trying to reach None
+2025-06-26 00:25:09,318 - ai.pathfinding_component - WARNING - Enemy 1960263250192 stuck at (1880.0, 200.0) trying to reach None
+2025-06-26 00:25:12,706 - entities.enemy - INFO - Enemy died at position (1740, 379)
+2025-06-26 00:25:12,707 - entities.enemy - INFO - Spawned orichalc fragment at (1740, 379)
+2025-06-26 00:25:13,459 - entities.enemy - INFO - Enemy died at position (1869, 294)
+2025-06-26 00:25:13,459 - entities.enemy - INFO - Spawned orichalc fragment at (1869, 294)
+2025-06-26 00:25:17,689 - ai.pathfinding_component - WARNING - Enemy 1960263250192 stuck at (1594.0, 297.0) trying to reach (1080.0, 360.0)
+2025-06-26 00:25:18,065 - entities.enemy - INFO - Enemy died at position (1594, 297)
+2025-06-26 00:25:18,065 - entities.enemy - INFO - Spawned orichalc fragment at (1594, 297)
+2025-06-26 00:25:19,364 - entities.enemy - INFO - Enemy died at position (1623, 291)
+2025-06-26 00:25:19,364 - entities.enemy - INFO - Spawned orichalc fragment at (1623, 291)
+2025-06-26 00:25:19,380 - root - INFO - Starting wave 2/3 with 7 sentinel enemies
+2025-06-26 00:25:19,396 - root - INFO - Spawned sentinel 1/7 for wave 2
+2025-06-26 00:25:20,413 - root - INFO - Spawned sentinel 2/7 for wave 2
+2025-06-26 00:25:21,429 - root - INFO - Spawned sentinel 3/7 for wave 2
+2025-06-26 00:25:22,433 - root - INFO - Spawned sentinel 4/7 for wave 2
+2025-06-26 00:25:23,445 - root - INFO - Spawned sentinel 5/7 for wave 2
+2025-06-26 00:25:23,526 - entities.enemy - INFO - Enemy died at position (1596, 288)
+2025-06-26 00:25:23,526 - entities.enemy - INFO - Spawned orichalc fragment at (1596, 288)
+2025-06-26 00:25:24,016 - entities.enemy - INFO - Enemy died at position (1851, 418)
+2025-06-26 00:25:24,016 - entities.enemy - INFO - Spawned orichalc fragment at (1851, 418)
+2025-06-26 00:25:24,458 - root - INFO - Spawned sentinel 6/7 for wave 2
+2025-06-26 00:25:25,468 - root - INFO - Spawned sentinel 7/7 for wave 2
+2025-06-26 00:25:26,530 - entities.enemy - INFO - Enemy died at position (1594, 291)
+2025-06-26 00:25:26,531 - entities.enemy - INFO - Spawned orichalc fragment at (1594, 291)
+2025-06-26 00:25:30,697 - ai.pathfinding_component - WARNING - Enemy 1960263247312 stuck at (1588.0, 300.0) trying to reach (1240.0, 280.0)
+2025-06-26 00:25:31,105 - entities.enemy - INFO - Enemy died at position (1588, 300)
+2025-06-26 00:25:31,106 - entities.enemy - INFO - Spawned orichalc fragment at (1588, 300)
+2025-06-26 00:25:33,412 - ai.pathfinding_component - WARNING - Enemy 1960263246672 stuck at (620.0, 784.0) trying to reach (600.0, 520.0)
+2025-06-26 00:25:33,727 - ai.pathfinding_component - WARNING - Enemy 1960263252432 stuck at (1592.0, 300.0) trying to reach (1240.0, 280.0)
+2025-06-26 00:25:33,728 - entities.enemy - INFO - Enemy died at position (1592, 300)
+2025-06-26 00:25:33,728 - entities.enemy - INFO - Spawned orichalc fragment at (1592, 300)
+2025-06-26 00:25:35,364 - ai.pathfinding_component - WARNING - Enemy 1960263242832 stuck at (1592.0, 300.0) trying to reach (1240.0, 280.0)
+2025-06-26 00:25:35,922 - ai.pathfinding_component - WARNING - Enemy 1960263246672 stuck at (620.0, 784.0) trying to reach (600.0, 520.0)
+2025-06-26 00:25:36,741 - entities.enemy - INFO - Enemy died at position (1592, 300)
+2025-06-26 00:25:36,741 - entities.enemy - INFO - Spawned orichalc fragment at (1592, 300)
+2025-06-26 00:25:38,426 - ai.pathfinding_component - WARNING - Enemy 1960263246672 stuck at (620.0, 784.0) trying to reach (600.0, 520.0)
+2025-06-26 00:25:40,951 - ai.pathfinding_component - WARNING - Enemy 1960263246672 stuck at (620.0, 784.0) trying to reach None
+2025-06-26 00:25:43,466 - ai.pathfinding_component - WARNING - Enemy 1960263246672 stuck at (620.0, 784.0) trying to reach (1080.0, 280.0)
+2025-06-26 00:25:45,981 - ai.pathfinding_component - WARNING - Enemy 1960263246672 stuck at (620.0, 784.0) trying to reach None
+2025-06-26 00:25:47,095 - entities.enemy - INFO - Enemy died at position (620, 784)
+2025-06-26 00:25:47,095 - entities.enemy - INFO - Spawned orichalc fragment at (620, 784)
+2025-06-26 00:25:47,112 - root - INFO - Starting wave 3/3 with 10 prototype_enemy enemies
+2025-06-26 00:25:47,129 - root - INFO - Spawned prototype_enemy 1/10 for wave 3
+2025-06-26 00:25:48,143 - root - INFO - Spawned prototype_enemy 2/10 for wave 3
+2025-06-26 00:25:49,149 - root - INFO - Spawned prototype_enemy 3/10 for wave 3
+2025-06-26 00:25:50,163 - root - INFO - Spawned prototype_enemy 4/10 for wave 3
+2025-06-26 00:25:51,164 - root - INFO - Spawned prototype_enemy 5/10 for wave 3
+2025-06-26 00:25:51,756 - entities.enemy - INFO - Enemy died at position (360.0, 120.0)
+2025-06-26 00:25:51,756 - entities.enemy - INFO - Spawned orichalc fragment at (360.0, 120.0)
+2025-06-26 00:25:52,172 - root - INFO - Spawned prototype_enemy 6/10 for wave 3
+2025-06-26 00:25:53,174 - root - INFO - Spawned prototype_enemy 7/10 for wave 3
+2025-06-26 00:25:54,176 - root - INFO - Spawned prototype_enemy 8/10 for wave 3
+2025-06-26 00:25:55,096 - entities.enemy - INFO - Enemy died at position (1046, 120)
+2025-06-26 00:25:55,097 - entities.enemy - INFO - Spawned orichalc fragment at (1046, 120)
+2025-06-26 00:25:55,177 - root - INFO - Spawned prototype_enemy 9/10 for wave 3
+2025-06-26 00:25:56,179 - root - INFO - Spawned prototype_enemy 10/10 for wave 3
+2025-06-26 00:25:56,527 - entities.enemy - INFO - Enemy died at position (1731, 321)
+2025-06-26 00:25:56,528 - entities.enemy - INFO - Spawned orichalc fragment at (1731, 321)
+2025-06-26 00:25:57,464 - entities.enemy - INFO - Enemy died at position (1655, 291)
+2025-06-26 00:25:57,465 - entities.enemy - INFO - Spawned orichalc fragment at (1655, 291)
+2025-06-26 00:26:00,703 - entities.enemy - INFO - Enemy died at position (1711, 307)
+2025-06-26 00:26:00,703 - entities.enemy - INFO - Spawned orichalc fragment at (1711, 307)
+2025-06-26 00:26:03,822 - entities.enemy - INFO - Enemy died at position (1594, 297)
+2025-06-26 00:26:03,823 - entities.enemy - INFO - Spawned orichalc fragment at (1594, 297)
+2025-06-26 00:26:06,827 - entities.enemy - INFO - Enemy died at position (1594, 297)
+2025-06-26 00:26:06,827 - entities.enemy - INFO - Spawned orichalc fragment at (1594, 297)
+2025-06-26 00:26:11,431 - ai.pathfinding_component - WARNING - Enemy 1960263250832 stuck at (309.0, 138.0) trying to reach (920.0, 440.0)
+2025-06-26 00:26:12,519 - entities.enemy - INFO - Enemy died at position (309, 138)
+2025-06-26 00:26:12,519 - entities.enemy - INFO - Spawned orichalc fragment at (309, 138)
+2025-06-26 00:26:14,538 - ai.pathfinding_component - WARNING - Enemy 1960263247312 stuck at (176.0, 904.0) trying to reach None
+2025-06-26 00:26:14,604 - ai.pathfinding_component - WARNING - Enemy 1960263252432 stuck at (188.0, 584.0) trying to reach None
+2025-06-26 00:26:16,957 - entities.enemy - INFO - Enemy died at position (188, 584)
+2025-06-26 00:26:16,958 - entities.enemy - INFO - Spawned orichalc fragment at (188, 584)
+2025-06-26 00:26:17,039 - ai.pathfinding_component - WARNING - Enemy 1960263247312 stuck at (176.0, 904.0) trying to reach None
+2025-06-26 00:26:19,549 - ai.pathfinding_component - WARNING - Enemy 1960263247312 stuck at (176.0, 904.0) trying to reach None
+2025-06-26 00:26:19,581 - entities.enemy - INFO - Enemy died at position (176, 904)
+2025-06-26 00:26:19,581 - entities.enemy - INFO - Spawned orichalc fragment at (176, 904)
+2025-06-26 00:26:19,598 - root - INFO - All waves cleared! Spawning the Maze Guardian boss!
+2025-06-26 00:30:27,587 - root - WARNING - AssetManager: Sound with key 'boss_death' not found.
+2025-06-26 00:30:27,588 - hyperdrone_core.game_loop - WARNING - Sound 'boss_death' not found
+2025-06-26 00:30:27,589 - root - INFO - Objective COMPLETED: 'Decommission the Vault's primary Guardian' (c2_defeat_guardian)
+2025-06-26 00:30:27,590 - root - INFO - BossDefeatedEvent dispatched: id=MAZE_GUARDIAN
+2025-06-26 00:30:27,590 - root - INFO - Maze Guardian defeated!
+2025-06-26 00:30:27,591 - root - WARNING - AssetManager: Sound with key 'boss_death' not found.
+2025-06-26 00:30:27,591 - hyperdrone_core.game_loop - WARNING - Sound 'boss_death' not found
+2025-06-26 00:30:30,604 - root - INFO - --- Advanced to Chapter: Chapter 3: The Corrupted Sector ---
+2025-06-26 00:30:30,620 - root - WARNING - Chapter 'Chapter 3: The Corrupted Sector': Tried to complete non-existent objective ID: 'c2_defeat_guardian'
+2025-06-26 00:30:30,621 - root - WARNING - Cannot advance: Current chapter is not yet complete.
+2025-06-26 00:30:30,637 - root - WARNING - Chapter 'Chapter 3: The Corrupted Sector': Tried to complete non-existent objective ID: 'c2_defeat_guardian'
+2025-06-26 00:30:30,637 - root - WARNING - Cannot advance: Current chapter is not yet complete.
+2025-06-26 00:30:30,654 - root - WARNING - Chapter 'Chapter 3: The Corrupted Sector': Tried to complete non-existent objective ID: 'c2_defeat_guardian'
+2025-06-26 00:30:30,654 - root - WARNING - Cannot advance: Current chapter is not yet complete.
+2025-06-26 00:30:30,670 - root - WARNING - Chapter 'Chapter 3: The Corrupted Sector': Tried to complete non-existent objective ID: 'c2_defeat_guardian'
+2025-06-26 00:30:30,670 - root - WARNING - Cannot advance: Current chapter is not yet complete.
+2025-06-26 00:30:30,686 - root - WARNING - Chapter 'Chapter 3: The Corrupted Sector': Tried to complete non-existent objective ID: 'c2_defeat_guardian'
+2025-06-26 00:30:30,686 - root - WARNING - Cannot advance: Current chapter is not yet complete.
+2025-06-26 00:30:30,701 - root - WARNING - Chapter 'Chapter 3: The Corrupted Sector': Tried to complete non-existent objective ID: 'c2_defeat_guardian'
+2025-06-26 00:30:30,702 - root - WARNING - Cannot advance: Current chapter is not yet complete.
+2025-06-26 00:30:30,719 - root - WARNING - Chapter 'Chapter 3: The Corrupted Sector': Tried to complete non-existent objective ID: 'c2_defeat_guardian'
+2025-06-26 00:30:30,719 - root - WARNING - Cannot advance: Current chapter is not yet complete.
+2025-06-26 00:30:30,735 - root - WARNING - Chapter 'Chapter 3: The Corrupted Sector': Tried to complete non-existent objective ID: 'c2_defeat_guardian'
+2025-06-26 00:30:30,736 - root - WARNING - Cannot advance: Current chapter is not yet complete.
+2025-06-26 00:30:30,752 - root - WARNING - Chapter 'Chapter 3: The Corrupted Sector': Tried to complete non-existent objective ID: 'c2_defeat_guardian'
+2025-06-26 00:30:30,752 - root - WARNING - Cannot advance: Current chapter is not yet complete.
+2025-06-26 00:30:30,767 - root - WARNING - Chapter 'Chapter 3: The Corrupted Sector': Tried to complete non-existent objective ID: 'c2_defeat_guardian'
+2025-06-26 00:30:30,768 - root - WARNING - Cannot advance: Current chapter is not yet complete.
+2025-06-26 00:30:30,784 - root - WARNING - Chapter 'Chapter 3: The Corrupted Sector': Tried to complete non-existent objective ID: 'c2_defeat_guardian'
+2025-06-26 00:30:30,785 - root - WARNING - Cannot advance: Current chapter is not yet complete.
+2025-06-26 00:30:30,801 - root - WARNING - Chapter 'Chapter 3: The Corrupted Sector': Tried to complete non-existent objective ID: 'c2_defeat_guardian'
+2025-06-26 00:30:30,801 - root - WARNING - Cannot advance: Current chapter is not yet complete.
+2025-06-26 00:30:30,817 - root - WARNING - Chapter 'Chapter 3: The Corrupted Sector': Tried to complete non-existent objective ID: 'c2_defeat_guardian'
+2025-06-26 00:30:30,817 - root - WARNING - Cannot advance: Current chapter is not yet complete.
+2025-06-26 00:30:30,835 - root - WARNING - Chapter 'Chapter 3: The Corrupted Sector': Tried to complete non-existent objective ID: 'c2_defeat_guardian'
+2025-06-26 00:30:30,835 - root - WARNING - Cannot advance: Current chapter is not yet complete.
+2025-06-26 00:30:30,851 - root - WARNING - Chapter 'Chapter 3: The Corrupted Sector': Tried to complete non-existent objective ID: 'c2_defeat_guardian'
+2025-06-26 00:30:30,851 - root - WARNING - Cannot advance: Current chapter is not yet complete.
+2025-06-26 00:30:30,868 - root - WARNING - Chapter 'Chapter 3: The Corrupted Sector': Tried to complete non-existent objective ID: 'c2_defeat_guardian'
+2025-06-26 00:30:30,868 - root - WARNING - Cannot advance: Current chapter is not yet complete.
+2025-06-26 00:30:30,885 - root - WARNING - Chapter 'Chapter 3: The Corrupted Sector': Tried to complete non-existent objective ID: 'c2_defeat_guardian'
+2025-06-26 00:30:30,885 - root - WARNING - Cannot advance: Current chapter is not yet complete.
+2025-06-26 00:30:30,901 - root - WARNING - Chapter 'Chapter 3: The Corrupted Sector': Tried to complete non-existent objective ID: 'c2_defeat_guardian'
+2025-06-26 00:30:30,901 - root - WARNING - Cannot advance: Current chapter is not yet complete.
+2025-06-26 00:30:30,917 - root - WARNING - Chapter 'Chapter 3: The Corrupted Sector': Tried to complete non-existent objective ID: 'c2_defeat_guardian'
+2025-06-26 00:30:30,918 - root - WARNING - Cannot advance: Current chapter is not yet complete.
+2025-06-26 00:30:30,935 - root - WARNING - Chapter 'Chapter 3: The Corrupted Sector': Tried to complete non-existent objective ID: 'c2_defeat_guardian'
+2025-06-26 00:30:30,935 - root - WARNING - Cannot advance: Current chapter is not yet complete.
+2025-06-26 00:30:30,951 - root - WARNING - Chapter 'Chapter 3: The Corrupted Sector': Tried to complete non-existent objective ID: 'c2_defeat_guardian'
+2025-06-26 00:30:30,951 - root - WARNING - Cannot advance: Current chapter is not yet complete.
+2025-06-26 00:30:30,967 - root - WARNING - Chapter 'Chapter 3: The Corrupted Sector': Tried to complete non-existent objective ID: 'c2_defeat_guardian'
+2025-06-26 00:30:30,967 - root - WARNING - Cannot advance: Current chapter is not yet complete.
+2025-06-26 00:30:30,984 - root - WARNING - Chapter 'Chapter 3: The Corrupted Sector': Tried to complete non-existent objective ID: 'c2_defeat_guardian'
+2025-06-26 00:30:30,985 - root - WARNING - Cannot advance: Current chapter is not yet complete.
+2025-06-26 00:30:31,001 - root - WARNING - Chapter 'Chapter 3: The Corrupted Sector': Tried to complete non-existent objective ID: 'c2_defeat_guardian'
+2025-06-26 00:30:31,001 - root - WARNING - Cannot advance: Current chapter is not yet complete.
+2025-06-26 00:30:31,017 - root - WARNING - Chapter 'Chapter 3: The Corrupted Sector': Tried to complete non-existent objective ID: 'c2_defeat_guardian'
+2025-06-26 00:30:31,017 - root - WARNING - Cannot advance: Current chapter is not yet complete.
+2025-06-26 00:30:31,034 - root - WARNING - Chapter 'Chapter 3: The Corrupted Sector': Tried to complete non-existent objective ID: 'c2_defeat_guardian'
+2025-06-26 00:30:31,034 - root - WARNING - Cannot advance: Current chapter is not yet complete.
+2025-06-26 00:30:31,050 - root - WARNING - Chapter 'Chapter 3: The Corrupted Sector': Tried to complete non-existent objective ID: 'c2_defeat_guardian'
+2025-06-26 00:30:31,050 - root - WARNING - Cannot advance: Current chapter is not yet complete.
+2025-06-26 00:30:31,066 - root - WARNING - Chapter 'Chapter 3: The Corrupted Sector': Tried to complete non-existent objective ID: 'c2_defeat_guardian'
+2025-06-26 00:30:31,066 - root - WARNING - Cannot advance: Current chapter is not yet complete.
+2025-06-26 00:30:31,083 - root - WARNING - Chapter 'Chapter 3: The Corrupted Sector': Tried to complete non-existent objective ID: 'c2_defeat_guardian'
+2025-06-26 00:30:31,083 - root - WARNING - Cannot advance: Current chapter is not yet complete.
+2025-06-26 00:30:31,099 - root - WARNING - Chapter 'Chapter 3: The Corrupted Sector': Tried to complete non-existent objective ID: 'c2_defeat_guardian'
+2025-06-26 00:30:31,099 - root - WARNING - Cannot advance: Current chapter is not yet complete.
+2025-06-26 00:30:31,115 - root - WARNING - Chapter 'Chapter 3: The Corrupted Sector': Tried to complete non-existent objective ID: 'c2_defeat_guardian'
+2025-06-26 00:30:31,116 - root - WARNING - Cannot advance: Current chapter is not yet complete.
+2025-06-26 00:30:31,132 - root - WARNING - Chapter 'Chapter 3: The Corrupted Sector': Tried to complete non-existent objective ID: 'c2_defeat_guardian'
+2025-06-26 00:30:31,132 - root - WARNING - Cannot advance: Current chapter is not yet complete.
+2025-06-26 00:30:31,148 - root - WARNING - Chapter 'Chapter 3: The Corrupted Sector': Tried to complete non-existent objective ID: 'c2_defeat_guardian'
+2025-06-26 00:30:31,148 - root - WARNING - Cannot advance: Current chapter is not yet complete.
+2025-06-26 00:30:31,164 - root - WARNING - Chapter 'Chapter 3: The Corrupted Sector': Tried to complete non-existent objective ID: 'c2_defeat_guardian'
+2025-06-26 00:30:31,165 - root - WARNING - Cannot advance: Current chapter is not yet complete.
+2025-06-26 00:30:31,181 - root - WARNING - Chapter 'Chapter 3: The Corrupted Sector': Tried to complete non-existent objective ID: 'c2_defeat_guardian'
+2025-06-26 00:30:31,182 - root - WARNING - Cannot advance: Current chapter is not yet complete.
+2025-06-26 00:30:31,198 - root - WARNING - Chapter 'Chapter 3: The Corrupted Sector': Tried to complete non-existent objective ID: 'c2_defeat_guardian'
+2025-06-26 00:30:31,198 - root - WARNING - Cannot advance: Current chapter is not yet complete.
+2025-06-26 00:30:31,214 - root - WARNING - Chapter 'Chapter 3: The Corrupted Sector': Tried to complete non-existent objective ID: 'c2_defeat_guardian'
+2025-06-26 00:30:31,214 - root - WARNING - Cannot advance: Current chapter is not yet complete.
+2025-06-26 00:30:31,230 - root - WARNING - Chapter 'Chapter 3: The Corrupted Sector': Tried to complete non-existent objective ID: 'c2_defeat_guardian'
+2025-06-26 00:30:31,230 - root - WARNING - Cannot advance: Current chapter is not yet complete.
+2025-06-26 00:30:31,245 - root - WARNING - Chapter 'Chapter 3: The Corrupted Sector': Tried to complete non-existent objective ID: 'c2_defeat_guardian'
+2025-06-26 00:30:31,245 - root - WARNING - Cannot advance: Current chapter is not yet complete.
+2025-06-26 00:30:31,262 - root - WARNING - Chapter 'Chapter 3: The Corrupted Sector': Tried to complete non-existent objective ID: 'c2_defeat_guardian'
+2025-06-26 00:30:31,262 - root - WARNING - Cannot advance: Current chapter is not yet complete.
+2025-06-26 00:30:31,278 - root - WARNING - Chapter 'Chapter 3: The Corrupted Sector': Tried to complete non-existent objective ID: 'c2_defeat_guardian'
+2025-06-26 00:30:31,278 - root - WARNING - Cannot advance: Current chapter is not yet complete.
+2025-06-26 00:30:31,293 - root - WARNING - Chapter 'Chapter 3: The Corrupted Sector': Tried to complete non-existent objective ID: 'c2_defeat_guardian'
+2025-06-26 00:30:31,294 - root - WARNING - Cannot advance: Current chapter is not yet complete.
+2025-06-26 00:30:31,310 - root - WARNING - Chapter 'Chapter 3: The Corrupted Sector': Tried to complete non-existent objective ID: 'c2_defeat_guardian'
+2025-06-26 00:30:31,310 - root - WARNING - Cannot advance: Current chapter is not yet complete.
+2025-06-26 00:30:31,326 - root - WARNING - Chapter 'Chapter 3: The Corrupted Sector': Tried to complete non-existent objective ID: 'c2_defeat_guardian'
+2025-06-26 00:30:31,327 - root - WARNING - Cannot advance: Current chapter is not yet complete.
+2025-06-26 00:30:31,343 - root - WARNING - Chapter 'Chapter 3: The Corrupted Sector': Tried to complete non-existent objective ID: 'c2_defeat_guardian'
+2025-06-26 00:30:31,343 - root - WARNING - Cannot advance: Current chapter is not yet complete.
+2025-06-26 00:30:31,359 - root - WARNING - Chapter 'Chapter 3: The Corrupted Sector': Tried to complete non-existent objective ID: 'c2_defeat_guardian'
+2025-06-26 00:30:31,359 - root - WARNING - Cannot advance: Current chapter is not yet complete.
+2025-06-26 00:30:31,375 - root - WARNING - Chapter 'Chapter 3: The Corrupted Sector': Tried to complete non-existent objective ID: 'c2_defeat_guardian'
+2025-06-26 00:30:31,375 - root - WARNING - Cannot advance: Current chapter is not yet complete.
+2025-06-26 00:30:31,391 - root - WARNING - Chapter 'Chapter 3: The Corrupted Sector': Tried to complete non-existent objective ID: 'c2_defeat_guardian'
+2025-06-26 00:30:31,391 - root - WARNING - Cannot advance: Current chapter is not yet complete.
+2025-06-26 00:30:31,409 - root - WARNING - Chapter 'Chapter 3: The Corrupted Sector': Tried to complete non-existent objective ID: 'c2_defeat_guardian'
+2025-06-26 00:30:31,409 - root - WARNING - Cannot advance: Current chapter is not yet complete.
+2025-06-26 00:30:31,426 - root - WARNING - Chapter 'Chapter 3: The Corrupted Sector': Tried to complete non-existent objective ID: 'c2_defeat_guardian'
+2025-06-26 00:30:31,426 - root - WARNING - Cannot advance: Current chapter is not yet complete.
+2025-06-26 00:30:31,426 - hyperdrone_core.story_map_state - WARNING - Could not load chapter data: 'charmap' codec can't decode byte 0x9d in position 11435: character maps to <undefined>
+2025-06-26 00:30:31,426 - hyperdrone_core.story_map_state - INFO - Entering StoryMapState
+2025-06-26 00:30:31,427 - hyperdrone_core.story_map_state - INFO - Showing completion summary for Chapter 2: The Guardian
+2025-06-26 00:30:31,427 - hyperdrone_core.state_manager - INFO - Game state changed from 'BossFightState' to 'StoryMapState'
+2025-06-26 00:30:31,428 - hyperdrone_core.state_manager - INFO - Playing music for context key 'menu_theme' at volume 0.5
+2025-06-26 00:30:37,216 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to corrupted_sector for chapter chapter_3
+2025-06-26 00:30:37,233 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to corrupted_sector for chapter chapter_3
+2025-06-26 00:30:37,251 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to corrupted_sector for chapter chapter_3
+2025-06-26 00:30:37,267 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to corrupted_sector for chapter chapter_3
+2025-06-26 00:30:37,284 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to corrupted_sector for chapter chapter_3
+2025-06-26 00:30:37,301 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to corrupted_sector for chapter chapter_3
+2025-06-26 00:30:37,318 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to corrupted_sector for chapter chapter_3
+2025-06-26 00:30:37,334 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to corrupted_sector for chapter chapter_3
+2025-06-26 00:30:37,351 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to corrupted_sector for chapter chapter_3
+2025-06-26 00:30:37,368 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to corrupted_sector for chapter chapter_3
+2025-06-26 00:30:37,386 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to corrupted_sector for chapter chapter_3
+2025-06-26 00:30:37,402 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to corrupted_sector for chapter chapter_3
+2025-06-26 00:30:37,419 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to corrupted_sector for chapter chapter_3
+2025-06-26 00:30:37,435 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to corrupted_sector for chapter chapter_3
+2025-06-26 00:30:37,452 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to corrupted_sector for chapter chapter_3
+2025-06-26 00:30:37,469 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to corrupted_sector for chapter chapter_3
+2025-06-26 00:30:37,486 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to corrupted_sector for chapter chapter_3
+2025-06-26 00:30:37,502 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to corrupted_sector for chapter chapter_3
+2025-06-26 00:30:37,518 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to corrupted_sector for chapter chapter_3
+2025-06-26 00:30:37,536 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to corrupted_sector for chapter chapter_3
+2025-06-26 00:30:37,553 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to corrupted_sector for chapter chapter_3
+2025-06-26 00:30:37,569 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to corrupted_sector for chapter chapter_3
+2025-06-26 00:30:37,585 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to corrupted_sector for chapter chapter_3
+2025-06-26 00:30:37,602 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to corrupted_sector for chapter chapter_3
+2025-06-26 00:30:37,619 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to corrupted_sector for chapter chapter_3
+2025-06-26 00:30:37,634 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to corrupted_sector for chapter chapter_3
+2025-06-26 00:30:37,651 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to corrupted_sector for chapter chapter_3
+2025-06-26 00:30:37,667 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to corrupted_sector for chapter chapter_3
+2025-06-26 00:30:37,683 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to corrupted_sector for chapter chapter_3
+2025-06-26 00:30:37,699 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to corrupted_sector for chapter chapter_3
+2025-06-26 00:30:37,715 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to corrupted_sector for chapter chapter_3
+2025-06-26 00:30:37,732 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to corrupted_sector for chapter chapter_3
+2025-06-26 00:30:37,748 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to corrupted_sector for chapter chapter_3
+2025-06-26 00:30:37,765 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to corrupted_sector for chapter chapter_3
+2025-06-26 00:30:37,780 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to corrupted_sector for chapter chapter_3
+2025-06-26 00:30:37,797 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to corrupted_sector for chapter chapter_3
+2025-06-26 00:30:37,813 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to corrupted_sector for chapter chapter_3
+2025-06-26 00:30:37,830 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to corrupted_sector for chapter chapter_3
+2025-06-26 00:30:37,847 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to corrupted_sector for chapter chapter_3
+2025-06-26 00:30:37,864 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to corrupted_sector for chapter chapter_3
+2025-06-26 00:30:37,879 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to corrupted_sector for chapter chapter_3
+2025-06-26 00:30:37,896 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to corrupted_sector for chapter chapter_3
+2025-06-26 00:30:37,912 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to corrupted_sector for chapter chapter_3
+2025-06-26 00:30:37,928 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to corrupted_sector for chapter chapter_3
+2025-06-26 00:30:37,944 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to corrupted_sector for chapter chapter_3
+2025-06-26 00:30:37,961 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to corrupted_sector for chapter chapter_3
+2025-06-26 00:30:37,978 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to corrupted_sector for chapter chapter_3
+2025-06-26 00:30:37,996 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to corrupted_sector for chapter chapter_3
+2025-06-26 00:30:38,013 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to corrupted_sector for chapter chapter_3
+2025-06-26 00:30:38,030 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to corrupted_sector for chapter chapter_3
+2025-06-26 00:30:38,045 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to corrupted_sector for chapter chapter_3
+2025-06-26 00:30:38,046 - hyperdrone_core.story_map_state - INFO - Exiting StoryMapState to CorruptedSectorState
+2025-06-26 00:30:38,046 - root - INFO - Entering CorruptedSectorState...
+2025-06-26 00:30:38,047 - root - INFO - Spawned Corrupted Log 'log_alpha' at (840, 920)
+2025-06-26 00:30:38,047 - root - INFO - Spawned Corrupted Log 'log_beta' at (280, 600)
+2025-06-26 00:30:38,047 - hyperdrone_core.enemy_manager - INFO - Level 3: Spawned 4 enemies out of 4 requested
+2025-06-26 00:30:38,047 - hyperdrone_core.state_manager - INFO - Game state changed from 'StoryMapState' to 'CorruptedSectorState'
+2025-06-26 00:30:38,048 - hyperdrone_core.state_manager - INFO - Playing music for context key 'corrupted_theme' at volume 0.5
+2025-06-26 00:30:40,100 - entities.enemy - INFO - Enemy died at position (796, 920)
+2025-06-26 00:30:40,100 - entities.enemy - INFO - Spawned orichalc fragment at (796, 920)
+2025-06-26 00:30:44,876 - drone_management.drone_system - INFO - Added 1 orichalc fragments. Total: 10
+2025-06-26 00:30:44,892 - root - INFO - ItemCollectedEvent dispatched: id=log_alpha, type=corrupted_log
+2025-06-26 00:30:44,892 - root - INFO - Objective COMPLETED: 'Find Corrupted Log Alpha' (c3_find_log_alpha)
+2025-06-26 00:30:47,745 - ai.pathfinding_component - WARNING - Enemy 1960263253712 stuck at (298.0, 312.0) trying to reach (840.0, 920.0)
+2025-06-26 00:30:50,237 - ai.pathfinding_component - WARNING - Enemy 1960263242832 stuck at (1098.0, 312.0) trying to reach (1080.0, 680.0)
+2025-06-26 00:30:52,752 - ai.pathfinding_component - WARNING - Enemy 1960263242832 stuck at (1098.0, 312.0) trying to reach (1320.0, 760.0)
+2025-06-26 00:30:54,587 - entities.enemy - INFO - Enemy died at position (1736, 773)
+2025-06-26 00:30:54,588 - entities.enemy - INFO - Spawned orichalc fragment at (1736, 773)
+2025-06-26 00:30:54,591 - drone_management.drone_system - INFO - Added 1 orichalc fragments. Total: 11
+2025-06-26 00:30:55,259 - ai.pathfinding_component - WARNING - Enemy 1960263242832 stuck at (1098.0, 312.0) trying to reach None
+2025-06-26 00:30:57,242 - drone_management.drone_system - INFO - Added 1 orichalc fragments. Total: 12
+2025-06-26 00:30:57,651 - drone_management.drone_system - INFO - Added 1 orichalc fragments. Total: 13
+2025-06-26 00:30:57,765 - ai.pathfinding_component - WARNING - Enemy 1960263242832 stuck at (1098.0, 312.0) trying to reach (1720.0, 440.0)
+2025-06-26 00:30:57,948 - drone_management.drone_system - INFO - Added 1 orichalc fragments. Total: 14
+2025-06-26 00:31:00,267 - ai.pathfinding_component - WARNING - Enemy 1960263242832 stuck at (1098.0, 312.0) trying to reach (1640.0, 120.0)
+2025-06-26 00:31:02,780 - ai.pathfinding_component - WARNING - Enemy 1960263242832 stuck at (1098.0, 312.0) trying to reach (1320.0, 120.0)
+2025-06-26 00:31:02,782 - entities.enemy - INFO - Enemy died at position (1098, 312)
+2025-06-26 00:31:02,782 - entities.enemy - INFO - Spawned orichalc fragment at (1098, 312)
+2025-06-26 00:31:05,014 - drone_management.drone_system - INFO - Added 1 orichalc fragments. Total: 15
+2025-06-26 00:31:05,046 - ai.pathfinding_component - WARNING - Enemy 1960263253712 stuck at (298.0, 312.0) trying to reach (1160.0, 280.0)
+2025-06-26 00:31:07,554 - ai.pathfinding_component - WARNING - Enemy 1960263253712 stuck at (298.0, 312.0) trying to reach (760.0, 360.0)
+2025-06-26 00:31:10,060 - ai.pathfinding_component - WARNING - Enemy 1960263253712 stuck at (298.0, 312.0) trying to reach (520.0, 120.0)
+2025-06-26 00:31:11,715 - entities.enemy - INFO - Enemy died at position (298, 312)
+2025-06-26 00:31:11,716 - entities.enemy - INFO - Spawned orichalc fragment at (298, 312)
+2025-06-26 00:31:13,956 - drone_management.drone_system - INFO - Added 1 orichalc fragments. Total: 16
+2025-06-26 00:31:16,010 - root - INFO - ItemCollectedEvent dispatched: id=log_beta, type=corrupted_log
+2025-06-26 00:31:16,011 - root - INFO - Objective COMPLETED: 'Access secure data with VANTIS drone' (c3_find_log_beta)
+2025-06-26 00:31:16,011 - root - INFO - --- Advanced to Chapter: Chapter 4: The Harvest Chamber ---
+2025-06-26 00:31:16,012 - root - INFO - Chapter 3 Complete! Transitioning...
+2025-06-26 00:31:16,831 - hyperdrone_core.story_map_state - WARNING - Could not load chapter data: 'charmap' codec can't decode byte 0x9d in position 11435: character maps to <undefined>
+2025-06-26 00:31:16,831 - hyperdrone_core.story_map_state - INFO - Entering StoryMapState
+2025-06-26 00:31:16,831 - hyperdrone_core.story_map_state - INFO - Showing completion summary for Chapter 3: The Corrupted Sector
+2025-06-26 00:31:16,832 - hyperdrone_core.state_manager - INFO - Game state changed from 'CorruptedSectorState' to 'StoryMapState'
+2025-06-26 00:31:16,833 - hyperdrone_core.state_manager - INFO - Playing music for context key 'menu_theme' at volume 0.5
+2025-06-26 00:31:22,411 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to harvest_chamber for chapter chapter_4
+2025-06-26 00:31:22,429 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to harvest_chamber for chapter chapter_4
+2025-06-26 00:31:22,445 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to harvest_chamber for chapter chapter_4
+2025-06-26 00:31:22,462 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to harvest_chamber for chapter chapter_4
+2025-06-26 00:31:22,478 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to harvest_chamber for chapter chapter_4
+2025-06-26 00:31:22,494 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to harvest_chamber for chapter chapter_4
+2025-06-26 00:31:22,510 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to harvest_chamber for chapter chapter_4
+2025-06-26 00:31:22,526 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to harvest_chamber for chapter chapter_4
+2025-06-26 00:31:22,543 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to harvest_chamber for chapter chapter_4
+2025-06-26 00:31:22,560 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to harvest_chamber for chapter chapter_4
+2025-06-26 00:31:22,577 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to harvest_chamber for chapter chapter_4
+2025-06-26 00:31:22,594 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to harvest_chamber for chapter chapter_4
+2025-06-26 00:31:22,610 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to harvest_chamber for chapter chapter_4
+2025-06-26 00:31:22,626 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to harvest_chamber for chapter chapter_4
+2025-06-26 00:31:22,642 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to harvest_chamber for chapter chapter_4
+2025-06-26 00:31:22,658 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to harvest_chamber for chapter chapter_4
+2025-06-26 00:31:22,673 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to harvest_chamber for chapter chapter_4
+2025-06-26 00:31:22,690 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to harvest_chamber for chapter chapter_4
+2025-06-26 00:31:22,707 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to harvest_chamber for chapter chapter_4
+2025-06-26 00:31:22,722 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to harvest_chamber for chapter chapter_4
+2025-06-26 00:31:22,739 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to harvest_chamber for chapter chapter_4
+2025-06-26 00:31:22,756 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to harvest_chamber for chapter chapter_4
+2025-06-26 00:31:22,772 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to harvest_chamber for chapter chapter_4
+2025-06-26 00:31:22,789 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to harvest_chamber for chapter chapter_4
+2025-06-26 00:31:22,805 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to harvest_chamber for chapter chapter_4
+2025-06-26 00:31:22,821 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to harvest_chamber for chapter chapter_4
+2025-06-26 00:31:22,836 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to harvest_chamber for chapter chapter_4
+2025-06-26 00:31:22,853 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to harvest_chamber for chapter chapter_4
+2025-06-26 00:31:22,868 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to harvest_chamber for chapter chapter_4
+2025-06-26 00:31:22,885 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to harvest_chamber for chapter chapter_4
+2025-06-26 00:31:22,902 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to harvest_chamber for chapter chapter_4
+2025-06-26 00:31:22,919 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to harvest_chamber for chapter chapter_4
+2025-06-26 00:31:22,935 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to harvest_chamber for chapter chapter_4
+2025-06-26 00:31:22,952 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to harvest_chamber for chapter chapter_4
+2025-06-26 00:31:22,969 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to harvest_chamber for chapter chapter_4
+2025-06-26 00:31:22,986 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to harvest_chamber for chapter chapter_4
+2025-06-26 00:31:23,001 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to harvest_chamber for chapter chapter_4
+2025-06-26 00:31:23,019 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to harvest_chamber for chapter chapter_4
+2025-06-26 00:31:23,035 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to harvest_chamber for chapter chapter_4
+2025-06-26 00:31:23,052 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to harvest_chamber for chapter chapter_4
+2025-06-26 00:31:23,069 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to harvest_chamber for chapter chapter_4
+2025-06-26 00:31:23,085 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to harvest_chamber for chapter chapter_4
+2025-06-26 00:31:23,100 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to harvest_chamber for chapter chapter_4
+2025-06-26 00:31:23,117 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to harvest_chamber for chapter chapter_4
+2025-06-26 00:31:23,134 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to harvest_chamber for chapter chapter_4
+2025-06-26 00:31:23,150 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to harvest_chamber for chapter chapter_4
+2025-06-26 00:31:23,165 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to harvest_chamber for chapter chapter_4
+2025-06-26 00:31:23,182 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to harvest_chamber for chapter chapter_4
+2025-06-26 00:31:23,199 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to harvest_chamber for chapter chapter_4
+2025-06-26 00:31:23,215 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to harvest_chamber for chapter chapter_4
+2025-06-26 00:31:23,231 - hyperdrone_core.story_map_state - INFO - Transitioning from StoryMapState to harvest_chamber for chapter chapter_4
+2025-06-26 00:31:23,231 - hyperdrone_core.story_map_state - INFO - Exiting StoryMapState to HarvestChamberState
+2025-06-26 00:31:23,231 - hyperdrone_core.harvest_chamber_state - INFO - Entering HarvestChamberState...
+2025-06-26 00:31:23,235 - root - INFO - Spawned Quantum Circuitry at (960.0, 200)
+2025-06-26 00:31:23,236 - hyperdrone_core.state_manager - INFO - Game state changed from 'StoryMapState' to 'HarvestChamberState'
+2025-06-26 00:31:23,236 - hyperdrone_core.state_manager - INFO - Playing music for context key 'shmup_theme' at volume 0.5

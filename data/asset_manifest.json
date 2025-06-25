@@ -134,7 +134,8 @@
     "ZEPHYR_WEAPON_6": "images/drones/zephyr_pierce.png",
     "ZEPHYR_WEAPON_7": "images/drones/zephyr_heatseeker.png",
     "ZEPHYR_WEAPON_8": "images/drones/zephyr_heatseeker_plus_bullets.png",
-    "ZEPHYR_WEAPON_9": "images/drones/zephyr_lightning.png"
+    "ZEPHYR_WEAPON_9": "images/drones/zephyr_lightning.png",
+    "TROPHY_ICON": "images/ui/trophy.png"
   },
   "fonts": {
     "UI_TEXT_FONT": "fonts/neuropol.otf"
