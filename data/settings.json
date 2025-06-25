@@ -2,13 +2,11 @@
   "display": {
     "FULLSCREEN_MODE": false,
     "MUSIC_VOLUME_MULTIPLIER": 0.5,
-    "SFX_VOLUME_MULTIPLIER": 0.7,
-    "WIDTH": 1920,
-    "HEIGHT": 1200
+    "SFX_VOLUME_MULTIPLIER": 0.7
   },
   "audio": {
     "VOLUME_FX": 1,
-    "VOLUME_GAME": 3
+    "VOLUME_GAME": 10
   },
   "gameplay": {
     "PLAYER_MAX_HEALTH": 100,
@@ -20,20 +18,6 @@
   "enemies": {
     "ENEMY_SPEED": 1.5,
     "ENEMY_HEALTH": 25
-  },
-  "bosses": {
-    "MAZE_GUARDIAN_SPEED": 1,
-    "tempest": {
-      "SPEED": 3,
-      "GUST_COOLDOWN": 5000,
-      "GUST_SIZE": 30,
-      "TORNADO_COOLDOWN": 8000,
-      "TORNADO_COUNT": 3,
-      "TORNADO_LIFESPAN": 5000,
-      "TORNADO_SPEED": 4,
-      "CYCLONE_COOLDOWN": 10000,
-      "CYCLONE_PROJECTILES": 16
-    }
   },
   "powerups": {
     "SHIELD_POWERUP_DURATION": 10000,

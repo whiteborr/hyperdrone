@@ -19,6 +19,7 @@ from constants import (
 
 from .build_menu import BuildMenu
 from .leaderboard_ui import LeaderboardUI
+from .settings_ui import SettingsUI
 
 logger = getLogger(__name__)
 if not getLogger().hasHandlers():
@@ -71,6 +72,11 @@ class UIManager:
             self.leaderboard_ui = LeaderboardUI()
         else:
             self.leaderboard_ui = None
+            
+        if SettingsUI:
+            self.settings_ui = SettingsUI(self.asset_manager)
+        else:
+            self.settings_ui = None
 
         self._load_ui_assets_from_manager()
         self.update_player_life_icon_surface()
@@ -1047,40 +1053,13 @@ class UIManager:
             self.screen.blit(obj_surf, obj_rect)
 
     def draw_settings_menu(self):
-        self._draw_star_background()
-        title_surf = self._render_text_safe("Settings", "large_text", GOLD, fallback_size=48)
-        self.screen.blit(title_surf, title_surf.get_rect(center=(self._cached_width // 2, 80)))
-        
-        ui_flow = self.game_controller.ui_flow_controller
-        settings_items, selected_index = ui_flow.settings_items_data, ui_flow.selected_setting_index
-        font_setting = self.asset_manager.get_font("ui_text", 28)
-        
-        start_y = 200
-        for i, item in enumerate(settings_items):
-            y_pos = start_y + i * 50
-            color = YELLOW if i == selected_index else WHITE
-            label_surf = font_setting.render(item['label'], True, color)
-            self.screen.blit(label_surf, (200, y_pos))
-            
-            val_text = ""
-            if item['type'] != 'action':
-                category = item.get('category', 'gameplay')  # Default to gameplay if not specified
-                current_val = get_setting(category, item['key'], None)
-                val_to_format = current_val
-                if item.get("is_ms_to_sec") and val_to_format is not None: val_to_format /= 1000
-                
-                if 'display_format' in item and val_to_format is not None:
-                    val_text = item['display_format'].format(val_to_format)
-                elif 'get_display' in item and current_val is not None:
-                    val_text = item['get_display'](current_val)
-                else:
-                    val_text = str(current_val) if current_val is not None else "N/A"
-                    
-                if item['type'] in ["numeric", "choice"]: val_text = f"< {val_text} >"
-            else: val_text = "[PRESS ENTER]"
-            
-            val_surf = font_setting.render(val_text, True, color)
-            self.screen.blit(val_surf, (self._cached_width - 200 - val_surf.get_width(), y_pos))
+        if self.settings_ui:
+            self.settings_ui.draw(self.screen, self.game_controller.ui_flow_controller)
+        else:
+            # Fallback to old method if SettingsUI not available
+            self._draw_star_background()
+            title_surf = self._render_text_safe("Settings", "large_text", GOLD, fallback_size=48)
+            self.screen.blit(title_surf, title_surf.get_rect(center=(self._cached_width // 2, 80)))
 
     def draw_leaderboard_ui(self):
         if self.leaderboard_ui:
