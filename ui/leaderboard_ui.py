@@ -103,22 +103,25 @@ class LeaderboardUI:
     def __init__(self):
         font_path = join(dirname(dirname(__file__)), "assets", "fonts", "neuropol.otf")
         self.font_title = font.Font(font_path, 40)
+        self.font_subtitle = font.Font(font_path, 28)
         self.font_entry = font.Font(font_path, 24)
         self.font_small = font.Font(font_path, 18)
         self.scanline_offset = 0
+        self.scanline_alpha = 50
 
     def draw(self, screen):
         width, height = screen.get_size()
         self._draw_background(screen)
 
-        board_width = 800
-        board_height = 600
+        board_width = 1000
+        board_height = 650
         board_x = (width - board_width) // 2
         board_y = (height - board_height) // 2
 
         self._draw_main_frame(screen, board_x, board_y, board_width, board_height)
-        self._draw_title(screen, "HIGH SCORES", board_x + 240, board_y + 20)
-        self._draw_scores(screen, board_x + 60, board_y + 100)
+        self._draw_title(screen, "HIGH SCORES", board_x + board_width // 2 - 120, board_y + 30)
+        self._draw_scores(screen, board_x + 80, board_y + 120)
+        self._draw_instructions(screen, board_x, board_y, board_width, board_height)
         self._draw_scanlines(screen)
 
     def _draw_background(self, screen):
@@ -138,40 +141,133 @@ class LeaderboardUI:
         screen.blit(overlay, (0, 0))
 
     def _draw_main_frame(self, screen, x, y, width, height):
-        surf = Surface((width, height), pygame.SRCALPHA)
-        alpha = int(220 + 20 * sin(get_ticks() * 0.002))
-        surf.fill((20, 35, 60, alpha))
-        screen.blit(surf, (x, y))
+        # Animated main background
+        panel_surface = Surface((width, height), pygame.SRCALPHA)
+        time_factor = get_ticks() * 0.002
+        bg_alpha = int(220 + 20 * sin(time_factor))
+        panel_surface.fill((20, 35, 60, bg_alpha))
+        screen.blit(panel_surface, (x, y))
+        
+        # Animated border glow
+        border_alpha = int(120 + 80 * sin(time_factor * 2))
+        draw.rect(screen, (0, 200, 255, border_alpha), (x-1, y-1, width+2, height+2), 3, border_radius=12)
+        draw.rect(screen, (0, 255, 255, 150), (x, y, width, height), 2, border_radius=10)
+        
+        # Enhanced corner details with glow
+        corner_size = 40
+        glow_alpha = int(150 + 100 * sin(time_factor * 3))
+        
+        # Top-left corner
+        draw.line(screen, (*GOLD, glow_alpha), (x-2, y + corner_size), (x-2, y-2), 5)
+        draw.line(screen, (*GOLD, glow_alpha), (x-2, y-2), (x + corner_size, y-2), 5)
+        draw.line(screen, GOLD, (x, y + corner_size), (x, y), 3)
+        draw.line(screen, GOLD, (x, y), (x + corner_size, y), 3)
+        
+        # Top-right corner
+        draw.line(screen, (*GOLD, glow_alpha), (x + width - corner_size, y-2), (x + width+2, y-2), 5)
+        draw.line(screen, (*GOLD, glow_alpha), (x + width+2, y-2), (x + width+2, y + corner_size), 5)
+        draw.line(screen, GOLD, (x + width - corner_size, y), (x + width, y), 3)
+        draw.line(screen, GOLD, (x + width, y), (x + width, y + corner_size), 3)
 
-        draw.rect(screen, (0, 255, 255, 150), (x, y, width, height), 2, border_radius=12)
+        # Bottom-left corner
+        draw.line(screen, (*GOLD, glow_alpha), (x-2, y + height - corner_size), (x-2, y + height+2), 5)
+        draw.line(screen, (*GOLD, glow_alpha), (x-2, y + height+2), (x + corner_size, y + height+2), 5)
+        draw.line(screen, GOLD, (x, y + height - corner_size), (x, y + height), 3)
+        draw.line(screen, GOLD, (x, y + height), (x + corner_size, y + height), 3)
+        
+        # Bottom-right corner
+        draw.line(screen, (*GOLD, glow_alpha), (x + width - corner_size, y + height+2), (x + width+2, y + height+2), 5)
+        draw.line(screen, (*GOLD, glow_alpha), (x + width+2, y + height+2), (x + width+2, y + height - corner_size), 5)
+        draw.line(screen, GOLD, (x + width - corner_size, y + height), (x + width, y + height), 3)
+        draw.line(screen, GOLD, (x + width, y + height), (x + width, y + height - corner_size), 3)
 
     def _draw_title(self, screen, text, x, y):
         self._draw_text_with_shadow(screen, text, self.font_title, GOLD, (x, y))
 
     def _draw_scores(self, screen, start_x, start_y):
         scores = get_top_scores()
+        if not scores:
+            self._draw_text_with_shadow(screen, "No scores yet!", self.font_subtitle, GREY, 
+                                        (start_x + 300, start_y + 200))
+            return
+            
+        # Enhanced score display with ranking highlights
         for i, entry in enumerate(scores[:10]):
             name = entry.get("name", "???")
             score = entry.get("score", 0)
             level = entry.get("level", 0)
+            
+            y_pos = start_y + i * 45
+            
+            # Rank-based styling
+            if i == 0:  # 1st place
+                color = GOLD
+                rank_bg_color = (*GOLD, 60)
+                glow_alpha = int(80 + 40 * sin(get_ticks() * 0.005 + i))
+                # Gold glow for 1st place
+                glow_surf = Surface((800, 40), pygame.SRCALPHA)
+                glow_surf.fill((*GOLD, glow_alpha))
+                screen.blit(glow_surf, (start_x - 20, y_pos - 5))
+            elif i < 3:  # Top 3
+                color = CYAN
+                rank_bg_color = (*CYAN, 40)
+            else:
+                color = WHITE
+                rank_bg_color = (*WHITE, 20)
+            
+            # Background highlight for each entry
+            bg_surf = Surface((800, 35), pygame.SRCALPHA)
+            bg_surf.fill(rank_bg_color)
+            screen.blit(bg_surf, (start_x - 10, y_pos - 2))
+            
+            # Rank number with special styling
+            rank_text = f"{i+1:2}."
+            self._draw_text_with_shadow(screen, rank_text, self.font_entry, color, (start_x, y_pos))
+            
+            # Player name
+            self._draw_text_with_shadow(screen, name, self.font_entry, color, (start_x + 60, y_pos))
+            
+            # Score with formatting
+            score_text = f"SCORE: {score:,}"
+            self._draw_text_with_shadow(screen, score_text, self.font_entry, color, (start_x + 200, y_pos))
+            
+            # Level
+            level_text = f"LVL: {level}"
+            self._draw_text_with_shadow(screen, level_text, self.font_entry, color, (start_x + 450, y_pos))
+            
+            # Special crown icon for 1st place
+            if i == 0:
+                crown_text = "★"
+                self._draw_text_with_shadow(screen, crown_text, self.font_entry, GOLD, (start_x + 550, y_pos))
 
-            color = GREEN if i == 0 else CYAN if i < 3 else WHITE
-            text = f"{i+1:2}. {name:6}  SCORE: {score:<6}  LVL: {level}"
-            self._draw_text_with_shadow(screen, text, self.font_entry, color, (start_x, start_y + i * 40))
-
-    def _draw_text_with_shadow(self, screen, text, font_obj, color, pos, shadow=(0, 0, 0), offset=(2, 2)):
-        shadow_surf = font_obj.render(text, True, shadow)
-        screen.blit(shadow_surf, (pos[0] + offset[0], pos[1] + offset[1]))
+    def _draw_text_with_shadow(self, screen, text, font_obj, color, pos, shadow_color=(0, 0, 0), offset=(2, 2)):
+        """Helper to draw text with a drop shadow."""
+        text_surf = font_obj.render(text, True, shadow_color)
+        screen.blit(text_surf, (pos[0] + offset[0], pos[1] + offset[1]))
         text_surf = font_obj.render(text, True, color)
         screen.blit(text_surf, pos)
 
     def _draw_scanlines(self, screen):
         width, height = screen.get_size()
-        overlay = Surface((width, height), pygame.SRCALPHA)
+        scanline_surface = Surface((width, height), pygame.SRCALPHA)
+        
         self.scanline_offset = (self.scanline_offset + 0.5) % 6
         time_factor = get_ticks() * 0.001
-
+        
+        # Variable intensity scanlines
         for y in range(int(self.scanline_offset), height, 6):
-            alpha = int(40 + 20 * sin(time_factor + y * 0.1))
-            draw.line(overlay, (0, 20, 40, alpha), (0, y), (width, y), 1)
-        screen.blit(overlay, (0, 0))
+            alpha = int(self.scanline_alpha + 20 * sin(time_factor + y * 0.1))
+            alpha = max(10, min(80, alpha))
+            draw.line(scanline_surface, (0, 20, 40, alpha), (0, y), (width, y), 1)
+            
+        # Occasional bright scanline
+        bright_line_y = int((get_ticks() * 0.1) % height)
+        draw.line(scanline_surface, (0, 100, 200, 60), (0, bright_line_y), (width, bright_line_y), 2)
+            
+        screen.blit(scanline_surface, (0, 0))
+        
+    def _draw_instructions(self, screen, board_x, board_y, board_width, board_height):
+        """Draw control instructions at the bottom."""
+        instructions = "Press [ESC] to return to Main Menu"
+        self._draw_text_with_shadow(screen, instructions, self.font_small, WHITE,
+                                    (board_x + board_width // 2 - 150, board_y + board_height - 50))

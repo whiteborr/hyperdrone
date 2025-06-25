@@ -17,11 +17,8 @@ from constants import (
     HUD_RING_ICON_SIZE, HUD_RING_ICON_SPACING
 )
 
-try:
-    from .build_menu import BuildMenu
-except ImportError:
-    warning("UIManager: Could not import BuildMenu. Build UI will not be available.")
-    BuildMenu = None 
+from .build_menu import BuildMenu
+from .leaderboard_ui import LeaderboardUI
 
 logger = getLogger(__name__)
 if not getLogger().hasHandlers():
@@ -69,6 +66,11 @@ class UIManager:
             self.build_menu = BuildMenu(self.game_controller, self, self.asset_manager) 
         else:
             self.build_menu = None
+            
+        if LeaderboardUI:
+            self.leaderboard_ui = LeaderboardUI()
+        else:
+            self.leaderboard_ui = None
 
         self._load_ui_assets_from_manager()
         self.update_player_life_icon_surface()
@@ -212,7 +214,7 @@ class UIManager:
             "MainMenuState": self.draw_main_menu,
             "DroneSelectState": self.draw_drone_select_menu,
             "SettingsState": self.draw_settings_menu,
-            "LeaderboardState": self.draw_leaderboard_overlay,
+            "LeaderboardState": self.draw_leaderboard_ui,
             "CodexState": self.draw_codex_screen,
             "GameOverState": self.draw_game_over_overlay,
             "EnterNameState": self.draw_enter_name_overlay,
@@ -1080,33 +1082,37 @@ class UIManager:
             val_surf = font_setting.render(val_text, True, color)
             self.screen.blit(val_surf, (self._cached_width - 200 - val_surf.get_width(), y_pos))
 
-    def draw_leaderboard_overlay(self):
-        self._draw_star_background()
-        title_surf = self._render_text_safe("Leaderboard", "large_text", GOLD, fallback_size=48)
-        width = get_setting("display", "WIDTH", 1920)
-        self.screen.blit(title_surf, title_surf.get_rect(center=(width // 2, 80)))
-        
-        scores = self.game_controller.ui_flow_controller.leaderboard_scores
-        font_header = self.asset_manager.get_font("medium_text", 36) or Font(None, 36)
-        font_score = self.asset_manager.get_font("ui_text", 28) or Font(None, 28)
-        
-        headers, header_positions = ["RANK", "NAME", "SCORE", "LEVEL"], [width*0.2, width*0.35, width*0.6, width*0.8]
-        
-        for i, header in enumerate(headers):
-            header_surf = font_header.render(header, True, CYAN)
-            self.screen.blit(header_surf, header_surf.get_rect(center=(header_positions[i], 180)))
+    def draw_leaderboard_ui(self):
+        if self.leaderboard_ui:
+            self.leaderboard_ui.draw(self.screen)
+        else:
+            # Fallback to old method if LeaderboardUI not available
+            self._draw_star_background()
+            title_surf = self._render_text_safe("Leaderboard", "large_text", GOLD, fallback_size=48)
+            width = get_setting("display", "WIDTH", 1920)
+            self.screen.blit(title_surf, title_surf.get_rect(center=(width // 2, 80)))
             
-        for i, score_entry in enumerate(scores):
-            y_pos = 250 + i * 50
-            color = GOLD if i == 0 else WHITE
-            rank_surf = font_score.render(f"{i+1}", True, color)
-            name_surf = font_score.render(score_entry.get('name', 'N/A'), True, color)
-            score_surf = font_score.render(str(score_entry.get('score', 0)), True, color)
-            level_surf = font_score.render(str(score_entry.get('level', 0)), True, color)
-            self.screen.blit(rank_surf, rank_surf.get_rect(center=(header_positions[0], y_pos)))
-            self.screen.blit(name_surf, name_surf.get_rect(center=(header_positions[1], y_pos)))
-            self.screen.blit(score_surf, score_surf.get_rect(center=(header_positions[2], y_pos)))
-            self.screen.blit(level_surf, level_surf.get_rect(center=(header_positions[3], y_pos)))
+            scores = self.game_controller.ui_flow_controller.leaderboard_scores
+            font_header = self.asset_manager.get_font("medium_text", 36) or Font(None, 36)
+            font_score = self.asset_manager.get_font("ui_text", 28) or Font(None, 28)
+            
+            headers, header_positions = ["RANK", "NAME", "SCORE", "LEVEL"], [width*0.2, width*0.35, width*0.6, width*0.8]
+            
+            for i, header in enumerate(headers):
+                header_surf = font_header.render(header, True, CYAN)
+                self.screen.blit(header_surf, header_surf.get_rect(center=(header_positions[i], 180)))
+                
+            for i, score_entry in enumerate(scores):
+                y_pos = 250 + i * 50
+                color = GOLD if i == 0 else WHITE
+                rank_surf = font_score.render(f"{i+1}", True, color)
+                name_surf = font_score.render(score_entry.get('name', 'N/A'), True, color)
+                score_surf = font_score.render(str(score_entry.get('score', 0)), True, color)
+                level_surf = font_score.render(str(score_entry.get('level', 0)), True, color)
+                self.screen.blit(rank_surf, rank_surf.get_rect(center=(header_positions[0], y_pos)))
+                self.screen.blit(name_surf, name_surf.get_rect(center=(header_positions[1], y_pos)))
+                self.screen.blit(score_surf, score_surf.get_rect(center=(header_positions[2], y_pos)))
+                self.screen.blit(level_surf, level_surf.get_rect(center=(header_positions[3], y_pos)))
 
     def draw_game_over_overlay(self):
         self._draw_star_background()
