@@ -1,121 +1,119 @@
-import pygame
-import random
-import math
-import game_settings as gs # For new particle settings
+# entities/particle.py
+from pygame.sprite import Sprite
+from pygame.draw import circle
+from pygame import Surface, SRCALPHA
+from random import choice, uniform
+from math import radians, cos, sin
+from settings_manager import get_setting
+from constants import FLAME_COLORS
 
-class Particle(pygame.sprite.Sprite):
+class Particle(Sprite):
     def __init__(self, x, y, color_list, 
                  min_speed, max_speed, 
                  min_size, max_size, 
                  gravity=0.1, shrink_rate=0.1, lifetime_frames=30,
-                 base_angle_deg=None, spread_angle_deg=360, # New: Directional parameters
-                 x_offset=0, y_offset=0, # New: Offset parameters
-                 blast_mode=False): # New: Blast mode toggle
+                 base_angle_deg=None, spread_angle_deg=360,
+                 x_offset=0, y_offset=0,
+                 blast_mode=False):
         super().__init__()
         
-        # Apply offset to initial position
-        self.x = float(x + x_offset)
-        self.y = float(y + y_offset)
-        
+        self.x, self.y = float(x + x_offset), float(y + y_offset)
         self.blast_mode = blast_mode
+        self.lifetime = lifetime_frames
 
         if self.blast_mode:
-            self.color = random.choice(gs.FLAME_COLORS)
-            self.size = random.uniform(gs.THRUST_PARTICLE_START_SIZE_BLAST_MIN, gs.THRUST_PARTICLE_START_SIZE_BLAST_MAX)
-            self.gravity = 0  # No gravity for flame thrust
-            self.shrink_rate = gs.THRUST_PARTICLE_SHRINK_RATE_BLAST # Use specific shrink rate
-            self.lifetime = gs.THRUST_PARTICLE_LIFETIME_BLAST
-            speed = random.uniform(gs.THRUST_PARTICLE_SPEED_MIN_BLAST, gs.THRUST_PARTICLE_SPEED_MAX_BLAST)
-        else: # Original behavior for explosions etc.
-            self.color = random.choice(color_list)
-            self.size = random.uniform(min_size, max_size)
+            self.color = choice(FLAME_COLORS)
+            self.size = uniform(min_size, max_size)
+            speed = uniform(min_speed, max_speed)
+        else:
+            self.color = choice(color_list)
+            self.size = uniform(min_size, max_size)
+            speed = uniform(min_speed, max_speed)
             self.gravity = gravity
             self.shrink_rate = shrink_rate
-            self.lifetime = lifetime_frames
-            speed = random.uniform(min_speed, max_speed)
 
-        self.initial_size = self.size 
+        self.initial_size = self.size
         self.current_lifetime = 0
-
-        # Calculate emission angle
-        if base_angle_deg is not None:
-            angle_offset = random.uniform(-spread_angle_deg / 2, spread_angle_deg / 2)
-            final_angle_deg = base_angle_deg + angle_offset
-            angle_rad = math.radians(final_angle_deg)
-        else: # Original random 360 spread if no base_angle_deg
-            angle_rad = random.uniform(0, 2 * math.pi)
         
-        self.vx = math.cos(angle_rad) * speed
-        self.vy = math.sin(angle_rad) * speed
+        angle = base_angle_deg if base_angle_deg is not None else uniform(0, 360)
+        angle += uniform(-spread_angle_deg / 2, spread_angle_deg / 2)
+        angle_rad = radians(angle)
         
-        # Create image surface (will be updated in update if size changes)
-        # Ensure initial surface can hold the largest possible particle to avoid clipping
-        # This might need adjustment if particles can grow, but they only shrink here.
-        max_possible_start_size = gs.THRUST_PARTICLE_START_SIZE_BLAST_MAX if self.blast_mode else max_size
-        surf_dim = int(max_possible_start_size * 2) + 2 # Add a small buffer
-        if surf_dim < 2: surf_dim = 2 # Ensure minimum surface dimension
-
-        self.image = pygame.Surface([surf_dim, surf_dim], pygame.SRCALPHA)
-        self._redraw_image() # Initial draw with correct current size
-        self.rect = self.image.get_rect(center=(self.x, self.y))
-
+        self.vx, self.vy = cos(angle_rad) * speed, sin(angle_rad) * speed
+        
+        surf_dim = int(self.initial_size * 2) + 2
+        self.image = Surface([surf_dim, surf_dim], SRCALPHA)
+        self.rect = self.image.get_rect(center=(int(self.x), int(self.y)))
+        self._redraw_image()
 
     def _redraw_image(self):
-        """Helper to redraw the particle image when size or color changes."""
-        # Ensure surface can contain the current size
-        surf_dim = int(self.size * 2) + 2
-        if surf_dim < 2 : surf_dim = 2
-        
-        # Check if surface needs resizing (only if current image is too small)
-        if self.image.get_width() < surf_dim or self.image.get_height() < surf_dim:
-             self.image = pygame.Surface([surf_dim, surf_dim], pygame.SRCALPHA)
-        else: # Clear existing surface if not resizing
-            self.image.fill((0,0,0,0))
+        self.image.fill((0, 0, 0, 0))
+        center_pos = self.image.get_width() // 2
+        draw_size = int(self.size)
+        if draw_size < 1:
+            return
 
-        center_pos = self.image.get_width() // 2 # Center on the potentially larger surface
-
-        # Determine color and alpha
-        life_ratio = max(0, 1 - (self.current_lifetime / self.lifetime))
-        current_alpha = 255
-        if self.blast_mode: # Flame particles fade out
-            current_alpha = int(255 * (life_ratio ** 1.5)) # Faster fade
+        life_ratio = 1.0 - (self.current_lifetime / self.lifetime)
+        current_alpha = int(255 * (life_ratio ** 1.5))
         
-        draw_color = (*self.color[:3], max(0, min(255, current_alpha)))
-
-        if self.size >= 1:
-            pygame.draw.circle(self.image, draw_color, (center_pos, center_pos), int(self.size))
-        
-        # Update rect based on the actual center of the potentially resized image
-        # self.rect = self.image.get_rect(center=(int(self.x), int(self.y))) # This is done in update()
+        if current_alpha > 0:
+            draw_color = (*self.color[:3], current_alpha)
+            circle(self.image, draw_color, (center_pos, center_pos), draw_size)
 
     def update(self):
         self.current_lifetime += 1
         if self.current_lifetime >= self.lifetime:
-            self.kill() 
-            return
-
-        self.vy += self.gravity
-        self.x += self.vx
-        self.y += self.vy
-        
-        prev_size = self.size
-        # Shrink based on lifetime for blast mode, or fixed rate for others
-        if self.blast_mode:
-            life_ratio = max(0, 1 - (self.current_lifetime / self.lifetime))
-            self.size = self.initial_size * (life_ratio ** 0.7) # Non-linear shrink for flames
-        else:
-            self.size -= self.shrink_rate # Original shrink logic for explosions
-
-        if self.size < 1:
             self.kill()
             return
-        
-        if self.size != prev_size or self.blast_mode: # Redraw if size changed or if it's a blast particle (for alpha fade)
-            self._redraw_image()
-        
-        self.rect = self.image.get_rect(center=(int(self.x), int(self.y)))
 
+        self.x += self.vx
+        self.y += self.vy
 
-    def draw(self, surface): 
-        if self.alive(): 
-            surface.blit(self.image, self.rect)
+        if self.blast_mode:
+            life_ratio = 1.0 - (self.current_lifetime / self.lifetime)
+            self.size = self.initial_size * life_ratio
+        else:
+            self.size -= self.shrink_rate
+
+        if self.size < 0.5:
+            self.kill()
+            return
+            
+        self._redraw_image()
+        self.rect.center = (int(self.x), int(self.y))
+
+    def draw(self, surface, camera=None): 
+        if self.alive():
+            if camera:
+                screen_rect = camera.apply_to_rect(self.rect)
+                if not screen_rect.colliderect(surface.get_rect()) or screen_rect.width <= 0:
+                    return
+                # Optimized drawing for scaled particles
+                draw_pos = (int(screen_rect.centerx), int(screen_rect.centery))
+                draw_radius = int(self.size * camera.zoom_level)
+                if draw_radius > 0:
+                    life_ratio = 1.0 - (self.current_lifetime / self.lifetime)
+                    alpha = int(255 * (life_ratio ** 1.5))
+                    color = (*self.color[:3], alpha)
+                    circle(surface, color, draw_pos, draw_radius)
+            else:
+                surface.blit(self.image, self.rect)
+
+class ParticleSystem:
+    def __init__(self):
+        self.particles = []
+    
+    def create_explosion(self, x, y, color, particle_count=20):
+        for _ in range(particle_count):
+            particle = Particle(x, y, [color], 1, 5, 2, 8, lifetime_frames=30)
+            self.particles.append(particle)
+    
+    def update(self, delta_time):
+        for particle in self.particles[:]:
+            particle.update()
+            if not particle.alive():
+                self.particles.remove(particle)
+    
+    def draw(self, surface, camera_offset=(0, 0)):
+        for particle in self.particles:
+            particle.draw(surface)

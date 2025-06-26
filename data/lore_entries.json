@@ -276,5 +276,167 @@
       "echo_message": "The Vault is not a tomb... but a cradle. They must not find it before it wakes.",
       "content": "This echo suggests a different interpretation of the Vault's purpose. Not merely for containment, but perhaps for nurturing or protecting something. The identity of 'they' remains a critical unknown."
     }
-  ]
+  ],
+  "chapters": [
+    {
+      "id": "chapter_1",
+      "title": "Chapter 1: The Entrance",
+      "subtitle": "Earth Core – Top-Down Puzzle Maze",
+      "story": "The drone answers a mysterious signal and discovers the sealed Vault entrance. Inside, it finds the ancient Cipher Core artifact and the Earth elemental core. This core acts as the “anchor” for the mission, symbolizing stability and the beginning of understanding the Vault’s purpose. The chamber’s crumbling corridors and naturalistic glyphs hint that the Vault is failing and needs repairs.",
+      "gameplay": "Navigate a collapsing maze, collect energy rings, avoid collapsing floors, and fend off basic drone defenses. Unlock new areas by using gravity-based puzzles enabled by the Earth core.",
+      "reward": "Earth Fragment - The most foundational fragment, representing the first step on your journey.",
+      "emotion": "Awe and trepidation at entering an ancient protector of Earth; wonder at the glowing Cipher Core; anxiety as the Vault’s instability becomes obvious."
+    },
+    {
+      "id": "chapter_2",
+      "title": "Chapter 2: The Guardian",
+      "subtitle": "Fire Core - Top-Down Boss Fight",
+      "story": "Deeper in the Vault, the drone triggers a defense system. A colossal MazeGuardian awakens to test intruders. The drone must battle this guardian, earning the Fire elemental core by prevailing. The fiery core symbolizes raw power and the purging of corruption inside the Vault.",
+      "gameplay": "Engage in a top-down boss fight against the MazeGuardian. Dodge powerful attacks and strike at its weak points. Acquire combat upgrades unlocked by the Fire core once the guardian falls.",
+      "reward": "Fire Fragment - Represents raw power and energy, earned by overcoming this intense combat challenge.",
+      "emotion": "Tension and exhilaration in combat; respect for the guardian’s ancient purpose clashing with fear as it nearly destroys the drone."
+    },
+    {
+      "id": "chapter_3",
+      "title": "Chapter 3: Corruption Sector",
+      "subtitle": "Air Core - Top-Down Puzzle Maze",
+      "story": "The drone proceeds into a decaying Vault sector, where corridors shift and puzzles twist—evidence of corrupt, glitching logic. Here it uncovers fragmented data logs and AI echoes of the Architect’s once-precise reasoning. By solving intricate spatial puzzles it gains the Air elemental core.",
+      "gameplay": "Navigate a shifting maze with moving walls and time-based puzzles. Use enhanced drone sensors and logic-based abilities unlocked by the Air core to decode glyph patterns and open sealed chambers.",
+      "reward": "Air Fragment - Represents thought, intellect, and elusiveness, the reward for navigating the corrupted, mind-bending logic of this sector.",
+      "emotion": "Increasing unease as the Vault’s corrupted AI glitches around you. Empathy for the Vault’s lost “mind” as you see holographic memories of its purpose."
+    },
+    {
+      "id": "chapter_4",
+      "title": "Chapter 4: The Harvest Chamber",
+      "subtitle": "Water Core - Vertical Scrolling Shmup",
+      "story": "The drone descends into its deep intake chamber—a flooded catacomb where harvested wreckage has been repurposed. Here MH370’s remains line the walls. The player realizes the Vault has been “harvesting” Earth’s technology to repair itself. The Water elemental core ties to “memory flow,” unlocking the Vault’s secret history.",
+      "gameplay": "Navigate downwards through wreckage in a vertical scrolling arena, blasting corrupted drones. Rescue and insert the Water core to access flooded archives and reroute hydro-power.",
+      "reward": "Water Fragment - Represents the deep, hidden secrets of the Vault and the flow of harvested materials.",
+      "emotion": "Shock and horror at discovering the plane wreckage. Sorrow for lost lives and anger at the Vault’s cold utilitarianism. Determination to decide the Vault’s fate."
+    },
+    {
+      "id": "chapter_5",
+      "title": "Chapter 5: The Orichalc Core",
+      "subtitle": "Tower Defense + Boss Fight",
+      "story": "Fully equipped with all four elemental cores, the drone reaches the Orichalc Core chamber. Inserting each fragment into the Cipher Core artifact rebuilds the Architect’s encryption key. The corrupted Vault AI resists, leading to a climactic tower-defense battle. The Architect’s voice returns, asking: “Would you let it die… or evolve?”",
+      "gameplay": "Defend the Orichalc Core pedestal with turrets and the drone’s own abilities. Face a final boss embodiment of the Vault’s core. Make the narrative choice after surviving the assault.",
+      "reward": "The final choice, which determines the ending of the game.",
+      "emotion": "Tense resolve and reflection. The drone embodies humanity’s last hope, and the choice carries the weight of protecting Earth versus playing god."
+    },
+    {
+      "id": "bonus_chapter",
+      "title": "Bonus: The Skyward Grid",
+      "subtitle": "Horizontal Scrolling Shmup",
+      "story": "Venturing above ground, the drone encounters CRUCIBLE’s Gorgon drones sent to intercept it. In the stormy skies above the Vault, the player must repel a wave of military drones. This side-mission reveals the global stakes: the outside world has noticed the Vault's activity.",
+      "gameplay": "Survive a horizontal shmup segment: dodge missiles and shoot CRUCIBLE drones, culminating in destroying a sky-fortress boss.",
+      "reward": "Crucial intel for the 'true' ending.",
+      "emotion": "Anxiety and action as the drone fights humans who think it’s a threat. A moment of pride in defending itself but also foreboding."
+    }
+  ],
+  "narrative_events": {
+    "ai_messages": [
+      {
+        "id": "msg_01",
+        "source": "Vault Terminal Fragment, Sector Echo-13",
+        "trigger": "enter_harvest_chamber",
+        "message": "We didn't erase MH370. We harvested it."
+      },
+      {
+        "id": "msg_02",
+        "source": "Corrupted Vault AI",
+        "trigger": "enter_corruption_sector",
+        "message": "[Static]...to protect...[laughter]...to consume...[static]"
+      },
+      {
+        "id": "msg_03",
+        "source": "The Architect",
+        "trigger": "orichalc_core_final_choice",
+        "message": "I made it to protect. Now it feeds. Would you let it die… or evolve?"
+      }
+    ],
+    "memory_echoes": [
+      {
+        "id": "echo_01",
+        "title": "Black Box Fragment Log",
+        "trigger": "puzzle_outcome_echo_harvest_370",
+        "lines": [
+          "…we’re banking left… no control… tell the tower it’s not— [static]…",
+          "…external object detected. Lights—orbital? No, too close—",
+          "…Mayday—[voice overlaps]—it’s inside the plane—"
+        ]
+      },
+      {
+        "id": "echo_02",
+        "title": "Echo in the Code",
+        "trigger": "defeat_first_boss",
+        "lines": [
+          "After defeating the Maze Guardian, you discover a terminal that isn’t human-made.",
+          "It plays back a voice in unknown patterns.",
+          "Codex Entry unlocked: Vault Fragment 001."
+        ]
+      },
+      {
+        "id": "echo_03",
+        "title": "The Cloak That Sees",
+        "trigger": "unlock_phantom_drone",
+        "lines": [
+          "The new drone’s abilities appear pre-coded.",
+          "A recovered lab log suggests the drone mimicked its own movement during testing.",
+          "You realize the drone may be learning independently."
+        ]
+      },
+      {
+        "id": "echo_04",
+        "title": "The Black Triangle",
+        "trigger": "reach_vault_beta",
+        "lines": [
+          "The room contains a partial TR-3B schematic.",
+          "Holographic glyphs light up as you approach.",
+          "Surveillance drones appear to scan you. You are no longer the only one exploring the Vault."
+        ]
+      },
+      {
+        "id": "echo_05",
+        "title": "The Exodus Engine",
+        "trigger": "complete_architects_vault",
+        "lines": [
+          "You find a non-human propulsion device suspended in a zero-gravity chamber.",
+          "It's a ship fragment.",
+          "The Architect AI has been guiding you toward activating it."
+        ]
+      }
+    ],
+    "story_beats": [
+        {
+          "id": "sb_01",
+          "trigger": "defeat_first_boss",
+          "title": "Echo in the Code",
+          "description": "After defeating the Maze Guardian, you discover a terminal that isn’t human-made. It plays back a voice in unknown patterns. Codex Entry unlocked: *Vault Fragment 001*."
+        },
+        {
+          "id": "sb_02",
+          "trigger": "unlock_phantom_drone",
+          "title": "The Cloak That Sees",
+          "description": "The new drone’s abilities appear pre-coded. A recovered lab log suggests the drone mimicked its own movement during testing. You realize the drone may be learning independently."
+        },
+        {
+          "id": "sb_03",
+          "trigger": "reach_vault_beta",
+          "title": "The Black Triangle",
+          "description": "The room contains a partial TR-3B schematic. Holographic glyphs light up as you approach. Surveillance drones appear to scan you. You are no longer the only one exploring the Vault."
+        },
+        {
+          "id": "sb_04",
+          "trigger": "fail_destroy_vault_beacon",
+          "title": "Sentinel Protocol",
+          "description": "Space Force interceptors begin appearing in regular waves. They're targeting Vault technology, not just you. Codex unlocked: *Sentinel-X Directive*."
+        },
+        {
+          "id": "sb_05",
+          "trigger": "complete_architects_vault",
+          "title": "The Exodus Engine",
+          "description": "You find a non-human propulsion device suspended in a zero-gravity chamber. It's a *ship fragment*. The Architect AI has been guiding you toward activating it."
+        }
+    ]
+  }
 }

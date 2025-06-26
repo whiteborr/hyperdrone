@@ -1,15 +1,18 @@
 # hyperdrone_core/puzzle_controller.py
-import pygame
-import os 
+from pygame.sprite import Group
+from pygame import KEYDOWN, K_ESCAPE, K_RETURN, K_SPACE, K_1, K_2, K_3
+from logging import getLogger
 
-import game_settings as gs
-from game_settings import (
-    GAME_STATE_RING_PUZZLE, GAME_STATE_PLAYING, GAME_STATE_MAZE_DEFENSE, GAME_STATE_ARCHITECT_VAULT_ENTRY_PUZZLE,
-    TOTAL_CORE_FRAGMENTS_NEEDED, CORE_FRAGMENT_DETAILS
+from settings_manager import get_setting, settings_manager
+from constants import (
+    GAME_STATE_RING_PUZZLE, GAME_STATE_PLAYING, GAME_STATE_MAZE_DEFENSE, 
+    GAME_STATE_ARCHITECT_VAULT_ENTRY_PUZZLE, GAME_STATE_ARCHITECT_VAULT_GAUNTLET
 )
 
 from entities import AncientAlienTerminal
 from .ring_puzzle_module import RingPuzzle
+
+logger = getLogger(__name__)
 
 class PuzzleController:
     """
@@ -33,10 +36,11 @@ class PuzzleController:
         self.ring_puzzle_solved_this_session = False
         self.last_interacted_terminal_for_ring_puzzle = None
 
-        self.architect_vault_terminals_activated = [False] * TOTAL_CORE_FRAGMENTS_NEEDED
-        self.architect_vault_puzzle_terminals_group = pygame.sprite.Group()
+        total_fragments = get_setting("collectibles", "TOTAL_CORE_FRAGMENTS_NEEDED", 3)
+        self.architect_vault_terminals_activated = [False] * total_fragments
+        self.architect_vault_puzzle_terminals_group = Group()
 
-        print("PuzzleController initialized.")
+        logger.info("PuzzleController initialized.")
 
     def set_active_entities(self, player, drone_system, scene_manager, alien_terminals_group=None, architect_vault_terminals_group=None):
         """Sets references to currently active game entities relevant to puzzles."""
@@ -66,25 +70,25 @@ class PuzzleController:
         if current_game_state == GAME_STATE_RING_PUZZLE:
             if self.ring_puzzle_active_flag and self.current_ring_puzzle:
                 self.current_ring_puzzle.handle_input(event)
-                if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                if event.type == KEYDOWN and event.key == K_ESCAPE:
                     self.exit_ring_puzzle()
                     return True
                 if self.current_ring_puzzle.is_solved() and \
                    not self.current_ring_puzzle.active and \
-                   event.type == pygame.KEYDOWN and (event.key == pygame.K_RETURN or event.key == pygame.K_SPACE):
+                   event.type == KEYDOWN and (event.key == K_RETURN or event.key == K_SPACE):
                     self.exit_ring_puzzle(puzzle_was_solved=True)
                     return True
                 return True
 
         elif current_game_state == GAME_STATE_ARCHITECT_VAULT_ENTRY_PUZZLE:
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_1:
+            if event.type == KEYDOWN:
+                if event.key == K_1:
                     self.try_activate_architect_vault_terminal(0)
                     return True
-                elif event.key == pygame.K_2:
+                elif event.key == K_2:
                     self.try_activate_architect_vault_terminal(1)
                     return True
-                elif event.key == pygame.K_3:
+                elif event.key == K_3:
                     self.try_activate_architect_vault_terminal(2)
                     return True
         return False
@@ -95,7 +99,7 @@ class PuzzleController:
         Initializes and starts the Ring Puzzle, passing the AssetManager to it.
         """
         if not self.scene_manager or not self.drone_system:
-            print("PuzzleController: SceneManager or DroneSystem not available to start ring puzzle.")
+            logger.error("PuzzleController: SceneManager or DroneSystem not available to start ring puzzle.")
             return
 
         if self.drone_system.has_puzzle_terminal_been_solved(terminal_sprite.item_id):
@@ -108,20 +112,23 @@ class PuzzleController:
         ]
         
         try:
+            screen_width = get_setting("display", "WIDTH", 1920)
+            screen_height = get_setting("display", "HEIGHT", 1080)
+            
             self.current_ring_puzzle = RingPuzzle(
-                gs.get_game_setting("WIDTH"), 
-                gs.get_game_setting("HEIGHT"),
+                screen_width, 
+                screen_height,
                 ring_configs,
-                asset_manager=self.asset_manager # <<< Pass asset_manager to RingPuzzle
+                asset_manager=self.asset_manager # Pass asset_manager to RingPuzzle
             )
             self.ring_puzzle_active_flag = True
             self.ring_puzzle_solved_this_session = False
             self.last_interacted_terminal_for_ring_puzzle = terminal_sprite
             self.scene_manager.set_game_state(GAME_STATE_RING_PUZZLE)
             self.game_controller.play_sound('ui_confirm')
-            print(f"PuzzleController: Ring Puzzle started for terminal {terminal_sprite.item_id}.")
+            logger.info(f"PuzzleController: Ring Puzzle started for terminal {terminal_sprite.item_id}.")
         except Exception as e:
-            print(f"PuzzleController: Error initializing RingPuzzle: {e}")
+            logger.error(f"PuzzleController: Error initializing RingPuzzle: {e}")
             self.current_ring_puzzle = None
             self.ring_puzzle_active_flag = False
             self.scene_manager.set_game_state(GAME_STATE_PLAYING)
@@ -129,11 +136,12 @@ class PuzzleController:
 
     def _handle_ring_puzzle_solved(self):
         """Handles the logic when the Ring Puzzle is solved."""
-        print("PuzzleController: Ring Puzzle solved!")
+        logger.info("PuzzleController: Ring Puzzle solved!")
         self.ring_puzzle_solved_this_session = True
         
         if self.drone_system:
-            self.drone_system.add_player_cores(gs.get_game_setting("RING_PUZZLE_CORE_REWARD", 750))
+            reward = get_setting("puzzles", "RING_PUZZLE_CORE_REWARD", 750)
+            self.drone_system.add_cores(reward)
             if self.last_interacted_terminal_for_ring_puzzle:
                 self.drone_system.mark_puzzle_terminal_as_solved(self.last_interacted_terminal_for_ring_puzzle.item_id)
 
@@ -166,7 +174,7 @@ class PuzzleController:
                 self.game_controller.ui_manager.build_menu.activate()
             else:
                  self.game_controller.ui_manager.build_menu.deactivate()
-        print("PuzzleController: Exited Ring Puzzle.")
+        logger.info("PuzzleController: Exited Ring Puzzle.")
 
 
     def try_activate_architect_vault_terminal(self, terminal_idx_pressed):
@@ -174,7 +182,7 @@ class PuzzleController:
         Attempts to activate one of the Architect's Vault entry terminals.
         """
         if not (0 <= terminal_idx_pressed < len(self.architect_vault_terminals_activated)):
-            print(f"PuzzleController: Invalid terminal index {terminal_idx_pressed} pressed.")
+            logger.warning(f"PuzzleController: Invalid terminal index {terminal_idx_pressed} pressed.")
             return
 
         if self.architect_vault_terminals_activated[terminal_idx_pressed]:
@@ -185,7 +193,10 @@ class PuzzleController:
         fragment_ids_for_puzzle_terminals = ["cf_alpha", "cf_beta", "cf_gamma"]
         required_fragment_id = fragment_ids_for_puzzle_terminals[terminal_idx_pressed]
         
-        frag_conf = next((details for _, details in CORE_FRAGMENT_DETAILS.items() if details and details.get("id") == required_fragment_id), None)
+        # Get core fragment details from settings manager
+        core_fragments = settings_manager.get_core_fragment_details()
+        frag_conf = next((details for _, details in core_fragments.items() 
+                         if details and details.get("id") == required_fragment_id), None)
         required_fragment_name = frag_conf.get("name", "a Core Fragment") if frag_conf else "a Core Fragment"
 
         if self.drone_system and self.drone_system.has_collected_fragment(required_fragment_id):
@@ -202,7 +213,7 @@ class PuzzleController:
             if all(self.architect_vault_terminals_activated):
                 self.game_controller.set_story_message("All terminals active. Lockdown disengaged. Prepare for Gauntlet!")
                 if hasattr(self.game_controller, 'start_architect_vault_gauntlet'):
-                    self.game_controller.scene_manager.set_game_state(gs.GAME_STATE_ARCHITECT_VAULT_GAUNTLET)
+                    self.game_controller.scene_manager.set_game_state(GAME_STATE_ARCHITECT_VAULT_GAUNTLET)
         else:
             self.game_controller.set_story_message(f"Terminal {terminal_idx_pressed + 1} requires {required_fragment_name}.")
             self.game_controller.play_sound('ui_denied')
@@ -214,8 +225,9 @@ class PuzzleController:
         self.ring_puzzle_solved_this_session = False
         self.last_interacted_terminal_for_ring_puzzle = None
         
-        self.architect_vault_terminals_activated = [False] * TOTAL_CORE_FRAGMENTS_NEEDED
-        print("PuzzleController: All puzzle states reset.")
+        total_fragments = get_setting("collectibles", "TOTAL_CORE_FRAGMENTS_NEEDED", 3)
+        self.architect_vault_terminals_activated = [False] * total_fragments
+        logger.info("PuzzleController: All puzzle states reset.")
 
     def draw_active_puzzle(self, surface):
         """Draws the UI for the currently active puzzle."""

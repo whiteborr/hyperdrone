@@ -1,6 +1,6 @@
 # hyperdrone_core/player_actions.py
-import pygame
-import game_settings as gs
+from pygame.time import get_ticks
+from pygame import K_w, K_UP, K_s, K_DOWN, K_a, K_LEFT, K_d, K_RIGHT, K_SPACE, K_LSHIFT, K_RSHIFT, K_f, K_F1
 
 class PlayerActions:
     """
@@ -23,49 +23,63 @@ class PlayerActions:
             return
 
         # Toggle cruise control ON with forward key.
-        if event.key == pygame.K_w or event.key == pygame.K_UP:
+        if event.key == K_w or event.key == K_UP:
             player.is_cruising = True
-            if player.active_powerup_type == "speed_boost":
-                player.attempt_speed_boost_activation()
+            # Activate speed boost if armed
+            if hasattr(player.powerup_manager, 'speed_boost_armed') and player.powerup_manager.speed_boost_armed:
+                player.activate_speed_boost()
         
         # Toggle cruise control OFF with backward key.
-        elif event.key == pygame.K_s or event.key == pygame.K_DOWN:
+        elif event.key == K_s or event.key == K_DOWN:
             player.is_cruising = False
 
-        elif event.key == pygame.K_a or event.key == pygame.K_LEFT:
+        elif event.key == K_a or event.key == K_LEFT:
             self.turn_left = True
         
-        elif event.key == pygame.K_d or event.key == pygame.K_RIGHT:
+        elif event.key == K_d or event.key == K_RIGHT:
             self.turn_right = True
         
-        elif event.key == pygame.K_SPACE:
+        elif event.key == K_SPACE:
             self.is_shooting = True
         
-        elif event.key == pygame.K_c:
-            player.cycle_weapon_state()
-            self.game_controller.play_sound('ui_select')
+        elif event.key == K_LSHIFT or event.key == K_RSHIFT:
+            if hasattr(player, 'special_ability') and player.special_ability == "phantom_cloak":
+                if player.try_activate_cloak(get_ticks()):
+                    if hasattr(self.game_controller, 'play_sound'):
+                        self.game_controller.play_sound('cloak_activate')
+                        
+        # NEW: Key binding for active abilities (e.g., 'F' key)
+        elif event.key == K_f:
+            if hasattr(player, 'activate_ability'):
+                player.activate_ability("temporary_barricade", self.game_controller) # Pass game_controller_ref
 
-        elif event.key == pygame.K_LSHIFT or event.key == pygame.K_RSHIFT:
-            if player.special_ability == "phantom_cloak":
-                if player.try_activate_cloak(pygame.time.get_ticks()):
-                    self.game_controller.play_sound('cloak_activate')
+        # Emergency key to eliminate stuck enemies (F1)
+        elif event.key == K_F1:
+            if hasattr(self.game_controller, 'combat_controller') and hasattr(self.game_controller.combat_controller, 'enemy_manager'):
+                enemy_count = self.game_controller.combat_controller.enemy_manager.get_active_enemies_count()
+                if enemy_count > 0:
+                    for enemy in list(self.game_controller.combat_controller.enemy_manager.enemies):
+                        if enemy.alive:
+                            enemy.health = 0
+                            enemy.alive = False
+                    if hasattr(self.game_controller, 'set_story_message'):
+                        self.game_controller.set_story_message(f"Emergency: {enemy_count} stuck enemies eliminated", 2000)
 
     def handle_key_up(self, event):
         """Processes key release events to reset action flags."""
-        if event.key == pygame.K_a or event.key == pygame.K_LEFT:
+        if event.key == K_a or event.key == K_LEFT:
             self.turn_left = False
         
-        elif event.key == pygame.K_d or event.key == pygame.K_RIGHT:
+        elif event.key == K_d or event.key == K_RIGHT:
             self.turn_right = False
         
-        elif event.key == pygame.K_SPACE:
+        elif event.key == K_SPACE:
             self.is_shooting = False
 
     def update_player_movement_and_actions(self, current_time_ms):
         """
         Called every frame to update the player's state based on continuous
-        (held-key) actions like turning and shooting. Forward movement is
-        handled by the PlayerDrone's 'is_cruising' state.
+        (held-key) actions like turning and shooting.
         """
         if self.turn_left:
             self.turn("left")

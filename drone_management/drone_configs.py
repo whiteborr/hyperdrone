@@ -1,26 +1,29 @@
+# drone_management/drone_configs.py
 """
 Defines the configurations for all available drones in the game.
 Each drone has a unique ID (the key in DRONE_DATA), a display name,
 paths to its sprite and icon, base statistics, an unlock condition,
 and a descriptive text.
 """
-import logging
-import game_settings as gs
-from game_settings import (
-    PLAYER_MAX_HEALTH, PLAYER_SPEED, ROTATION_SPEED,
-    ARCHITECT_REWARD_BLUEPRINT_ID
-)
+from logging import getLogger
+from constants import ARCHITECT_REWARD_BLUEPRINT_ID
+from settings_manager import get_setting
 
 # Configure logger
-logger = logging.getLogger(__name__)
+logger = getLogger(__name__)
+
+# Get player settings
+PLAYER_MAX_HEALTH = get_setting("gameplay", "PLAYER_MAX_HEALTH", 100)
+PLAYER_SPEED = get_setting("gameplay", "PLAYER_SPEED", 3)
+ROTATION_SPEED = get_setting("gameplay", "ROTATION_SPEED", 5)
 
 # Main dictionary holding all drone configurations
 DRONE_DATA = {
     "DRONE": {
         "name": "Drone",
-        "sprite_path": "assets/images/drones/drone_2d.png",
-        "icon_path": "assets/images/drones/drone_2d.png",
-        "ingame_sprite_path": "assets/images/drones/drone_2d.png",
+        "sprite_path": "assets/images/drones/drone_default.png",
+        "icon_path": "assets/images/drones/drone_default.png",
+        "ingame_sprite_path": "assets/images/drones/drone_default.png",
         "base_stats": {
             "hp": PLAYER_MAX_HEALTH,
             "speed": PLAYER_SPEED,
@@ -36,7 +39,7 @@ DRONE_DATA = {
         "name": "VANTIS",
         "sprite_path": "assets/images/drones/vantis.png",
         "icon_path": "assets/images/drones/vantis.png",
-        "ingame_sprite_path": "assets/images/drones/vantis_2d.png",
+        "ingame_sprite_path": "assets/images/drones/vantis_default.png",
         "base_stats": {
             "hp": int(PLAYER_MAX_HEALTH * 0.9),
             "speed": PLAYER_SPEED * 1.1,
@@ -52,7 +55,7 @@ DRONE_DATA = {
         "name": "RHINOX",
         "sprite_path": "assets/images/drones/rhinox.png",
         "icon_path": "assets/images/drones/rhinox.png",
-        "ingame_sprite_path": "assets/images/drones/rhinox_2d.png",
+        "ingame_sprite_path": "assets/images/drones/rhinox_default.png",
         "base_stats": {
             "hp": int(PLAYER_MAX_HEALTH * 1.5),
             "speed": PLAYER_SPEED * 0.8,
@@ -68,7 +71,7 @@ DRONE_DATA = {
         "name": "ZEPHYR",
         "sprite_path": "assets/images/drones/zephyr.png",
         "icon_path": "assets/images/drones/zephyr.png",
-        "ingame_sprite_path": "assets/images/drones/zephyr_2d.png",
+        "ingame_sprite_path": "assets/images/drones/zephyr_default.png",
         "base_stats": {
             "hp": int(PLAYER_MAX_HEALTH * 0.75),
             "speed": PLAYER_SPEED * 1.3,
@@ -84,7 +87,7 @@ DRONE_DATA = {
         "name": "STRIX",
         "sprite_path": "assets/images/drones/strix.png",
         "icon_path": "assets/images/drones/strix.png",
-        "ingame_sprite_path": "assets/images/drones/strix_2d.png",
+        "ingame_sprite_path": "assets/images/drones/strix_default.png",
         "base_stats": {
             "hp": PLAYER_MAX_HEALTH * 1.0,
             "speed": PLAYER_SPEED * 1.0,
@@ -100,7 +103,7 @@ DRONE_DATA = {
         "name": "OMEGA-9",
         "sprite_path": "assets/images/drones/omega-9.png",
         "icon_path": "assets/images/drones/omega-9.png",
-        "ingame_sprite_path": "assets/images/drones/omega-9_2d.png",
+        "ingame_sprite_path": "assets/images/drones/omega-9_default.png",
         "base_stats": {
             "hp": PLAYER_MAX_HEALTH * 1.0,
             "speed": PLAYER_SPEED * 1.0,
@@ -116,7 +119,7 @@ DRONE_DATA = {
         "name": "PHANTOM",
         "sprite_path": "assets/images/drones/phantom.png",
         "icon_path": "assets/images/drones/phantom.png",
-        "ingame_sprite_path": "assets/images/drones/phantom_2d.png",
+        "ingame_sprite_path": "assets/images/drones/phantom_default.png",
         "base_stats": {
             "hp": int(PLAYER_MAX_HEALTH * 0.6),
             "speed": PLAYER_SPEED * 1.0,
@@ -125,14 +128,14 @@ DRONE_DATA = {
             "bullet_damage_multiplier": 1.0,
             "special_ability": "phantom_cloak"
         },
-        "unlock_condition": {"type": "cores", "value": 50, "description": "Unlock: 50000 Cores"},
+        "unlock_condition": {"type": "cores", "value": 50, "description": "Unlock: 50 Cores"},
         "description": "Features a shimmer-based cloaking device. Can briefly turn invisible but is delicate."
     },
     ARCHITECT_REWARD_BLUEPRINT_ID: {
         "name": "Architect-X",
-        "sprite_path": "assets/images/drones/architect_x_icon.png",
-        "icon_path": "assets/images/drones/architect_x_icon.png",
-        "ingame_sprite_path": "assets/images/drones/architect_x_2d.png",
+        "sprite_path": "assets/images/drones/architect_x.png",
+        "icon_path": "assets/images/drones/architect_x.png",
+        "ingame_sprite_path": "assets/images/drones/architect_x_default.png",
         "base_stats": {
             "hp": int(PLAYER_MAX_HEALTH * 1.2),
             "speed": PLAYER_SPEED * 1.1,

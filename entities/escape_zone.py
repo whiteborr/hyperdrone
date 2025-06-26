@@ -1,14 +1,17 @@
-import pygame
-import math # Added import math
-import game_settings as gs # For TILE_SIZE and potential color settings
+# entities/escape_zone.py
+from pygame.sprite import Sprite
+from pygame.draw import rect
+from pygame import Surface, SRCALPHA
+from math import sin
+from settings_manager import get_setting
 
-class EscapeZone(pygame.sprite.Sprite):
+class EscapeZone(Sprite):
     def __init__(self, x, y):
         super().__init__()
-        self.size = int(gs.TILE_SIZE * 1.5) # Make it a bit larger than a tile
-        self.image = pygame.Surface([self.size, self.size], pygame.SRCALPHA)
-        # Use get_game_setting for safety, in case ESCAPE_ZONE_COLOR is modified by user or missing
-        self.color = gs.get_game_setting("ESCAPE_ZONE_COLOR", (0, 255, 128)) # Bright green, default opaque
+        self.size = int(get_setting("gameplay", "TILE_SIZE", 80) * 1.5) # Make it a bit larger than a tile
+        self.image = Surface([self.size, self.size], SRCALPHA)
+        # Use get_setting for safety, in case ESCAPE_ZONE_COLOR is modified by user or missing
+        self.color = get_setting("gameplay", "ESCAPE_ZONE_COLOR", (0, 255, 128)) # Bright green, default opaque
         
         # Simple pulsing visual
         self.pulse_time = 0
@@ -26,7 +29,7 @@ class EscapeZone(pygame.sprite.Sprite):
         current_alpha = alpha_override
         if current_alpha is None:
             # Pulse alpha
-            pulse_val = (math.sin(self.pulse_time) + 1) / 2 # 0 to 1
+            pulse_val = (sin(self.pulse_time) + 1) / 2 # 0 to 1
             current_alpha = self.min_alpha + (self.max_alpha - self.min_alpha) * pulse_val
         
         # Ensure color has 3 components (RGB) before adding alpha
@@ -52,10 +55,10 @@ class EscapeZone(pygame.sprite.Sprite):
             if rect_size > 0: # Only draw if size is positive
                  # Ensure radius is valid for pygame.draw.rect
                 radius = min(radius, int(rect_size / 2))
-                pygame.draw.rect(self.image, temp_color, (offset, offset, rect_size, rect_size), border_radius=radius)
+                rect(self.image, temp_color, (offset, offset, rect_size, rect_size), border_radius=radius)
                 if i == 0: # Innermost rect a bit brighter and outlined
                     inner_color = (*base_color_rgb, min(255, rect_alpha + 50))
-                    pygame.draw.rect(self.image, inner_color, (offset, offset, rect_size, rect_size), border_radius=radius, width=2)
+                    rect(self.image, inner_color, (offset, offset, rect_size, rect_size), border_radius=radius, width=2)
 
 
     def update(self):

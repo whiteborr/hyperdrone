@@ -1,0 +1,23 @@
+# hyperdrone_core/drone_select_state.py
+from pygame import KEYDOWN, K_ESCAPE
+from .state import State
+
+class DroneSelectState(State):
+    def enter(self, previous_state=None, **kwargs):
+        self.game.ui_flow_controller.initialize_drone_select()
+    
+    def handle_events(self, events):
+        for event in events:
+            if event.type == KEYDOWN:
+                if event.key == K_ESCAPE:
+                    drone_select_index = 1  # "Select Drone" is at index 1 in menu_options
+                    self.game.state_manager.set_state("MainMenuState", selected_option=drone_select_index)
+                else:
+                    self.game.ui_flow_controller.handle_key_input(event.key, "drone_select")
+    
+    def update(self, delta_time):
+        pass
+    
+    def draw(self, surface):
+        # Drawing is now handled by the UIManager.
+        pass

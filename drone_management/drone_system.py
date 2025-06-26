@@ -1,11 +1,12 @@
 # drone_management/drone_system.py
-import json
-import os
-import logging
+from json import load, dump
+from os.path import exists, dirname
+from os import makedirs
+from logging import getLogger
 from .drone_configs import DRONE_DATA
-import game_settings as gs
+from settings_manager import settings_manager
 
-logger = logging.getLogger(__name__)
+logger = getLogger(__name__)
 
 class DroneSystem:
     """
@@ -18,7 +19,7 @@ class DroneSystem:
         self.drones = DRONE_DATA
         self.unlocked_drones = {"DRONE"}  # Start with the base drone unlocked
         self.selected_drone_id = "DRONE"
-        self.player_cores = 0
+        self.cores = 0
         
         # Lore and story progression
         self.all_lore_entries = self._load_all_lore_entries()
@@ -32,75 +33,127 @@ class DroneSystem:
         # Track defeated bosses for unlocks
         self.defeated_bosses = set()
 
+        # NEW: Track unlocked active abilities
+        self.unlocked_abilities = set()
+        
+        # Track owned weapons with levels (weapon_mode: level)
+        self.owned_weapons = {0: 1}  # Start with default weapon at level 1
+        
+        # Orichalc fragments for weapon upgrades
+        self.orichalc_fragments = 0
+
         # Vault status
         self.architect_vault_completed = False
 
         self._load_unlocks()
+        
+        # Unlock some basic lore entries by default for testing
+        self._unlock_default_lore_entries()
+        
         logger.info(f"DroneSystem initialized. Unlocked: {self.unlocked_drones}. Selected: {self.selected_drone_id}")
+
 
     def _load_all_lore_entries(self):
         """Loads all possible lore entries from the JSON file and converts the list to a dictionary."""
-        if not os.path.exists(self.LORE_FILE):
+        from constants import KEY_LORE_ENTRIES, KEY_LORE_ID
+        
+        if not exists(self.LORE_FILE):
             logger.error(f"Lore file not found at '{self.LORE_FILE}'. No lore will be available.")
             return {}
         try:
             with open(self.LORE_FILE, 'r', encoding='utf-8') as f:
-                lore_data_list = json.load(f).get("entries", [])
+                lore_data_list = load(f).get(KEY_LORE_ENTRIES, [])
                 
                 # Convert the loaded list into a dictionary, keyed by the 'id' field.
-                lore_data_dict = {entry['id']: entry for entry in lore_data_list if 'id' in entry}
+                lore_data_dict = {entry[KEY_LORE_ID]: entry for entry in lore_data_list if KEY_LORE_ID in entry}
                 
                 logger.info(f"Successfully loaded and processed {len(lore_data_dict)} lore entries.")
                 return lore_data_dict
-        except (IOError, json.JSONDecodeError, TypeError, KeyError) as e:
+        except (IOError, TypeError, KeyError) as e:
             logger.error(f"Error loading or parsing lore file '{self.LORE_FILE}': {e}")
             return {}
-
+        
     def _load_unlocks(self):
         """Loads player progress from the save file."""
-        if os.path.exists(self.SAVE_FILE):
+        from constants import (
+            KEY_UNLOCKED_DRONES, KEY_SELECTED_DRONE_ID, KEY_CORES,
+            KEY_UNLOCKED_LORE_IDS, KEY_COLLECTED_CORE_FRAGMENTS,
+            KEY_ARCHITECT_VAULT_COMPLETED, KEY_COLLECTED_GLYPH_TABLETS,
+            KEY_SOLVED_PUZZLE_TERMINALS, KEY_DEFEATED_BOSSES
+        )
+        
+        if exists(self.SAVE_FILE):
             try:
                 with open(self.SAVE_FILE, 'r') as f:
-                    data = json.load(f)
-                    self.unlocked_drones.update(data.get("unlocked_drones", ["DRONE"]))
-                    self.selected_drone_id = data.get("selected_drone_id", "DRONE")
-                    self.player_cores = data.get("player_cores", 0)
-                    self.unlocked_lore_ids.update(data.get("unlocked_lore_ids", []))
-                    self.collected_core_fragments.update(data.get("collected_core_fragments", []))
-                    self.architect_vault_completed = data.get("architect_vault_completed", False)
-                    self.collected_glyph_tablets.update(data.get("collected_glyph_tablets", []))
-                    self.solved_puzzle_terminals.update(data.get("solved_puzzle_terminals", []))
-                    self.defeated_bosses.update(data.get("defeated_bosses", []))
-            except (IOError, json.JSONDecodeError) as e:
+                    data = load(f)
+                    self.unlocked_drones.update(data.get(KEY_UNLOCKED_DRONES, ["DRONE"]))
+                    self.selected_drone_id = data.get(KEY_SELECTED_DRONE_ID, "DRONE")
+                    self.cores = data.get(KEY_CORES, 0)
+                    self.unlocked_lore_ids.update(data.get(KEY_UNLOCKED_LORE_IDS, []))
+                    self.collected_core_fragments.update(data.get(KEY_COLLECTED_CORE_FRAGMENTS, []))
+                    self.architect_vault_completed = data.get(KEY_ARCHITECT_VAULT_COMPLETED, False)
+                    self.collected_glyph_tablets.update(data.get(KEY_COLLECTED_GLYPH_TABLETS, []))
+                    self.solved_puzzle_terminals.update(data.get(KEY_SOLVED_PUZZLE_TERMINALS, []))
+                    self.defeated_bosses.update(data.get(KEY_DEFEATED_BOSSES, []))
+                    self.unlocked_abilities.update(data.get('unlocked_abilities', [])) # NEW
+                    # Handle both old list format and new dict format for owned_weapons
+                    owned_weapons_data = data.get('owned_weapons', {0: 1})
+                    if isinstance(owned_weapons_data, list):
+                        # Convert old list format to new dict format
+                        self.owned_weapons = {weapon: 1 for weapon in owned_weapons_data}
+                    else:
+                        # Convert string keys to integers to prevent duplicates
+                        self.owned_weapons = {int(k): v for k, v in owned_weapons_data.items()}
+                    self.orichalc_fragments = data.get('orichalc_fragments', 0)
+            except IOError as e:
                 logger.error(f"Error loading save file '{self.SAVE_FILE}': {e}")
         else:
             logger.info(f"No save file found at '{self.SAVE_FILE}'. Starting with defaults.")
+            # Ensure default weapon is owned at level 1
+            if 0 not in self.owned_weapons:
+                self.owned_weapons[0] = 1
             self._save_unlocks() # Create a new save file with defaults
 
     def _save_unlocks(self):
         """Saves current player progress to the save file."""
+        if not getattr(self, '_save_dirty', True):
+            return
+            
+        from constants import (
+            KEY_UNLOCKED_DRONES, KEY_SELECTED_DRONE_ID, KEY_CORES,
+            KEY_UNLOCKED_LORE_IDS, KEY_COLLECTED_CORE_FRAGMENTS,
+            KEY_ARCHITECT_VAULT_COMPLETED, KEY_COLLECTED_GLYPH_TABLETS,
+            KEY_SOLVED_PUZZLE_TERMINALS, KEY_DEFEATED_BOSSES
+        )
+        
         data = {
-            "unlocked_drones": list(self.unlocked_drones),
-            "selected_drone_id": self.selected_drone_id,
-            "player_cores": self.player_cores,
-            "unlocked_lore_ids": list(self.unlocked_lore_ids),
-            "collected_core_fragments": list(self.collected_core_fragments),
-            "architect_vault_completed": self.architect_vault_completed,
-            "collected_glyph_tablets": list(self.collected_glyph_tablets),
-            "solved_puzzle_terminals": list(self.solved_puzzle_terminals),
-            "defeated_bosses": list(self.defeated_bosses)
+            KEY_UNLOCKED_DRONES: list(self.unlocked_drones),
+            KEY_SELECTED_DRONE_ID: self.selected_drone_id,
+            KEY_CORES: self.cores,
+            KEY_UNLOCKED_LORE_IDS: list(self.unlocked_lore_ids),
+            KEY_COLLECTED_CORE_FRAGMENTS: list(self.collected_core_fragments),
+            KEY_ARCHITECT_VAULT_COMPLETED: self.architect_vault_completed,
+            KEY_COLLECTED_GLYPH_TABLETS: list(self.collected_glyph_tablets),
+            KEY_SOLVED_PUZZLE_TERMINALS: list(self.solved_puzzle_terminals),
+            KEY_DEFEATED_BOSSES: list(self.defeated_bosses),
+            'unlocked_abilities': list(self.unlocked_abilities), # NEW
+            'owned_weapons': {str(k): v for k, v in self.owned_weapons.items()},
+            'orichalc_fragments': self.orichalc_fragments
         }
         try:
-            os.makedirs(os.path.dirname(self.SAVE_FILE), exist_ok=True)
+            makedirs(dirname(self.SAVE_FILE), exist_ok=True)
             with open(self.SAVE_FILE, 'w') as f:
-                json.dump(data, f, indent=4)
+                dump(data, f, indent=4)
+            self._save_dirty = False
         except IOError as e:
             logger.error(f"Error saving progress to file '{self.SAVE_FILE}': {e}")
+            self._save_dirty = True
 
     def add_defeated_boss(self, boss_id):
         """Adds a boss ID to the set of defeated bosses and saves progress."""
         if boss_id not in self.defeated_bosses:
             self.defeated_bosses.add(boss_id)
+            self._save_dirty = True
             self._save_unlocks()
             logger.info(f"Boss '{boss_id}' marked as defeated.")
             return True
@@ -119,39 +172,53 @@ class DroneSystem:
         return self.drones.get(drone_id, self.drones["DRONE"])
 
     def get_drone_stats(self, drone_id, is_in_architect_vault=False):
+        from constants import KEY_BASE_STATS, KEY_VAULT_STATS
+        
         config = self.get_drone_config(drone_id)
         # Use a more robust check for 'base_stats'
-        stats_source = config.get("base_stats", {})
-        if is_in_architect_vault and "vault_stats" in config:
-            stats_source = config.get("vault_stats")
+        stats_source = config.get(KEY_BASE_STATS, {})
+        if is_in_architect_vault and KEY_VAULT_STATS in config:
+            stats_source = config.get(KEY_VAULT_STATS)
         return stats_source
 
     def set_selected_drone(self, drone_id):
-        if self.is_drone_unlocked(drone_id):
+        if self.is_drone_unlocked(drone_id) and self.selected_drone_id != drone_id:
             self.selected_drone_id = drone_id
+            self._save_dirty = True
             self._save_unlocks()
             return True
         return False
 
     def unlock_drone(self, drone_id):
+        from constants import KEY_UNLOCK_CONDITION, KEY_UNLOCK_TYPE, KEY_UNLOCK_VALUE
+        
         if drone_id in self.unlocked_drones:
             return True
         
         config = self.get_drone_config(drone_id)
-        unlock_condition = config.get("unlock_condition", {})
+        unlock_condition = config.get(KEY_UNLOCK_CONDITION, {})
         unlock_type = unlock_condition.get("type")
         unlock_value = unlock_condition.get("value")
+        
+        logger.info(f"Unlocking {drone_id}: type={unlock_type}, value={unlock_value}, player_cores={self.cores}")
 
         if unlock_type == "cores":
-            if self.player_cores >= unlock_value:
-                self.player_cores -= unlock_value
+            if self.cores >= unlock_value:
+                self.cores -= unlock_value
                 self.unlocked_drones.add(drone_id)
+                self._save_dirty = True
                 self._save_unlocks()
-                logger.info(f"Drone '{drone_id}' unlocked by spending {unlock_value} cores.")
+                # Force immediate save to ensure persistence
+                self._save_unlocks()
+                logger.info(f"Drone '{drone_id}' unlocked by spending {unlock_value} cores. Remaining cores: {self.cores}")
                 return True
+            else:
+                logger.info(f"Cannot unlock drone '{drone_id}': need {unlock_value} cores, have {self.cores}")
+                return False
         elif unlock_type == "boss":
              if unlock_value in self.defeated_bosses:
                 self.unlocked_drones.add(drone_id)
+                self._save_dirty = True
                 self._save_unlocks()
                 logger.info(f"Drone '{drone_id}' unlocked by defeating boss '{unlock_value}'.")
                 return True
@@ -160,39 +227,57 @@ class DroneSystem:
             # For now, it remains as a potential unlock method.
             pass
         return False
-
-    def add_player_cores(self, amount):
-        self.player_cores += amount
-        self._save_unlocks()
+    
+    def add_cores(self, amount):
+        if amount != 0:
+            self.cores += amount
+            self._save_dirty = True
+            self._save_unlocks()
         
-    def get_player_cores(self):
-        return self.player_cores
+    def get_cores(self):
+        return self.cores
         
-    def spend_player_cores(self, amount):
-        if self.player_cores >= amount:
-            self.player_cores -= amount
+    def set_cores(self, amount):
+        """Set the player's core count to a specific amount"""
+        new_amount = max(0, amount)
+        if self.cores != new_amount:
+            self.cores = new_amount
+            self._save_dirty = True
+            self._save_unlocks()
+        return self.cores
+        
+    def spend_cores(self, amount):
+        if self.cores >= amount:
+            self.cores -= amount
+            self._save_dirty = True
             self._save_unlocks()
             return True
         return False
 
-    # --- Lore and Progression Methods ---
     def unlock_lore_entry_by_id(self, lore_id):
         """Unlocks a specific lore entry if it's not already unlocked."""
         if lore_id in self.all_lore_entries and lore_id not in self.unlocked_lore_ids:
             self.unlocked_lore_ids.add(lore_id)
             logger.info(f"Lore Codex Entry '{lore_id}' unlocked!")
+            self._save_dirty = True
             self._save_unlocks()
             return [lore_id]
         return []
         
     def check_and_unlock_lore_entries(self, event_trigger, **kwargs):
         """Checks conditions for all lore entries and unlocks them if criteria are met."""
+        from constants import KEY_LORE_UNLOCKED_BY
+        
         unlocked_ids_this_check = []
         for lore_id, entry in self.all_lore_entries.items():
-            if lore_id not in self.unlocked_lore_ids:
-                if entry.get("unlocked_by") == event_trigger:
-                    self.unlock_lore_entry_by_id(lore_id)
-                    unlocked_ids_this_check.append(lore_id)
+            if lore_id not in self.unlocked_lore_ids and entry.get(KEY_LORE_UNLOCKED_BY) == event_trigger:
+                self.unlocked_lore_ids.add(lore_id)
+                logger.info(f"Lore Codex Entry '{lore_id}' unlocked!")
+                unlocked_ids_this_check.append(lore_id)
+        
+        if unlocked_ids_this_check:
+            self._save_dirty = True
+            self._save_unlocks()
         return unlocked_ids_this_check
 
     def get_lore_entry_details(self, lore_id):
@@ -203,39 +288,42 @@ class DroneSystem:
 
     def get_unlocked_lore_categories(self):
         """Gets a sorted list of unique categories from all unlocked lore entries."""
+        from constants import KEY_LORE_CATEGORY
+        
         if not self.unlocked_lore_ids:
             return []
         
-        categories = set()
-        for lore_id in self.unlocked_lore_ids:
-            entry = self.all_lore_entries.get(lore_id)
-            if entry and "category" in entry:
-                categories.add(entry["category"])
+        # Cache preferred order as class attribute to avoid recreating
+        if not hasattr(self, '_preferred_order'):
+            self._preferred_order = ["Story", "Architect's Echoes", "Drones", "Alien Tech", "Alien Races", "Locations", "Story Beats"]
         
-        preferred_order = ["Story", "Architect's Echoes", "Drones", "Alien Tech", "Alien Races", "Locations", "Story Beats"]
+        categories = {entry[KEY_LORE_CATEGORY] 
+                     for lore_id in self.unlocked_lore_ids 
+                     if (entry := self.all_lore_entries.get(lore_id)) and KEY_LORE_CATEGORY in entry}
         
-        sorted_categories = sorted(list(categories), key=lambda x: preferred_order.index(x) if x in preferred_order else len(preferred_order))
-        
-        return sorted_categories
+        return sorted(categories, key=lambda x: self._preferred_order.index(x) if x in self._preferred_order else len(self._preferred_order))
 
     def get_unlocked_lore_entries_by_category(self, category_name):
         """Gets a list of all unlocked lore entries within a specific category."""
+        from constants import KEY_LORE_CATEGORY, KEY_LORE_SEQUENCE
+        
         entries = []
         for lore_id in self.unlocked_lore_ids:
             entry = self.all_lore_entries.get(lore_id)
-            if entry and entry.get("category") == category_name:
+            if entry and entry.get(KEY_LORE_CATEGORY) == category_name:
                 entries.append(entry)
         
         # Ensure a 'sequence' key exists for sorting, default to 0 if not present
-        entries.sort(key=lambda x: x.get('sequence', 0))
+        entries.sort(key=lambda x: x.get(KEY_LORE_SEQUENCE, 0))
         return entries
         
     def collect_core_fragment(self, fragment_id):
         if fragment_id not in self.collected_core_fragments:
             self.collected_core_fragments.add(fragment_id)
+            self._save_dirty = True
             self._save_unlocks()
             return True
-        return False
+        return True  # Return True even if already collected to support chapter selection
 
     def has_collected_fragment(self, fragment_id):
         return fragment_id in self.collected_core_fragments
@@ -243,21 +331,41 @@ class DroneSystem:
     def get_collected_fragments_ids(self):
         return self.collected_core_fragments
 
+    def unlock_ability(self, ability_id):
+        if ability_id not in self.unlocked_abilities:
+            self.unlocked_abilities.add(ability_id)
+            self._save_dirty = True
+            self._save_unlocks()
+            logger.info(f"Ability '{ability_id}' unlocked!")
+            return True
+        return False
+    
+    def has_ability_unlocked(self, ability_id):
+        return ability_id in self.unlocked_abilities
+    
     def are_all_core_fragments_collected(self):
         """Checks if all fragments *required for the vault* are collected."""
-        required_fragments = {details['id'] for _, details in gs.CORE_FRAGMENT_DETAILS.items() if details and details.get('required_for_vault')}
-        if not required_fragments:
-            logger.warning("No fragments marked as 'required_for_vault'. Vault may be permanently locked.")
-            return False
-        return required_fragments.issubset(self.collected_core_fragments)
+        from constants import KEY_FRAGMENT_ID, KEY_FRAGMENT_REQUIRED_FOR_VAULT
+        
+        # Cache required fragments to avoid repeated computation
+        if not hasattr(self, '_required_fragments'):
+            core_fragments = settings_manager.get_core_fragment_details()
+            self._required_fragments = frozenset(details[KEY_FRAGMENT_ID] for _, details in core_fragments.items() 
+                                                if details and details.get(KEY_FRAGMENT_REQUIRED_FOR_VAULT))
+            if not self._required_fragments:
+                logger.warning(f"No fragments marked as '{KEY_FRAGMENT_REQUIRED_FOR_VAULT}'. Vault may be permanently locked.")
+        
+        return bool(self._required_fragments) and self._required_fragments.issubset(self.collected_core_fragments)   
         
     def reset_collected_fragments_in_storage(self):
         self.collected_core_fragments.clear()
         logger.info("Persisted collected core fragments have been reset for new game session.")
+        self._save_dirty = True
         self._save_unlocks()
 
     def mark_architect_vault_completed(self, success_status):
         self.architect_vault_completed = success_status
+        self._save_dirty = True
         self._save_unlocks()
         
     def has_completed_architect_vault(self):
@@ -266,11 +374,13 @@ class DroneSystem:
     def reset_architect_vault_status(self):
         self.architect_vault_completed = False
         logger.info("Architect's Vault completion status reset for new game session.")
+        self._save_dirty = True
         self._save_unlocks()
 
     def add_collected_glyph_tablet(self, tablet_id):
         if tablet_id not in self.collected_glyph_tablets:
             self.collected_glyph_tablets.add(tablet_id)
+            self._save_dirty = True
             self._save_unlocks()
             return True
         return False
@@ -278,6 +388,7 @@ class DroneSystem:
     def mark_puzzle_terminal_as_solved(self, terminal_id):
         if terminal_id not in self.solved_puzzle_terminals:
             self.solved_puzzle_terminals.add(terminal_id)
+            self._save_dirty = True
             self._save_unlocks()
             return True
         return False
@@ -288,3 +399,76 @@ class DroneSystem:
     def set_player_level(self, level):
         """Placeholder for potential future logic related to player level."""
         pass
+    
+    def add_owned_weapon(self, weapon_mode):
+        """Add a weapon to the player's owned weapons at level 1"""
+        if weapon_mode not in self.owned_weapons:
+            self.owned_weapons[weapon_mode] = 1
+            self._save_dirty = True
+            self._save_unlocks()
+            logger.info(f"Weapon mode {weapon_mode} added to owned weapons at level 1")
+            return True
+        return False
+    
+    def get_owned_weapons(self):
+        """Get dict of owned weapons with their levels"""
+        return self.owned_weapons.copy()
+    
+    def get_weapon_level(self, weapon_mode):
+        """Get the level of a specific weapon"""
+        return self.owned_weapons.get(weapon_mode, 0)
+    
+    def upgrade_weapon(self, weapon_mode, max_level=5):
+        """Upgrade a weapon to the next level"""
+        current_level = self.get_weapon_level(weapon_mode)
+        if current_level == 0:
+            # Weapon not owned, add at level 1
+            self.owned_weapons[weapon_mode] = 1
+            self._save_dirty = True
+            self._save_unlocks()
+            logger.info(f"Weapon mode {weapon_mode} acquired at level 1")
+            return True
+        elif current_level < max_level:
+            self.owned_weapons[weapon_mode] = current_level + 1
+            self._save_dirty = True
+            self._save_unlocks()
+            logger.info(f"Weapon mode {weapon_mode} upgraded to level {current_level + 1}")
+            return True
+        return False
+    
+    def add_orichalc_fragments(self, amount):
+        """Add orichalc fragments"""
+        if amount > 0:
+            self.orichalc_fragments += amount
+            self._save_dirty = True
+            self._save_unlocks()
+            logger.info(f"Added {amount} orichalc fragments. Total: {self.orichalc_fragments}")
+    
+    def spend_orichalc_fragments(self, amount):
+        """Spend orichalc fragments if available"""
+        if self.orichalc_fragments >= amount:
+            self.orichalc_fragments -= amount
+            self._save_dirty = True
+            self._save_unlocks()
+            return True
+        return False
+    
+    def get_orichalc_fragments(self):
+        """Get current orichalc fragment count"""
+        return self.orichalc_fragments
+    
+    def _unlock_default_lore_entries(self):
+        """Unlock some basic lore entries that should be available from the start"""
+        default_entries = [
+            "architect_legacy_intro",
+            "drone_DRONE"
+        ]
+        
+        for entry_id in default_entries:
+            if entry_id in self.all_lore_entries and entry_id not in self.unlocked_lore_ids:
+                self.unlocked_lore_ids.add(entry_id)
+                logger.info(f"Default lore entry '{entry_id}' unlocked")
+        
+        if default_entries:
+            self._save_dirty = True
+            self._save_unlocks()

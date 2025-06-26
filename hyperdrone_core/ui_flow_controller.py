@@ -1,22 +1,22 @@
 # hyperdrone_core/ui_flow_controller.py
-import pygame
-import random
-import logging
+from pygame.time import get_ticks
+from pygame.key import name as key_name
+from pygame import K_UP, K_DOWN, K_LEFT, K_RIGHT, K_RETURN, K_SPACE, K_ESCAPE, K_BACKSPACE, K_w, K_s, K_a, K_d, K_r, K_l, K_m, K_q
+from random import randint, uniform
+from logging import getLogger, info
 
-import game_settings as gs
-from game_settings import (
-    WIDTH, HEIGHT, GAME_PLAY_AREA_HEIGHT, 
-    # <<< FIX: Added missing game state constants >>>
-    GAME_STATE_MAIN_MENU, GAME_STATE_DRONE_SELECT,
-    GAME_STATE_SETTINGS, GAME_STATE_LEADERBOARD, GAME_STATE_CODEX,
-    GAME_STATE_GAME_OVER, GAME_STATE_ENTER_NAME, GAME_STATE_PLAYING, GAME_STATE_MAZE_DEFENSE,
+from settings_manager import get_setting
+from constants import (
+    WHITE, GOLD, RED,
+    GAME_STATE_MAIN_MENU, GAME_STATE_DRONE_SELECT, GAME_STATE_SETTINGS,
+    GAME_STATE_LEADERBOARD, GAME_STATE_GAME_OVER, GAME_STATE_ENTER_NAME, GAME_STATE_CODEX,
+    GAME_STATE_PLAYING, GAME_STATE_MAZE_DEFENSE, GAME_STATE_GAME_INTRO_SCROLL,
     GAME_STATE_ARCHITECT_VAULT_SUCCESS, GAME_STATE_ARCHITECT_VAULT_FAILURE,
-    GAME_STATE_GAME_INTRO_SCROLL,
-    get_game_setting, set_game_setting, reset_all_settings_to_default,
-    SETTINGS_MODIFIED
+    KEY_DEFEATED_BOSSES
 )
+from ui.leaderboard_ui import add_score, is_high_score, load_scores
 
-logger = logging.getLogger(__name__)
+logger = getLogger(__name__)
 
 class UIFlowController:
     """
@@ -30,24 +30,19 @@ class UIFlowController:
         self.drone_system = None
         self.leaderboard_scores = []
         
-        # Menu state variables
-        self.menu_options = ["Start Game", "Maze Defense", "Select Drone", "Codex", "Settings", "Leaderboard", "Quit"]
+        self.menu_options = ["Start Game", "Select Drone", "Weapon Upgrade Shop", "Codex", "Settings", "Leaderboard", "Quit"]
         self.selected_menu_option = 0
         self.menu_stars = self._create_stars(200)
 
-        # Drone Select state variables
         self.drone_select_options = []
         self.selected_drone_preview_index = 0
 
-        # Settings state variables
         self.settings_items_data = []
         self.selected_setting_index = 0
 
-        # Leaderboard/Game Over state
         self.player_name_input_cache = ""
         self.game_over_acknowledged = False
         
-        # Codex state variables
         self.codex_categories_list = []
         self.codex_current_view = "categories"
         self.codex_selected_category_index = 0
@@ -58,17 +53,15 @@ class UIFlowController:
         self.codex_content_scroll_offset = 0
         self.codex_current_entry_total_lines = 0
 
-        # Architect Vault Result Screen
         self.architect_vault_result_message = ""
-        self.architect_vault_result_message_color = gs.WHITE
+        self.architect_vault_result_message_color = WHITE
 
-        # Game Intro Scroll
         self.intro_screens_data = []
         self.current_intro_screen_index = 0
         self.intro_screen_start_time = 0
         self.intro_sequence_finished = False
         
-        logger.info("UIFlowController initialized.")
+        info("UIFlowController initialized.")
 
 
     def set_dependencies(self, scene_manager, ui_manager, drone_system):
@@ -80,55 +73,63 @@ class UIFlowController:
     def handle_key_input(self, key, current_game_state):
         """
         Public method to route keyboard input to the correct handler based on game state.
-        This is called by the EventManager.
         """
-        if current_game_state == GAME_STATE_MAIN_MENU:
-            return self._handle_main_menu_input(key)
-        elif current_game_state == GAME_STATE_DRONE_SELECT:
-            return self._handle_drone_select_input(key)
-        elif current_game_state == GAME_STATE_SETTINGS:
-            return self._handle_settings_input(key)
-        elif current_game_state == GAME_STATE_LEADERBOARD:
-            return self._handle_leaderboard_input(key)
-        elif current_game_state == GAME_STATE_CODEX:
-            return self._handle_codex_input(key)
-        elif current_game_state == GAME_STATE_ENTER_NAME:
-            return self._handle_enter_name_input(key)
-        elif current_game_state == GAME_STATE_GAME_OVER:
-            return self._handle_game_over_input(key)
-        elif current_game_state == GAME_STATE_ARCHITECT_VAULT_SUCCESS or current_game_state == GAME_STATE_ARCHITECT_VAULT_FAILURE:
-            return self._handle_vault_result_input(key)
-        elif current_game_state == GAME_STATE_GAME_INTRO_SCROLL:
-            return self._handle_game_intro_input(key)
+        state_handlers = {
+            GAME_STATE_MAIN_MENU: self._handle_main_menu_input,
+            GAME_STATE_DRONE_SELECT: self._handle_drone_select_input,
+            "drone_select": self._handle_drone_select_input,  # Add support for string-based state name
+            GAME_STATE_SETTINGS: self._handle_settings_input,
+            "SettingsState": self._handle_settings_input,  # Add support for string-based state name
+            GAME_STATE_LEADERBOARD: self._handle_leaderboard_input,
+            GAME_STATE_CODEX: self._handle_codex_input,
+            GAME_STATE_ENTER_NAME: self._handle_enter_name_input,
+            GAME_STATE_GAME_OVER: self._handle_game_over_input,
+            GAME_STATE_ARCHITECT_VAULT_SUCCESS: self._handle_vault_result_input,
+            GAME_STATE_ARCHITECT_VAULT_FAILURE: self._handle_vault_result_input,
+            GAME_STATE_GAME_INTRO_SCROLL: self._handle_game_intro_input
+        }
         
-        return False # Input was not handled by any UI flow
+        handler = state_handlers.get(current_game_state)
+        if handler:
+            return handler(key)
+        
+        return False
 
     def update(self, current_time_ms, delta_time_ms, current_game_state):
         """Called every frame to update UI animations or timed transitions."""
-        if current_game_state == GAME_STATE_MAIN_MENU:
+        # MODIFICATION: Use class names for state IDs to match the StateManager.
+        menu_like_states = [
+            "MainMenuState", "LeaderboardState", "SettingsState",
+            "DroneSelectState", "CodexState", "GameOverState", "EnterNameState"
+        ]
+        
+        if current_game_state in menu_like_states:
             if self.menu_stars:
+                height = get_setting("display", "HEIGHT", 1080)
+                width = get_setting("display", "WIDTH", 1920)
                 for star in self.menu_stars:
+                    # Update star position
                     star[1] += star[2] * (delta_time_ms / 1000.0)
-                    if star[1] > HEIGHT:
-                        star[0] = random.randint(0, WIDTH)
+                    # Reset star if it goes off-screen
+                    if star[1] > height:
+                        star[0] = randint(0, width)
                         star[1] = 0
 
     def _create_stars(self, num_stars):
         """Helper to create a list of star parameters for background effects."""
         stars = []
+        width = get_setting("display", "WIDTH", 1920)
+        height = get_setting("display", "HEIGHT", 1080)
         for _ in range(num_stars):
-            x = random.randint(0, WIDTH)
-            y = random.randint(0, HEIGHT)
-            speed = random.uniform(10, 50)
-            size = random.uniform(0.5, 2)
+            x = randint(0, width)
+            y = randint(0, height)
+            speed = uniform(10, 50)
+            size = uniform(0.5, 2)
             stars.append([x, y, speed, size])
         return stars
 
-    # --- Initialization Methods for Each UI State ---
-    def initialize_main_menu(self):
-        self.selected_menu_option = 0
-        if self.game_controller and self.game_controller.player:
-            self.game_controller.player = None
+    def initialize_main_menu(self, selected_option=0):
+        self.selected_menu_option = selected_option
         if self.game_controller and hasattr(self.game_controller, 'combat_controller'):
             self.game_controller.combat_controller.reset_combat_state()
 
@@ -146,8 +147,7 @@ class UIFlowController:
         self.selected_setting_index = 0
 
     def initialize_leaderboard(self):
-        if self.game_controller and hasattr(self.game_controller, 'leaderboard'):
-            self.leaderboard_scores = self.game_controller.leaderboard.load_scores()
+        self.leaderboard_scores = load_scores()
 
     def initialize_codex(self):
         if not self.drone_system: return
@@ -162,18 +162,18 @@ class UIFlowController:
     def initialize_architect_vault_result_screen(self, success=True, failure_reason=""):
         if success:
             self.architect_vault_result_message = "VAULT CONQUERED"
-            self.architect_vault_result_message_color = gs.GOLD
+            self.architect_vault_result_message_color = GOLD
         else:
             self.architect_vault_result_message = "MISSION FAILED"
-            self.architect_vault_result_message_color = gs.RED
-        self.game_controller.architect_vault_failure_reason = failure_reason
+            self.architect_vault_result_message_color = RED
+        if hasattr(self.game_controller, 'architect_vault_failure_reason'):
+            self.game_controller.architect_vault_failure_reason = failure_reason
 
     def initialize_game_intro(self, intro_data):
         self.intro_screens_data = intro_data
         self.current_intro_screen_index = 0
-        self.intro_screen_start_time = pygame.time.get_ticks()
+        self.intro_screen_start_time = get_ticks()
         self.intro_sequence_finished = False
-        self.game_controller._prepare_current_intro_screen_surfaces()
 
     def reset_ui_flow_states(self):
         """Resets all UI state variables to their defaults."""
@@ -185,29 +185,28 @@ class UIFlowController:
         self.codex_current_view = "categories"
         self.codex_selected_category_index = 0
         self.codex_content_scroll_offset = 0
-        logger.info("UIFlowController: UI states reset.")
+        info("UIFlowController: UI states reset.")
         
-    # --- Private Input Handlers for Each UI State ---
-    
     def _handle_main_menu_input(self, key):
-        if key == pygame.K_UP or key == pygame.K_w:
+        if key == K_UP or key == K_w:
             self.selected_menu_option = (self.selected_menu_option - 1) % len(self.menu_options)
             self.game_controller.play_sound('ui_select')
             return True
-        elif key == pygame.K_DOWN or key == pygame.K_s:
+        elif key == K_DOWN or key == K_s:
             self.selected_menu_option = (self.selected_menu_option + 1) % len(self.menu_options)
             self.game_controller.play_sound('ui_select')
             return True
-        elif key == pygame.K_RETURN or key == pygame.K_SPACE:
+        elif key == K_RETURN or key == K_SPACE:
             selected_action = self.menu_options[self.selected_menu_option]
-            logger.info(f"Main menu action selected: {selected_action}")
+            info(f"Main menu action selected: {selected_action}")
             self.game_controller.play_sound('ui_confirm')
-            if selected_action == "Start Game": self.scene_manager.set_game_state(GAME_STATE_GAME_INTRO_SCROLL)
-            elif selected_action == "Maze Defense": self.scene_manager.set_game_state(GAME_STATE_MAZE_DEFENSE)
-            elif selected_action == "Select Drone": self.scene_manager.set_game_state(GAME_STATE_DRONE_SELECT)
-            elif selected_action == "Settings": self.scene_manager.set_game_state(GAME_STATE_SETTINGS)
-            elif selected_action == "Leaderboard": self.scene_manager.set_game_state(GAME_STATE_LEADERBOARD)
-            elif selected_action == "Codex": self.scene_manager.set_game_state(GAME_STATE_CODEX)
+            if selected_action == "Start Game": self.scene_manager.set_state(GAME_STATE_GAME_INTRO_SCROLL)
+
+            elif selected_action == "Select Drone": self.scene_manager.set_state(GAME_STATE_DRONE_SELECT)
+            elif selected_action == "Weapon Upgrade Shop": self.scene_manager.set_state("WeaponsUpgradeShopState")
+            elif selected_action == "Settings": self.scene_manager.set_state(GAME_STATE_SETTINGS)
+            elif selected_action == "Leaderboard": self.scene_manager.set_state(GAME_STATE_LEADERBOARD)
+            elif selected_action == "Codex": self.scene_manager.set_state(GAME_STATE_CODEX)
             elif selected_action == "Quit": self.game_controller.quit_game()
             return True
         return False
@@ -216,24 +215,28 @@ class UIFlowController:
         if not self.drone_select_options: return False
         num_options = len(self.drone_select_options)
         
-        if key == pygame.K_LEFT or key == pygame.K_a:
+        if key == K_LEFT or key == K_a:
             self.selected_drone_preview_index = (self.selected_drone_preview_index - 1 + num_options) % num_options
             self.game_controller.play_sound('ui_select')
             return True
-        elif key == pygame.K_RIGHT or key == pygame.K_d:
+        elif key == K_RIGHT or key == K_d:
             self.selected_drone_preview_index = (self.selected_drone_preview_index + 1) % num_options
             self.game_controller.play_sound('ui_select')
             return True
-        elif key == pygame.K_RETURN or key == pygame.K_SPACE:
+        elif key == K_RETURN or key == K_SPACE:
             selected_id = self.drone_select_options[self.selected_drone_preview_index]
             if self.drone_system.is_drone_unlocked(selected_id):
                 self.drone_system.set_selected_drone(selected_id)
                 self.game_controller.play_sound('ui_confirm')
                 if hasattr(self.ui_manager, 'update_player_life_icon_surface'): self.ui_manager.update_player_life_icon_surface()
-                self.scene_manager.set_game_state(GAME_STATE_MAIN_MENU)
-            else: # Attempt to unlock
-                if self.drone_system.unlock_drone(selected_id):
-                    self.game_controller.play_sound('lore_unlock') # Re-use sound
+                drone_select_index = self.menu_options.index("Select Drone") if "Select Drone" in self.menu_options else 0
+                self.scene_manager.set_state(GAME_STATE_MAIN_MENU, selected_option=drone_select_index)
+            else:
+                unlock_result = self.drone_system.unlock_drone(selected_id)
+                logger.info(f"Unlock attempt for {selected_id}: {unlock_result}")
+                if unlock_result:
+                    self.game_controller.play_sound('lore_unlock')
+                    # Don't reinitialize - just stay on the same drone for potential equipping
                 else:
                     self.game_controller.play_sound('ui_denied')
             return True
@@ -244,87 +247,197 @@ class UIFlowController:
         selected_item = self.settings_items_data[self.selected_setting_index]
         item_key = selected_item["key"]
         
-        if key == pygame.K_UP or key == pygame.K_w:
+        if key == K_UP or key == K_w:
             self.selected_setting_index = (self.selected_setting_index - 1 + len(self.settings_items_data)) % len(self.settings_items_data)
             self.game_controller.play_sound('ui_select', 0.5)
             return True
-        elif key == pygame.K_DOWN or key == pygame.K_s:
+        elif key == K_DOWN or key == K_s:
             self.selected_setting_index = (self.selected_setting_index + 1) % len(self.settings_items_data)
             self.game_controller.play_sound('ui_select', 0.5)
             return True
-        elif key == pygame.K_RETURN and selected_item["type"] == "action":
-            if item_key == "RESET_SETTINGS_ACTION":
-                reset_all_settings_to_default()
-                self.game_controller.play_sound('ui_confirm')
-            return True
+        elif key == K_RETURN:
+            if selected_item["type"] == "action":
+                if item_key == "RESET_SETTINGS_ACTION":
+                    # Reset settings to defaults
+                    from settings_manager import reset_all_settings_to_default
+                    reset_all_settings_to_default()
+                    # Update game lives to match the reset default
+                    self.game_controller.lives = get_setting("gameplay", "PLAYER_LIVES", 3)
+                    # Reinitialize settings menu to reflect changes
+                    self.settings_items_data = self.game_controller._get_settings_menu_items_data_structure()
+                    self.game_controller.play_sound('ui_confirm')
+                return True
+            elif selected_item.get("action") == "start_chapter" and selected_item["type"] == "choice":
+                # Handle chapter selection
+                category = selected_item.get("category", "testing")
+                current_val = get_setting(category, item_key)
+                if current_val:
+                    # Extract chapter number from chapter_id (e.g., "chapter_2" -> 2)
+                    try:
+                        chapter_num = int(current_val.split("_")[1]) - 1
+                        # Save the selected chapter setting before starting it
+                        from settings_manager import set_setting
+                        set_setting(category, item_key, current_val)
+                        self._start_selected_chapter(chapter_num)
+                        self.game_controller.play_sound('ui_confirm')
+                    except (ValueError, IndexError):
+                        self.game_controller.play_sound('ui_denied')
+                return True
         
         direction = 0
-        if key == pygame.K_LEFT or key == pygame.K_a: direction = -1
-        elif key == pygame.K_RIGHT or key == pygame.K_d: direction = 1
+        if key == K_LEFT or key == K_a: direction = -1
+        elif key == K_RIGHT or key == K_d: direction = 1
         
         if direction != 0:
-            current_val = get_game_setting(item_key)
+            category = selected_item.get("category", "gameplay")
+            current_val = get_setting(category, item_key)
             if selected_item["type"] == "numeric":
                 step = selected_item.get("step", 1)
+                # Handle case where current_val is None
+                if current_val is None:
+                    current_val = selected_item.get("min", 0)
                 new_val = current_val + direction * step
                 new_val = max(selected_item["min"], min(new_val, selected_item["max"]))
-                set_game_setting(item_key, new_val)
-                self.game_controller.play_sound('ui_select')
+                from settings_manager import set_setting
+                set_setting(category, item_key, new_val)
+                # Update game lives if PLAYER_LIVES setting was changed
+                if item_key == "PLAYER_LIVES":
+                    self.game_controller.lives = new_val
+                # Play sample sound when FX volume is changed
+                elif item_key == "VOLUME_FX":
+                    self.game_controller.play_sound('shoot', volume_override=new_val/10.0)
+                    from settings_manager import save_settings
+                    save_settings()
+                # Adjust menu music volume when Game volume is changed
+                elif item_key == "VOLUME_GAME":
+                    if hasattr(self.game_controller, 'state_manager'):
+                        self.game_controller.state_manager._update_music()
+                    from settings_manager import save_settings
+                    save_settings()
+                else:
+                    self.game_controller.play_sound('ui_select')
             elif selected_item["type"] == "choice":
                 choices = selected_item["choices"]
                 try:
-                    current_idx = choices.index(current_val)
-                    new_idx = (current_idx + direction + len(choices)) % len(choices)
-                    set_game_setting(item_key, choices[new_idx])
-                    self.game_controller.play_sound('ui_select')
-                except ValueError: pass # Value not in choices, do nothing
+                    # Handle the case where current_val is not in choices
+                    if current_val not in choices:
+                        new_idx = 0 if direction > 0 else len(choices) - 1
+                    else:
+                        current_idx = choices.index(current_val)
+                        new_idx = (current_idx + direction) % len(choices)
+                    from settings_manager import set_setting
+                    set_setting(category, item_key, choices[new_idx])
+                    # Update game lives if PLAYER_LIVES setting was changed
+                    if item_key == "PLAYER_LIVES":
+                        self.game_controller.lives = choices[new_idx]
+                    # Play sample sound when FX volume is changed
+                    elif item_key == "VOLUME_FX":
+                        self.game_controller.play_sound('shoot', volume_override=choices[new_idx]/10.0)
+                        from settings_manager import save_settings
+                        save_settings()
+                    # Adjust menu music volume when Game volume is changed
+                    elif item_key == "VOLUME_GAME":
+                        if hasattr(self.game_controller, 'state_manager'):
+                            self.game_controller.state_manager._update_music()
+                        from settings_manager import save_settings
+                        save_settings()
+                    else:
+                        self.game_controller.play_sound('ui_select')
+                except (ValueError, TypeError):
+                    # If there's any error, just set to the first choice
+                    if choices:
+                        from settings_manager import set_setting
+                        set_setting(category, item_key, choices[0])
+                        # Update game lives if PLAYER_LIVES setting was changed
+                        if item_key == "PLAYER_LIVES":
+                            self.game_controller.lives = choices[0]
+                        # Play sample sound when FX volume is changed
+                        elif item_key == "VOLUME_FX":
+                            self.game_controller.play_sound('shoot', volume_override=choices[0]/10.0)
+                            from settings_manager import save_settings
+                            save_settings()
+                        # Adjust menu music volume when Game volume is changed
+                        elif item_key == "VOLUME_GAME":
+                            if hasattr(self.game_controller, 'state_manager'):
+                                self.game_controller.state_manager._update_music()
+                            from settings_manager import save_settings
+                            save_settings()
+                        else:
+                            self.game_controller.play_sound('ui_select')
             return True
         return False
+        
+    def _start_selected_chapter(self, chapter_index):
+        """Set up prerequisites and start the selected chapter via story map."""
+        if not hasattr(self.game_controller, 'story_manager'):
+            return
+            
+        story_manager = self.game_controller.story_manager
+        
+        # Validate chapter index
+        if chapter_index < 0 or chapter_index >= len(story_manager.chapters):
+            return
+            
+        # Set the current chapter in the story manager
+        story_manager.current_chapter_index = chapter_index
+        
+        # Apply chapter prerequisites using the story manager's method
+        story_manager._apply_chapter_prerequisites(chapter_index)
+        
+        # Launch the story map instead of directly launching the chapter
+        if self.scene_manager:
+            self.scene_manager.set_state("StoryMapState")
 
     def _handle_leaderboard_input(self, key):
-        if key == pygame.K_RETURN or key == pygame.K_q:
-            self.scene_manager.set_game_state(GAME_STATE_MAIN_MENU)
+        if key == K_RETURN or key == K_q or key == K_ESCAPE:
+            leaderboard_index = self.menu_options.index("Leaderboard") if "Leaderboard" in self.menu_options else 0
+            self.scene_manager.set_state(GAME_STATE_MAIN_MENU, selected_option=leaderboard_index)
             return True
         return False
 
     def _handle_codex_input(self, key):
         if self.codex_current_view == "categories":
-            if key in (pygame.K_UP, pygame.K_w): self.codex_selected_category_index = (self.codex_selected_category_index - 1 + len(self.codex_categories_list)) % len(self.codex_categories_list) if self.codex_categories_list else 0
-            elif key in (pygame.K_DOWN, pygame.K_s): self.codex_selected_category_index = (self.codex_selected_category_index + 1) % len(self.codex_categories_list) if self.codex_categories_list else 0
-            elif key == pygame.K_RETURN:
+            if key == K_ESCAPE:
+                codex_index = self.menu_options.index("Codex") if "Codex" in self.menu_options else 0
+                self.scene_manager.set_state(GAME_STATE_MAIN_MENU, selected_option=codex_index)
+                return True
+            elif key in (K_UP, K_w): self.codex_selected_category_index = (self.codex_selected_category_index - 1 + len(self.codex_categories_list)) % len(self.codex_categories_list) if self.codex_categories_list else 0
+            elif key in (K_DOWN, K_s): self.codex_selected_category_index = (self.codex_selected_category_index + 1) % len(self.codex_categories_list) if self.codex_categories_list else 0
+            elif key == K_RETURN:
                 if self.codex_categories_list:
                     self.codex_current_view = "entries"
                     self.codex_current_category_name = self.codex_categories_list[self.codex_selected_category_index]
                     self.codex_entries_in_category_list = self.drone_system.get_unlocked_lore_entries_by_category(self.codex_current_category_name)
                     self.codex_selected_entry_index_in_category = 0
         elif self.codex_current_view == "entries":
-            if key == pygame.K_ESCAPE: self.codex_current_view = "categories"
-            elif key in (pygame.K_UP, pygame.K_w): self.codex_selected_entry_index_in_category = (self.codex_selected_entry_index_in_category - 1 + len(self.codex_entries_in_category_list)) % len(self.codex_entries_in_category_list) if self.codex_entries_in_category_list else 0
-            elif key in (pygame.K_DOWN, pygame.K_s): self.codex_selected_entry_index_in_category = (self.codex_selected_entry_index_in_category + 1) % len(self.codex_entries_in_category_list) if self.codex_entries_in_category_list else 0
-            elif key == pygame.K_RETURN:
+            if key == K_ESCAPE: self.codex_current_view = "categories"
+            elif key in (K_UP, K_w): self.codex_selected_entry_index_in_category = (self.codex_selected_entry_index_in_category - 1 + len(self.codex_entries_in_category_list)) % len(self.codex_entries_in_category_list) if self.codex_entries_in_category_list else 0
+            elif key in (K_DOWN, K_s): self.codex_selected_entry_index_in_category = (self.codex_selected_entry_index_in_category + 1) % len(self.codex_entries_in_category_list) if self.codex_entries_in_category_list else 0
+            elif key == K_RETURN:
                 if self.codex_entries_in_category_list:
                     self.codex_current_view = "content"
                     self.codex_selected_entry_id = self.codex_entries_in_category_list[self.codex_selected_entry_index_in_category]['id']
                     self.codex_content_scroll_offset = 0
         elif self.codex_current_view == "content":
-            if key == pygame.K_ESCAPE: self.codex_current_view = "entries"
-            elif key in (pygame.K_UP, pygame.K_w): self.codex_content_scroll_offset = max(0, self.codex_content_scroll_offset - 1)
-            elif key in (pygame.K_DOWN, pygame.K_s): self.codex_content_scroll_offset = min(max(0, self.codex_current_entry_total_lines - 10), self.codex_content_scroll_offset + 1)
+            if key == K_ESCAPE: self.codex_current_view = "entries"
+            elif key in (K_UP, K_w): self.codex_content_scroll_offset = max(0, self.codex_content_scroll_offset - 1)
+            elif key in (K_DOWN, K_s): self.codex_content_scroll_offset = min(max(0, self.codex_current_entry_total_lines - 10), self.codex_content_scroll_offset + 1)
         
         self.game_controller.play_sound('ui_select', 0.5)
         return True
 
     def _handle_enter_name_input(self, key):
-        if key == pygame.K_RETURN:
+        if key == K_RETURN:
             if len(self.player_name_input_cache) > 0:
-                self.game_controller.submit_leaderboard_name(self.player_name_input_cache)
+                add_score(self.player_name_input_cache, self.game_controller.score, self.game_controller.level)
+                self.scene_manager.set_state(GAME_STATE_LEADERBOARD)
             return True
-        elif key == pygame.K_BACKSPACE:
+        elif key == K_BACKSPACE:
             self.player_name_input_cache = self.player_name_input_cache[:-1]
             return True
         elif len(self.player_name_input_cache) < 6:
             try:
-                char = pygame.key.name(key).upper()
+                char = key_name(key).upper()
                 if len(char) == 1 and char.isalpha():
                     self.player_name_input_cache += char
                     return True
@@ -332,34 +445,45 @@ class UIFlowController:
         return False
 
     def _handle_game_over_input(self, key):
-        if self.game_controller.is_current_score_a_high_score() and not gs.SETTINGS_MODIFIED:
-            self.scene_manager.set_game_state(GAME_STATE_ENTER_NAME)
+        score_is_high = is_high_score(self.game_controller.score, self.game_controller.level)
+        settings_modified = get_setting("gameplay", "SETTINGS_MODIFIED", False)
+        if score_is_high and not settings_modified:
+            self.scene_manager.set_state(GAME_STATE_ENTER_NAME)
         else:
-            if key == pygame.K_r: self.scene_manager.set_game_state(GAME_STATE_MAIN_MENU, action="restart") # Or GAME_STATE_PLAYING
-            elif key == pygame.K_l: self.scene_manager.set_game_state(GAME_STATE_LEADERBOARD)
-            elif key == pygame.K_m: self.scene_manager.set_game_state(GAME_STATE_MAIN_MENU)
-            elif key == pygame.K_q: self.game_controller.quit_game()
+            if key == K_r: self.scene_manager.set_state(GAME_STATE_PLAYING, action="restart")
+            elif key == K_l: self.scene_manager.set_state(GAME_STATE_LEADERBOARD)
+            elif key == K_m: self.scene_manager.set_state(GAME_STATE_MAIN_MENU)
+            elif key == K_q: self.game_controller.quit_game()
         return True
 
     def _handle_vault_result_input(self, key):
-        if key == pygame.K_RETURN or key == pygame.K_m or key == pygame.K_SPACE:
-            self.scene_manager.set_game_state(GAME_STATE_MAIN_MENU)
+        if key == K_RETURN or key == K_m or key == K_SPACE:
+            self.scene_manager.set_state(GAME_STATE_MAIN_MENU)
             return True
         return False
         
     def _handle_game_intro_input(self, key):
-        if key == pygame.K_SPACE or key == pygame.K_RETURN:
-            if self.intro_sequence_finished:
-                self.scene_manager.set_game_state(GAME_STATE_PLAYING)
+        if key == K_SPACE or key == K_RETURN:
+            if self.current_intro_screen_index >= len(self.intro_screens_data) - 1:
+                self.intro_sequence_finished = True
             else:
                 self.current_intro_screen_index += 1
-                if self.current_intro_screen_index >= len(self.intro_screens_data):
-                    self.intro_sequence_finished = True
-                else:
-                    self.intro_screen_start_time = pygame.time.get_ticks()
-                    self.game_controller._prepare_current_intro_screen_surfaces()
+                self.intro_screen_start_time = get_ticks()
             return True
-        elif key == pygame.K_ESCAPE:
-            self.scene_manager.set_game_state(GAME_STATE_MAIN_MENU)
+        elif key == K_ESCAPE:
+            settings_index = self.menu_options.index("Settings") if "Settings" in self.menu_options else 0
+            self.scene_manager.set_state(GAME_STATE_MAIN_MENU, selected_option=settings_index)
             return True
         return False
+
+    def advance_intro_screen(self):
+        """Advance to the next intro screen."""
+        if self.current_intro_screen_index >= len(self.intro_screens_data) - 1:
+            self.intro_sequence_finished = True
+        else:
+            self.current_intro_screen_index += 1
+            self.intro_screen_start_time = get_ticks()
+            
+    def skip_intro(self):
+        """Skip the intro sequence."""
+        self.intro_sequence_finished = True

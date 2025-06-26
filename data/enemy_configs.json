@@ -1,0 +1,224 @@
+{
+  "enemies": {
+    "prototype_enemy": {
+      "name": "Prototype Enemy",
+      "class_name": "Enemy",
+      "stats": {
+        "health": 80,
+        "speed": 1.8,
+        "contact_damage": 20,
+        "aggro_radius_tiles": 10
+      },
+      "ai": {
+        "initial_behavior": "ChasePlayerBehavior"
+      },
+      "assets": {
+        "sprite_asset_key": "images/enemies/defense_drone_1.png",
+        "shoot_sound_key": "enemy_shoot"
+      },
+      "weapon": {
+        "shoot_cooldown": 1200,
+        "bullet_size_ratio": 0.67,
+        "bullet_damage": 8,
+        "bullet_speed": 6
+      }
+    },
+    "regular_enemy": {
+      "name": "Regular Enemy",
+      "class_name": "Enemy",
+      "stats": {
+        "health": 100,
+        "speed": 1.5,
+        "contact_damage": 25,
+        "aggro_radius_tiles": 9
+      },
+      "ai": {
+        "initial_behavior": "ChasePlayerBehavior"
+      },
+      "assets": {
+        "sprite_asset_key": "regular_enemy_sprite_key",
+        "shoot_sound_key": "enemy_shoot"
+      },
+      "weapon": {
+        "shoot_cooldown": 1500,
+        "bullet_size_ratio": 0.67,
+        "bullet_damage": 10,
+        "bullet_speed": 5
+      }
+    },
+    "sentinel": {
+      "name": "Sentinel Drone",
+      "class_name": "SentinelDrone",
+      "stats": {
+        "health": 75,
+        "speed": 3.0,
+        "contact_damage": 25,
+        "aggro_radius_tiles": 9
+      },
+      "ai": {
+        "initial_behavior": "ChasePlayerBehavior"
+      },
+      "assets": {
+        "sprite_asset_key": "sentinel_drone_sprite_key",
+        "shoot_sound_key": "enemy_shoot"
+      },
+      "weapon": {
+        "shoot_cooldown": 1050,
+        "bullet_size_ratio": 0.6,
+        "bullet_damage": 10,
+        "bullet_speed": 6
+      }
+    },
+    "tr3b": {
+      "name": "TR-3B Enemy",
+      "class_name": "TR3BEnemy",
+      "stats": {
+        "health": 150,
+        "speed": 2.0,
+        "contact_damage": 25,
+        "aggro_radius_tiles": 12,
+        "patrol_radius_tiles": 8
+      },
+      "ai": {
+        "initial_behavior": "TRBPatrolBehavior",
+        "dash_speed_multiplier": 3.0,
+        "dash_cooldown_min": 3000,
+        "dash_cooldown_max": 5000
+      },
+      "assets": {
+        "sprite_asset_key": "images/enemies/TR-3B_enemy.png",
+        "shoot_sound_key": "enemy_shoot"
+      },
+      "weapon": {
+        "shoot_cooldown": 1200,
+        "bullet_size_ratio": 0.67,
+        "bullet_damage": 10,
+        "bullet_speed": 5
+      }
+    },
+    "defense_drone_1": {
+      "name": "Defense Drone Mk. I",
+      "class_name": "DefenseDrone",
+      "stats": {
+        "health": 75,
+        "speed": 1.8,
+        "contact_damage": 25
+      },
+      "ai": {
+        "initial_behavior": "PathFollowingBehavior"
+      },
+      "assets": {
+        "sprite_asset_key": "defense_drone_1_sprite_key"
+      },
+      "weapon": null
+    },
+    "defense_drone_2": {
+      "name": "Defense Drone Mk. II",
+      "class_name": "DefenseDrone",
+      "stats": {
+        "health": 150,
+        "speed": 1.2,
+        "contact_damage": 30
+      },
+      "ai": {
+        "initial_behavior": "PathFollowingBehavior"
+      },
+      "assets": {
+        "sprite_asset_key": "defense_drone_2_sprite_key"
+      },
+      "weapon": null
+    },
+    "defense_drone_3": {
+      "name": "Defense Drone Mk. III",
+      "class_name": "DefenseDrone",
+      "stats": {
+        "health": 50,
+        "speed": 2.5,
+        "contact_damage": 20
+      },
+      "ai": {
+        "initial_behavior": "PathFollowingBehavior"
+      },
+      "assets": {
+        "sprite_asset_key": "defense_drone_3_sprite_key"
+      },
+      "weapon": null
+    },
+    "defense_drone_4": {
+      "name": "Defense Drone Mk. IV",
+      "class_name": "DefenseDrone",
+      "stats": {
+        "health": 250,
+        "speed": 1.0,
+        "contact_damage": 40
+      },
+      "ai": {
+        "initial_behavior": "PathFollowingBehavior"
+      },
+      "assets": {
+        "sprite_asset_key": "defense_drone_4_sprite_key"
+      },
+      "weapon": null
+    },
+    "defense_drone_5": {
+      "name": "Defense Drone Mk. V",
+      "class_name": "DefenseDrone",
+      "stats": {
+        "health": 100,
+        "speed": 2.0,
+        "contact_damage": 35
+      },
+      "ai": {
+        "initial_behavior": "PathFollowingBehavior"
+      },
+      "assets": {
+        "sprite_asset_key": "defense_drone_5_sprite_key"
+      },
+      "weapon": null
+    },
+    "tempest_boss": {
+      "name": "Tempest",
+      "class_name": "TempestBoss",
+      "stats": {
+        "health": 2500,
+        "speed": 3,
+        "score_value": 5000
+      },
+      "ai": {
+        "initial_behavior": "None"
+      },
+      "assets": {
+        "sprite_asset_key": "sprite_tempest_boss",
+        "shoot_sound_key": "sfx_enemy_shoot_heavy",
+        "death_sound_key": "sfx_explosion_large"
+      },
+      "weapon": {
+        "shoot_cooldown": 2000,
+        "bullet_damage": 15,
+        "bullet_speed": 5,
+        "bullet_size": 10
+      }
+    },
+    "tornado_minion": {
+      "name": "Tornado",
+      "class_name": "TornadoMinion",
+      "stats": {
+        "health": 20,
+        "speed": 4,
+        "score_value": 50
+      },
+      "ai": {
+        "initial_behavior": "None"
+      },
+      "assets": {
+        "sprite_asset_key": "sprite_tornado_minion",
+        "death_sound_key": "sfx_wind_dissipate"
+      },
+      "weapon": {
+        "shoot_cooldown": 99999,
+        "bullet_damage": 5, 
+        "contact_damage": 5
+      }
+    }
+  }
+}
