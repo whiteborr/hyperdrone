@@ -157,8 +157,10 @@ class PlayerDrone(BaseDrone):
             self.current_weapon_strategy.update_maze(maze)
             self.current_weapon_strategy.update_enemies_group(enemies_group)
         
+        # Use original player_actions system
         self.moving_forward = self.is_cruising
         
+        # Use original movement system
         super().update(maze, game_area_x_offset)
         
         shmup_mode = getattr(self, 'shmup_mode', False)

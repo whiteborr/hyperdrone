@@ -8,9 +8,9 @@ from .powerup_manager import PowerUpManager
 from .collectibles import (
     Ring, WeaponUpgradeItem, ShieldItem, SpeedBoostItem, 
     CoreFragmentItem, VaultLogItem, GlyphTabletItem, AncientAlienTerminal, 
-    ArchitectEchoItem, CorruptedLogItem, QuantumCircuitryItem
+    ArchitectEchoItem, CorruptedLogItem, QuantumCircuitryItem, Core
 )
-from .particle import Particle
+from .particle import Particle, ParticleSystem
 from .maze_guardian import MazeGuardian 
 from .escape_zone import EscapeZone
 from .core_reactor import CoreReactor
@@ -20,12 +20,14 @@ from .maze_chapter3 import MazeChapter3
 from .temporary_barricade import TemporaryBarricade
 from .glitching_wall import GlitchingWall
 from .weapon_shop import WeaponShop
+from .turret import Turret
 
 __all__ = [
     "AncientAlienTerminal",
     "ArchitectEchoItem",
     "BaseDrone",
     "Bullet",
+    "Core",
     "CoreFragmentItem",
     "CorruptedLogItem",
     "CoreReactor",
@@ -41,6 +43,7 @@ __all__ = [
     "MazeGuardian",
     "Missile",
     "Particle",
+    "ParticleSystem",
     "PlayerDrone",
     "PowerUpManager", 
     "QuantumCircuitryItem",

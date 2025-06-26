@@ -2,25 +2,42 @@
 from pygame.time import get_ticks
 from pygame.font import Font
 from pygame.sprite import spritecollide
-from pygame import KEYDOWN, KEYUP, K_p
+from pygame import KEYDOWN, KEYUP, K_p, K_f
 from random import randint, choice
 from logging import getLogger, info
 from .state import State
 from settings_manager import get_setting
 from entities import Maze, MazeGuardian, PlayerDrone
+from entities.elemental_core import ElementalCore, CipherCore
+from entities.particle import ParticleSystem
 from drone_management import DRONE_DATA
+from constants import GAME_STATE_STORY_MAP
 
 logger = getLogger(__name__)
 
 class BossFightState(State):
     """
+    Chapter 2: The Guardian - Fire Core Boss Fight
+    
     Manages the entire boss battle sequence against the Maze Guardian.
-    This state sets up a special arena and controls the win/loss conditions
-    for the boss fight.
+    Features Fire Core collection and purge abilities.
     """
     def enter(self, previous_state=None, **kwargs):
         """Initializes the boss arena, the player, and the Maze Guardian."""
-        info("Entering BossFightState...")
+        info("Entering Chapter 2: The Guardian (Fire Core Boss Fight)...")
+        
+        # Initialize Fire Core system
+        self.fire_core = None
+        self.cipher_core = CipherCore()
+        self.core_collected = False
+        self.chapter_complete = False
+        self.particles = ParticleSystem()
+        
+        # Fire core abilities
+        self.purge_cooldown = 0
+        self.purge_duration = 5000  # 5 seconds
+        self.weapon_boost_active = False
+        self.weapon_boost_timer = 0
         # Create a specific arena for the boss fight (more open layout)
         self.game.maze = Maze(maze_type="boss_arena")
 
@@ -88,6 +105,9 @@ class BossFightState(State):
         
         # Message to player
         self.game.set_story_message(f"Wave 1/{self.total_waves}: Defeat the guardian's minions!", 3000)
+        
+        # Place Fire Core in the arena (will appear after boss defeat)
+        self._setup_fire_core()
 
     def _start_next_wave(self):
         """Start the next wave of enemies"""
@@ -203,9 +223,24 @@ class BossFightState(State):
                 # Wave cleared, start the next one
                 self._start_next_wave()
         
+        # Update Fire Core abilities
+        self._update_fire_abilities(current_time)
+        
+        # Update particles
+        self.particles.update(delta_time)
+        
+        # Update Fire Core if not collected
+        if self.fire_core and not self.core_collected:
+            self.fire_core.update(delta_time)
+            
+            # Check for core collection
+            if self.game.player.rect.colliderect(self.fire_core.rect):
+                self._collect_fire_core()
+        
         # Check if the boss has been defeated
         if self.game.combat_controller.boss_active and not self.game.combat_controller.maze_guardian.alive:
-            self.game.story_manager.complete_objective_by_id("c2_defeat_guardian")
+            if hasattr(self.game, 'story_manager'):
+                self.game.story_manager.complete_objective_by_id("c2_defeat_guardian")
             
             # Create explosion effect for the boss
             if hasattr(self.game.combat_controller.maze_guardian, 'rect') and not hasattr(self, 'boss_explosion_created'):
@@ -215,23 +250,31 @@ class BossFightState(State):
                 else:
                     # Fallback to simple explosion if method doesn't exist
                     boss_rect = self.game.combat_controller.maze_guardian.rect
-                    self.game._create_explosion(boss_rect.centerx, boss_rect.centery, 40, 'boss_death')
+                    if hasattr(self.game, '_create_explosion'):
+                        self.game._create_explosion(boss_rect.centerx, boss_rect.centery, 40, 'boss_death')
                 
                 self.boss_explosion_created = True
                 self.victory_time = current_time + 3000  # Show victory message for 3 seconds
-                self.game.set_story_message("Congratulations! Maze Guardian defeated!", 3000)
+                self.game.set_story_message("Maze Guardian defeated! The Fire Core has appeared!", 3000)
+                
+                # Spawn Fire Core at boss location
+                if self.fire_core:
+                    boss_pos = self.game.combat_controller.maze_guardian.rect.center
+                    self.fire_core.rect.center = boss_pos
+                    
                 return
                 
-            # After showing the victory message, show narrative transition then advance chapter
+            # After showing the victory message and collecting core, advance chapter
             if hasattr(self, 'victory_time') and current_time > self.victory_time:
-                self.game.story_manager.advance_chapter()
-                # Trigger narrative transition with "Echo in the Code" story beat
-                self.game.state_manager.set_state(
-                    "NarrativeState",
-                    narrative_event_id="echo_02",  # "Echo in the Code" from memory_echoes
-                    next_state="StoryMapState"
-                )
-                return
+                if self.core_collected:
+                    self.chapter_complete = True
+                    # Trigger narrative transition with "Echo in the Code" story beat
+                    self.game.state_manager.set_state(
+                        GAME_STATE_STORY_MAP,
+                        chapter_completed=True,
+                        completed_chapter="Chapter 2: The Guardian"
+                    )
+                    return
 
         # Check if the player has been defeated
         if not self.game.player.alive:
@@ -286,6 +329,9 @@ class BossFightState(State):
             if event.type == KEYDOWN:
                 if event.key == K_p:
                     self.game.toggle_pause()
+                elif event.key == K_f and self.core_collected:
+                    # Activate Fire Core purge ability
+                    self._activate_purge_ability()
                 else:
                     self.game.player_actions.handle_key_down(event)
             elif event.type == KEYUP:
@@ -318,3 +364,164 @@ class BossFightState(State):
             
             surface.blit(wave_surface, (50, 50))
             surface.blit(enemies_surface, (50, 90))
+        
+        # Draw Fire Core if available
+        if self.fire_core and not self.core_collected:
+            camera_offset = getattr(self.game, 'camera', (0, 0))
+            self.fire_core.draw(surface, camera_offset)
+        
+        # Draw particles
+        camera_offset = getattr(self.game, 'camera', (0, 0))
+        self.particles.draw(surface, camera_offset)
+        
+        # Draw Fire Core UI
+        self._draw_fire_core_ui(surface)
+    
+    def _setup_fire_core(self):
+        """Setup the Fire Core that appears after boss defeat"""
+        # Initially place off-screen, will be moved to boss location on defeat
+        self.fire_core = ElementalCore(
+            -100, -100,  # Off-screen initially
+            ElementalCore.FIRE,
+            self.game.asset_manager
+        )
+    
+    def _collect_fire_core(self):
+        """Handle Fire Core collection"""
+        if self.fire_core.collect():
+            self.core_collected = True
+            
+            # Insert into Cipher Core
+            self.cipher_core.insert_core(ElementalCore.FIRE, self.fire_core)
+            
+            # Play collection sound
+            self.game.asset_manager.play_sound("collect_fragment")
+            
+            # Create fire particle effect
+            self.particles.create_explosion(
+                self.fire_core.rect.centerx,
+                self.fire_core.rect.centery,
+                (255, 69, 0),  # Fire orange color
+                particle_count=25
+            )
+            
+            # Activate weapon boost
+            self.weapon_boost_active = True
+            self.weapon_boost_timer = get_ticks() + 30000  # 30 seconds
+            
+            # Show message
+            self.game.set_story_message("Fire Core collected! Purge abilities unlocked! Press F to purge corruption.", 4000)
+            logger.info("Fire Core collected! Purge and weapon boost abilities unlocked.")
+    
+    def _activate_purge_ability(self):
+        """Activate Fire Core purge ability to clear corruption"""
+        current_time = get_ticks()
+        
+        if current_time < self.purge_cooldown:
+            return  # Still on cooldown
+        
+        if not self.cipher_core.has_ability("purge_corruption"):
+            return  # Don't have the ability
+        
+        # Set cooldown
+        self.purge_cooldown = current_time + 15000  # 15 second cooldown
+        
+        # Create purge effect around player
+        player_pos = self.game.player.rect.center
+        purge_radius = 200
+        
+        # Damage all enemies in range
+        enemy_sprites = self.game.combat_controller.enemy_manager.get_sprites()
+        if self.game.combat_controller.boss_active and self.game.combat_controller.maze_guardian:
+            enemy_sprites.add(self.game.combat_controller.maze_guardian)
+        
+        purged_count = 0
+        for enemy in enemy_sprites:
+            if hasattr(enemy, 'rect'):
+                distance = ((enemy.rect.centerx - player_pos[0])**2 + (enemy.rect.centery - player_pos[1])**2)**0.5
+                if distance <= purge_radius:
+                    # Apply purge damage
+                    purge_damage = 50
+                    if hasattr(enemy, 'take_damage'):
+                        enemy.take_damage(purge_damage)
+                    purged_count += 1
+                    
+                    # Create purge effect on enemy
+                    self.particles.create_explosion(
+                        enemy.rect.centerx,
+                        enemy.rect.centery,
+                        (255, 100, 0),  # Orange fire
+                        particle_count=15
+                    )
+        
+        # Create main purge effect
+        self.particles.create_explosion(
+            player_pos[0], player_pos[1],
+            (255, 69, 0),  # Fire color
+            particle_count=40
+        )
+        
+        # Play purge sound
+        self.game.asset_manager.play_sound("laser_fire")
+        
+        logger.info(f"Purge ability activated! Affected {purged_count} enemies.")
+    
+    def _update_fire_abilities(self, current_time):
+        """Update Fire Core abilities"""
+        # Update weapon boost
+        if self.weapon_boost_active and current_time > self.weapon_boost_timer:
+            self.weapon_boost_active = False
+            logger.info("Fire Core weapon boost expired")
+        
+        # Apply weapon boost effect
+        if self.weapon_boost_active and hasattr(self.game.player, 'damage_multiplier'):
+            self.game.player.damage_multiplier = 1.5  # 50% damage boost
+        elif hasattr(self.game.player, 'damage_multiplier'):
+            self.game.player.damage_multiplier = 1.0  # Normal damage
+    
+    def _draw_fire_core_ui(self, surface):
+        """Draw Fire Core specific UI elements"""
+        font = Font(None, 24)
+        
+        # Chapter title
+        title_font = Font(None, 36)
+        title_text = title_font.render("Chapter 2: The Guardian", True, (255, 215, 0))
+        surface.blit(title_text, (10, 10))
+        
+        # Fire Core status
+        if self.core_collected:
+            status_text = "Fire Core: Collected"
+            color = (255, 69, 0)  # Fire orange
+        else:
+            status_text = "Fire Core: Not Found"
+            color = (128, 128, 128)  # Gray
+        
+        status_surface = font.render(status_text, True, color)
+        surface.blit(status_surface, (10, surface.get_height() - 80))
+        
+        # Abilities status
+        if self.core_collected:
+            # Purge cooldown
+            current_time = get_ticks()
+            if current_time < self.purge_cooldown:
+                cooldown_left = (self.purge_cooldown - current_time) // 1000
+                purge_text = f"Purge: {cooldown_left}s cooldown"
+                color = (255, 100, 100)
+            else:
+                purge_text = "Purge: Ready (Press F)"
+                color = (100, 255, 100)
+            
+            purge_surface = font.render(purge_text, True, color)
+            surface.blit(purge_surface, (10, surface.get_height() - 50))
+            
+            # Weapon boost status
+            if self.weapon_boost_active:
+                boost_left = (self.weapon_boost_timer - current_time) // 1000
+                boost_text = f"Weapon Boost: {boost_left}s remaining"
+                boost_color = (255, 215, 0)  # Gold
+            else:
+                boost_text = "Weapon Boost: Inactive"
+                boost_color = (128, 128, 128)
+            
+            boost_surface = font.render(boost_text, True, boost_color)
+            surface.blit(boost_surface, (10, surface.get_height() - 20))

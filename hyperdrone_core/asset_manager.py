@@ -292,8 +292,8 @@ class AssetManager:
                 "ui_text": {"path": get_asset_path("fonts", "UI_TEXT_FONT"), "sizes": [28, 24, 20, 16, 32, 56]},
                 "ui_values": {"path": get_asset_path("fonts", "UI_TEXT_FONT"), "sizes": [30]},
                 "small_text": {"path": get_asset_path("fonts", "UI_TEXT_FONT"), "sizes": [24]},
-                "medium_text": {"path": get_asset_path("fonts", "UI_TEXT_FONT"), "sizes": [48, 36]},
-                "large_text": {"path": get_asset_path("fonts", "UI_TEXT_FONT"), "sizes": [74, 52, 48]},
+                "medium_text": {"path": get_asset_path("fonts", "UI_TEXT_FONT"), "sizes": [48, 36, 24]},
+                "large_text": {"path": get_asset_path("fonts", "UI_TEXT_FONT"), "sizes": [74, 52, 48, 24]},
                 "title_text": {"path": get_asset_path("fonts", "UI_TEXT_FONT"), "sizes": [90]},
             },
             "music": {

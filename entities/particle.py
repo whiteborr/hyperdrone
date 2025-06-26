@@ -98,3 +98,22 @@ class Particle(Sprite):
                     circle(surface, color, draw_pos, draw_radius)
             else:
                 surface.blit(self.image, self.rect)
+
+class ParticleSystem:
+    def __init__(self):
+        self.particles = []
+    
+    def create_explosion(self, x, y, color, particle_count=20):
+        for _ in range(particle_count):
+            particle = Particle(x, y, [color], 1, 5, 2, 8, lifetime_frames=30)
+            self.particles.append(particle)
+    
+    def update(self, delta_time):
+        for particle in self.particles[:]:
+            particle.update()
+            if not particle.alive():
+                self.particles.remove(particle)
+    
+    def draw(self, surface, camera_offset=(0, 0)):
+        for particle in self.particles:
+            particle.draw(surface)

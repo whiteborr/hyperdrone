@@ -1,27 +1,19 @@
 {
     "unlocked_drones": [
-        "PHANTOM",
         "DRONE"
     ],
     "selected_drone_id": "DRONE",
-    "cores": 1040,
+    "cores": 1070,
     "unlocked_lore_ids": [
         "architect_legacy_intro",
         "drone_DRONE"
     ],
-    "collected_core_fragments": [
-        "cf_earth",
-        "cf_air"
-    ],
+    "collected_core_fragments": [],
     "architect_vault_completed": false,
     "collected_glyph_tablets": [],
     "solved_puzzle_terminals": [],
     "defeated_bosses": [],
     "unlocked_abilities": [],
-    "owned_weapons": {
-        "2": 2,
-        "1": 1,
-        "7": 1
-    },
-    "orichalc_fragments": 16
+    "owned_weapons": {},
+    "orichalc_fragments": []
 }

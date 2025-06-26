@@ -1,6 +1,5 @@
 # entities/jetstream_particle.py
 
-import pygame
 from pygame.sprite import Sprite
 from pygame.draw import circle
 from pygame import Surface, SRCALPHA

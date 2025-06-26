@@ -5,7 +5,45 @@ from pygame import KEYDOWN, KEYUP, K_ESCAPE, K_p
 from .state import State
 from settings_manager import get_setting
 
-class ArchitectVaultIntroState(State):
+class BaseArchitectVaultState(State):
+    """Base class for Architect Vault states with common functionality"""
+    
+    def _get_colors(self):
+        """Get common colors used across vault states"""
+        return {
+            'bg': get_setting("colors", "ARCHITECT_VAULT_BG_COLOR", (20, 0, 30)),
+            'gold': get_setting("colors", "GOLD", (255, 215, 0)),
+            'white': get_setting("colors", "WHITE", (255, 255, 255)),
+            'red': get_setting("colors", "RED", (255, 0, 0)),
+            'cyan': get_setting("colors", "CYAN", (0, 255, 255)),
+            'black': get_setting("colors", "BLACK", (0, 0, 0))
+        }
+    
+    def _get_display_size(self):
+        """Get display dimensions"""
+        return {
+            'width': get_setting("display", "WIDTH", 1920),
+            'height': get_setting("display", "HEIGHT", 1080)
+        }
+    
+    def _draw_title(self, surface, title="Architect's Vault"):
+        """Draw the vault title"""
+        colors = self._get_colors()
+        display = self._get_display_size()
+        
+        font = self.game.asset_manager.get_font("large_text", 48) or Font(None, 48)
+        title_surf = font.render(title, True, colors['gold'])
+        surface.blit(title_surf, title_surf.get_rect(center=(display['width'] // 2, 50)))
+    
+    def _handle_pause_events(self, events):
+        """Handle common pause events"""
+        for event in events:
+            if event.type == KEYDOWN and event.key in (K_p, K_ESCAPE):
+                self.game.toggle_pause()
+                return True
+        return False
+
+class ArchitectVaultIntroState(BaseArchitectVaultState):
     def enter(self, previous_state=None, **kwargs):
         self.game.architect_vault_current_phase = "intro"
         self.game.architect_vault_message = "Entering the Architect's Vault..."
@@ -17,37 +55,30 @@ class ArchitectVaultIntroState(State):
             self.game.state_manager.set_state("ArchitectVaultEntryPuzzleState")
     
     def draw(self, surface):
-        bg_color = get_setting("colors", "ARCHITECT_VAULT_BG_COLOR", (20, 0, 30))
-        gold_color = get_setting("colors", "GOLD", (255, 215, 0))
-        white_color = get_setting("colors", "WHITE", (255, 255, 255))
-        width = get_setting("display", "WIDTH", 1920)
-        height = get_setting("display", "HEIGHT", 1080)
+        colors = self._get_colors()
+        display = self._get_display_size()
         
-        surface.fill(bg_color)
-        
-        # Draw intro message
-        font = self.game.asset_manager.get_font("large_text", 48) or Font(None, 48)
-        title_surf = font.render("Architect's Vault", True, gold_color)
-        surface.blit(title_surf, title_surf.get_rect(center=(width // 2, 50)))
+        surface.fill(colors['bg'])
+        self._draw_title(surface)
         
         font = self.game.asset_manager.get_font("medium_text", 36) or Font(None, 36)
-        msg_surf = font.render(self.game.architect_vault_message, True, white_color)
-        surface.blit(msg_surf, msg_surf.get_rect(center=(width // 2, height // 2)))
+        msg_surf = font.render(self.game.architect_vault_message, True, colors['white'])
+        surface.blit(msg_surf, msg_surf.get_rect(center=(display['width'] // 2, display['height'] // 2)))
 
 
-class ArchitectVaultEntryPuzzleState(State):
+class ArchitectVaultEntryPuzzleState(BaseArchitectVaultState):
     def enter(self, previous_state=None, **kwargs):
         self.game.architect_vault_current_phase = "entry_puzzle"
         if hasattr(self.game.puzzle_controller, 'initialize_vault_entry_puzzle'):
             self.game.puzzle_controller.initialize_vault_entry_puzzle()
     
     def handle_events(self, events):
+        if self._handle_pause_events(events):
+            return
+        
         for event in events:
-            if event.type == KEYDOWN:
-                if event.key == K_ESCAPE:
-                    self.game.toggle_pause()
-                else:
-                    self.game.puzzle_controller.handle_input(event, "architect_vault_entry_puzzle")
+            if event.type == KEYDOWN and event.key != K_ESCAPE:
+                self.game.puzzle_controller.handle_input(event, "architect_vault_entry_puzzle")
     
     def update(self, delta_time):
         if hasattr(self.game.puzzle_controller, 'update_vault_entry_puzzle'):
@@ -56,30 +87,26 @@ class ArchitectVaultEntryPuzzleState(State):
                 self.game.state_manager.set_state("ArchitectVaultGauntletState")
     
     def draw(self, surface):
-        bg_color = get_setting("colors", "ARCHITECT_VAULT_BG_COLOR", (20, 0, 30))
-        gold_color = get_setting("colors", "GOLD", (255, 215, 0))
-        width = get_setting("display", "WIDTH", 1920)
+        colors = self._get_colors()
+        surface.fill(colors['bg'])
+        self._draw_title(surface)
         
-        surface.fill(bg_color)
-        
-        # Draw title
-        font = self.game.asset_manager.get_font("large_text", 48) or Font(None, 48)
-        title_surf = font.render("Architect's Vault", True, gold_color)
-        surface.blit(title_surf, title_surf.get_rect(center=(width // 2, 50)))
-        
-        # Let puzzle controller draw the puzzle
         if hasattr(self.game.puzzle_controller, 'draw_vault_entry_puzzle'):
             self.game.puzzle_controller.draw_vault_entry_puzzle(surface)
 
 
-class ArchitectVaultGauntletState(State):
+class ArchitectVaultGauntletState(BaseArchitectVaultState):
     def enter(self, previous_state=None, **kwargs):
         self.game.architect_vault_current_phase = "gauntlet"
-        
-        # Initialize maze for gauntlet
+        self._initialize_maze()
+        self._initialize_player()
+        self._setup_combat()
+        self._setup_waves()
+    
+    def _initialize_maze(self):
         self.game.maze = self.game.Maze(is_architect_vault=True)
-        
-        # Initialize player
+    
+    def _initialize_player(self):
         tile_size = get_setting("gameplay", "TILE_SIZE", 80)
         spawn_x, spawn_y = self.game._get_safe_spawn_point(tile_size * 0.7, tile_size * 0.7)
         drone_id = self.game.drone_system.get_selected_drone_id()
@@ -87,143 +114,152 @@ class ArchitectVaultGauntletState(State):
         sprite_key = f"drone_{drone_id}_ingame_sprite"
         
         self.game.player = self.game.PlayerDrone(
-            spawn_x, spawn_y, drone_id, drone_stats, 
-            self.game.asset_manager, sprite_key, 'crash', 
+            spawn_x, spawn_y, drone_id, drone_stats,
+            self.game.asset_manager, sprite_key, 'crash',
             self.game.drone_system
         )
-        
-        # Set up combat controller
+    
+    def _setup_combat(self):
         self.game.combat_controller.reset_combat_state()
         self.game.combat_controller.set_active_entities(
-            player=self.game.player, 
-            maze=self.game.maze, 
+            player=self.game.player,
+            maze=self.game.maze,
             power_ups_group=self.game.power_ups_group
         )
-        
-        # Spawn enemies for gauntlet
+    
+    def _setup_waves(self):
         drones_per_wave = get_setting("architect_vault", "ARCHITECT_VAULT_DRONES_PER_WAVE", [3, 4, 5])
         self.game.combat_controller.enemy_manager.spawn_architect_vault_enemies(
-            wave=0, 
-            num_enemies=drones_per_wave[0]
+            wave=0, num_enemies=drones_per_wave[0]
         )
         
-        # Set up wave counter
         self.game.architect_vault_current_wave = 0
         self.game.architect_vault_total_waves = get_setting("architect_vault", "ARCHITECT_VAULT_GAUNTLET_WAVES", 3)
     
     def handle_events(self, events):
+        if self._handle_pause_events(events):
+            return
+        
         for event in events:
-            if event.type == KEYDOWN:
-                if event.key == K_p or event.key == K_ESCAPE:
-                    self.game.toggle_pause()
-                else:
-                    self.game.player_actions.handle_key_down(event)
+            if event.type == KEYDOWN and event.key not in (K_p, K_ESCAPE):
+                self.game.player_actions.handle_key_down(event)
             elif event.type == KEYUP:
                 self.game.player_actions.handle_key_up(event)
     
     def update(self, delta_time):
         current_time_ms = get_ticks()
         
-        # Update player
+        self._update_player(current_time_ms)
+        self._update_combat(current_time_ms, delta_time)
+        self._check_wave_progression()
+        self._handle_game_updates(current_time_ms)
+    
+    def _update_player(self, current_time_ms):
         if self.game.player:
             self.game.player.update(
-                current_time_ms, 
-                self.game.maze, 
-                self.game.combat_controller.enemy_manager.get_sprites(), 
-                self.game.player_actions, 
+                current_time_ms,
+                self.game.maze,
+                self.game.combat_controller.enemy_manager.get_sprites(),
+                self.game.player_actions,
                 self.game.maze.game_area_x_offset if self.game.maze else 0
             )
-        
-        # Update combat
+    
+    def _update_combat(self, current_time_ms, delta_time):
         self.game.combat_controller.update(current_time_ms, delta_time)
-        
-        # Check if all enemies are defeated
+    
+    def _check_wave_progression(self):
         if len(self.game.combat_controller.enemy_manager.get_sprites()) == 0:
             self.game.architect_vault_current_wave += 1
             
-            # Check if all waves are completed
             if self.game.architect_vault_current_wave >= self.game.architect_vault_total_waves:
                 self.game.state_manager.set_state("ArchitectVaultExtractionState")
             else:
-                # Spawn next wave
-                drones_per_wave = get_setting("architect_vault", "ARCHITECT_VAULT_DRONES_PER_WAVE", [3, 4, 5])
-                self.game.combat_controller.enemy_manager.spawn_architect_vault_enemies(
-                    wave=self.game.architect_vault_current_wave,
-                    num_enemies=drones_per_wave[self.game.architect_vault_current_wave]
-                )
-        
-        # Handle collectible collisions
+                self._spawn_next_wave()
+    
+    def _spawn_next_wave(self):
+        drones_per_wave = get_setting("architect_vault", "ARCHITECT_VAULT_DRONES_PER_WAVE", [3, 4, 5])
+        self.game.combat_controller.enemy_manager.spawn_architect_vault_enemies(
+            wave=self.game.architect_vault_current_wave,
+            num_enemies=drones_per_wave[self.game.architect_vault_current_wave]
+        )
+    
+    def _handle_game_updates(self, current_time_ms):
         self.game._handle_collectible_collisions()
-        
-        # Update continuous player movement and actions
         self.game.player_actions.update_player_movement_and_actions(current_time_ms)
     
     def draw(self, surface):
-        bg_color = get_setting("colors", "ARCHITECT_VAULT_BG_COLOR", (20, 0, 30))
-        white_color = get_setting("colors", "WHITE", (255, 255, 255))
-        width = get_setting("display", "WIDTH", 1920)
+        colors = self._get_colors()
+        display = self._get_display_size()
         
-        surface.fill(bg_color)
+        surface.fill(colors['bg'])
         
-        # Draw maze
+        self._draw_game_elements(surface)
+        self._draw_wave_counter(surface, colors['white'], display['width'])
+    
+    def _draw_game_elements(self, surface):
         if self.game.maze:
             self.game.maze.draw(surface, self.game.camera)
         
-        # Draw collectibles and powerups
-        for item_group in [
-            self.game.collectible_rings_group, 
-            self.game.power_ups_group, 
-            self.game.core_fragments_group
-        ]:
-            for item in item_group:
-                item.draw(surface, self.game.camera)
+        self._draw_collectibles(surface)
         
-        # Draw player
         if self.game.player:
             self.game.player.draw(surface)
         
-        # Draw enemies
         if self.game.combat_controller:
             self.game.combat_controller.enemy_manager.draw_all(surface, self.game.camera)
+    
+    def _draw_collectibles(self, surface):
+        item_groups = [
+            self.game.collectible_rings_group,
+            self.game.power_ups_group,
+            self.game.core_fragments_group
+        ]
         
-        # Draw wave counter
+        for item_group in item_groups:
+            for item in item_group:
+                item.draw(surface, self.game.camera)
+    
+    def _draw_wave_counter(self, surface, color, width):
         font = self.game.asset_manager.get_font("medium_text", 36) or Font(None, 36)
-        wave_surf = font.render(f"Wave {self.game.architect_vault_current_wave + 1}/{self.game.architect_vault_total_waves}", 
-                              True, white_color)
+        wave_text = f"Wave {self.game.architect_vault_current_wave + 1}/{self.game.architect_vault_total_waves}"
+        wave_surf = font.render(wave_text, True, color)
         surface.blit(wave_surf, wave_surf.get_rect(center=(width // 2, 100)))
 
 
-class ArchitectVaultExtractionState(State):
+class ArchitectVaultExtractionState(BaseArchitectVaultState):
     def enter(self, previous_state=None, **kwargs):
         self.game.architect_vault_current_phase = "extraction"
-        
-        # Initialize extraction timer
         self.game.architect_vault_phase_timer_start = get_ticks()
         
-        # Create escape zone
-        if hasattr(self.game.maze, 'create_escape_zone'):
-            escape_pos = self.game.maze.create_escape_zone()
-            if escape_pos:
-                self.game.escape_zone_group.empty()
-                tile_size = get_setting("gameplay", "TILE_SIZE", 80)
-                escape_zone_color = get_setting("colors", "ESCAPE_ZONE_COLOR", (0, 255, 120))
-                self.game.escape_zone_group.add(self.game.EscapeZone(
-                    escape_pos[0], escape_pos[1], 
-                    tile_size * 2, tile_size * 2, 
-                    escape_zone_color
-                ))
+        self._create_escape_zone()
+        self._spawn_vault_core()
+    
+    def _create_escape_zone(self):
+        if not hasattr(self.game.maze, 'create_escape_zone'):
+            return
         
-        # Spawn vault core collectible
+        escape_pos = self.game.maze.create_escape_zone()
+        if escape_pos:
+            self.game.escape_zone_group.empty()
+            tile_size = get_setting("gameplay", "TILE_SIZE", 80)
+            escape_zone_color = get_setting("colors", "ESCAPE_ZONE_COLOR", (0, 255, 120))
+            self.game.escape_zone_group.add(self.game.EscapeZone(
+                escape_pos[0], escape_pos[1],
+                tile_size * 2, tile_size * 2,
+                escape_zone_color
+            ))
+    
+    def _spawn_vault_core(self):
         if hasattr(self.game, 'item_manager'):
             self.game.item_manager.spawn_vault_core(self.game.maze)
     
     def handle_events(self, events):
+        if self._handle_pause_events(events):
+            return
+        
         for event in events:
-            if event.type == KEYDOWN:
-                if event.key == K_p or event.key == K_ESCAPE:
-                    self.game.toggle_pause()
-                else:
-                    self.game.player_actions.handle_key_down(event)
+            if event.type == KEYDOWN and event.key not in (K_p, K_ESCAPE):
+                self.game.player_actions.handle_key_down(event)
             elif event.type == KEYUP:
                 self.game.player_actions.handle_key_up(event)
     
@@ -317,7 +353,7 @@ class ArchitectVaultExtractionState(State):
         surface.blit(objective_surf, objective_surf.get_rect(center=(width // 2, 150)))
 
 
-class ArchitectVaultSuccessState(State):
+class ArchitectVaultSuccessState(BaseArchitectVaultState):
     def enter(self, previous_state=None, **kwargs):
         # Unlock rewards
         blueprint_id = get_setting("architect_vault", "ARCHITECT_REWARD_BLUEPRINT_ID", "DRONE_ARCHITECT_X")
@@ -359,7 +395,7 @@ class ArchitectVaultSuccessState(State):
         surface.blit(prompt_surf, prompt_surf.get_rect(center=(width // 2, height // 2 + 150)))
 
 
-class ArchitectVaultFailureState(State):
+class ArchitectVaultFailureState(BaseArchitectVaultState):
     def handle_events(self, events):
         for event in events:
             if event.type == KEYDOWN:

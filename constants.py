@@ -112,6 +112,14 @@ GAME_STATE_BOSS_FIGHT = GameStates.BOSS_FIGHT
 GAME_STATE_CORRUPTED_SECTOR = GameStates.CORRUPTED_SECTOR
 GAME_STATE_HARVEST_CHAMBER = GameStates.HARVEST_CHAMBER
 
+# New chapter states
+GAME_STATE_EARTH_CORE = "earth_core"
+GAME_STATE_FIRE_CORE = "fire_core"
+GAME_STATE_AIR_CORE = "air_core"
+GAME_STATE_WATER_CORE = "water_core"
+GAME_STATE_ORICHALC_CORE = "orichalc_core"
+GAME_STATE_SKYWARD_GRID = "skyward_grid"
+
 # ==========================
 # Player Weapon Modes
 # ==========================

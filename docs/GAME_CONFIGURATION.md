@@ -67,55 +67,72 @@ To create a new enemy type with custom behaviors:
 3. Set the default behavior
 4. Override `update()` if needed for behavior transitions
 
-## Chapter 4 SHMUP System
+## Chapter 1: Earth Core State System
 
 ### Overview
-Chapter 4 features a vertical scrolling shoot-em-up (SHMUP) gameplay mode with wave-based enemy spawning similar to Space Invaders.
+Chapter 1 features a top-down maze exploration gameplay mode with procedural generation, enemy AI, and environmental hazards.
 
 ### Key Components
 
-#### ShmupEnemyManager
-Manages wave-based enemy spawning with the following features:
-- **Wave System**: Enemies spawn in organized formations (rows and columns)
-- **Progressive Difficulty**: Each wave increases enemy count and speed
-- **Formation Patterns**: 2-4 rows and 4-8 columns per wave
-- **Wave Delays**: 3-second intervals between waves
+#### EarthCoreState
+Manages the first chapter gameplay with the following features:
+- **Procedural Maze Generation**: Dynamic maze creation based on screen resolution
+- **Enemy AI System**: Configurable enemies with pathfinding and combat behaviors
+- **Collectible System**: Rings, cores, and core fragments with progression tracking
+- **Environmental Hazards**: Unstable floors that collapse based on player proximity
+- **Particle Effects**: Explosion and movement effects for visual feedback
 
-#### Wave Configuration
+#### Maze System
 ```python
-# Wave spawning logic
-rows = min(2 + (self.current_wave - 1) // 3, 4)  # 2-4 rows
-cols = min(4 + (self.current_wave - 1) // 2, 8)  # 4-8 columns
-enemy.speed = 2 + (self.current_wave * 0.5)      # Increasing speed
+# Maze generation with dynamic sizing
+self.actual_maze_cols = self.available_width // self.tile_size
+self.actual_maze_rows = self.available_height // self.tile_size
+
+# Wall collision detection
+def is_wall(self, obj_center_x_abs, obj_center_y_abs, obj_width, obj_height):
+    # Collision detection with maze walls and borders
 ```
 
-#### One-Shot Kill System
-All enemies in Chapter 4 die from a single bullet hit:
-- Enemy health is set to 1 during wave spawning
-- Collision handling ensures instant kills regardless of bullet damage
-- Creates explosion effects on enemy destruction
+#### Player Movement Integration
+Player movement is fully integrated with the chapter state:
+- Input handling through player_actions system
+- Collision detection with maze walls
+- Weapon firing and projectile management
+- Camera-independent rendering
 
-### Usage
-The SHMUP system is automatically activated when entering the HarvestChamberState:
+### Current Implementation Status
+The Earth Core State is fully functional:
 
 ```python
-# Enemy manager handles wave spawning
-self.shmup_enemy_manager = ShmupEnemyManager(self.game)
+# Player initialization with proper drone configuration
+start_pos = (100, 100)  # Simple start position
+drone_id = self.game.drone_system.get_selected_drone_id()
+drone_stats = self.game.drone_system.get_drone_stats(drone_id)
+self.player = PlayerDrone(start_pos[0], start_pos[1], drone_id, drone_stats, ...)
 
-# Collision system ensures one-shot kills
-enemy.health = 0
-enemy.alive = False
+# Enemy spawning with JSON configuration
+enemy_config = {"health": 25, "speed": 1.0, "damage": 10}
+enemy = Enemy(x, y, self.game.asset_manager, enemy_config)
 ```
 
 ### Benefits
-- **Arcade-Style Gameplay**: Classic Space Invaders wave mechanics
-- **Escalating Challenge**: Progressive difficulty through wave progression  
-- **Satisfying Combat**: One-shot kills provide immediate feedback
-- **Visual Appeal**: Organized enemy formations create engaging patterns
+- **Stable Gameplay**: Fully functional maze navigation and combat
+- **Configurable Systems**: JSON-based settings for easy modification
+- **Visual Feedback**: Particle effects and environmental responses
+- **Progression Integration**: Collectibles tie into overall game progression
 
-## Collision Optimization
+## Collision System Improvements
 
 ### Overview
+The collision system has been significantly improved with better error handling, coordinate system fixes, and performance optimizations.
+
+### Recent Fixes
+- **Attribute Error Resolution**: Fixed missing rect and collision_rect attributes
+- **Camera Integration**: Proper handling of camera-aware and camera-independent rendering
+- **Coordinate Conversion**: Fixed world-to-grid and grid-to-world coordinate transformations
+- **Method Signature Fixes**: Corrected parameter mismatches in collision detection methods
+
+### Performance Optimization
 The collision handling in `hyperdrone_core/combat_controller.py` has been optimized using pygame's `groupcollide` function to improve performance.
 
 ### Key Changes
@@ -155,6 +172,22 @@ The refactored code maintains all the original functionality while using `groupc
 - **Better performance**: `groupcollide` uses spatial hashing for faster collision detection
 - **Cleaner code**: Reduces nested loops and complex logic
 - **More maintainable**: Easier to understand and modify
+
+## Asset Management System
+
+### Overview
+The asset management system now includes robust fallback mechanisms to handle missing assets gracefully.
+
+### Fallback Sprite Generation
+When assets are missing, the system automatically generates fallback sprites:
+- **Elemental Cores**: Colored circles with appropriate core colors
+- **Enemies**: Basic geometric shapes with identifying features
+- **UI Elements**: Simple text-based representations
+
+### Asset Loading Improvements
+- **Warning System**: Logs warnings for missing assets without crashing
+- **Graceful Degradation**: Game remains playable even with missing assets
+- **Development Friendly**: Easy to identify which assets need creation
 
 ## Constants Update
 
@@ -238,6 +271,26 @@ enemy_manager.spawn_enemy_by_id("defense_drone_1", x, y, path_to_core=path)
 
 #### Modifying Existing Enemies
 Simply edit the values in `data/enemy_configs.json` to adjust enemy properties.
+
+## Current Game State System
+
+### Overview
+
+The game now uses a robust state management system with the State Design Pattern, providing stable transitions between different game modes and chapters.
+
+### Implemented States
+
+#### EarthCoreState (Chapter 1)
+- **Status**: ✅ Fully Implemented and Functional
+- **Features**: Maze navigation, enemy combat, collectible system, particle effects
+- **Player Systems**: Movement, weapons, collision detection all working
+- **Enemy Systems**: AI pathfinding, combat behaviors, JSON configuration
+
+#### State Transition System
+- **Robust Error Handling**: Fixed import resolution and method signature issues
+- **Asset Fallbacks**: Automatic sprite generation when assets are missing
+- **Coordinate Systems**: Proper world-to-grid and grid-to-world conversions
+- **Input Integration**: Player actions properly integrated with state updates
 
 ## Event Batching System
 

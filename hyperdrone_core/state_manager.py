@@ -46,6 +46,12 @@ from .corrupted_sector_state import CorruptedSectorState
 from .harvest_chamber_state import HarvestChamberState
 from .weapons_upgrade_shop_state import WeaponsUpgradeShopState
 from .narrative_state import NarrativeState
+from .earth_core_state import EarthCoreState
+from .fire_core_state import FireCoreState
+from .air_core_state import AirCoreState
+from .water_core_state import WaterCoreState
+from .orichalc_core_state import OrichalcCoreState
+from .skyward_grid_state import SkywardGridState
 
 logger = getLogger(__name__)
 
@@ -136,7 +142,13 @@ class StateManager:
             "HarvestChamberState": HarvestChamberState,
             "WeaponsUpgradeShopState": WeaponsUpgradeShopState,
             "NarrativeState": NarrativeState,
-            "TempestFightState": TempestFightState
+            "TempestFightState": TempestFightState,
+            "EarthCoreState": EarthCoreState,
+            "FireCoreState": FireCoreState,
+            "AirCoreState": AirCoreState,
+            "WaterCoreState": WaterCoreState,
+            "OrichalcCoreState": OrichalcCoreState,
+            "SkywardGridState": SkywardGridState
         }
         
         # Register states with both the local cache and the central registry
@@ -171,7 +183,13 @@ class StateManager:
             GAME_STATE_ARCHITECT_VAULT_FAILURE: "ArchitectVaultFailureState",
             GAME_STATE_BOSS_FIGHT: "BossFightState",
             GAME_STATE_CORRUPTED_SECTOR: "CorruptedSectorState",
-            GAME_STATE_HARVEST_CHAMBER: "HarvestChamberState"
+            GAME_STATE_HARVEST_CHAMBER: "HarvestChamberState",
+            "GAME_STATE_EARTH_CORE": "EarthCoreState",
+            "GAME_STATE_FIRE_CORE": "FireCoreState",
+            "GAME_STATE_AIR_CORE": "AirCoreState",
+            "GAME_STATE_WATER_CORE": "WaterCoreState",
+            "GAME_STATE_ORICHALC_CORE": "OrichalcCoreState",
+            "GAME_STATE_SKYWARD_GRID": "SkywardGridState"
         }
         
     def _register_allowed_transitions(self):
@@ -213,9 +231,15 @@ class StateManager:
         
         # Story map transitions
         self.registry.register_transition("StoryMapState", "PlayingState")
+        self.registry.register_transition("StoryMapState", "EarthCoreState")
+        self.registry.register_transition("StoryMapState", "FireCoreState")
+        self.registry.register_transition("StoryMapState", "AirCoreState")
+        self.registry.register_transition("StoryMapState", "WaterCoreState")
         self.registry.register_transition("StoryMapState", "BossFightState")
         self.registry.register_transition("StoryMapState", "CorruptedSectorState")
         self.registry.register_transition("StoryMapState", "HarvestChamberState")
+        self.registry.register_transition("StoryMapState", "OrichalcCoreState")
+        self.registry.register_transition("StoryMapState", "SkywardGridState")
         self.registry.register_transition("StoryMapState", "MazeDefenseState")
         
         # Playing state transitions
@@ -275,7 +299,30 @@ class StateManager:
 
         # Harvest Chamber transitions
         self.registry.register_transition("HarvestChamberState", "GameOverState")
-        self.registry.register_transition("HarvestChamberState", "MainMenuState") # Placeholder for now
+        self.registry.register_transition("HarvestChamberState", "OrichalcCoreState")
+        self.registry.register_transition("HarvestChamberState", "StoryMapState")
+        
+        # Chapter core transitions
+        self.registry.register_transition("EarthCoreState", "GameOverState")
+        self.registry.register_transition("EarthCoreState", "StoryMapState")
+        
+        self.registry.register_transition("FireCoreState", "GameOverState")
+        self.registry.register_transition("FireCoreState", "StoryMapState")
+        
+        self.registry.register_transition("AirCoreState", "GameOverState")
+        self.registry.register_transition("AirCoreState", "StoryMapState")
+        
+        self.registry.register_transition("WaterCoreState", "GameOverState")
+        self.registry.register_transition("WaterCoreState", "StoryMapState")
+        
+        # Orichalc Core transitions
+        self.registry.register_transition("OrichalcCoreState", "GameOverState")
+        self.registry.register_transition("OrichalcCoreState", "MainMenuState")
+        self.registry.register_transition("OrichalcCoreState", "StoryMapState")
+        
+        # Skyward Grid transitions
+        self.registry.register_transition("SkywardGridState", "GameOverState")
+        self.registry.register_transition("SkywardGridState", "StoryMapState")
         
         # Narrative state transitions
         self.registry.register_transition("BossFightState", "NarrativeState")
@@ -352,6 +399,12 @@ class StateManager:
             "BossFightState": "boss_theme", 
             "CorruptedSectorState": "corrupted_theme",
             "HarvestChamberState": "shmup_theme",
+            "EarthCoreState": "gameplay_theme",
+            "FireCoreState": "boss_theme",
+            "AirCoreState": "corrupted_theme",
+            "WaterCoreState": "shmup_theme",
+            "OrichalcCoreState": "architect_vault_theme",
+            "SkywardGridState": "boss_theme",
             "BonusLevelPlayingState": "gameplay_theme",
             "MazeDefenseState": "defense_theme",
             "ArchitectVaultIntroState": "architect_vault_theme",

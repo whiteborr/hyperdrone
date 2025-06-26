@@ -43,6 +43,7 @@ class StoryMapState(State):
         logger.info("Entering StoryMapState")
         self.display_timer = get_ticks()
         self.ready_to_transition = False
+        self._transitioning = False
         
         # Check if we're returning from a completed chapter
         chapter_completed = kwargs.get('chapter_completed', False)
@@ -76,6 +77,7 @@ class StoryMapState(State):
                         self.ready_to_transition = True
                     else:
                         self.ready_to_transition = True
+                        self._transition_to_gameplay()
                     
     def update(self, delta_time):
         """Handle continuous updates"""
@@ -103,7 +105,9 @@ class StoryMapState(State):
                 
         # Only transition when player presses spacebar or Enter (and not during animations)
         elif self.ready_to_transition and not self.showing_completion_summary and not self.animating_to_next_chapter:
-            self._transition_to_gameplay()
+            if not hasattr(self, '_transitioning'):
+                self._transitioning = True
+                self._transition_to_gameplay()
             
     def _transition_to_gameplay(self):
         """Transition to the appropriate gameplay state based on the current chapter"""
@@ -111,8 +115,8 @@ class StoryMapState(State):
         current_chapter = story_manager.get_current_chapter()
         
         if not current_chapter:
-            logger.warning("No current chapter found, defaulting to PlayingState")
-            self.game.state_manager.set_state(GAME_STATE_PLAYING)
+            logger.warning("No current chapter found, defaulting to EarthCoreState")
+            self.game.state_manager.set_state("EarthCoreState")
             return
             
         # Determine the appropriate state based on the chapter ID
@@ -120,17 +124,17 @@ class StoryMapState(State):
         
         # Map chapter IDs to their corresponding game states
         chapter_state_map = {
-            "chapter_1": GAME_STATE_PLAYING,
-            "chapter_2": GAME_STATE_BOSS_FIGHT,
-            "chapter_3": GAME_STATE_CORRUPTED_SECTOR,
-            "chapter_4": GAME_STATE_HARVEST_CHAMBER,
-            "chapter_5": GAME_STATE_MAZE_DEFENSE,
-            "bonus": GAME_STATE_PLAYING      # Placeholder
+            "chapter_1": "EarthCoreState",
+            "chapter_2": "FireCoreState",
+            "chapter_3": "AirCoreState",
+            "chapter_4": "WaterCoreState",
+            "chapter_5": "OrichalcCoreState",
+            "bonus_chapter": "SkywardGridState"
         }
         
         # Get the appropriate state for the current chapter
-        next_state = chapter_state_map.get(chapter_id, GAME_STATE_PLAYING)
-        logger.info(f"Transitioning from StoryMapState to {next_state} for chapter {chapter_id}")
+        next_state = chapter_state_map.get(chapter_id, "EarthCoreState")
+        self.ready_to_transition = False
         self.game.state_manager.set_state(next_state, from_story_map=True)
             
     def draw(self, surface):

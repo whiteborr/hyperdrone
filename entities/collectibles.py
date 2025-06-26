@@ -460,3 +460,14 @@ class CoreFragmentAssemblerItem(Collectible):
                         game_controller_instance.play_sound('collect_fragment', 0.8)
             return True
         return False
+
+class Core(Collectible):
+    def __init__(self, x, y, asset_manager):
+        super().__init__(x, y, base_color=CYAN, size=20, thickness=3)
+    
+    def update(self):
+        if self.collected:
+            self.kill()
+            return True
+        self.update_collectible_state()
+        return False

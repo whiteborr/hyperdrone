@@ -1,11 +1,11 @@
 # main.py
 from sys import exit
 from pygame import get_init, quit as pygame_quit
-from logging import INFO
+from logging import DEBUG
 from logging_config import setup_logging
 
 # Setup logging for the application
-logger = setup_logging(INFO)
+logger = setup_logging(DEBUG)
 
 from hyperdrone_core.game_loop import GameController
 

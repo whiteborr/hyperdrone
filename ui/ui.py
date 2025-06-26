@@ -238,7 +238,7 @@ class UIManager:
             self.draw_architect_vault_hud_elements()
             if self.game_controller.paused: self.draw_pause_overlay()
         
-        elif current_state in ["PlayingState", "BonusLevelPlayingState"]:
+        elif current_state in ["PlayingState", "BonusLevelPlayingState", "EarthCoreState", "FireCoreState", "AirCoreState", "WaterCoreState", "OrichalcCoreState"]:
             self.draw_gameplay_hud(player_active_abilities_data)
             if self.game_controller.paused: self.draw_pause_overlay()
         
