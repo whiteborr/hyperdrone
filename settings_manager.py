@@ -2,9 +2,9 @@
 from json import load, dump
 from os.path import join, exists, dirname
 from os import makedirs
-import logging
+from logging import getLogger
 
-logger = logging.getLogger(__name__)
+logger = getLogger(__name__)
 
 class SettingsManager:
     """

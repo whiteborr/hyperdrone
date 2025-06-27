@@ -1,5 +1,8 @@
 # hyperdrone_core/air_core_state.py
-import pygame
+from pygame import KEYDOWN, KEYUP, K_p, K_ESCAPE, USEREVENT
+from pygame.sprite import Group
+from pygame.time import get_ticks, set_timer
+from pygame import Surface
 from .state import State
 from entities import PlayerDrone, Enemy, ParticleSystem, Maze
 from entities.elemental_core import ElementalCore
@@ -11,7 +14,7 @@ class AirCoreState(State):
         self.player = None
         self.maze = None
         self.air_core = None
-        self.enemies = pygame.sprite.Group()
+        self.enemies = Group()
         self.particles = ParticleSystem()
         self.core_collected = False
         self.shifting_walls = []
@@ -49,15 +52,15 @@ class AirCoreState(State):
         
     def handle_events(self, events):
         for event in events:
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_p:
+            if event.type == KEYDOWN:
+                if event.key == K_p:
                     self.game.paused = not self.game.paused
-                elif event.key == pygame.K_ESCAPE:
+                elif event.key == K_ESCAPE:
                     self.game.state_manager.set_state(GAME_STATE_STORY_MAP)
                 else:
                     if hasattr(self.game, 'player_actions'):
                         self.game.player_actions.handle_key_down(event)
-            elif event.type == pygame.KEYUP:
+            elif event.type == KEYUP:
                 if hasattr(self.game, 'player_actions'):
                     self.game.player_actions.handle_key_up(event)
     
@@ -65,7 +68,7 @@ class AirCoreState(State):
         if self.game.paused:
             return
             
-        current_time = pygame.time.get_ticks()
+        current_time = get_ticks()
         
         # Update shifting walls
         self.shift_timer += delta_time
@@ -105,7 +108,7 @@ class AirCoreState(State):
         for row in range(min(5, self.maze.actual_maze_rows)):
             for col in range(min(5, self.maze.actual_maze_cols)):
                 if row > 0 and col > 0:  # Don't modify edges
-                    if pygame.time.get_ticks() % 2 == 0:  # Random chance
+                    if get_ticks() % 2 == 0:  # Random chance
                         self.maze.grid[row][col] = 1 - self.maze.grid[row][col]
         
         # Recreate wall lines
@@ -141,7 +144,7 @@ class AirCoreState(State):
             self.game.set_story_message("Air Core collected! Your mind expands with new possibilities.", 3000)
             
             # Return to story map
-            pygame.time.set_timer(pygame.USEREVENT + 2, 2000)
+            set_timer(USEREVENT + 2, 2000)
     
     def draw(self, surface):
         surface.fill((40, 20, 60))  # Purple corrupted background
@@ -163,7 +166,7 @@ class AirCoreState(State):
         self.particles.draw(surface, (0, 0))
         
         # Draw corruption effect overlay
-        corruption_surface = pygame.Surface((surface.get_width(), surface.get_height()))
+        corruption_surface = Surface((surface.get_width(), surface.get_height()))
         corruption_surface.set_alpha(30)
         corruption_surface.fill((100, 0, 100))
         surface.blit(corruption_surface, (0, 0))

@@ -1,12 +1,13 @@
 # entities/enemy.py
-from math import hypot, degrees, atan2
+from math import hypot, degrees, atan2, radians, cos, sin
 from random import randint, random
-import logging
+from logging import getLogger
 
-from pygame.sprite import Sprite
+from pygame.sprite import Sprite, Group
 from pygame.time import get_ticks
 from pygame import Surface, SRCALPHA
-from pygame.draw import polygon
+from pygame.draw import polygon, rect as draw_rect
+from pygame.transform import rotate
 
 try:
     from .bullet import Bullet 
@@ -21,7 +22,7 @@ from constants import GREEN, YELLOW, RED, WHITE, DARK_PURPLE
 from ai.behaviors import ChasePlayerBehavior, RetreatBehavior # NEW: Import RetreatBehavior
 from ai.pathfinding_component import PathfinderComponent
 
-logger = logging.getLogger(__name__)
+logger = getLogger(__name__)
 
 class Enemy(Sprite):
     def __init__(self, x, y, asset_manager, config, target_player_ref=None):
@@ -55,7 +56,6 @@ class Enemy(Sprite):
         self._load_sprite()
         
         # Bullet system
-        from pygame.sprite import Group
         self.bullets = Group()
         self.last_shot_time = get_ticks() + randint(0, 1500)
         
@@ -122,7 +122,6 @@ class Enemy(Sprite):
             self.behavior.execute(maze, current_time_ms, delta_time_ms, game_area_x_offset)
         
         # Update sprite rotation and position
-        from pygame.transform import rotate
         self.image = rotate(self.original_image, -self.angle)
         self.rect = self.image.get_rect(center=(int(self.x), int(self.y)))
         self.collision_rect.center = self.rect.center
@@ -134,7 +133,6 @@ class Enemy(Sprite):
 
     def shoot(self, direct_angle_to_target, maze): 
         if not self.alive: return
-        from math import radians, cos, sin
         rad_fire_angle = radians(direct_angle_to_target) 
         tip_offset_distance = (self.rect.width / 2) if self.rect else (get_setting("gameplay", "TILE_SIZE", 80) * 0.35)
         
@@ -205,7 +203,6 @@ class Enemy(Sprite):
         bar_x, bar_y = screen_rect.centerx - bar_w/2, screen_rect.top - bar_h - 3
         fill_w = bar_w * (self.health / self.max_health if self.max_health > 0 else 0)
         fill_color = GREEN if self.health/self.max_health > 0.6 else YELLOW if self.health/self.max_health > 0.3 else RED
-        from pygame.draw import rect as draw_rect
         draw_rect(surface, (80,0,0), (bar_x, bar_y, bar_w, bar_h))
         if fill_w > 0: draw_rect(surface, fill_color, (bar_x, bar_y, int(fill_w), bar_h)) 
         draw_rect(surface, WHITE, (bar_x, bar_y, bar_w, bar_h), 1) 
@@ -221,7 +218,6 @@ class DefenseDrone(Enemy):
         if not self.alive: return
         self.pathfinder.update_movement(maze, current_time_ms, delta_time_ms, game_area_x_offset)
         if self.image and self.original_image:
-            from pygame.transform import rotate
             self.image = rotate(self.original_image, -self.angle)
             self.rect = self.image.get_rect(center=(int(self.x), int(self.y)))
             if self.collision_rect: self.collision_rect.center = self.rect.center

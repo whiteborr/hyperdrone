@@ -391,7 +391,7 @@ class GameController:
             {"label": "Invincibility", "key": "PLAYER_INVINCIBILITY","category":"gameplay", "type": "choice",
              "choices": [False, True], "get_display": lambda val: "ON" if val else "OFF",
              "note": "Player does not take damage."},
-            {"label":"Fullscreen", "key":"FULLSCREEN_MODE","category":"display", "type":"choice", "choices":[False,True], "get_display":lambda v: "ON" if v else "OFF", "note":"Restart may be needed"},
+
             {"label":"Reset to Defaults","key":"RESET_SETTINGS_ACTION","type":"action"},
         ] 
     def _get_safe_spawn_point(self, width, height):

@@ -1,7 +1,9 @@
 # hyperdrone_core/skyward_grid_state.py
-import pygame
+from pygame import KEYDOWN, KEYUP, K_p, K_ESCAPE, K_SPACE, K_UP, K_w, K_DOWN, K_s, Rect, Surface
+from pygame.sprite import Group, Sprite
 from pygame.time import get_ticks
 from pygame.font import Font
+from pygame.draw import circle, line
 from logging import getLogger
 from .state import State
 from entities.player import PlayerDrone
@@ -9,8 +11,8 @@ from entities.enemy import Enemy
 from entities.particle import ParticleSystem
 from settings_manager import get_setting
 from constants import GAME_STATE_STORY_MAP
-import random
-import math
+from random import uniform, choice, randint, random
+from math import sqrt, sin
 
 logger = getLogger(__name__)
 
@@ -29,8 +31,8 @@ class SkywardGridState(State):
     def __init__(self, game_controller):
         super().__init__(game_controller)
         self.player = None
-        self.enemies = pygame.sprite.Group()
-        self.enemy_projectiles = pygame.sprite.Group()
+        self.enemies = Group()
+        self.enemy_projectiles = Group()
         self.particles = ParticleSystem()
         
         # Horizontal scrolling
@@ -94,7 +96,7 @@ class SkywardGridState(State):
         self._setup_orbital_grid()
         
         # Set stormy atmosphere
-        self.storm_intensity = random.uniform(0.3, 0.8)
+        self.storm_intensity = uniform(0.3, 0.8)
         
         logger.info("Skyward Grid initialized successfully")
     
@@ -110,24 +112,24 @@ class SkywardGridState(State):
     def handle_events(self, events):
         """Handle Bonus Chapter specific events"""
         for event in events:
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_p:
+            if event.type == KEYDOWN:
+                if event.key == K_p:
                     # Pause functionality
                     self.game.paused = not self.game.paused
-                elif event.key == pygame.K_ESCAPE:
+                elif event.key == K_ESCAPE:
                     # Return to story map
                     self.game.state_manager.set_state(GAME_STATE_STORY_MAP)
-                elif event.key == pygame.K_SPACE:
+                elif event.key == K_SPACE:
                     # Player shooting
                     self.player.shoot()
-                elif event.key in [pygame.K_UP, pygame.K_w]:
+                elif event.key in [K_UP, K_w]:
                     self.player.thrust_up = True
-                elif event.key in [pygame.K_DOWN, pygame.K_s]:
+                elif event.key in [K_DOWN, K_s]:
                     self.player.thrust_down = True
-            elif event.type == pygame.KEYUP:
-                if event.key in [pygame.K_UP, pygame.K_w]:
+            elif event.type == KEYUP:
+                if event.key in [K_UP, K_w]:
                     self.player.thrust_up = False
-                elif event.key in [pygame.K_DOWN, pygame.K_s]:
+                elif event.key in [K_DOWN, K_s]:
                     self.player.thrust_down = False
     
     def update(self, delta_time):
@@ -212,7 +214,7 @@ class SkywardGridState(State):
         
         # Draw enemy projectiles
         for projectile in self.enemy_projectiles:
-            pygame.draw.circle(surface, (255, 100, 100), projectile.rect.center, 4)
+            circle(surface, (255, 100, 100), projectile.rect.center, 4)
         
         # Draw boss
         if self.boss:
@@ -240,7 +242,7 @@ class SkywardGridState(State):
             self.grid_lines.append({
                 'type': 'vertical',
                 'pos': x,
-                'alpha': random.randint(50, 150)
+                'alpha': randint(50, 150)
             })
         
         # Horizontal lines
@@ -248,7 +250,7 @@ class SkywardGridState(State):
             self.grid_lines.append({
                 'type': 'horizontal',
                 'pos': y,
-                'alpha': random.randint(50, 150)
+                'alpha': randint(50, 150)
             })
     
     def _update_player_horizontal(self, delta_time):
@@ -276,11 +278,11 @@ class SkywardGridState(State):
         screen_width = get_setting("display", "WIDTH", 1920)
         screen_height = get_setting("display", "HEIGHT", 1080)
         
-        enemy_type = random.choice(self.enemy_types)
+        enemy_type = choice(self.enemy_types)
         
         # Spawn at right edge
         x = screen_width + 50
-        y = random.randint(50, screen_height - 50)
+        y = randint(50, screen_height - 50)
         
         enemy = Enemy(x, y, self.game.asset_manager)
         
@@ -307,7 +309,7 @@ class SkywardGridState(State):
         self.enemies.add(enemy)
         
         # Some enemies shoot
-        if random.random() < 0.3:  # 30% chance to shoot
+        if random() < 0.3:  # 30% chance to shoot
             self._enemy_shoot(enemy)
     
     def _enemy_shoot(self, enemy):
@@ -315,7 +317,7 @@ class SkywardGridState(State):
         # Calculate direction to player
         dx = self.player.rect.centerx - enemy.rect.centerx
         dy = self.player.rect.centery - enemy.rect.centery
-        distance = math.sqrt(dx*dx + dy*dy)
+        distance = sqrt(dx*dx + dy*dy)
         
         if distance > 0:
             # Normalize direction
@@ -323,8 +325,8 @@ class SkywardGridState(State):
             dy /= distance
             
             # Create projectile
-            projectile = pygame.sprite.Sprite()
-            projectile.rect = pygame.Rect(enemy.rect.centerx, enemy.rect.centery, 8, 8)
+            projectile = Sprite()
+            projectile.rect = Rect(enemy.rect.centerx, enemy.rect.centery, 8, 8)
             projectile.velocity_x = dx * 5
             projectile.velocity_y = dy * 5
             projectile.damage = 20
@@ -369,11 +371,11 @@ class SkywardGridState(State):
         """Update storm and lightning effects"""
         # Lightning strikes
         if current_time > self.lightning_timer:
-            self.lightning_timer = current_time + random.randint(2000, 5000)
+            self.lightning_timer = current_time + randint(2000, 5000)
             self._create_lightning_strike()
         
         # Update storm intensity
-        self.storm_intensity += random.uniform(-0.1, 0.1)
+        self.storm_intensity += uniform(-0.1, 0.1)
         self.storm_intensity = max(0.2, min(1.0, self.storm_intensity))
     
     def _create_lightning_strike(self):
@@ -382,7 +384,7 @@ class SkywardGridState(State):
         screen_height = get_setting("display", "HEIGHT", 1080)
         
         # Random lightning position
-        x = random.randint(0, screen_width)
+        x = randint(0, screen_width)
         
         # Create lightning particles
         self.particles.create_explosion(
@@ -400,7 +402,7 @@ class SkywardGridState(State):
         
         # Pulse grid lines
         for line in self.grid_lines:
-            pulse = math.sin(self.grid_pulse_timer * 0.01 + line['pos'] * 0.1)
+            pulse = sin(self.grid_pulse_timer * 0.01 + line['pos'] * 0.1)
             line['alpha'] = int(100 + 50 * pulse)
     
     def _handle_collisions(self):
@@ -542,7 +544,7 @@ class SkywardGridState(State):
         
         # Add storm clouds effect
         cloud_alpha = int(100 * self.storm_intensity)
-        cloud_surface = pygame.Surface(surface.get_size())
+        cloud_surface = Surface(surface.get_size())
         cloud_surface.set_alpha(cloud_alpha)
         cloud_surface.fill((40, 40, 60))
         surface.blit(cloud_surface, (0, 0))
@@ -557,19 +559,19 @@ class SkywardGridState(State):
             
             if line['type'] == 'vertical':
                 x = (line['pos'] + self.background_x) % (screen_width + 100)
-                pygame.draw.line(surface, color[:3], (x, 0), (x, screen_height), 1)
+                line(surface, color[:3], (x, 0), (x, screen_height), 1)
             else:  # horizontal
                 y = line['pos']
-                pygame.draw.line(surface, color[:3], (0, y), (screen_width, y), 1)
+                line(surface, color[:3], (0, y), (screen_width, y), 1)
     
     def _draw_storm_effects(self, surface):
         """Draw additional storm effects"""
         # Rain effect
         if self.storm_intensity > 0.5:
             for _ in range(int(20 * self.storm_intensity)):
-                x = random.randint(0, surface.get_width())
-                y = random.randint(0, surface.get_height())
-                pygame.draw.line(surface, (100, 100, 150), (x, y), (x - 2, y + 10), 1)
+                x = randint(0, surface.get_width())
+                y = randint(0, surface.get_height())
+                line(surface, (100, 100, 150), (x, y), (x - 2, y + 10), 1)
     
     def _draw_ui(self, surface):
         """Draw Bonus Chapter UI"""

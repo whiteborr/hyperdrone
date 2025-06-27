@@ -1,5 +1,8 @@
 # hyperdrone_core/orichalc_core_state.py
-import pygame
+from pygame import KEYDOWN, KEYUP, K_p, K_ESCAPE, K_1, K_2, K_3, USEREVENT
+from pygame.sprite import Group
+from pygame.time import get_ticks, set_timer
+from pygame.font import Font
 from .state import State
 from entities import PlayerDrone, Enemy, ParticleSystem, Turret
 from entities.elemental_core import ElementalCore
@@ -10,8 +13,8 @@ class OrichalcCoreState(State):
         super().__init__(game)
         self.player = None
         self.orichalc_core = None
-        self.enemies = pygame.sprite.Group()
-        self.turrets = pygame.sprite.Group()
+        self.enemies = Group()
+        self.turrets = Group()
         self.particles = ParticleSystem()
         self.core_collected = False
         self.defense_phase = True
@@ -46,23 +49,23 @@ class OrichalcCoreState(State):
     
     def handle_events(self, events):
         for event in events:
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_p:
+            if event.type == KEYDOWN:
+                if event.key == K_p:
                     self.game.paused = not self.game.paused
-                elif event.key == pygame.K_ESCAPE:
+                elif event.key == K_ESCAPE:
                     self.game.state_manager.set_state(GAME_STATE_STORY_MAP)
                 elif not self.defense_phase and not self.final_choice_made:
                     # Final choice keys
-                    if event.key == pygame.K_1:
+                    if event.key == K_1:
                         self._make_choice("preserve")
-                    elif event.key == pygame.K_2:
+                    elif event.key == K_2:
                         self._make_choice("erase")
-                    elif event.key == pygame.K_3:
+                    elif event.key == K_3:
                         self._make_choice("merge")
                 else:
                     if hasattr(self.game, 'player_actions'):
                         self.game.player_actions.handle_key_down(event)
-            elif event.type == pygame.KEYUP:
+            elif event.type == KEYUP:
                 if hasattr(self.game, 'player_actions'):
                     self.game.player_actions.handle_key_up(event)
     
@@ -70,7 +73,7 @@ class OrichalcCoreState(State):
         if self.game.paused:
             return
             
-        current_time = pygame.time.get_ticks()
+        current_time = get_ticks()
         
         if self.defense_phase:
             self._update_defense_phase(current_time, delta_time)
@@ -190,7 +193,7 @@ class OrichalcCoreState(State):
         self.game.drone_system.architect_vault_completed = True
         
         # Return to story map after delay
-        pygame.time.set_timer(pygame.USEREVENT + 4, 6000)
+        set_timer(USEREVENT + 4, 6000)
     
     def draw(self, surface):
         surface.fill((60, 40, 80))  # Deep purple background
@@ -213,13 +216,13 @@ class OrichalcCoreState(State):
         self.particles.draw(surface, (0, 0))
         
         # Draw UI
-        font = pygame.font.Font(None, 24)
+        font = Font(None, 24)
         if self.defense_phase:
             text = font.render(f"Defend the Core - Wave: {self.wave_count}/5", True, (255, 255, 255))
             surface.blit(text, (10, 10))
         elif not self.final_choice_made:
             # Draw choice options
-            font_large = pygame.font.Font(None, 36)
+            font_large = Font(None, 36)
             title = font_large.render("Choose the Vault's Fate:", True, (255, 255, 255))
             surface.blit(title, (250, 100))
             

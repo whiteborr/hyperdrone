@@ -1,5 +1,8 @@
 # hyperdrone_core/fire_core_state.py
-import pygame
+from pygame import KEYDOWN, KEYUP, K_p, K_ESCAPE, USEREVENT
+from pygame.sprite import Group
+from pygame.time import get_ticks, set_timer
+from pygame.font import Font
 from .state import State
 from entities import PlayerDrone, MazeGuardian, ParticleSystem
 from entities.elemental_core import ElementalCore
@@ -37,15 +40,15 @@ class FireCoreState(State):
         
     def handle_events(self, events):
         for event in events:
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_p:
+            if event.type == KEYDOWN:
+                if event.key == K_p:
                     self.game.paused = not self.game.paused
-                elif event.key == pygame.K_ESCAPE:
+                elif event.key == K_ESCAPE:
                     self.game.state_manager.set_state(GAME_STATE_STORY_MAP)
                 else:
                     if hasattr(self.game, 'player_actions'):
                         self.game.player_actions.handle_key_down(event)
-            elif event.type == pygame.KEYUP:
+            elif event.type == KEYUP:
                 if hasattr(self.game, 'player_actions'):
                     self.game.player_actions.handle_key_up(event)
     
@@ -53,11 +56,11 @@ class FireCoreState(State):
         if self.game.paused:
             return
             
-        current_time = pygame.time.get_ticks()
+        current_time = get_ticks()
         
         # Update player
         if hasattr(self.player, 'update'):
-            self.player.update(current_time, None, pygame.sprite.Group(), self.game.player_actions, 0)
+            self.player.update(current_time, None, Group(), self.game.player_actions, 0)
         
         # Update player actions
         if hasattr(self.game, 'player_actions'):
@@ -119,7 +122,7 @@ class FireCoreState(State):
             self.game.set_story_message("Fire Core collected! Raw power courses through your systems.", 3000)
             
             # Return to story map
-            pygame.time.set_timer(pygame.USEREVENT + 1, 2000)
+            set_timer(USEREVENT + 1, 2000)
     
     def draw(self, surface):
         surface.fill((20, 20, 40))  # Dark blue background
@@ -140,7 +143,7 @@ class FireCoreState(State):
         
         # Draw UI
         if self.boss_defeated and not self.core_collected:
-            font = pygame.font.Font(None, 36)
+            font = Font(None, 36)
             text = font.render("Collect the Fire Core!", True, (255, 255, 255))
             surface.blit(text, (300, 50))
     

@@ -199,13 +199,13 @@ class StoryMapState(State):
         chapter_info = self.chapter_data.get(completed_chapter_id, {})
         
         # Title
-        font_large = Font(None, 48)
+        font_large = self.game.asset_manager.get_font("large_text", 48) or Font(None, 48)
         title_text = font_large.render("Chapter Completed!", True, (255, 215, 0))  # Gold
         title_rect = title_text.get_rect(center=(screen_width // 2, screen_height // 2 - 150))
         surface.blit(title_text, title_rect)
         
         # Chapter title
-        font_medium = Font(None, 36)
+        font_medium = self.game.asset_manager.get_font("medium_text", 36) or Font(None, 36)
         chapter_title = chapter_info.get('title', self.completed_chapter)
         chapter_text = font_medium.render(chapter_title, True, (255, 255, 255))
         chapter_rect = chapter_text.get_rect(center=(screen_width // 2, screen_height // 2 - 100))
@@ -214,13 +214,13 @@ class StoryMapState(State):
         # Reward text
         reward = chapter_info.get('reward', '')
         if reward:
-            font_small = Font(None, 28)
+            font_small = self.game.asset_manager.get_font("ui_text", 28) or Font(None, 28)
             reward_text = font_small.render(f"Reward: {reward}", True, (0, 255, 255))  # Cyan
             reward_rect = reward_text.get_rect(center=(screen_width // 2, screen_height // 2 - 50))
             surface.blit(reward_text, reward_rect)
         
         # Continue instruction
-        font_small = Font(None, 24)
+        font_small = self.game.asset_manager.get_font("ui_text", 24) or Font(None, 24)
         continue_text = font_small.render("Press SPACE to continue", True, (200, 200, 200))
         continue_rect = continue_text.get_rect(center=(screen_width // 2, screen_height // 2 + 50))
         surface.blit(continue_text, continue_rect)
@@ -247,7 +247,7 @@ class StoryMapState(State):
         surface.blit(overlay, (0, 0))
         
         # Next chapter title
-        font_large = Font(None, 48)
+        font_large = self.game.asset_manager.get_font("large_text", 48) or Font(None, 48)
         title = chapter_info.get('title', current_chapter.title)
         title_text = font_large.render(title, True, (255, 215, 0))  # Gold
         title_rect = title_text.get_rect(center=(screen_width // 2, screen_height // 2 - 100))
@@ -256,7 +256,7 @@ class StoryMapState(State):
         # Subtitle
         subtitle = chapter_info.get('subtitle', '')
         if subtitle:
-            font_medium = Font(None, 32)
+            font_medium = self.game.asset_manager.get_font("medium_text", 32) or Font(None, 32)
             subtitle_text = font_medium.render(subtitle, True, (200, 200, 255))  # Light blue
             subtitle_rect = subtitle_text.get_rect(center=(screen_width // 2, screen_height // 2 - 60))
             surface.blit(subtitle_text, subtitle_rect)
@@ -264,7 +264,7 @@ class StoryMapState(State):
         # Story preview (first part)
         story = chapter_info.get('story', '')
         if story:
-            font_small = Font(None, 24)
+            font_small = self.game.asset_manager.get_font("ui_text", 24) or Font(None, 24)
             # Take first sentence or first 100 characters
             preview = story.split('.')[0] + '...' if '.' in story else story[:100] + '...'
             

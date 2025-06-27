@@ -141,7 +141,7 @@ class ShieldItem(Collectible):
         if self.update_collectible_state(item_lifetime_ms=powerup_lifetime): self.kill(); return True
         return False
 
-    def apply_effect(self, player_drone):
+    def apply_effect(self, player_drone, game_controller=None):
         if hasattr(player_drone, 'activate_shield'): player_drone.activate_shield(self.effect_duration_ms)
 
 class SpeedBoostItem(Collectible):

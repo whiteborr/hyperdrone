@@ -1,6 +1,6 @@
 # hyperdrone_core/player_actions.py
 from pygame.time import get_ticks
-from pygame import K_w, K_UP, K_s, K_DOWN, K_a, K_LEFT, K_d, K_RIGHT, K_SPACE, K_LSHIFT, K_RSHIFT, K_f, K_F1
+from pygame import K_w, K_UP, K_s, K_DOWN, K_a, K_LEFT, K_d, K_RIGHT, K_SPACE, K_LSHIFT, K_RSHIFT, K_f, K_F1, K_TAB
 
 class PlayerActions:
     """
@@ -52,6 +52,13 @@ class PlayerActions:
         elif event.key == K_f:
             if hasattr(player, 'activate_ability'):
                 player.activate_ability("temporary_barricade", self.game_controller) # Pass game_controller_ref
+
+        # Weapon cycling with Tab key
+        elif event.key == K_TAB:
+            if hasattr(player, 'cycle_weapon_state'):
+                player.cycle_weapon_state()
+                if hasattr(self.game_controller, 'play_sound'):
+                    self.game_controller.play_sound('ui_confirm')
 
         # Emergency key to eliminate stuck enemies (F1)
         elif event.key == K_F1:

@@ -14,6 +14,7 @@ from constants import (
     WEAPON_MODE_PIERCE, WEAPON_MODE_HEATSEEKER, WEAPON_MODE_HEATSEEKER_PLUS_BULLETS,
     WEAPON_MODE_LIGHTNING
 )
+from .ui_common import UICommon
 
 class WeaponShopUI:
     """UI for purchasing weapons with fragments"""
@@ -29,12 +30,11 @@ class WeaponShopUI:
         self.scanline_alpha = 50
         self.scanline_offset = 0
 
-        # Load fonts - it's better to load them once
-        font_path = join(dirname(dirname(__file__)), "assets", "fonts", "neuropol.otf")
-        self.font_title = Font(font_path, 40)
-        self.font_subtitle = Font(font_path, 28)
-        self.font_ui = Font(font_path, 22)
-        self.font_small = Font(font_path, 18)
+        fonts = UICommon.load_fonts()
+        self.font_title = fonts['title']
+        self.font_subtitle = fonts['subtitle']
+        self.font_ui = fonts['ui']
+        self.font_small = fonts['small']
 
 
     def show(self, weapon_shop, fragments_count, game_controller=None):
@@ -161,8 +161,7 @@ class WeaponShopUI:
         width = screen.get_width()
         height = screen.get_height()
 
-        # New: Draw a more interesting background
-        self._draw_background(screen)
+        UICommon.draw_background(screen)
 
         # Main shop panel
         shop_width = 1100
@@ -170,8 +169,7 @@ class WeaponShopUI:
         shop_x = (width - shop_width) // 2
         shop_y = (height - shop_height) // 2
         
-        # Main frame
-        self._draw_main_frame(screen, shop_x, shop_y, shop_width, shop_height)
+        UICommon.draw_main_frame(screen, shop_x, shop_y, shop_width, shop_height)
 
         # Enhanced animated divider line
         divider_x = shop_x + 350
@@ -201,83 +199,18 @@ class WeaponShopUI:
             self._draw_weapon_page(screen, shop_x + 370, shop_y + 20, shop_width - 390, shop_height - 40)
             self._draw_instructions(screen, shop_x, shop_y, shop_width, shop_height)
 
-        # New: Add scanlines for a cool retro effect
-        self._draw_scanlines(screen)
+        UICommon.draw_scanlines(screen)
         
-    def _draw_text_with_shadow(self, screen, text, font, color, pos, shadow_color=(0,0,0), offset=(2,2)):
-        """Helper to draw text with a drop shadow."""
-        text_surf = font.render(text, True, shadow_color)
-        screen.blit(text_surf, (pos[0] + offset[0], pos[1] + offset[1]))
-        text_surf = font.render(text, True, color)
-        screen.blit(text_surf, pos)
 
-    def _draw_background(self, screen):
-        """Draws the main background with animated grid and overlay."""
-        width, height = screen.get_size()
-        
-        # Animated background overlay
-        overlay = Surface((width, height), SRCALPHA)
-        time_factor = get_ticks() * 0.001
-        bg_alpha = int(200 + 30 * sin(time_factor))
-        overlay.fill((5, 15, 35, bg_alpha))
-        
-        # Animated grid pattern
-        grid_offset = int(get_ticks() * 0.02) % 50
-        for x in range(-grid_offset, width + 50, 50):
-            alpha = int(60 + 40 * sin(time_factor + x * 0.01))
-            draw_line(overlay, (20, 60, 120, alpha), (x, 0), (x, height))
-        for y in range(-grid_offset, height + 50, 50):
-            alpha = int(60 + 40 * cos(time_factor + y * 0.01))
-            draw_line(overlay, (20, 60, 120, alpha), (0, y), (width, y))
-            
-        screen.blit(overlay, (0, 0))
 
-    def _draw_main_frame(self, screen, x, y, width, height):
-        """Draw an enhanced stylized frame for the shop."""
-        # Animated main background
-        panel_surface = Surface((width, height), SRCALPHA)
-        time_factor = get_ticks() * 0.002
-        bg_alpha = int(220 + 20 * sin(time_factor))
-        panel_surface.fill((20, 35, 60, bg_alpha))
-        screen.blit(panel_surface, (x, y))
-        
-        # Animated border glow
-        border_alpha = int(120 + 80 * sin(time_factor * 2))
-        draw_rect(screen, (0, 200, 255, border_alpha), (x-1, y-1, width+2, height+2), 3, border_radius=12)
-        draw_rect(screen, (0, 255, 255, 150), (x, y, width, height), 2, border_radius=10)
-        
-        # Enhanced corner details with glow
-        corner_size = 40
-        glow_alpha = int(150 + 100 * sin(time_factor * 3))
-        
-        # Top-left corner
-        draw_line(screen, (*GOLD, glow_alpha), (x-2, y + corner_size), (x-2, y-2), 5)
-        draw_line(screen, (*GOLD, glow_alpha), (x-2, y-2), (x + corner_size, y-2), 5)
-        draw_line(screen, GOLD, (x, y + corner_size), (x, y), 3)
-        draw_line(screen, GOLD, (x, y), (x + corner_size, y), 3)
-        
-        # Top-right corner
-        draw_line(screen, (*GOLD, glow_alpha), (x + width - corner_size, y-2), (x + width+2, y-2), 5)
-        draw_line(screen, (*GOLD, glow_alpha), (x + width+2, y-2), (x + width+2, y + corner_size), 5)
-        draw_line(screen, GOLD, (x + width - corner_size, y), (x + width, y), 3)
-        draw_line(screen, GOLD, (x + width, y), (x + width, y + corner_size), 3)
 
-        # Bottom-left corner
-        draw_line(screen, (*GOLD, glow_alpha), (x-2, y + height - corner_size), (x-2, y + height+2), 5)
-        draw_line(screen, (*GOLD, glow_alpha), (x-2, y + height+2), (x + corner_size, y + height+2), 5)
-        draw_line(screen, GOLD, (x, y + height - corner_size), (x, y + height), 3)
-        draw_line(screen, GOLD, (x, y + height), (x + corner_size, y + height), 3)
-        
-        # Bottom-right corner
-        draw_line(screen, (*GOLD, glow_alpha), (x + width - corner_size, y + height+2), (x + width+2, y + height+2), 5)
-        draw_line(screen, (*GOLD, glow_alpha), (x + width+2, y + height+2), (x + width+2, y + height - corner_size), 5)
-        draw_line(screen, GOLD, (x + width - corner_size, y + height), (x + width, y + height), 3)
-        draw_line(screen, GOLD, (x + width, y + height), (x + width, y + height - corner_size), 3)
+
+
 
     def _draw_weapon_page(self, screen, shop_x, shop_y, shop_width, shop_height):
         """Draw single weapon page with improved visuals."""
         if not self.available_weapons:
-            self._draw_text_with_shadow(screen, "All weapons fully upgraded!", self.font_subtitle, GREEN, 
+            UICommon.draw_text_with_shadow(screen, "All weapons fully upgraded!", self.font_subtitle, GREEN, 
                                         (shop_x + shop_width // 2 - 250, shop_y + shop_height // 2 - 20))
             return
 
@@ -294,7 +227,7 @@ class WeaponShopUI:
         is_maxed = current_level >= max_level
 
         # Title
-        self._draw_text_with_shadow(screen, "WEAPON UPGRADE", self.font_title, GOLD, (shop_x + 90, shop_y + 10))
+        UICommon.draw_text_with_shadow(screen, "WEAPON UPGRADE", self.font_title, GOLD, (shop_x + 90, shop_y + 10))
 
         # Enhanced pulsing selection glow with multiple layers
         pulse_alpha = int(100 + 100 * sin(get_ticks() * 0.008))
@@ -343,11 +276,11 @@ class WeaponShopUI:
             
         # Weapon Name
         name_color = GOLD if can_afford else RED
-        self._draw_text_with_shadow(screen, weapon_name, self.font_subtitle, name_color, (shop_x + 200, shop_y + 100))
+        UICommon.draw_text_with_shadow(screen, weapon_name, self.font_subtitle, name_color, (shop_x + 200, shop_y + 100))
 
         # Level display
         level_text = f"Level: {current_level} / {max_level}"
-        self._draw_text_with_shadow(screen, level_text, self.font_ui, CYAN, (shop_x + 200, shop_y + 140))
+        UICommon.draw_text_with_shadow(screen, level_text, self.font_ui, CYAN, (shop_x + 200, shop_y + 140))
 
         # Price
         if is_maxed:
@@ -356,17 +289,17 @@ class WeaponShopUI:
         else:
             price_text = f"Upgrade Cost: {price}"
             price_color = GREEN if can_afford else RED
-        self._draw_text_with_shadow(screen, price_text, self.font_ui, price_color, (shop_x + 200, shop_y + 170))
+        UICommon.draw_text_with_shadow(screen, price_text, self.font_ui, price_color, (shop_x + 200, shop_y + 170))
 
         # Stats
-        self._draw_text_with_shadow(screen, "Next Level Stats:", self.font_subtitle, CYAN, (shop_x + 40, shop_y + 300))
+        UICommon.draw_text_with_shadow(screen, "Next Level Stats:", self.font_subtitle, CYAN, (shop_x + 40, shop_y + 300))
         stats_lines = [
             f"Damage: {stats['damage']}",
             f"Fire Rate: {stats['rate']}",
             f"Special: {stats['special']}"
         ]
         for i, line in enumerate(stats_lines):
-            self._draw_text_with_shadow(screen, line, self.font_ui, WHITE, (shop_x + 40, shop_y + 350 + i * 35))
+            UICommon.draw_text_with_shadow(screen, line, self.font_ui, WHITE, (shop_x + 40, shop_y + 350 + i * 35))
 
     def _draw_arrow_button(self, screen, pos, direction):
         """Draws enhanced stylized arrow buttons with glow effects."""
@@ -409,22 +342,22 @@ class WeaponShopUI:
         draw_rect(screen, YELLOW, (conf_x, conf_y, conf_width, conf_height), 2, border_radius=10)
 
         # Confirmation Text
-        self._draw_text_with_shadow(screen, f"Confirm {action_text}", self.font_subtitle, WHITE, 
+        UICommon.draw_text_with_shadow(screen, f"Confirm {action_text}", self.font_subtitle, WHITE, 
                                     (conf_x + 130, conf_y + 40))
-        self._draw_text_with_shadow(screen, weapon_name, self.font_subtitle, GOLD, 
+        UICommon.draw_text_with_shadow(screen, weapon_name, self.font_subtitle, GOLD, 
                                     (conf_x + 150, conf_y + 80))
-        self._draw_text_with_shadow(screen, f"for {price} fragments?", self.font_subtitle, WHITE,
+        UICommon.draw_text_with_shadow(screen, f"for {price} fragments?", self.font_subtitle, WHITE,
                                     (conf_x + 100, conf_y + 120))
         
         # Yes/No options
-        self._draw_text_with_shadow(screen, "[Y] Yes", self.font_ui, GREEN, (conf_x + 100, conf_y + 190))
-        self._draw_text_with_shadow(screen, "[N] No", self.font_ui, RED, (conf_x + 300, conf_y + 190))
+        UICommon.draw_text_with_shadow(screen, "[Y] Yes", self.font_ui, GREEN, (conf_x + 100, conf_y + 190))
+        UICommon.draw_text_with_shadow(screen, "[N] No", self.font_ui, RED, (conf_x + 300, conf_y + 190))
 
 
     def _draw_instructions(self, screen, shop_x, shop_y, shop_width, shop_height):
         """Draw control instructions at the bottom."""
         instructions = "Use [LEFT]/[RIGHT] to Navigate  |  [ENTER] to Upgrade  |  [ESC] to Exit"
-        self._draw_text_with_shadow(screen, instructions, self.font_small, WHITE,
+        UICommon.draw_text_with_shadow(screen, instructions, self.font_small, WHITE,
                                     (shop_x + shop_width // 2 - 350, shop_y + shop_height - 50))
 
 
@@ -432,7 +365,7 @@ class WeaponShopUI:
         """Draw drone and weapon inventory panel with enhanced visuals."""
         
         # Panel Title
-        self._draw_text_with_shadow(screen, "INVENTORY", self.font_subtitle, GOLD, (inv_x + 70, inv_y + 10))
+        UICommon.draw_text_with_shadow(screen, "INVENTORY", self.font_subtitle, GOLD, (inv_x + 70, inv_y + 10))
 
         # Fragments display
         fragments_icon = self.asset_manager.get_image('images/collectibles/orichalc_fragment.png')
@@ -441,13 +374,13 @@ class WeaponShopUI:
             screen.blit(icon_scaled, (inv_x + 10, inv_y + 60))
         
         current_fragments = self.game_controller.drone_system.get_orichalc_fragments() if self.game_controller else self.fragments_count
-        self._draw_text_with_shadow(screen, f"{current_fragments} Fragments", self.font_ui, (255, 0, 255), (inv_x + 45, inv_y + 60))
+        UICommon.draw_text_with_shadow(screen, f"{current_fragments} Fragments", self.font_ui, (255, 0, 255), (inv_x + 45, inv_y + 60))
 
         # Current Drone
-        self._draw_text_with_shadow(screen, "Active Drone:", self.font_ui, CYAN, (inv_x + 10, inv_y + 110))
+        UICommon.draw_text_with_shadow(screen, "Active Drone:", self.font_ui, CYAN, (inv_x + 10, inv_y + 110))
         if self.game_controller and hasattr(self.game_controller, 'drone_system'):
             drone_id = self.game_controller.drone_system.get_selected_drone_id()
-            self._draw_text_with_shadow(screen, drone_id, self.font_ui, WHITE, (inv_x + 10, inv_y + 140))
+            UICommon.draw_text_with_shadow(screen, drone_id, self.font_ui, WHITE, (inv_x + 10, inv_y + 140))
             
             drone_image_key = f"{drone_id.upper()}_IMAGE"
             drone_image = self.asset_manager.get_image(drone_image_key)
@@ -456,7 +389,7 @@ class WeaponShopUI:
                 screen.blit(drone_scaled, (inv_x + 200, inv_y + 110))
 
         # Owned Weapons
-        self._draw_text_with_shadow(screen, "Owned Weapons:", self.font_ui, CYAN, (inv_x + 10, inv_y + 220))
+        UICommon.draw_text_with_shadow(screen, "Owned Weapons:", self.font_ui, CYAN, (inv_x + 10, inv_y + 220))
         
         if self.game_controller and hasattr(self.game_controller, 'drone_system'):
             owned_weapons = self.game_controller.drone_system.get_owned_weapons()
@@ -471,7 +404,7 @@ class WeaponShopUI:
                     icon_scaled = scale(weapon_icon, (24, 24))
                     screen.blit(icon_scaled, (inv_x + 10, y_offset))
                 
-                self._draw_text_with_shadow(screen, weapon_name, self.font_small, GREEN, (inv_x + 40, y_offset + 2))
+                UICommon.draw_text_with_shadow(screen, weapon_name, self.font_small, GREEN, (inv_x + 40, y_offset + 2))
                 
                 # Progress Bar
                 bar_width = 150
@@ -485,28 +418,9 @@ class WeaponShopUI:
                 draw_rect(screen, WHITE, (bar_x, bar_y, bar_width, bar_height), 1, border_radius=4)
 
                 level_text = f"Lv {level}"
-                self._draw_text_with_shadow(screen, level_text, self.font_small, WHITE, (bar_x + bar_width + 10, bar_y - 2))
+                UICommon.draw_text_with_shadow(screen, level_text, self.font_small, WHITE, (bar_x + bar_width + 10, bar_y - 2))
                 
                 y_offset += 50
                 if y_offset > inv_y + inv_height - 50:
                     break
                     
-    def _draw_scanlines(self, screen):
-        """Draws enhanced moving scanlines for a retro CRT effect."""
-        width, height = screen.get_size()
-        scanline_surface = Surface((width, height), SRCALPHA)
-        
-        self.scanline_offset = (self.scanline_offset + 0.5) % 6
-        time_factor = get_ticks() * 0.001
-        
-        # Variable intensity scanlines
-        for y in range(int(self.scanline_offset), height, 6):
-            alpha = int(self.scanline_alpha + 20 * sin(time_factor + y * 0.1))
-            alpha = max(10, min(80, alpha))
-            draw_line(scanline_surface, (0, 20, 40, alpha), (0, y), (width, y), 1)
-            
-        # Occasional bright scanline
-        bright_line_y = int((get_ticks() * 0.1) % height)
-        draw_line(scanline_surface, (0, 100, 200, 60), (0, bright_line_y), (width, bright_line_y), 2)
-            
-        screen.blit(scanline_surface, (0, 0))

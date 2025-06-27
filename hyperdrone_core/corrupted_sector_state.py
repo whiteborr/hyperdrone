@@ -1,8 +1,10 @@
 # hyperdrone_core/corrupted_sector_state.py
 from pygame.sprite import spritecollide
 from pygame.time import get_ticks
-from pygame import KEYDOWN, KEYUP, K_p, K_l, K_ESCAPE
+from pygame import KEYDOWN, KEYUP, K_p, K_l, K_ESCAPE, K_1, K_2, K_3, K_4, Rect, Surface, SRCALPHA
 from pygame.font import Font
+from pygame.draw import rect as draw_rect, circle
+from math import sin
 from random import shuffle, randint
 from logging import getLogger, info, warning
 from .state import State
@@ -11,7 +13,6 @@ from entities import Maze, GlitchingWall, PlayerDrone
 from entities.elemental_core import ElementalCore, CipherCore
 from entities.particle import ParticleSystem
 from constants import GAME_STATE_STORY_MAP
-import pygame
 
 logger = getLogger(__name__)
 
@@ -99,7 +100,7 @@ class CorruptedSectorState(State):
             y = (i * 3 + 5) * tile_size
             
             chamber = {
-                'rect': pygame.Rect(x, y, tile_size, tile_size),
+                'rect': Rect(x, y, tile_size, tile_size),
                 'glyph_id': i + 1,
                 'activated': False,
                 'glow_alpha': 128
@@ -246,7 +247,7 @@ class CorruptedSectorState(State):
             if chamber['activated']:
                 chamber['glow_alpha'] = 255
             else:
-                chamber['glow_alpha'] = int(128 + 127 * pygame.math.sin(current_time * 0.005))
+                chamber['glow_alpha'] = int(128 + 127 * sin(current_time * 0.005))
     
     def _draw_glyph_chambers(self, surface, camera_offset):
         """Draw glyph puzzle chambers"""
@@ -261,8 +262,8 @@ class CorruptedSectorState(State):
             else:
                 color = (100, 100, 200)  # Blue when inactive
             
-            pygame.draw.rect(surface, color, draw_rect)
-            pygame.draw.rect(surface, (255, 255, 255), draw_rect, 2)
+            draw_rect(surface, color, draw_rect)
+            draw_rect(surface, (255, 255, 255), draw_rect, 2)
             
             # Draw glyph number
             font = Font(None, 48)
@@ -279,8 +280,8 @@ class CorruptedSectorState(State):
         draw_pos = (player_pos[0] - camera_offset[0], player_pos[1] - camera_offset[1])
         
         # Draw sensor range circle
-        sensor_surface = pygame.Surface((self.sensor_range * 2, self.sensor_range * 2), pygame.SRCALPHA)
-        pygame.draw.circle(sensor_surface, (135, 206, 235, 50), (self.sensor_range, self.sensor_range), self.sensor_range)
+        sensor_surface = Surface((self.sensor_range * 2, self.sensor_range * 2), SRCALPHA)
+        circle(sensor_surface, (135, 206, 235, 50), (self.sensor_range, self.sensor_range), self.sensor_range)
         
         sensor_rect = sensor_surface.get_rect(center=draw_pos)
         surface.blit(sensor_surface, sensor_rect)
@@ -526,9 +527,9 @@ class CorruptedSectorState(State):
                 elif event.key == K_l and self.core_collected:
                     # Activate logic shift ability
                     self._activate_logic_shift()
-                elif event.key in [pygame.K_1, pygame.K_2, pygame.K_3, pygame.K_4]:
+                elif event.key in [K_1, K_2, K_3, K_4]:
                     # Glyph sequence input
-                    glyph_num = event.key - pygame.K_1 + 1
+                    glyph_num = event.key - K_1 + 1
                     self._input_glyph_sequence(glyph_num)
                 else:
                     self.game.player_actions.handle_key_down(event)

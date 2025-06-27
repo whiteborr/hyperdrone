@@ -1,5 +1,9 @@
 # hyperdrone_core/water_core_state.py
-import pygame
+from pygame import KEYDOWN, KEYUP, K_p, K_ESCAPE, USEREVENT, Rect, Surface
+from pygame.sprite import Group
+from pygame.time import get_ticks, set_timer
+from pygame.font import Font
+from pygame.draw import rect as draw_rect
 from .state import State
 from entities import PlayerDrone, Enemy, ParticleSystem
 from entities.elemental_core import ElementalCore
@@ -10,7 +14,7 @@ class WaterCoreState(State):
         super().__init__(game)
         self.player = None
         self.water_core = None
-        self.enemies = pygame.sprite.Group()
+        self.enemies = Group()
         self.particles = ParticleSystem()
         self.core_collected = False
         self.scroll_offset = 0
@@ -40,21 +44,21 @@ class WaterCoreState(State):
             x = 50 + (i * 50) % 700
             y = 200 + (i * 80)
             self.wreckage_pieces.append({
-                'rect': pygame.Rect(x, y, 30, 20),
+                'rect': Rect(x, y, 30, 20),
                 'color': (100, 100, 120)
             })
     
     def handle_events(self, events):
         for event in events:
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_p:
+            if event.type == KEYDOWN:
+                if event.key == K_p:
                     self.game.paused = not self.game.paused
-                elif event.key == pygame.K_ESCAPE:
+                elif event.key == K_ESCAPE:
                     self.game.state_manager.set_state(GAME_STATE_STORY_MAP)
                 else:
                     if hasattr(self.game, 'player_actions'):
                         self.game.player_actions.handle_key_down(event)
-            elif event.type == pygame.KEYUP:
+            elif event.type == KEYUP:
                 if hasattr(self.game, 'player_actions'):
                     self.game.player_actions.handle_key_up(event)
     
@@ -62,7 +66,7 @@ class WaterCoreState(State):
         if self.game.paused:
             return
             
-        current_time = pygame.time.get_ticks()
+        current_time = get_ticks()
         
         # Vertical scrolling effect
         self.scroll_offset += 1
@@ -149,14 +153,14 @@ class WaterCoreState(State):
             self.game.set_story_message("Water Core collected! Hidden memories flow through your circuits.", 3000)
             
             # Return to story map
-            pygame.time.set_timer(pygame.USEREVENT + 3, 2000)
+            set_timer(USEREVENT + 3, 2000)
     
     def draw(self, surface):
         surface.fill((10, 30, 60))  # Deep blue water background
         
         # Draw wreckage pieces
         for piece in self.wreckage_pieces:
-            pygame.draw.rect(surface, piece['color'], piece['rect'])
+            draw_rect(surface, piece['color'], piece['rect'])
         
         # Draw player
         self.player.draw(surface)
@@ -172,13 +176,13 @@ class WaterCoreState(State):
         self.particles.draw(surface, (0, 0))
         
         # Draw water effect overlay
-        water_surface = pygame.Surface((surface.get_width(), surface.get_height()))
+        water_surface = Surface((surface.get_width(), surface.get_height()))
         water_surface.set_alpha(20)
         water_surface.fill((0, 100, 200))
         surface.blit(water_surface, (0, 0))
         
         # Draw wave counter
-        font = pygame.font.Font(None, 24)
+        font = Font(None, 24)
         text = font.render(f"Wave: {self.wave_count}", True, (255, 255, 255))
         surface.blit(text, (10, 10))
     

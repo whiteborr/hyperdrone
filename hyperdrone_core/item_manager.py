@@ -192,30 +192,39 @@ class ItemManager:
             warning("Cannot spawn core fragment: maze is None")
             return False
 
-        # Check if we're in Chapter 1 and not on the 4th level yet
+        # Check if we're in Chapter 1 - only Earth Core Fragment should spawn here
         current_chapter = self.game_controller.story_manager.get_current_chapter()
         if current_chapter and current_chapter.chapter_id == "chapter_1":
+            # Only spawn Earth Core Fragment in Chapter 1, and only on the final level
             if self.game_controller.level_manager.chapter1_level < self.game_controller.level_manager.chapter1_max_levels:
-                info(f"Skipping core fragment spawn - Chapter 1 Level {self.game_controller.level_manager.chapter1_level} (fragment only appears on level 4)")
+                info(f"Skipping core fragment spawn - Chapter 1 Level {self.game_controller.level_manager.chapter1_level} (Earth fragment only appears on final level)")
                 return False
+            # Force spawn only Earth Core Fragment
+            fragment_id = "earth_core_fragment"
+        else:
+            # For other chapters, use normal fragment progression
+            fragment_id = None
 
         # 1. Get all fragment configs and the IDs of already collected fragments
         all_fragments = settings_manager.get_core_fragment_details()
         collected_ids = self.game_controller.drone_system.get_collected_fragments_ids()
 
-        # 2. Find the next required fragment that hasn't been collected yet
-        # Sort them to ensure a consistent spawn order (alpha, then beta, etc.)
-        required_fragments = sorted(
-            [details for _, details in all_fragments.items() if details.get('required_for_vault')],
-            key=lambda d: d.get('id')
-        )
-
+        # 2. Find the fragment to spawn
         fragment_to_spawn_details = None
-        for frag_details in required_fragments:
-            if frag_details['id'] not in collected_ids:
-                # We found the next one to spawn
-                fragment_to_spawn_details = frag_details
-                break
+        if fragment_id:
+            # Specific fragment requested (Chapter 1 - Earth only)
+            if fragment_id in all_fragments and fragment_id not in collected_ids:
+                fragment_to_spawn_details = all_fragments[fragment_id]
+        else:
+            # Find the next required fragment that hasn't been collected yet
+            required_fragments = sorted(
+                [details for _, details in all_fragments.items() if details.get('required_for_vault')],
+                key=lambda d: d.get('id')
+            )
+            for frag_details in required_fragments:
+                if frag_details['id'] not in collected_ids:
+                    fragment_to_spawn_details = frag_details
+                    break
         
         # If all required fragments are collected or none are defined, do nothing
         if not fragment_to_spawn_details:

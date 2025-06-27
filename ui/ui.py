@@ -301,14 +301,14 @@ class UIManager:
                 chapter_title_surf = self._render_text_safe(current_chapter.title, "ui_text", CYAN, fallback_size=32)
                 self.screen.blit(chapter_title_surf, chapter_title_surf.get_rect(center=(width // 2, 450)))
                 
-                desc_font = Font(None, 24)
+                desc_font = self.asset_manager.get_font("ui_text", 24) or Font(None, 24)
                 wrapped_desc = self._wrap_text_with_font_obj(current_chapter.description, desc_font, width - 200)
                 for i, line in enumerate(wrapped_desc):
                     desc_surf = desc_font.render(line, True, WHITE)
                     self.screen.blit(desc_surf, desc_surf.get_rect(center=(width // 2, 490 + i * 30)))
                 
                 obj_y = 490 + len(wrapped_desc) * 30 + 50
-                obj_font = Font(None, 24)
+                obj_font = self.asset_manager.get_font("ui_text", 24) or Font(None, 24)
                 
                 for obj in current_chapter.objectives:
                     obj_color = GREEN if obj.is_complete else WHITE
@@ -938,6 +938,20 @@ class UIManager:
         
         # Draw chapter objectives in the middle of the HUD
         self._draw_chapter_objectives_hud()
+        
+        # Draw ring animations
+        ring_icon = self.ui_asset_surfaces.get("ring_icon")
+        if ring_icon and hasattr(self.game_controller, 'level_manager'):
+            self.game_controller.level_manager.draw_ring_animations(self.screen, ring_icon)
+        
+        # Draw orichalc fragment HUD container
+        if hasattr(self.game_controller, 'hud_container'):
+            current_state_id = self.state_manager.get_current_state_id() if self.state_manager else None
+            current_chapter = self.game_controller.story_manager.get_current_chapter() if hasattr(self.game_controller, 'story_manager') else None
+            if (current_state_id in ["PlayingState", "BonusLevelPlayingState", "EarthCoreState", "FireCoreState", "AirCoreState", "WaterCoreState", "OrichalcCoreState"] and 
+                current_chapter and current_chapter.chapter_id == "chapter_1"):
+                orichalc_count = self.drone_system.get_cores()
+                self.game_controller.hud_container.draw(self.screen, orichalc_count)
 
     def get_scaled_fragment_icon_surface(self, fragment_id):
         # Normalize fragment ID
@@ -1240,7 +1254,7 @@ class UIManager:
         rings_y = panel_y + hud_ring_icon_area_y_offset
         
         current_game_state = self.state_manager.get_current_state_id() if self.state_manager else None
-        if current_game_state == "PlayingState":
+        if current_game_state in ["PlayingState", "EarthCoreState", "FireCoreState", "AirCoreState", "WaterCoreState", "OrichalcCoreState"]:
             ring_icon, ring_empty = self.ui_asset_surfaces.get("ring_icon"), self.ui_asset_surfaces.get("ring_icon_empty")
             if ring_icon and ring_empty:
                 for i in range(self.game_controller.level_manager.total_rings_per_level): 

@@ -49,6 +49,7 @@ class LevelManager:
         self.all_enemies_killed_this_level = False
         self.level_cleared_pending_animation = False
         self.level_clear_fragment_spawned_this_level = False
+        self.boss_fight_triggered = False
         
         # Register for events
         if hasattr(game_controller_ref, 'event_manager'):
@@ -85,6 +86,7 @@ class LevelManager:
         self.all_enemies_killed_this_level = False
         self.level_cleared_pending_animation = False
         self.level_clear_fragment_spawned_this_level = False
+        self.boss_fight_triggered = False
     
     def add_score(self, points):
         """Add points to the score"""
@@ -98,7 +100,7 @@ class LevelManager:
     def collect_ring(self, ring_position):
         """Handle ring collection and animation"""
         current_game_state = self.game_controller.state_manager.get_current_state_id()
-        if current_game_state == "PlayingState":
+        if current_game_state in ["PlayingState", "EarthCoreState", "FireCoreState", "AirCoreState", "WaterCoreState", "OrichalcCoreState"]:
             self.collected_rings_count += 1
             self.score += 10
             self._animate_ring_to_hud(ring_position)
@@ -152,7 +154,7 @@ class LevelManager:
         """Draw ring animations on the surface"""
         current_time = get_ticks()
         current_game_state = self.game_controller.state_manager.get_current_state_id()
-        if current_game_state == "PlayingState":
+        if current_game_state in ["PlayingState", "EarthCoreState", "FireCoreState", "AirCoreState", "WaterCoreState", "OrichalcCoreState"]:
             self._draw_level_timer_border(surface, current_time)
             for i in range(len(self.animating_rings_to_hud) - 1, -1, -1):
                 ring_data = self.animating_rings_to_hud[i]
@@ -242,8 +244,9 @@ class LevelManager:
             current_chapter = self.game_controller.story_manager.get_current_chapter()
 
             # After completing all levels in Chapter 1, trigger the Tempest boss fight.
-            if current_chapter and current_chapter.chapter_id == "chapter_1" and self.chapter1_level >= self.chapter1_max_levels:
+            if current_chapter and current_chapter.chapter_id == "chapter_1" and self.chapter1_level >= self.chapter1_max_levels and not self.boss_fight_triggered:
                 logger.info(f"Chapter 1 completed! Triggering Tempest boss fight.")
+                self.boss_fight_triggered = True
                 self.game_controller.story_manager.complete_objective_by_id("c1_clear_hostiles")
                 # next_level is the level to go to *after* the boss fight.
                 self.game_controller.state_manager.set_state('TempestFightState', next_level=self.level + 1)

@@ -1,6 +1,7 @@
 # hyperdrone_core/earth_core_state.py
-import pygame
+from pygame import KEYDOWN, KEYUP, K_p, K_ESCAPE
 from pygame.time import get_ticks
+from pygame.sprite import spritecollide
 from .state import State
 from settings_manager import get_setting
 from constants import GAME_STATE_STORY_MAP
@@ -62,14 +63,14 @@ class EarthCoreState(State):
     def handle_events(self, events):
         """Handle events like PlayingState"""
         for event in events:
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_p:
+            if event.type == KEYDOWN:
+                if event.key == K_p:
                     self.game.toggle_pause()
-                elif event.key == pygame.K_ESCAPE:
+                elif event.key == K_ESCAPE:
                     self.game.state_manager.set_state(GAME_STATE_STORY_MAP)
                 else:
                     self.game.player_actions.handle_key_down(event)
-            elif event.type == pygame.KEYUP:
+            elif event.type == KEYUP:
                 self.game.player_actions.handle_key_up(event)
     
     def update(self, delta_time):
@@ -101,6 +102,10 @@ class EarthCoreState(State):
         # Handle bullet-enemy collisions like PlayingState
         self._handle_bullet_enemy_collisions()
         
+        # Check for level clear condition like PlayingState
+        if self.game.level_manager.check_level_clear_condition():
+            pass  # Level progression handled by level manager
+        
         self.game.player_actions.update_player_movement_and_actions(current_time_ms)
     
     def _handle_bullet_enemy_collisions(self):
@@ -114,7 +119,6 @@ class EarthCoreState(State):
             return
             
         # Check bullet collisions with enemies
-        from pygame.sprite import spritecollide
         for bullet in self.game.player.bullets_group:
             for enemy in spritecollide(bullet, enemy_sprites, False):
                 if enemy.alive and bullet.alive:

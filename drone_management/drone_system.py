@@ -104,7 +104,8 @@ class DroneSystem:
                     else:
                         # Convert string keys to integers to prevent duplicates
                         self.owned_weapons = {int(k): v for k, v in owned_weapons_data.items()}
-                    self.orichalc_fragments = data.get('orichalc_fragments', 0)
+                    orichalc_data = data.get('orichalc_fragments', 0)
+                    self.orichalc_fragments = orichalc_data if isinstance(orichalc_data, int) else 0
             except IOError as e:
                 logger.error(f"Error loading save file '{self.SAVE_FILE}': {e}")
         else:
@@ -439,7 +440,10 @@ class DroneSystem:
     def add_orichalc_fragments(self, amount):
         """Add orichalc fragments"""
         if amount > 0:
-            self.orichalc_fragments += amount
+            if isinstance(self.orichalc_fragments, int):
+                self.orichalc_fragments += amount
+            else:
+                self.orichalc_fragments = amount
             self._save_dirty = True
             self._save_unlocks()
             logger.info(f"Added {amount} orichalc fragments. Total: {self.orichalc_fragments}")

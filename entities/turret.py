@@ -1,9 +1,11 @@
 # entities/turret.py
-import pygame
-import math
+from pygame import Surface, SRCALPHA
+from pygame.sprite import Sprite, Group
+from pygame.draw import rect as draw_rect
+from math import sqrt, atan2
 from entities.bullet import Bullet
 
-class Turret(pygame.sprite.Sprite):
+class Turret(Sprite):
     def __init__(self, x, y, asset_manager):
         super().__init__()
         self.asset_manager = asset_manager
@@ -11,12 +13,12 @@ class Turret(pygame.sprite.Sprite):
         self.max_health = 100
         
         # Create simple turret sprite
-        self.image = pygame.Surface((40, 40), pygame.SRCALPHA)
-        pygame.draw.rect(self.image, (100, 100, 100), (0, 0, 40, 40))
-        pygame.draw.rect(self.image, (150, 150, 150), (15, 5, 10, 30))
+        self.image = Surface((40, 40), SRCALPHA)
+        draw_rect(self.image, (100, 100, 100), (0, 0, 40, 40))
+        draw_rect(self.image, (150, 150, 150), (15, 5, 10, 30))
         
         self.rect = self.image.get_rect(center=(x, y))
-        self.bullets_group = pygame.sprite.Group()
+        self.bullets_group = Group()
         
         self.shoot_cooldown = 1000  # 1 second
         self.last_shot_time = 0
@@ -30,7 +32,7 @@ class Turret(pygame.sprite.Sprite):
         for enemy in enemies_group:
             dx = enemy.rect.centerx - self.rect.centerx
             dy = enemy.rect.centery - self.rect.centery
-            distance = math.sqrt(dx*dx + dy*dy)
+            distance = sqrt(dx*dx + dy*dy)
             
             if distance < self.range and distance < min_distance:
                 closest_enemy = enemy
@@ -48,7 +50,7 @@ class Turret(pygame.sprite.Sprite):
         # Calculate angle to target
         dx = target.rect.centerx - self.rect.centerx
         dy = target.rect.centery - self.rect.centery
-        angle = math.atan2(dy, dx)
+        angle = atan2(dy, dx)
         
         # Create bullet
         bullet = Bullet(
@@ -73,10 +75,10 @@ class Turret(pygame.sprite.Sprite):
             bar_y = self.rect.top - 10
             
             # Background
-            pygame.draw.rect(surface, (100, 0, 0), (bar_x, bar_y, bar_width, bar_height))
+            draw_rect(surface, (100, 0, 0), (bar_x, bar_y, bar_width, bar_height))
             # Health
             health_width = int((self.health / self.max_health) * bar_width)
-            pygame.draw.rect(surface, (0, 255, 0), (bar_x, bar_y, health_width, bar_height))
+            draw_rect(surface, (0, 255, 0), (bar_x, bar_y, health_width, bar_height))
         
         # Draw bullets
         for bullet in self.bullets_group:

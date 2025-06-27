@@ -224,8 +224,8 @@ class StateManager:
         # Weapons upgrade shop transitions
         self.registry.register_transition("WeaponsUpgradeShopState", "MainMenuState")
         self.registry.register_transition("WeaponsUpgradeShopState", "PlayingState")
-        self.registry.register_transition("PlayingState", "WeaponsUpgradeShopState")
-        
+        self.registry.register_transition("WeaponsUpgradeShopState", "EarthCoreState")
+
         # Game intro transitions
         self.registry.register_transition("GameIntroScrollState", "StoryMapState")
         
@@ -251,6 +251,7 @@ class StateManager:
         self.registry.register_transition("PlayingState", "BossFightState")
         self.registry.register_transition("PlayingState", "TempestFightState")
         self.registry.register_transition("PlayingState", "StoryMapState")
+        self.registry.register_transition("PlayingState", "WeaponsUpgradeShopState")        
 
         # Game over transitions
         self.registry.register_transition("GameOverState", "MainMenuState")
@@ -305,7 +306,9 @@ class StateManager:
         # Chapter core transitions
         self.registry.register_transition("EarthCoreState", "GameOverState")
         self.registry.register_transition("EarthCoreState", "StoryMapState")
-        
+        self.registry.register_transition("EarthCoreState", "WeaponsUpgradeShopState")
+        self.registry.register_transition("EarthCoreState", "TempestFightState")
+
         self.registry.register_transition("FireCoreState", "GameOverState")
         self.registry.register_transition("FireCoreState", "StoryMapState")
         

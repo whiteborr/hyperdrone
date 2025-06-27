@@ -1,6 +1,8 @@
 # entities/elemental_core.py
-import pygame
+from pygame import Surface, SRCALPHA
 from pygame.sprite import Sprite
+from pygame.draw import circle
+from math import sin
 from settings_manager import get_setting
 from logging import getLogger
 
@@ -25,10 +27,10 @@ class ElementalCore(Sprite):
         self.collected = False
         
         # Create fallback sprite since assets don't exist
-        self.image = pygame.Surface((32, 32), pygame.SRCALPHA)
+        self.image = Surface((32, 32), SRCALPHA)
         color = self._get_core_color()
-        pygame.draw.circle(self.image, color, (16, 16), 16)
-        pygame.draw.circle(self.image, (255, 255, 255), (16, 16), 16, 2)
+        circle(self.image, color, (16, 16), 16)
+        circle(self.image, (255, 255, 255), (16, 16), 16, 2)
         
         self.rect = self.image.get_rect()
         self.rect.center = (x, y)
@@ -88,9 +90,8 @@ class ElementalCore(Sprite):
             return
             
         # Floating animation
-        import math
         self.float_offset += self.float_speed * delta_time
-        float_y = 5 * math.sin(self.float_offset)
+        float_y = 5 * sin(self.float_offset)
         
         # Update position
         original_center = self.rect.center
@@ -111,9 +112,9 @@ class ElementalCore(Sprite):
             return
             
         # Draw glow effect
-        glow_surface = pygame.Surface((self.rect.width + 20, self.rect.height + 20), pygame.SRCALPHA)
+        glow_surface = Surface((self.rect.width + 20, self.rect.height + 20), SRCALPHA)
         glow_color = (*self._get_core_color(), self.glow_alpha // 4)
-        pygame.draw.circle(glow_surface, glow_color, 
+        circle(glow_surface, glow_color, 
                          (glow_surface.get_width() // 2, glow_surface.get_height() // 2), 
                          self.rect.width // 2 + 10)
         
