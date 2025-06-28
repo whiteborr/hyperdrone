@@ -328,6 +328,10 @@ class DroneSystem:
 
     def has_collected_fragment(self, fragment_id):
         return fragment_id in self.collected_core_fragments
+    
+    def has_core_fragment(self, fragment_id):
+        """Alias for has_collected_fragment for backward compatibility"""
+        return self.has_collected_fragment(fragment_id)
         
     def get_collected_fragments_ids(self):
         return self.collected_core_fragments
@@ -418,6 +422,29 @@ class DroneSystem:
     def get_weapon_level(self, weapon_mode):
         """Get the level of a specific weapon"""
         return self.owned_weapons.get(weapon_mode, 0)
+    
+    def get_weapon_tree_progress(self, base_weapon):
+        """Get progress through a weapon tree"""
+        from constants import WeaponModes
+        tree = WeaponModes.get_weapon_tree(base_weapon)
+        progress = []
+        for weapon in tree:
+            level = self.get_weapon_level(weapon)
+            progress.append((weapon, level))
+        return progress
+    
+    def unlock_next_weapon_in_tree(self, current_weapon):
+        """Unlock the next weapon in the tree"""
+        from constants import WeaponModes
+        tree = WeaponModes.get_weapon_tree(current_weapon)
+        try:
+            current_index = tree.index(current_weapon)
+            if current_index < len(tree) - 1:
+                next_weapon = tree[current_index + 1]
+                return self.add_owned_weapon(next_weapon)
+        except ValueError:
+            pass
+        return False
     
     def upgrade_weapon(self, weapon_mode, max_level=5):
         """Upgrade a weapon to the next level"""

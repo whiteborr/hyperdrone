@@ -3,10 +3,10 @@
         "DRONE"
     ],
     "selected_drone_id": "DRONE",
-    "cores": 1300,
+    "cores": 1310,
     "unlocked_lore_ids": [
-        "architect_legacy_intro",
-        "drone_DRONE"
+        "drone_DRONE",
+        "architect_legacy_intro"
     ],
     "collected_core_fragments": [],
     "architect_vault_completed": false,
@@ -14,11 +14,6 @@
     "solved_puzzle_terminals": [],
     "defeated_bosses": [],
     "unlocked_abilities": [],
-    "owned_weapons": {
-        "6": 2,
-        "1": 1,
-        "8": 1,
-        "2": 1
-    },
-    "orichalc_fragments": 31
+    "owned_weapons": {},
+    "orichalc_fragments": 500
 }

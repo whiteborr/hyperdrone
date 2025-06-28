@@ -14,38 +14,42 @@ from constants import (
 
 def create_weapon_strategy(weapon_mode, player_drone):
     """
-    Factory method to create the appropriate weapon strategy based on weapon mode.
-    
-    Maps weapon mode constants to their corresponding strategy implementations.
-    This factory pattern allows for easy extension of the weapon system without
-    modifying existing code.
-    
-    Args:
-        weapon_mode (int): The weapon mode constant (e.g., WEAPON_MODE_TRI_SHOT)
-        player_drone (PlayerDrone): The player drone instance that will use this weapon
-        
-    Returns:
-        BaseWeaponStrategy: An instance of the appropriate weapon strategy
-        
-    Example:
-        strategy = create_weapon_strategy(WEAPON_MODE_LIGHTNING, player)
-        player.current_weapon_strategy = strategy
+    Factory method to create weapon strategy with upgrade level support.
     """
-    strategy_map = {
-        WEAPON_MODE_DEFAULT: DefaultWeaponStrategy,
-        WEAPON_MODE_TRI_SHOT: TriShotWeaponStrategy,
-        WEAPON_MODE_RAPID_SINGLE: RapidSingleWeaponStrategy,
-        WEAPON_MODE_RAPID_TRI: RapidTriShotWeaponStrategy,
-        WEAPON_MODE_BIG_SHOT: BigShotWeaponStrategy,
-        WEAPON_MODE_BOUNCE: BounceWeaponStrategy,
-        WEAPON_MODE_PIERCE: PierceWeaponStrategy,
-        WEAPON_MODE_HEATSEEKER: HeatseekerWeaponStrategy,
-        WEAPON_MODE_HEATSEEKER_PLUS_BULLETS: HeatseekerPlusBulletsWeaponStrategy,
-        WEAPON_MODE_LIGHTNING: LightningWeaponStrategy
-    }
+    from constants import WeaponModes
     
-    strategy_class = strategy_map.get(weapon_mode, DefaultWeaponStrategy)
-    return strategy_class(player_drone)
+    # Basic weapons
+    if weapon_mode in [WeaponModes.DEFAULT, WeaponModes.TRI_SHOT, WeaponModes.RAPID_SINGLE, WeaponModes.RAPID_TRI]:
+        strategy_map = {
+            WeaponModes.DEFAULT: DefaultWeaponStrategy,
+            WeaponModes.TRI_SHOT: TriShotWeaponStrategy,
+            WeaponModes.RAPID_SINGLE: RapidSingleWeaponStrategy,
+            WeaponModes.RAPID_TRI: RapidTriShotWeaponStrategy
+        }
+        return strategy_map[weapon_mode](player_drone)
+    
+    # Big Shot Tree
+    elif weapon_mode in [WeaponModes.BIG_SHOT_FIRE, WeaponModes.BIG_SHOT_EARTH, WeaponModes.BIG_SHOT_WATER, WeaponModes.BIG_SHOT_AIR, WeaponModes.BIG_SHOT_CONVERGENCE]:
+        level = [WeaponModes.BIG_SHOT_FIRE, WeaponModes.BIG_SHOT_EARTH, WeaponModes.BIG_SHOT_WATER, WeaponModes.BIG_SHOT_AIR, WeaponModes.BIG_SHOT_CONVERGENCE].index(weapon_mode) + 1
+        return BigShotWeaponStrategy(player_drone, level)
+    
+    # Bounce/Pierce Tree
+    elif weapon_mode in [WeaponModes.BOUNCE, WeaponModes.PIERCE, WeaponModes.RICOCHET_CHAIN, WeaponModes.TUNNEL_SHOT, WeaponModes.DISRUPTOR_CORE]:
+        level = [WeaponModes.BOUNCE, WeaponModes.PIERCE, WeaponModes.RICOCHET_CHAIN, WeaponModes.TUNNEL_SHOT, WeaponModes.DISRUPTOR_CORE].index(weapon_mode) + 1
+        return BounceWeaponStrategy(player_drone, level)
+    
+    # Heatseeker Tree
+    elif weapon_mode in [WeaponModes.HEATSEEKER, WeaponModes.HEATSEEKER_PLUS_BULLETS, WeaponModes.TRACK_SPIKE, WeaponModes.GORGON_MARK, WeaponModes.ORBITAL_ECHO]:
+        level = [WeaponModes.HEATSEEKER, WeaponModes.HEATSEEKER_PLUS_BULLETS, WeaponModes.TRACK_SPIKE, WeaponModes.GORGON_MARK, WeaponModes.ORBITAL_ECHO].index(weapon_mode) + 1
+        return HeatseekerWeaponStrategy(player_drone, level)
+    
+    # Lightning Tree
+    elif weapon_mode in [WeaponModes.ARC_SPARK, WeaponModes.LIGHTNING, WeaponModes.CHAIN_BURST, WeaponModes.MINDLASH, WeaponModes.QUASINET]:
+        level = [WeaponModes.ARC_SPARK, WeaponModes.LIGHTNING, WeaponModes.CHAIN_BURST, WeaponModes.MINDLASH, WeaponModes.QUASINET].index(weapon_mode) + 1
+        return LightningWeaponStrategy(player_drone, level)
+    
+    # Fallback
+    return DefaultWeaponStrategy(player_drone)
 
 class BaseWeaponStrategy:
     """
@@ -203,137 +207,122 @@ class RapidTriShotWeaponStrategy(BaseWeaponStrategy):
             self.player.bullets_group.add(new_bullet)
 
 class BigShotWeaponStrategy(BaseWeaponStrategy):
-    def __init__(self, player_drone):
+    def __init__(self, player_drone, level=1):
         super().__init__(player_drone)
-        self.bullet_size = get_setting("weapons", "PLAYER_BIG_BULLET_SIZE", 8)
-        self.shoot_cooldown = get_setting("weapons", "PLAYER_BASE_SHOOT_COOLDOWN", 500) * 1.5
+        self.level = level
+        self.bullet_size = get_setting("weapons", "PLAYER_BIG_BULLET_SIZE", 8) + (level - 1) * 2
+        self.shoot_cooldown = max(300, get_setting("weapons", "PLAYER_BASE_SHOOT_COOLDOWN", 500) * (2 - level * 0.1))
+        self.bullet_damage = self.bullet_damage + (level - 1) * 10
+        
+        # Elemental colors
+        self.element_colors = {
+            1: (255, 100, 0),    # Fire - Orange
+            2: (139, 69, 19),    # Earth - Brown
+            3: (0, 100, 255),    # Water - Blue
+            4: (200, 255, 200),  # Air - Light Green
+            5: (255, 255, 255)   # Convergence - White
+        }
+        self.bullet_color = self.element_colors.get(level, self.bullet_color)
     
     def _create_projectile(self, spawn_x, spawn_y, missile_sound_asset_key=None):
-        # Create big bullet
-        new_bullet = Bullet(spawn_x, spawn_y, self.player.angle, self.bullet_speed, 
+        if self.level >= 5:  # Convergence - multiple shots
+            for angle_offset in [-20, -10, 0, 10, 20]:
+                shot_angle = self.player.angle + angle_offset
+                new_bullet = Bullet(spawn_x, spawn_y, shot_angle, self.bullet_speed, 
+                               self.bullet_lifetime, self.bullet_size, 
+                               self.bullet_color, self.bullet_damage, bullet_type='Convergence Shot')
+                self.player.bullets_group.add(new_bullet)
+        else:
+            new_bullet = Bullet(spawn_x, spawn_y, self.player.angle, self.bullet_speed, 
                            self.bullet_lifetime, self.bullet_size, 
-                           self.bullet_color, self.bullet_damage, bullet_type='Big Shot')
-        self.player.bullets_group.add(new_bullet)
+                           self.bullet_color, self.bullet_damage, bullet_type=f'Elemental Shot L{self.level}')
+            self.player.bullets_group.add(new_bullet)
 
 class BounceWeaponStrategy(BaseWeaponStrategy):
+    def __init__(self, player_drone, level=1):
+        super().__init__(player_drone)
+        self.level = level
+        self.bullet_damage = self.bullet_damage + (level - 1) * 5
+    
     def _create_projectile(self, spawn_x, spawn_y, missile_sound_asset_key=None):
-        # Create bouncing bullet
-        bounces = get_setting("weapons", "BOUNCING_BULLET_MAX_BOUNCES", 3)
-        new_bullet = Bullet(spawn_x, spawn_y, self.player.angle, self.bullet_speed, 
+        if self.level == 1:  # Bounce
+            bounces = get_setting("weapons", "BOUNCING_BULLET_MAX_BOUNCES", 3)
+            new_bullet = Bullet(spawn_x, spawn_y, self.player.angle, self.bullet_speed, 
                            self.bullet_lifetime, self.bullet_size, 
                            self.bullet_color, self.bullet_damage, max_bounces=bounces)
+        elif self.level == 2:  # Pierce
+            pierces = get_setting("weapons", "PIERCING_BULLET_MAX_PIERCES", 2)
+            new_bullet = Bullet(spawn_x, spawn_y, self.player.angle, self.bullet_speed, 
+                           self.bullet_lifetime, self.bullet_size, 
+                           self.bullet_color, self.bullet_damage, max_pierces=pierces, can_pierce_walls=True)
+        elif self.level == 3:  # Ricochet Chain
+            new_bullet = Bullet(spawn_x, spawn_y, self.player.angle, self.bullet_speed, 
+                           self.bullet_lifetime, self.bullet_size, 
+                           self.bullet_color, self.bullet_damage, max_bounces=6, max_pierces=1)
+        elif self.level == 4:  # Tunnel Shot
+            new_bullet = Bullet(spawn_x, spawn_y, self.player.angle, self.bullet_speed, 
+                           self.bullet_lifetime, self.bullet_size, 
+                           self.bullet_color, self.bullet_damage, max_pierces=5, can_pierce_walls=True)
+        else:  # Disruptor Core
+            for angle_offset in [-15, 0, 15]:
+                shot_angle = self.player.angle + angle_offset
+                new_bullet = Bullet(spawn_x, spawn_y, shot_angle, self.bullet_speed, 
+                               self.bullet_lifetime, self.bullet_size, 
+                               self.bullet_color, self.bullet_damage, max_bounces=3, max_pierces=2, can_pierce_walls=True)
+                self.player.bullets_group.add(new_bullet)
+            return
+        
         self.player.bullets_group.add(new_bullet)
 
-class PierceWeaponStrategy(BaseWeaponStrategy):
-    def _create_projectile(self, spawn_x, spawn_y, missile_sound_asset_key=None):
-        # Create piercing bullet
-        pierces = get_setting("weapons", "PIERCING_BULLET_MAX_PIERCES", 2)
-        new_bullet = Bullet(spawn_x, spawn_y, self.player.angle, self.bullet_speed, 
-                           self.bullet_lifetime, self.bullet_size, 
-                           self.bullet_color, self.bullet_damage, max_pierces=pierces,
-                           can_pierce_walls=True)
-        self.player.bullets_group.add(new_bullet)
+
 
 class HeatseekerWeaponStrategy(BaseWeaponStrategy):
-    def __init__(self, player_drone):
+    def __init__(self, player_drone, level=1):
         super().__init__(player_drone)
-        self.shoot_cooldown = get_setting("weapons", "MISSILE_COOLDOWN", 3000)  # 3 seconds cooldown
-    
-    def _create_projectile(self, spawn_x, spawn_y, missile_sound_asset_key=None):
-        # Create heatseeker missile
-        if missile_sound_asset_key and self.asset_manager:
-            missile_sound = self.asset_manager.get_sound(missile_sound_asset_key)
-            if missile_sound:
-                from settings_manager import get_setting
-                fx_volume = get_setting("audio", "VOLUME_FX", 7) / 10.0
-                missile_sound.set_volume(0.7 * fx_volume)
-                missile_sound.play()
-        
-        missile_damage = get_setting("weapons", "MISSILE_DAMAGE", 30)
-        new_missile = Missile(spawn_x, spawn_y, self.player.angle, missile_damage, self.enemies_group)
-        self.player.missiles_group.add(new_missile)
-
-class HeatseekerPlusBulletsWeaponStrategy(BaseWeaponStrategy):
-    def __init__(self, player_drone):
-        super().__init__(player_drone)
-        self.shoot_cooldown = get_setting("weapons", "MISSILE_COOLDOWN", 3000)  # 3 seconds cooldown
+        self.level = level
+        base_cooldown = get_setting("weapons", "MISSILE_COOLDOWN", 3000)
+        self.shoot_cooldown = max(1000, base_cooldown - (level - 1) * 400)
         self.rapid_fire_cooldown = get_setting("weapons", "PLAYER_RAPID_FIRE_COOLDOWN", 250)
-        self.last_bullet_time = 0  # Separate tracking for bullet firing
+        self.last_bullet_time = 0
     
     def _create_projectile(self, spawn_x, spawn_y, missile_sound_asset_key=None):
-        current_time_ms = get_ticks()
-        
-        # Create heatseeker missile (on missile cooldown)
         if missile_sound_asset_key and self.asset_manager:
             missile_sound = self.asset_manager.get_sound(missile_sound_asset_key)
             if missile_sound:
-                from settings_manager import get_setting
                 fx_volume = get_setting("audio", "VOLUME_FX", 7) / 10.0
                 missile_sound.set_volume(0.7 * fx_volume)
                 missile_sound.play()
         
-        missile_damage = get_setting("weapons", "MISSILE_DAMAGE", 30)
-        new_missile = Missile(spawn_x, spawn_y, self.player.angle, missile_damage, self.enemies_group)
-        self.player.missiles_group.add(new_missile)
+        missile_damage = get_setting("weapons", "MISSILE_DAMAGE", 30) + (self.level - 1) * 15
         
-        # Create rapid fire bullet
-        new_bullet = Bullet(spawn_x, spawn_y, self.player.angle, self.bullet_speed, 
+        if self.level >= 2:  # Heatseeker + Bullets and above
+            new_bullet = Bullet(spawn_x, spawn_y, self.player.angle, self.bullet_speed, 
                            self.bullet_lifetime, self.bullet_size, 
                            self.bullet_color, self.bullet_damage)
-        self.player.bullets_group.add(new_bullet)
-        
-        # Update last bullet time for rapid fire rate
-        self.last_bullet_time = current_time_ms
-    
-    def fire(self, sound_asset_key=None, missile_sound_asset_key=None):
-        """Override fire method to handle separate cooldowns for missiles and bullets"""
-        current_time_ms = get_ticks()
-        
-        # Check if we can fire a missile (using the main cooldown)
-        can_fire_missile = current_time_ms - self.last_shot_time > self.shoot_cooldown
-        
-        # Check if we can fire a bullet (using rapid fire cooldown)
-        can_fire_bullet = current_time_ms - self.last_bullet_time > self.rapid_fire_cooldown
-        
-        # If we can fire a missile, do the full firing sequence
-        if can_fire_missile:
-            return super().fire(sound_asset_key, missile_sound_asset_key)
-        
-        # If we can only fire a bullet, do that
-        elif can_fire_bullet:
-            # Calculate spawn position
-            rad_angle = radians(self.player.angle)
-            spawn_x = self.player.x + cos(rad_angle) * (self.player.rect.width / 2)
-            spawn_y = self.player.y + sin(rad_angle) * (self.player.rect.height / 2)
-            
-            # Play sound if provided
-            if sound_asset_key and self.asset_manager:
-                sound = self.asset_manager.get_sound(sound_asset_key)
-                if sound:
-                    from settings_manager import get_setting
-                    fx_volume = get_setting("audio", "VOLUME_FX", 7) / 10.0
-                    sound.set_volume(0.7 * fx_volume)
-                    sound.play()
-            
-            # Create just a bullet
-            new_bullet = Bullet(spawn_x, spawn_y, self.player.angle, self.bullet_speed, 
-                               self.bullet_lifetime, self.bullet_size, 
-                               self.bullet_color, self.bullet_damage)
             self.player.bullets_group.add(new_bullet)
-            
-            # Update last bullet time
-            self.last_bullet_time = current_time_ms
-            return True
-            
-        return False
+        
+        if self.level >= 3:  # Track Spike - multiple missiles
+            missile_count = min(3, self.level - 1)
+            for i in range(missile_count):
+                angle_offset = (i - missile_count // 2) * 10
+                missile_angle = self.player.angle + angle_offset
+                new_missile = Missile(spawn_x, spawn_y, missile_angle, missile_damage, self.enemies_group)
+                self.player.missiles_group.add(new_missile)
+        else:
+            new_missile = Missile(spawn_x, spawn_y, self.player.angle, missile_damage, self.enemies_group)
+            self.player.missiles_group.add(new_missile)
+
+
 
 class LightningWeaponStrategy(BaseWeaponStrategy):
-    def __init__(self, player_drone):
+    def __init__(self, player_drone, level=1):
         super().__init__(player_drone)
+        self.level = level
         self.charge_start_time = 0
         self.is_charging = False
-        self.charge_duration = 5000  # 5 seconds
+        self.charge_duration = max(2000, 5000 - (level - 1) * 500)  # Faster charge at higher levels
         self.shoot_cooldown = get_setting("weapons", "PLAYER_BASE_SHOOT_COOLDOWN", 500)
+        self.lightning_damage = get_setting("weapons", "LIGHTNING_DAMAGE", 25) + (level - 1) * 15
         
     def start_charging(self):
         """Start charging the lightning weapon"""
@@ -358,16 +347,14 @@ class LightningWeaponStrategy(BaseWeaponStrategy):
         return False
         
     def _fire_chain_lightning(self, sound_asset_key=None):
-        """Fire the charged lightning"""
-        # Find closest enemy
-        closest_enemy = None
-        min_distance = float('inf')
-        lightning_range = get_setting("weapons", "LIGHTNING_ZAP_RANGE", 250)
+        """Fire the charged lightning with level-based effects"""
+        lightning_range = get_setting("weapons", "LIGHTNING_ZAP_RANGE", 250) + (self.level - 1) * 50
         
+        # Find targets based on level
+        targets = []
         if self.enemies_group:
             for enemy in self.enemies_group:
                 if enemy.alive:
-                    # Skip boss enemies for targeting
                     if hasattr(enemy, 'enemy_type') and 'boss' in enemy.enemy_type.lower():
                         continue
                     if hasattr(enemy, '__class__') and 'guardian' in enemy.__class__.__name__.lower():
@@ -376,24 +363,26 @@ class LightningWeaponStrategy(BaseWeaponStrategy):
                     dx = enemy.rect.centerx - self.player.rect.centerx
                     dy = enemy.rect.centery - self.player.rect.centery
                     distance = sqrt(dx*dx + dy*dy)
-                    if distance < min_distance and distance < lightning_range:
-                        min_distance = distance
-                        closest_enemy = enemy
+                    if distance < lightning_range:
+                        targets.append((enemy, distance))
         
-        if closest_enemy:
-            # Play sound if provided
+        if targets:
+            targets.sort(key=lambda x: x[1])  # Sort by distance
+            max_targets = min(self.level * 2, len(targets))  # More targets at higher levels
+            
             if sound_asset_key and self.asset_manager:
                 sound = self.asset_manager.get_sound(sound_asset_key)
                 if sound:
-                    from settings_manager import get_setting
                     fx_volume = get_setting("audio", "VOLUME_FX", 7) / 10.0
                     sound.set_volume(0.7 * fx_volume)
                     sound.play()
-                
-            # Create lightning zap with chaining
+            
             lightning_lifetime = get_setting("weapons", "LIGHTNING_LIFETIME", 30)
-            new_zap = LightningZap(self.player, closest_enemy, 9999, lightning_lifetime, self.maze, game_area_x_offset=0, color_override=None, enemies_group=self.enemies_group)
-            self.player.lightning_zaps_group.add(new_zap)
+            for i in range(max_targets):
+                target_enemy = targets[i][0]
+                damage = self.lightning_damage if i == 0 else self.lightning_damage // 2  # Reduced damage for chained targets
+                new_zap = LightningZap(self.player, target_enemy, damage, lightning_lifetime, self.maze, game_area_x_offset=0, color_override=None, enemies_group=self.enemies_group)
+                self.player.lightning_zaps_group.add(new_zap)
             
     def get_charge_progress(self):
         """Get charging progress (0.0 to 1.0)"""
@@ -441,9 +430,11 @@ class LightningWeaponStrategy(BaseWeaponStrategy):
             surface.blit(temp_surface, (player_center[0] - radius - 5, player_center[1] - radius - 5))
     
     def _create_projectile(self, spawn_x, spawn_y, missile_sound_asset_key=None):
-        """Create normal lightning bullet"""
-        # Create bright yellow lightning bullet to make it visible
-        new_bullet = Bullet(spawn_x, spawn_y, self.player.angle, self.bullet_speed, 
+        """Create lightning projectile based on level"""
+        if self.level == 1:  # Arc Spark - simple lightning bullet
+            new_bullet = Bullet(spawn_x, spawn_y, self.player.angle, self.bullet_speed, 
                            self.bullet_lifetime, self.bullet_size, 
                            (255, 255, 0), self.bullet_damage)
-        self.player.bullets_group.add(new_bullet)
+            self.player.bullets_group.add(new_bullet)
+        else:  # Higher levels use charged lightning
+            self._fire_chain_lightning()

@@ -33,57 +33,94 @@ def create_weapon_strategy(weapon_mode, player_drone):
 - **Maintainability**: Each weapon's logic is self-contained
 - **Testability**: Individual weapon behaviors can be tested in isolation
 
-## Weapon Types
+## Weapon Mode Trees
 
-### 1. DefaultWeaponStrategy
-- **Description**: Single forward-firing projectile
-- **Use Case**: Balanced, reliable weapon for general combat
-- **Properties**: Standard damage, moderate fire rate
+### 🔴 BIG SHOT — Elemental Weaponry
+- `Level 1`: `WEAPON_MODE_BIG_SHOT_FIRE`
+- `Level 2`: `WEAPON_MODE_BIG_SHOT_EARTH`
+- `Level 3`: `WEAPON_MODE_BIG_SHOT_WATER`
+- `Level 4`: `WEAPON_MODE_BIG_SHOT_AIR`
+- `Level 5`: `WEAPON_MODE_BIG_SHOT_CONVERGENCE`
 
-### 2. TriShotWeaponStrategy
-- **Description**: Three projectiles fired in a spread pattern
-- **Use Case**: Area coverage, multiple target engagement
-- **Properties**: 15-degree spread, same damage per projectile
+### 🔵 BOUNCE / PIERCE — Vault Disruption Logic
+- `Level 1`: `WEAPON_MODE_BOUNCE`
+- `Level 2`: `WEAPON_MODE_PIERCE`
+- `Level 3`: `WEAPON_MODE_RICOCHET_CHAIN`
+- `Level 4`: `WEAPON_MODE_TUNNEL_SHOT`
+- `Level 5`: `WEAPON_MODE_DISRUPTOR_CORE`
 
-### 3. RapidSingleWeaponStrategy
-- **Description**: High rate of fire single projectiles
-- **Use Case**: Sustained damage output, fast-moving targets
-- **Properties**: Reduced cooldown, standard damage
+### 🟣 HEATSEEKER — Autonomous Pursuit Logic
+- `Level 1`: `WEAPON_MODE_HEATSEEKER`
+- `Level 2`: `WEAPON_MODE_HEATSEEKER_PLUS_BULLETS`
+- `Level 3`: `WEAPON_MODE_TRACK_SPIKE`
+- `Level 4`: `WEAPON_MODE_GORGON_MARK`
+- `Level 5`: `WEAPON_MODE_ORBITAL_ECHO`
 
-### 4. RapidTriShotWeaponStrategy
-- **Description**: Rapid-fire tri-shot combination
-- **Use Case**: Maximum area coverage with high DPS
-- **Properties**: Fast firing tri-shot spread
+### ⚡ LIGHTNING — Cognition Cascade Arc
+- `Level 1`: `WEAPON_MODE_ARC_SPARK`
+- `Level 2`: `WEAPON_MODE_LIGHTNING`
+- `Level 3`: `WEAPON_MODE_CHAIN_BURST`
+- `Level 4`: `WEAPON_MODE_MINDLASH`
+- `Level 5`: `WEAPON_MODE_QUASINET`
 
-### 5. BigShotWeaponStrategy
-- **Description**: Large, high-damage projectiles
-- **Use Case**: Heavy armor penetration, boss encounters
-- **Properties**: Increased size and damage, slower fire rate
+Each set represents a progression from basic to advanced behavior and ties into the game’s story themes like Vault manipulation, AI sentience, and elemental mastery.
 
-### 6. BounceWeaponStrategy
-- **Description**: Projectiles that bounce off walls
-- **Use Case**: Confined spaces, indirect fire
-- **Properties**: Configurable bounce count, ricochet physics
 
-### 7. PierceWeaponStrategy
-- **Description**: Projectiles that pass through enemies and walls
-- **Use Case**: Multiple enemy engagement, obstacle bypass
-- **Properties**: Piercing capability, reduced damage per hit
+⚙️ SET 1: Bounce / Pierce Path – "Vault Disruption Protocol"
+This path is ideal for representing the Vault’s physical-world manipulation logic — weapons that bounce, pierce, or disobey normal physics. It reflects the Vault learning to rewrite reality rules.
 
-### 8. HeatseekerWeaponStrategy
-- **Description**: Homing missiles that track enemies
-- **Use Case**: Mobile targets, guaranteed hits
-- **Properties**: Target acquisition, curved flight paths
+Level	Mode	Description
+1	WEAPON_MODE_BOUNCE	Basic reality-disruptive rounds that rebound off walls
+2	WEAPON_MODE_PIERCE	Refined logic — shots now pass through multiple enemies
+3	WEAPON_MODE_RICOCHET_CHAIN	(New) Each bounce chains to nearest target
+4	WEAPON_MODE_TUNNEL_SHOT	(New) Projectiles phase through all objects and reappear behind targets
+5	WEAPON_MODE_DISRUPTOR_CORE	(New) Fires logic-warping shells that destabilize enemy AI, briefly stunning them
 
-### 9. HeatseekerPlusBulletsWeaponStrategy
-- **Description**: Combination of homing missiles and rapid bullets
-- **Use Case**: Versatile combat, multiple engagement types
-- **Properties**: Dual cooldown system, mixed projectile types
+🧠 Lore Tie-In: This weapon tree is based on Vault environmental interaction logic — as if the Vault is “rewriting physics” around each shot. Great for puzzle bosses or corrupted sectors.
 
-### 10. LightningWeaponStrategy
-- **Description**: Chain lightning that arcs between enemies
-- **Use Case**: Crowd control, electrical damage
-- **Properties**: Multi-target damage, visual lightning effects
+
+⚙️ SET 2: Heatseeker Path – "AI Pursuit Logic"
+This weapon set is all about adaptive targeting, tying into the Vault’s automated hunter drones and CRUCIBLE surveillance AI.
+
+Level	Mode	Description
+1	WEAPON_MODE_HEATSEEKER	Basic homing missile that locks to closest enemy
+2	WEAPON_MODE_HEATSEEKER_PLUS_BULLETS	Homing missiles plus low-damage bullet spread
+3	WEAPON_MODE_TRACK_SPIKE	(New) Lock-on darts with increasing homing precision over time
+4	WEAPON_MODE_GORGON_MARK	(New) Marks enemies, causing all future shots to home in — even non-seeking ones
+5	WEAPON_MODE_ORBITAL_ECHO	(New) Fires a slow orb that auto-tracks up to 3 enemies and triggers delayed AoE pulses upon proximity detection
+
+🧠 Lore Tie-In: These are tied to CRUCIBLE’s Gorgon Stare surveillance tech and the Vault’s autonomous guardian orbs. Perfect for Chapter 4+ enemy types or defense scenarios.
+
+
+⚡ SET 3: Lightning Path – "Cognition Cascade Arc"
+This weapon line directly ties into Air Core logic and AI cognition / synapse chaining. It’s cerebral and fast, ideal for countering logic-locked enemies and swarms.
+
+Level	Mode	Description
+1	WEAPON_MODE_ARC_SPARK	(New) Fires a straight bolt that arcs to a nearby enemy
+2	WEAPON_MODE_LIGHTNING	Upgraded chain lightning with 2 jumps
+3	WEAPON_MODE_CHAIN_BURST	(New) Each enemy struck triggers a mini-lightning nova
+4	WEAPON_MODE_MINDLASH	(New) Lightning pulses temporarily slow enemy thinking/movement
+5	WEAPON_MODE_QUASINET	(New) Creates a lightning web between struck enemies — immobilizes and damages all within
+
+🧠 Lore Tie-In: The Vault’s neural pathways, the Air Core's cognition cascade, and the Architect’s fragmented mind are all echoed in this set. It feels like using AI's own logic pathways as a weapon.
+
+
+✅ Summary: Weapon Mode Trees (Level 1–5)
+🔴 BIG SHOT — Elemental Weaponry
+Fire → Earth → Water → Air → Convergence
+→ Tied to Vault core fragments
+
+🔵 BOUNCE / PIERCE — Vault Disruption
+Bounce → Pierce → Ricochet_Chain → Tunnel_Shot → Disruptor_Core
+→ Reality-breaking tech, echoes of Vault structure manipulation
+
+🟣 HEATSEEKER — Autonomous Pursuit Logic
+Heatseeker → Heatseeker+Bullets → Track_Spike → Gorgon_Mark → Orbital_Echo
+→ Vault's hunter logic + CRUCIBLE interception tech
+
+⚡ LIGHTNING — Synaptic AI Weapons
+Arc_Spark → Lightning → Chain_Burst → Mindlash → Quasinet
+→ Vault’s cognition cascade logic turned into synaptic warfare
 
 ## Implementation Details
 

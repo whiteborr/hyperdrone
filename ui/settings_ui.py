@@ -79,7 +79,10 @@ class SettingsUI:
         if 'display_format' in item and val_to_format is not None:
             val_text = item['display_format'].format(val_to_format)
         elif 'get_display' in item and current_val is not None:
-            val_text = item['get_display'](current_val)
+            try:
+                val_text = item['get_display'](current_val)
+            except Exception:
+                val_text = str(current_val)
         else:
             val_text = str(current_val) if current_val is not None else "N/A"
 

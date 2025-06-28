@@ -16,35 +16,36 @@ class OrichalcCoreState(State):
         self.enemies = Group()
         self.turrets = Group()
         self.particles = ParticleSystem()
+        
+        # State flags
         self.core_collected = False
         self.defense_phase = True
+        self.final_choice_made = False
+        
+        # Wave management
         self.wave_count = 0
         self.spawn_timer = 0
-        self.final_choice_made = False
         self.choice_timer = 0
         
     def enter(self, previous_state=None, **kwargs):
         # Initialize player
-        start_pos = (400, 500)
         drone_id = self.game.drone_system.get_selected_drone_id()
         drone_stats = self.game.drone_system.get_drone_stats(drone_id)
         self.player = PlayerDrone(
-            start_pos[0], start_pos[1], drone_id, drone_stats,
+            400, 500, drone_id, drone_stats,
             self.game.asset_manager, "drone_default", "crash", self.game.drone_system
         )
         
-        # Create Orichalc core at center
+        # Create Orichalc core
         self.orichalc_core = ElementalCore(400, 300, "orichalc", self.game.asset_manager)
         
         # Create defensive turrets
         self._create_turrets()
         
     def _create_turrets(self):
-        turret_positions = [
-            (200, 200), (600, 200), (200, 400), (600, 400)
-        ]
-        for pos in turret_positions:
-            turret = Turret(pos[0], pos[1], self.game.asset_manager)
+        positions = [(200, 200), (600, 200), (200, 400), (600, 400)]
+        for x, y in positions:
+            turret = Turret(x, y, self.game.asset_manager)
             self.turrets.add(turret)
     
     def handle_events(self, events):
@@ -55,13 +56,10 @@ class OrichalcCoreState(State):
                 elif event.key == K_ESCAPE:
                     self.game.state_manager.set_state(GAME_STATE_STORY_MAP)
                 elif not self.defense_phase and not self.final_choice_made:
-                    # Final choice keys
-                    if event.key == K_1:
-                        self._make_choice("preserve")
-                    elif event.key == K_2:
-                        self._make_choice("erase")
-                    elif event.key == K_3:
-                        self._make_choice("merge")
+                    # Handle final choice
+                    choices = {K_1: "preserve", K_2: "erase", K_3: "merge"}
+                    if event.key in choices:
+                        self._make_choice(choices[event.key])
                 else:
                     if hasattr(self.game, 'player_actions'):
                         self.game.player_actions.handle_key_down(event)
@@ -75,35 +73,33 @@ class OrichalcCoreState(State):
             
         current_time = get_ticks()
         
+        # Update based on phase
         if self.defense_phase:
             self._update_defense_phase(current_time, delta_time)
         elif not self.final_choice_made:
             self._update_choice_phase(delta_time)
         
-        # Update player
+        # Update entities
         if hasattr(self.player, 'update'):
             self.player.update(current_time, None, self.enemies, self.game.player_actions, 0)
         
-        # Update player actions
         if hasattr(self.game, 'player_actions'):
             self.game.player_actions.update_player_movement_and_actions(current_time)
         
-        # Update particles
         self.particles.update(delta_time)
     
     def _update_defense_phase(self, current_time, delta_time):
-        # Spawn enemy waves
+        # Spawn waves
         self.spawn_timer += delta_time
-        if self.spawn_timer > 3000:  # Every 3 seconds
+        if self.spawn_timer > 3000:
             self._spawn_defense_wave()
             self.spawn_timer = 0
         
-        # Update enemies
+        # Update entities
         for enemy in self.enemies:
             if hasattr(enemy, 'update'):
                 enemy.update(None, current_time, delta_time, 0)
         
-        # Update turrets
         for turret in self.turrets:
             if hasattr(turret, 'update'):
                 turret.update(current_time, self.enemies)
@@ -111,40 +107,39 @@ class OrichalcCoreState(State):
         # Handle combat
         self._handle_combat()
         
-        # Check if defense phase complete (5 waves)
+        # Check phase completion
         if self.wave_count >= 5 and len(self.enemies) == 0:
             self.defense_phase = False
             self.game.set_story_message("The Architect's voice returns: 'Would you let it die... or evolve?'", 5000)
     
     def _update_choice_phase(self, delta_time):
         self.choice_timer += delta_time
-        # Update core with special effects
         self.orichalc_core.update(delta_time)
     
     def _spawn_defense_wave(self):
         self.wave_count += 1
-        enemies_in_wave = 4 + self.wave_count
+        enemies_count = 4 + self.wave_count
         
-        spawn_positions = [
+        positions = [
             (50, 100), (750, 100), (50, 500), (750, 500),
             (400, 50), (100, 300), (700, 300)
         ]
         
-        for i in range(min(enemies_in_wave, len(spawn_positions))):
-            pos = spawn_positions[i]
-            enemy_config = {
+        for i in range(min(enemies_count, len(positions))):
+            x, y = positions[i]
+            config = {
                 "health": 20 + (self.wave_count * 5),
                 "speed": 1.5 + (self.wave_count * 0.2),
                 "damage": 15
             }
-            enemy = Enemy(pos[0], pos[1], self.game.asset_manager, enemy_config)
+            enemy = Enemy(x, y, self.game.asset_manager, config)
             self.enemies.add(enemy)
     
     def _handle_combat(self):
-        # Player bullets vs enemies
+        # Player vs enemies
         if hasattr(self.player, 'bullets_group'):
-            for bullet in self.player.bullets_group:
-                for enemy in self.enemies:
+            for bullet in list(self.player.bullets_group):
+                for enemy in list(self.enemies):
                     if bullet.rect.colliderect(enemy.rect):
                         enemy.health -= bullet.damage
                         bullet.kill()
@@ -154,69 +149,73 @@ class OrichalcCoreState(State):
                         )
                         if enemy.health <= 0:
                             enemy.kill()
+                        break
         
-        # Turret bullets vs enemies
+        # Turrets vs enemies
         for turret in self.turrets:
             if hasattr(turret, 'bullets_group'):
-                for bullet in turret.bullets_group:
-                    for enemy in self.enemies:
+                for bullet in list(turret.bullets_group):
+                    for enemy in list(self.enemies):
                         if bullet.rect.colliderect(enemy.rect):
                             enemy.health -= bullet.damage
                             bullet.kill()
                             if enemy.health <= 0:
                                 enemy.kill()
+                            break
         
-        # Enemy bullets vs player and turrets
+        # Enemies vs player and turrets
         for enemy in self.enemies:
             if hasattr(enemy, 'bullets_group'):
-                for bullet in enemy.bullets_group:
+                for bullet in list(enemy.bullets_group):
+                    # Check player collision
                     if bullet.rect.colliderect(self.player.rect):
                         self.player.take_damage(bullet.damage)
                         bullet.kill()
+                        continue
                     
+                    # Check turret collisions
                     for turret in self.turrets:
                         if bullet.rect.colliderect(turret.rect):
                             turret.take_damage(bullet.damage)
                             bullet.kill()
+                            break
     
     def _make_choice(self, choice):
         self.final_choice_made = True
         
-        if choice == "preserve":
-            self.game.set_story_message("You stabilize the Orichalc Core. The Vault enters dormancy, but its hunger remains...", 5000)
-        elif choice == "erase":
-            self.game.set_story_message("The Vault is destroyed. Earth is free, but now exposed to the Guardians...", 5000)
-        elif choice == "merge":
-            self.game.set_story_message("You merge with the Vault. Earth becomes your domain to protect and shape...", 5000)
+        messages = {
+            "preserve": "You stabilize the Orichalc Core. The Vault enters dormancy, but its hunger remains...",
+            "erase": "The Vault is destroyed. Earth is free, but now exposed to the Guardians...",
+            "merge": "You merge with the Vault. Earth becomes your domain to protect and shape..."
+        }
         
-        # Mark vault as completed
+        self.game.set_story_message(messages[choice], 5000)
         self.game.drone_system.architect_vault_completed = True
         
         # Return to story map after delay
         set_timer(USEREVENT + 4, 6000)
     
     def draw(self, surface):
-        surface.fill((60, 40, 80))  # Deep purple background
+        surface.fill((60, 40, 80))
         
-        # Draw player
+        # Draw entities
         self.player.draw(surface)
         
-        # Draw enemies
         for enemy in self.enemies:
             enemy.draw(surface)
         
-        # Draw turrets
         for turret in self.turrets:
             turret.draw(surface)
         
-        # Draw Orichalc core with special effects
         self.orichalc_core.draw(surface, (0, 0))
-        
-        # Draw particles
         self.particles.draw(surface, (0, 0))
         
         # Draw UI
+        self._draw_ui(surface)
+    
+    def _draw_ui(self, surface):
         font = Font(None, 24)
+        
         if self.defense_phase:
             text = font.render(f"Defend the Core - Wave: {self.wave_count}/5", True, (255, 255, 255))
             surface.blit(text, (10, 10))

@@ -8,7 +8,8 @@ from .powerup_manager import PowerUpManager
 from .collectibles import (
     Ring, WeaponUpgradeItem, ShieldItem, SpeedBoostItem, 
     CoreFragmentItem, VaultLogItem, GlyphTabletItem, AncientAlienTerminal, 
-    ArchitectEchoItem, CorruptedLogItem, QuantumCircuitryItem, Core
+    ArchitectEchoItem, CorruptedLogItem, QuantumCircuitryItem, Core,
+    WeaponsUpgradeShopItem
 )
 from .particle import Particle, ParticleSystem
 from .maze_guardian import MazeGuardian 
@@ -55,5 +56,6 @@ __all__ = [
     "Turret",
     "VaultLogItem",
     "WeaponUpgradeItem",
-    "WeaponShop"
+    "WeaponShop",
+    "WeaponsUpgradeShopItem"
 ]

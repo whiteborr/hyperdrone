@@ -116,37 +116,79 @@ GAME_STATE_AIR_CORE = "air_core"
 GAME_STATE_WATER_CORE = "water_core"
 GAME_STATE_ORICHALC_CORE = "orichalc_core"
 GAME_STATE_SKYWARD_GRID = "skyward_grid"
+GAME_STATE_TEMPEST_FIGHT = "tempest_fight"
+GAME_STATE_WEAPONS_UPGRADE_SHOP = "weapons_upgrade_shop"
+GAME_STATE_NARRATIVE = "narrative"
 
 # ==========================
 # Player Weapon Modes
 # ==========================
 class WeaponModes:
+    # Basic weapons
     DEFAULT: int = 0
     TRI_SHOT: int = 1
     RAPID_SINGLE: int = 2
     RAPID_TRI: int = 3
-    BIG_SHOT: int = 4
-    BOUNCE: int = 5
-    PIERCE: int = 6
-    HEATSEEKER: int = 7
-    HEATSEEKER_PLUS_BULLETS: int = 8
-    LIGHTNING: int = 9
+    
+    # BIG SHOT Tree - Elemental Weaponry
+    BIG_SHOT_FIRE: int = 10
+    BIG_SHOT_EARTH: int = 11
+    BIG_SHOT_WATER: int = 12
+    BIG_SHOT_AIR: int = 13
+    BIG_SHOT_CONVERGENCE: int = 14
+    
+    # BOUNCE/PIERCE Tree - Vault Disruption Logic
+    BOUNCE: int = 20
+    PIERCE: int = 21
+    RICOCHET_CHAIN: int = 22
+    TUNNEL_SHOT: int = 23
+    DISRUPTOR_CORE: int = 24
+    
+    # HEATSEEKER Tree - Autonomous Pursuit Logic
+    HEATSEEKER: int = 30
+    HEATSEEKER_PLUS_BULLETS: int = 31
+    TRACK_SPIKE: int = 32
+    GORGON_MARK: int = 33
+    ORBITAL_ECHO: int = 34
+    
+    # LIGHTNING Tree - Cognition Cascade Arc
+    ARC_SPARK: int = 40
+    LIGHTNING: int = 41
+    CHAIN_BURST: int = 42
+    MINDLASH: int = 43
+    QUASINET: int = 44
     
     @classmethod
     def get_all_modes(cls) -> List[int]:
         """Return all weapon modes as a list"""
         return [
             cls.DEFAULT, cls.TRI_SHOT, cls.RAPID_SINGLE, cls.RAPID_TRI,
-            cls.BIG_SHOT, cls.BOUNCE, cls.PIERCE, cls.HEATSEEKER,
-            cls.HEATSEEKER_PLUS_BULLETS, cls.LIGHTNING
+            cls.BIG_SHOT_FIRE, cls.BIG_SHOT_EARTH, cls.BIG_SHOT_WATER, cls.BIG_SHOT_AIR, cls.BIG_SHOT_CONVERGENCE,
+            cls.BOUNCE, cls.PIERCE, cls.RICOCHET_CHAIN, cls.TUNNEL_SHOT, cls.DISRUPTOR_CORE,
+            cls.HEATSEEKER, cls.HEATSEEKER_PLUS_BULLETS, cls.TRACK_SPIKE, cls.GORGON_MARK, cls.ORBITAL_ECHO,
+            cls.ARC_SPARK, cls.LIGHTNING, cls.CHAIN_BURST, cls.MINDLASH, cls.QUASINET
         ]
+    
+    @classmethod
+    def get_weapon_tree(cls, base_weapon: int) -> List[int]:
+        """Get weapon upgrade tree for a base weapon"""
+        trees = {
+            cls.BIG_SHOT_FIRE: [cls.BIG_SHOT_FIRE, cls.BIG_SHOT_EARTH, cls.BIG_SHOT_WATER, cls.BIG_SHOT_AIR, cls.BIG_SHOT_CONVERGENCE],
+            cls.BOUNCE: [cls.BOUNCE, cls.PIERCE, cls.RICOCHET_CHAIN, cls.TUNNEL_SHOT, cls.DISRUPTOR_CORE],
+            cls.HEATSEEKER: [cls.HEATSEEKER, cls.HEATSEEKER_PLUS_BULLETS, cls.TRACK_SPIKE, cls.GORGON_MARK, cls.ORBITAL_ECHO],
+            cls.ARC_SPARK: [cls.ARC_SPARK, cls.LIGHTNING, cls.CHAIN_BURST, cls.MINDLASH, cls.QUASINET]
+        }
+        for base, tree in trees.items():
+            if base_weapon in tree:
+                return tree
+        return [base_weapon]
 
 # For backward compatibility
 WEAPON_MODE_DEFAULT = WeaponModes.DEFAULT
 WEAPON_MODE_TRI_SHOT = WeaponModes.TRI_SHOT
 WEAPON_MODE_RAPID_SINGLE = WeaponModes.RAPID_SINGLE
 WEAPON_MODE_RAPID_TRI = WeaponModes.RAPID_TRI
-WEAPON_MODE_BIG_SHOT = WeaponModes.BIG_SHOT
+WEAPON_MODE_BIG_SHOT = WeaponModes.BIG_SHOT_FIRE  # Map old to new
 WEAPON_MODE_BOUNCE = WeaponModes.BOUNCE
 WEAPON_MODE_PIERCE = WeaponModes.PIERCE
 WEAPON_MODE_HEATSEEKER = WeaponModes.HEATSEEKER
@@ -190,19 +232,41 @@ def get_weapon_mode_names() -> Dict[int, str]:
         WeaponModes.TRI_SHOT: "Tri-Shot",
         WeaponModes.RAPID_SINGLE: "Rapid Single", 
         WeaponModes.RAPID_TRI: "Rapid Tri-Shot",
-        WeaponModes.BIG_SHOT: "Big Shot", 
+        
+        # Big Shot Tree
+        WeaponModes.BIG_SHOT_FIRE: "Fire Shot",
+        WeaponModes.BIG_SHOT_EARTH: "Earth Shot", 
+        WeaponModes.BIG_SHOT_WATER: "Water Shot",
+        WeaponModes.BIG_SHOT_AIR: "Air Shot",
+        WeaponModes.BIG_SHOT_CONVERGENCE: "Convergence Shot",
+        
+        # Bounce/Pierce Tree
         WeaponModes.BOUNCE: "Bounce Shot",
-        WeaponModes.PIERCE: "Pierce Shot", 
+        WeaponModes.PIERCE: "Pierce Shot",
+        WeaponModes.RICOCHET_CHAIN: "Ricochet Chain",
+        WeaponModes.TUNNEL_SHOT: "Tunnel Shot",
+        WeaponModes.DISRUPTOR_CORE: "Disruptor Core",
+        
+        # Heatseeker Tree
         WeaponModes.HEATSEEKER: "Heatseeker",
-        WeaponModes.HEATSEEKER_PLUS_BULLETS: "Seeker + Rapid", 
-        WeaponModes.LIGHTNING: "Chain Lightning"
+        WeaponModes.HEATSEEKER_PLUS_BULLETS: "Seeker + Rapid",
+        WeaponModes.TRACK_SPIKE: "Track Spike",
+        WeaponModes.GORGON_MARK: "Gorgon Mark",
+        WeaponModes.ORBITAL_ECHO: "Orbital Echo",
+        
+        # Lightning Tree
+        WeaponModes.ARC_SPARK: "Arc Spark",
+        WeaponModes.LIGHTNING: "Chain Lightning",
+        WeaponModes.CHAIN_BURST: "Chain Burst",
+        WeaponModes.MINDLASH: "Mindlash",
+        WeaponModes.QUASINET: "Quasinet"
     }
 
 # Cache the weapon mode names
 WEAPON_MODE_NAMES: Dict[int, str] = get_weapon_mode_names()
 
-# Weapon modes sequence - defines the upgrade path
-WEAPON_MODES_SEQUENCE: List[int] = WeaponModes.get_all_modes()
+# Base weapon modes sequence - defines the initial unlock path
+WEAPON_MODES_SEQUENCE: List[int] = [WeaponModes.DEFAULT, WeaponModes.TRI_SHOT, WeaponModes.RAPID_SINGLE, WeaponModes.RAPID_TRI]
 
 # ==========================
 # Asset Paths

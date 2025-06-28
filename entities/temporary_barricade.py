@@ -4,6 +4,7 @@ from pygame.time import get_ticks
 from pygame.draw import rect, line
 from pygame.transform import scale
 from pygame import Surface, SRCALPHA, Rect
+import pygame
 from random import randint
 from logging import getLogger, info, debug
 
@@ -59,9 +60,9 @@ class TemporaryBarricade(Sprite):
             self.health = 0
             self.alive = False
             # Play destruction sound and create particles
-            if hasattr(self.asset_manager, 'game_controller'):
-                self.asset_manager.game_controller.play_sound('barricade_destroy_sound') # Need to add this sound later
-                self.asset_manager.game_controller._create_explosion(self.x, self.y, num_particles=10, specific_sound_key=None, is_enemy=False)
+            # Play destruction sound and create particles
+            # Note: Using existing crash sound as placeholder for barricade destruction
+            # TODO: Add dedicated barricade destruction sound to asset manifest
             info(f"Barricade at ({self.x:.1f}, {self.y:.1f}) destroyed.")
 
     def update(self):

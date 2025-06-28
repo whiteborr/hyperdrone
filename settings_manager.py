@@ -191,29 +191,68 @@ def reset_all_settings_to_default():
             "ENEMY_SPEED": 1.5,
             "ENEMY_HEALTH": 25
         },
-        "powerups": {
-            "SHIELD_POWERUP_DURATION": 10000,
-            "SPEED_BOOST_POWERUP_DURATION": 7000
-        },
         "progression": {
-            "LEVEL_TIMER_DURATION": 120000
+            "LEVEL_TIMER_DURATION": 120000,
+            "BONUS_LEVEL_DURATION_MS": 60000
         },
         "weapons": {
-            "weapons": 50
+            "PLAYER_BULLET_SPEED": 8,
+            "PLAYER_BULLET_LIFETIME": 60,
+            "PLAYER_BULLET_COLOR": [0, 200, 255],
+            "PLAYER_BULLET_DAMAGE": 15,
+            "PLAYER_DEFAULT_BULLET_SIZE": 5,
+            "PLAYER_BASE_SHOOT_COOLDOWN": 500,
+            "PLAYER_RAPID_FIRE_COOLDOWN": 250,
+            "PLAYER_BIG_BULLET_SIZE": 8,
+            "BOUNCING_BULLET_MAX_BOUNCES": 3,
+            "PIERCING_BULLET_MAX_PIERCES": 2,
+            "MISSILE_COOLDOWN": 3000,
+            "MISSILE_DAMAGE": 30,
+            "LIGHTNING_ZAP_RANGE": 250,
+            "LIGHTNING_LIFETIME": 30,
+            "LIGHTNING_DAMAGE": 25
+        },
+        "abilities": {
+            "TEMPORARY_BARRICADE_COOLDOWN_MS": 10000,
+            "TEMPORARY_BARRICADE_DURATION_MS": 3000,
+            "TEMPORARY_BARRICADE_COUNT": 3,
+            "TEMPORARY_BARRICADE_HEALTH": 50,
+            "TEMPORARY_BARRICADE_SIZE": 40
+        },
+        "colors": {
+            "BLACK": [0, 0, 0],
+            "WHITE": [255, 255, 255],
+            "ORANGE": [255, 165, 0],
+            "YELLOW": [255, 255, 0],
+            "RED": [255, 0, 0]
         },
         "weapon_modes": {
-            "WEAPON_MODES_SEQUENCE": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+            "WEAPON_MODES_SEQUENCE": [0, 1, 2, 3],
             "WEAPON_MODE_NAMES": {
                 "0": "Single Shot",
-                "1": "Tri-Shot", 
+                "1": "Tri-Shot",
                 "2": "Rapid Single",
                 "3": "Rapid Tri-Shot",
-                "4": "Big Shot",
-                "5": "Bounce Shot",
-                "6": "Pierce Shot",
-                "7": "Heatseeker",
-                "8": "Seeker + Rapid",
-                "9": "Chain Lightning"
+                "10": "Fire Shot",
+                "11": "Earth Shot",
+                "12": "Water Shot",
+                "13": "Air Shot",
+                "14": "Convergence Shot",
+                "20": "Bounce Shot",
+                "21": "Pierce Shot",
+                "22": "Ricochet Chain",
+                "23": "Tunnel Shot",
+                "24": "Disruptor Core",
+                "30": "Heatseeker",
+                "31": "Seeker + Rapid",
+                "32": "Track Spike",
+                "33": "Gorgon Mark",
+                "34": "Orbital Echo",
+                "40": "Arc Spark",
+                "41": "Chain Lightning",
+                "42": "Chain Burst",
+                "43": "Mindlash",
+                "44": "Quasinet"
             }
         }
     }

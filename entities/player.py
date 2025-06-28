@@ -21,8 +21,7 @@ from .base_drone import BaseDrone
 from .powerup_manager import PowerUpManager
 from .weapon_strategies import (
     DefaultWeaponStrategy, TriShotWeaponStrategy, RapidSingleWeaponStrategy, RapidTriShotWeaponStrategy,
-    BigShotWeaponStrategy, BounceWeaponStrategy, PierceWeaponStrategy, HeatseekerWeaponStrategy,
-    HeatseekerPlusBulletsWeaponStrategy, LightningWeaponStrategy
+    BigShotWeaponStrategy, BounceWeaponStrategy, HeatseekerWeaponStrategy, LightningWeaponStrategy
 )
 
 
@@ -294,29 +293,34 @@ class PlayerDrone(BaseDrone):
             self.last_shot_time = get_ticks()
 
     def cycle_weapon_state(self):
-        # Get owned weapons from drone system
         if hasattr(self, 'drone_system') and self.drone_system:
             owned_weapons = list(self.drone_system.get_owned_weapons().keys())
-            # Always include default weapon (0) if not in owned list
             if 0 not in owned_weapons:
                 owned_weapons = [0] + owned_weapons
             
-            if owned_weapons:
-                # Find current weapon index in owned weapons
+            # Sort weapons by tree and level for logical cycling
+            basic_weapons = [w for w in owned_weapons if w < 10]
+            tree_weapons = [w for w in owned_weapons if w >= 10]
+            sorted_weapons = sorted(basic_weapons) + sorted(tree_weapons)
+            
+            if sorted_weapons:
                 try:
-                    current_index = owned_weapons.index(self.current_weapon_mode)
-                    next_index = (current_index + 1) % len(owned_weapons)
-                    self.current_weapon_mode = owned_weapons[next_index]
+                    current_index = sorted_weapons.index(self.current_weapon_mode)
+                    next_index = (current_index + 1) % len(sorted_weapons)
+                    self.current_weapon_mode = sorted_weapons[next_index]
                 except ValueError:
-                    # Current weapon not in owned list, use first owned weapon
-                    self.current_weapon_mode = owned_weapons[0]
+                    self.current_weapon_mode = sorted_weapons[0]
                 self.set_weapon_mode(self.current_weapon_mode)
                 return
         
-        # Fallback to original behavior
-        weapon_modes_sequence = get_setting("weapon_modes", "WEAPON_MODES_SEQUENCE", [0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
-        self.weapon_mode_index = (self.weapon_mode_index + 1) % len(weapon_modes_sequence)
-        self.current_weapon_mode = weapon_modes_sequence[self.weapon_mode_index]
+        # Fallback
+        weapon_modes_sequence = get_setting("weapon_modes", "WEAPON_MODES_SEQUENCE", [0, 1, 2, 3])
+        try:
+            current_index = weapon_modes_sequence.index(self.current_weapon_mode)
+            next_index = (current_index + 1) % len(weapon_modes_sequence)
+            self.current_weapon_mode = weapon_modes_sequence[next_index]
+        except ValueError:
+            self.current_weapon_mode = weapon_modes_sequence[0]
         self.set_weapon_mode(self.current_weapon_mode)
 
     def set_weapon_mode(self, mode):

@@ -4,7 +4,7 @@ from .state import State
 
 class GameIntroScrollState(State):
     def enter(self, previous_state=None, **kwargs):
-        self.game.ui_flow_controller.initialize_game_intro(self.game._load_intro_data_from_json_internal())
+        self.game.ui_flow_controller.initialize_game_intro(self.game._load_intro_data())
     
     def handle_events(self, events):
         for event in events:

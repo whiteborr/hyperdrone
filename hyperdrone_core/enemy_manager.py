@@ -17,52 +17,49 @@ class EnemyManager:
         self.enemies = Group()
         self.tile_size = get_setting("gameplay", "TILE_SIZE", 80)
         
-        # Load enemy configurations from JSON file
-        self.enemy_configs = {}
-        config_path = join("data", "enemy_configs.json")
+        # Load enemy configurations
+        self.enemy_configs = self._load_configs()
+        
+        # Enemy class mapping
+        self.enemy_classes = {
+            "Enemy": Enemy,
+            "SentinelDrone": SentinelDrone,
+            "TR3BEnemy": TR3BEnemy,
+            "DefenseDrone": DefenseDrone
+        }
+
+    def _load_configs(self):
         try:
-            with open(config_path, 'r') as f:
-                self.enemy_configs = load(f)["enemies"]
+            with open(join("data", "enemy_configs.json"), 'r') as f:
+                return load(f)["enemies"]
         except (FileNotFoundError, JSONDecodeError, KeyError) as e:
             logger.error(f"Error loading enemy configs: {e}")
-            # Fallback to default configs if file can't be loaded
+            return {}
 
     def spawn_enemy_by_id(self, enemy_id, x, y, **kwargs):
-        """Spawn an enemy by its ID from the configuration"""
-        # For level 1, use prototype_enemy as fallback if regular_enemy fails
-        if enemy_id == "regular_enemy":
-            config = self.enemy_configs.get(enemy_id)
-            if not config:
-                logger.warning(f"Regular enemy config not found, using prototype_enemy instead")
-                enemy_id = "prototype_enemy"
-                config = self.enemy_configs.get(enemy_id)
-        else:
-            config = self.enemy_configs.get(enemy_id)
+        # Handle fallback for regular_enemy
+        if enemy_id == "regular_enemy" and enemy_id not in self.enemy_configs:
+            logger.warning("Regular enemy config not found, using prototype_enemy")
+            enemy_id = "prototype_enemy"
             
+        config = self.enemy_configs.get(enemy_id)
         if not config:
-            logger.error(f"Enemy config for '{enemy_id}' not found.")
+            logger.error(f"Enemy config for '{enemy_id}' not found")
             return None
             
-        # Dynamically get the class based on class_name
+        # Get enemy class
         class_name = config.get("class_name", "Enemy")
-        enemy_class = None
+        enemy_class = self.enemy_classes.get(class_name)
         
-        if class_name == "Enemy":
-            enemy_class = Enemy
-        elif class_name == "SentinelDrone":
-            enemy_class = SentinelDrone
-        elif class_name == "TR3BEnemy":
-            enemy_class = TR3BEnemy
-        elif class_name == "DefenseDrone":
-            enemy_class = DefenseDrone
-        else:
+        if not enemy_class:
             logger.error(f"Unknown enemy class '{class_name}'")
             return None
             
-        # Create the enemy instance
-        enemy = enemy_class(x, y, self.asset_manager, config, self.game_controller.player if hasattr(self.game_controller, 'player') else None)
+        # Create enemy
+        player = getattr(self.game_controller, 'player', None)
+        enemy = enemy_class(x, y, self.asset_manager, config, player)
         
-        # Handle unique arguments like path_to_core for defense mode
+        # Set path for defense mode
         if 'path_to_core' in kwargs and hasattr(enemy, 'path'):
             enemy.path = kwargs['path_to_core']
             enemy.current_path_index = 1 if enemy.path and len(enemy.path) > 1 else -1
@@ -74,104 +71,84 @@ class EnemyManager:
         self.enemies.empty()
         num_enemies = min(level + 1, 7)
         
-        # Get screen dimensions to ensure enemies are within visible area
+        # Get screen bounds
         width = get_setting("display", "WIDTH", 1920)
-        height = get_setting("display", "HEIGHT", 1080)
-        game_play_area_height = get_setting("display", "GAME_PLAY_AREA_HEIGHT", 960)
+        height = get_setting("display", "GAME_PLAY_AREA_HEIGHT", 960)
         
-        # Track spawned enemies to ensure we have the correct count
         spawned_count = 0
-        max_attempts = 20  # Limit attempts to prevent infinite loops
         
         if level >= 6:
-            # Spawn mix of TR-3B and Sentinel drones for higher levels
-            tr3b_count = min(level - 5, 3)  # Up to 3 TR-3B enemies based on level
+            # High level: TR-3B + Sentinels
+            tr3b_count = min(level - 5, 3)
             sentinel_count = num_enemies - tr3b_count
             
-            # Spawn TR-3B enemies
-            for _ in range(tr3b_count):
-                attempts = 0
-                while attempts < max_attempts:
-                    if pos := self.game_controller._get_safe_spawn_point(self.tile_size * 0.7, self.tile_size * 0.7):
-                        # Verify position is within screen bounds
-                        if 0 < pos[0] < width and 0 < pos[1] < game_play_area_height:
-                            enemy = self.spawn_enemy_by_id("tr3b", pos[0], pos[1])
-                            if enemy:
-                                spawned_count += 1
-                                break
-                    attempts += 1
+            spawned_count += self._spawn_enemy_type("tr3b", tr3b_count, width, height, 0.7)
+            spawned_count += self._spawn_enemy_type("sentinel", sentinel_count, width, height, 0.6)
             
-            # Spawn Sentinel drones
-            for _ in range(sentinel_count):
-                attempts = 0
-                while attempts < max_attempts:
-                    if pos := self.game_controller._get_safe_spawn_point(self.tile_size * 0.6, self.tile_size * 0.6):
-                        # Verify position is within screen bounds
-                        if 0 < pos[0] < width and 0 < pos[1] < game_play_area_height:
-                            enemy = self.spawn_enemy_by_id("sentinel", pos[0], pos[1])
-                            if enemy:
-                                spawned_count += 1
-                                break
-                    attempts += 1
         elif level >= 4:
-            # Spawn only Sentinel drones for mid levels
-            for _ in range(num_enemies):
-                attempts = 0
-                while attempts < max_attempts:
-                    if pos := self.game_controller._get_safe_spawn_point(self.tile_size * 0.6, self.tile_size * 0.6):
-                        # Verify position is within screen bounds
-                        if 0 < pos[0] < width and 0 < pos[1] < game_play_area_height:
-                            enemy = self.spawn_enemy_by_id("sentinel", pos[0], pos[1])
-                            if enemy:
-                                spawned_count += 1
-                                break
-                    attempts += 1
+            # Mid level: Sentinels only
+            spawned_count += self._spawn_enemy_type("sentinel", num_enemies, width, height, 0.6)
+            
         else:
-            # Spawn regular enemies for early levels
-            for _ in range(num_enemies):
-                attempts = 0
-                while attempts < max_attempts:
-                    if pos := self.game_controller._get_safe_spawn_point(self.tile_size * 0.7, self.tile_size * 0.7):
-                        # Verify position is within screen bounds
-                        if 0 < pos[0] < width and 0 < pos[1] < game_play_area_height:
-                            enemy = self.spawn_enemy_by_id("regular_enemy", pos[0], pos[1])
-                            if enemy:
-                                spawned_count += 1
-                                break
-                    attempts += 1
+            # Early level: Regular enemies
+            spawned_count += self._spawn_enemy_type("regular_enemy", num_enemies, width, height, 0.7)
         
-        logger.info(f"Level {level}: Spawned {spawned_count} enemies out of {num_enemies} requested")
+        logger.info(f"Level {level}: Spawned {spawned_count}/{num_enemies} enemies")
+
+    def _spawn_enemy_type(self, enemy_type, count, width, height, size_factor):
+        spawned = 0
+        max_attempts = 20
+        
+        for _ in range(count):
+            for attempt in range(max_attempts):
+                pos = self.game_controller._get_safe_spawn_point(
+                    self.tile_size * size_factor, 
+                    self.tile_size * size_factor
+                )
+                
+                if pos and 0 < pos[0] < width and 0 < pos[1] < height:
+                    if self.spawn_enemy_by_id(enemy_type, pos[0], pos[1]):
+                        spawned += 1
+                        break
+                        
+        return spawned
 
     def spawn_enemy_for_defense(self, enemy_type_key, spawn_position_grid, path_to_core):
         abs_x, abs_y = self.game_controller.maze._grid_to_pixel_center(*spawn_position_grid)
         
-        # Use the new spawn_enemy_by_id method with the path_to_core parameter
+        # Try to spawn requested enemy type
         enemy = self.spawn_enemy_by_id(enemy_type_key, abs_x, abs_y, path_to_core=path_to_core)
         
         if enemy:
-            logger.info(f"Spawned {enemy_type_key} at {abs_x}, {abs_y} with path length: {len(path_to_core)}")
+            logger.info(f"Spawned {enemy_type_key} at {abs_x}, {abs_y}")
         else:
-            # Fallback to defense_drone_1 if the requested enemy type doesn't exist
+            # Fallback to defense_drone_1
             enemy = self.spawn_enemy_by_id("defense_drone_1", abs_x, abs_y, path_to_core=path_to_core)
             if enemy:
-                logger.info(f"Fallback: Spawned defense_drone_1 at {abs_x}, {abs_y} with path length: {len(path_to_core)}")
+                logger.info(f"Fallback: Spawned defense_drone_1 at {abs_x}, {abs_y}")
         
-    def update_enemies(self, primary_target_pos_pixels, maze, current_time_ms, delta_time_ms, game_area_x_offset=0, is_defense_mode=False):
-        for enemy_obj in list(self.enemies):
-            if enemy_obj.alive:
-                enemy_obj.update(primary_target_pos_pixels, maze, current_time_ms, delta_time_ms, game_area_x_offset, is_defense_mode)
-            elif not hasattr(enemy_obj, '_exploded'):
-                self.game_controller._create_explosion(enemy_obj.rect.centerx, enemy_obj.rect.centery)
-                enemy_obj._exploded = True; enemy_obj.kill()
-            elif hasattr(enemy_obj, '_exploded') and not enemy_obj.bullets:
-                 enemy_obj.kill()
+    def update_enemies(self, target_pos, maze, current_time_ms, delta_time_ms, x_offset=0, is_defense_mode=False):
+        for enemy in list(self.enemies):
+            if enemy.alive:
+                enemy.update(target_pos, maze, current_time_ms, delta_time_ms, x_offset, is_defense_mode)
+            elif not hasattr(enemy, '_exploded'):
+                self.game_controller._create_explosion(enemy.rect.centerx, enemy.rect.centery)
+                enemy._exploded = True
+                enemy.kill()
+            elif hasattr(enemy, '_exploded') and not enemy.bullets:
+                enemy.kill()
 
     def draw_all(self, surface, camera=None):
         for enemy in self.enemies:
             enemy.draw(surface, None)
-            if enemy.alive and hasattr(enemy, '_draw_health_bar'): enemy._draw_health_bar(surface, None)
+            if enemy.alive and hasattr(enemy, '_draw_health_bar'):
+                enemy._draw_health_bar(surface, None)
 
-    def reset_all(self): self.enemies.empty()
-    def get_sprites(self): return self.enemies
-    def get_active_enemies_count(self): 
+    def reset_all(self):
+        self.enemies.empty()
+        
+    def get_sprites(self):
+        return self.enemies
+        
+    def get_active_enemies_count(self):
         return sum(1 for e in self.enemies if e.alive)

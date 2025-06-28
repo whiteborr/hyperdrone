@@ -2,7 +2,9 @@
   "display": {
     "FULLSCREEN_MODE": false,
     "MUSIC_VOLUME_MULTIPLIER": 0.5,
-    "SFX_VOLUME_MULTIPLIER": 0.7
+    "SFX_VOLUME_MULTIPLIER": 0.7,
+    "WIDTH": 1920,
+    "HEIGHT": 1200
   },
   "audio": {
     "VOLUME_FX": 1,
@@ -12,8 +14,8 @@
     "PLAYER_MAX_HEALTH": 100,
     "PLAYER_LIVES": 3,
     "PLAYER_SPEED": 3,
-    "PLAYER_INVINCIBILITY": false,
-    "INITIAL_WEAPON_MODE": 0
+    "PLAYER_INVINCIBILITY": true,
+    "INITIAL_WEAPON_MODE": 8
   },
   "enemies": {
     "ENEMY_SPEED": 1.5,
